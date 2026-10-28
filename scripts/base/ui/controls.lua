@@ -263,11 +263,11 @@ function controls.read(settings, raw)
         if left then
             input.screen = {left = tonumber(left), top = tonumber(top), right = tonumber(right), bottom = tonumber(bottom)}
         end
-        -- Capability letters (live only): x = xBRZ upscaling, w = a toggleable window (Fullscreen),
-        -- t = TrueType text (the translated languages).
+        -- Capability letters (live only): x = xBRZ upscaling, p = pixel-art scaling ("sharp"), w = a
+        -- toggleable window (Fullscreen), t = TrueType text (the translated languages).
         local given_filters = raw:match(" f(%a*)") or ""
         input.filters = {xbrz = given_filters:find("x", 1, true) ~= nil, window = given_filters:find("w", 1, true) ~= nil,
-            text = given_filters:find("t", 1, true) ~= nil}
+            text = given_filters:find("t", 1, true) ~= nil, sharp = given_filters:find("p", 1, true) ~= nil}
         -- " s": measured FPS for Show FPS (live only; traces have no wall-clock time).
         input.fps = tonumber(raw:match(" s(%d+)"))
         if x then

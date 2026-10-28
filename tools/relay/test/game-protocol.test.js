@@ -1,113 +1,81 @@
 // SPDX-License-Identifier: MIT
 //
-// End-to-end check of the browser side (dist/web/online.js) through the relay, driven exactly the
-// way OpenLF2 drives a network transport: the C++ adapter's poll/send/status semantics and a line
-// by line port of scripts/base/game/network.lua (handshake, random table, lockstep 22-byte packets).
+// End-to-end check of the browser side (dist/web/online.js) through the relay, driven the way
+// OpenLF2 drives a network transport: the C++ adapter's poll/send/status semantics and a room
+// client speaking protocol 2 (scripts/base/game/room.lua; room-game.test.js runs the script itself).
 // Uses Node's built-in WebSocket client, the same API browsers have.
 'use strict';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  OnlineTransport, STATUS, sleep, startRelay, engineNetwork, peer, until, randomInput, playFrames,
+  OnlineTransport, STATUS, startRelay, engineNetwork, peer, until, startRoom, playFrames,
 } = require('./helpers.js');
 
-test('two browsers complete the OpenLF2 handshake and stay in lockstep through the relay', async (t) => {
+test('browsers meet in a room, start together and receive the same frames', async (t) => {
   const relay = await startRelay();
   try {
     const host = peer(relay.url, '482913', ['Alice', 'Bob', 'Carol', 'Dan']);
     const guest = peer(relay.url, '999999', ['Linh', 'Minh', 'Nam', 'Quan']);
+    const third = peer(relay.url, '482913', ['Tuan', '', '', '']);
     assert.equal(host.network.start(true, '0.0.0.0'), true);
     assert.equal(host.online.status(), STATUS.listening);
-    // The guest types the host's room code into the address field.
+    await until(() => host.network.poll() === false && host.network.players.length === 1);
+    assert.equal(host.online.status(), STATUS.connected);
+    // A friend types the host's room code into the address field; another opened the invite link.
     assert.equal(guest.network.start(false, '482913'), true);
     assert.equal(guest.online.status(), STATUS.connecting);
-
+    assert.equal(third.network.start(false, ''), true);
     await until(() => {
-      for (const side of [host, guest]) {
-        const result = side.network.poll();
-        if (result && result.error) throw new Error(result.error);
-      }
-      return host.network.phase === 'ready' && guest.network.phase === 'ready';
+      for (const side of [host, guest, third]) side.network.poll();
+      return host.network.players.length === 3;
     });
-    assert.ok(host.network.sharedRandom.equals(guest.network.sharedRandom), 'random tables match');
-    assert.deepEqual(host.network.peerNames, ['Linh', 'Minh', 'Nam', 'Quan']);
-    assert.deepEqual(guest.network.peerNames, ['Alice', 'Bob', 'Carol', 'Dan']);
+    assert.deepEqual(host.network.players.map((player) => player.info.split('\0')[0]), ['Alice', 'Linh', 'Tuan']);
+    assert.deepEqual([host.online.players, host.online.started], [3, false]);
+    host.network.begin();
+    await until(() => [host, guest, third].every((side) => side.network.poll() === true));
+    assert.ok(guest.network.sharedRandom.equals(host.network.randomTable), 'everyone has the host\'s random table');
+    assert.ok(third.network.sharedRandom.equals(host.network.randomTable));
+    assert.deepEqual([guest.network.index, third.network.index], [1, 2]);
 
-    const hostLog = [];
-    const guestLog = [];
+    const logs = [[], [], []];
     const started = Date.now();
-    await Promise.all([playFrames(host, 300, hostLog), playFrames(guest, 300, guestLog)]);
-    const elapsed = Date.now() - started;
-    assert.equal(host.network.frames, 300);
-    assert.deepEqual(hostLog, guestLog, 'both players see identical inputs every frame');
-    t.diagnostic(`300 lockstep frames over the local relay in ${elapsed} ms`);
+    await Promise.all([host, guest, third].map((side, index) => playFrames(side, 150, logs[index])));
+    t.diagnostic(`150 frames in ${Date.now() - started} ms`);
+    const strip = (log) => log.map(({ time, ...frame }) => frame);
+    assert.deepEqual(strip(logs[1]), strip(logs[0]), 'identical frames');
+    assert.deepEqual(strip(logs[2]), strip(logs[0]), 'identical frames');
+    assert.deepEqual(logs[0].map((frame) => frame.number), [...Array(150).keys()]);
 
-    // The guest leaves: the host's next frame reports it, in the game's message font's ASCII.
+    // A friend leaves: the others are told and play on.
     guest.network.engine.close();
-    const outcome = await until(() => host.network.exchange(randomInput(), 42));
-    assert.deepEqual(outcome, { error: 'Relay: the other player left' });
-    assert.equal(host.online.status(), STATUS.idle);
+    await until(() => (host.network.poll(), host.network.left.length > 0));
+    assert.deepEqual(host.network.left, [1]);
+    assert.equal(host.online.status(), STATUS.connected);
+    assert.equal(host.online.players, 2);
   } finally { await relay.close(); }
 });
 
-// The game advances one frame per 33 ms and, in network play, only once the other player's
-// packet for that frame has arrived. So the speed drops once the time a packet needs from one
-// player to the other (both legs through the relay) exceeds 33 ms.
-test('frame rate against the one-way delay between the players', async (t) => {
-  const results = [];
-  for (const delay of [0, 20, 50, 80]) {
-    const relay = await startRelay({ forwardDelayMs: delay });
-    try {
-      const host = peer(relay.url, '246810', ['A', '', '', '']);
-      const guest = peer(relay.url, '246810', ['B', '', '', '']);
-      host.network.start(true, '0.0.0.0');
-      guest.network.start(false, '');
-      await until(() => {
-        host.network.poll();
-        guest.network.poll();
-        return host.network.phase === 'ready' && guest.network.phase === 'ready';
-      });
-      const frames = 45;
-      const started = Date.now();
-      const paced = async (side) => {
-        for (let frame = 0; frame < frames; frame += 1) {
-          while (Date.now() < started + (frame * 1000) / 30) await sleep(1); // the 33 ms frame clock
-          const input = randomInput();
-          await until(() => {
-            const result = side.network.exchange(input, 7);
-            if (result && result.error) throw new Error(result.error);
-            return result;
-          });
-        }
-      };
-      await Promise.all([paced(host), paced(guest)]);
-      const fps = ((frames - 1) * 1000) / (Date.now() - started); // frame 0 starts at once
-      results.push([delay, fps]);
-      t.diagnostic(`one-way delay ${delay} ms -> ${fps.toFixed(1)} frames per second (game speed ${Math.round((fps / 30) * 100)}%)`);
-      host.online.close();
-      guest.online.close();
-    } finally { await relay.close(); }
-  }
-  assert.ok(results[0][1] > 25, 'no delay plays at full speed');
-  assert.ok(results[1][1] > 25, '20 ms is still full speed');
-  assert.ok(results[3][1] < 15, '80 ms slows the game down');
-});
-
-test('Connect with an empty address joins the room from the invite link', async () => {
+// The relay keeps the beat: the frame rate never depends on how far the other players are.
+test('frame rate with a distant friend', async (t) => {
   const relay = await startRelay();
   try {
-    const host = peer(relay.url, '135790', ['A', '', '', '']);
-    const guest = peer(relay.url, '135790', ['B', '', '', '']); // opened the invite link
-    host.network.start(true, '0.0.0.0');
-    guest.network.start(false, '');
-    await until(() => {
-      host.network.poll();
-      guest.network.poll();
-      return host.network.phase === 'ready' && guest.network.phase === 'ready';
-    });
-    host.online.close();
-    guest.online.close();
+    const { WebSocket } = require('ws');
+    const distant = (oneWay) => class extends WebSocket {
+      send(data) { setTimeout(() => { if (this.readyState === 1) super.send(data); }, oneWay); }
+    };
+    for (const oneWay of [0, 50, 150]) {
+      const host = peer(relay.url, String(246810 + oneWay), ['A', '', '', '']);
+      const guest = peer(relay.url, String(246810 + oneWay), ['B', '', '', ''], { WebSocket: distant(oneWay) });
+      await startRoom([host, guest]);
+      const log = [];
+      await Promise.all([playFrames(host, 60, log), playFrames(guest, 60, [])]);
+      const fps = ((log.length - 1) * 1000) / (log.at(-1).time - log[0].time);
+      t.diagnostic(`friend ${oneWay} ms away -> ${fps.toFixed(1)} frames per second for the host`);
+      assert.ok(fps > 28 && fps < 32, `${fps} frames per second`);
+      host.online.close();
+      guest.online.close();
+    }
   } finally { await relay.close(); }
 });
 
@@ -161,16 +129,27 @@ test('an https relay address pasted into the panel reaches the relay', async () 
     const host = peer(`http://127.0.0.1:${port}`, '555123', ['A', '', '', '']);
     const guest = peer(`http://127.0.0.1:${port}/relay`, '555123', ['B', '', '', '']);
     assert.equal(host.online.relay, `ws://127.0.0.1:${port}`);
-    host.network.start(true, '0.0.0.0');
-    guest.network.start(false, '');
-    await until(() => {
-      host.network.poll();
-      guest.network.poll();
-      return host.network.phase === 'ready' && guest.network.phase === 'ready';
-    });
+    await startRoom([host, guest]);
     host.online.close();
     guest.online.close();
   } finally { await relay.close(); }
+});
+
+test('a relay that only pairs two players is reported as too old', async () => {
+  const { WebSocketServer } = require('ws');
+  const server = new WebSocketServer({ port: 0, host: '127.0.0.1' });
+  await new Promise((resolve) => server.once('listening', resolve));
+  server.on('connection', (ws) => ws.send(JSON.stringify({ t: 'waiting', room: '123456' })));
+  try {
+    const online = new OnlineTransport({ relay: `ws://127.0.0.1:${server.address().port}/relay`, room: '123456', WebSocket: globalThis.WebSocket });
+    const engine = engineNetwork(online);
+    assert.equal(engine.host(), null);
+    const result = await until(() => {
+      const polled = engine.poll();
+      return polled.error ? polled : null;
+    });
+    assert.equal(result.error, 'Relay: this relay is too old for this game page; update it (install-vps.sh)');
+  } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
 test('an unreachable relay is reported through poll', async () => {
@@ -195,9 +174,9 @@ test('received bytes are handed out in order across chunk boundaries and capacit
   assert.equal(online.available(), 9);
   assert.deepEqual([...online.take(2)], [1, 2]);
   assert.deepEqual([...online.take(3)], [3, 4, 5]);
-  online.onClose(socket, { code: 4006, reason: '' });
+  online.onClose(socket, { code: 4013, reason: '' });
   assert.equal(online.available(), 4, 'bytes that arrived before the close are still delivered');
   assert.deepEqual([...online.take(100)], [6, 7, 8, 9]);
   assert.equal(online.available(), -1);
-  assert.equal(online.error(), 'Relay: the other player left');
+  assert.equal(online.error(), 'Relay: the host left the room');
 });

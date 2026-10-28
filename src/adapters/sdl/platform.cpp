@@ -336,8 +336,15 @@ public:
         for (const auto& sound : sounds) {
             auto voice = voices_.find(sound.resource);
             if (voice == voices_.end()) {
+                if (silent_.contains(sound.resource)) continue;
                 auto loaded = load_voice(sound.resource);
-                if (!loaded) return std::unexpected(loaded.error());
+                if (!loaded) {
+                    // A sound the data names but cannot be played (a mod's missing or non-WAV file)
+                    // stays silent, like the original, instead of stopping the game.
+                    silent_.insert(sound.resource);
+                    std::cerr << "Sound " << sound.resource << " cannot play: " << loaded.error().message << '\n';
+                    continue;
+                }
                 voice = voices_.emplace(sound.resource, std::move(*loaded)).first;
             }
             const double volume_gain = gain(sound.volume);
@@ -642,7 +649,12 @@ public:
         else SDL_StopTextInput(window_.get());
     }
     SetupDialog& setup_dialog() override { return *setup_; }
-    bool supports(RenderFilter filter) const override { return filter != RenderFilter::xbrz || upscaler_ != nullptr; }
+    bool supports(RenderFilter filter) const override {
+#if !SDL_VERSION_ATLEAST(3, 4, 0)
+        if (filter == RenderFilter::sharp) return false;
+#endif
+        return filter != RenderFilter::xbrz || upscaler_ != nullptr;
+    }
     bool supports_text() const override { return TextRenderer::available(); }
     std::string renderer_name() const override {
         const char* name = renderer_ ? SDL_GetRendererName(renderer_.get()) : nullptr;
@@ -709,6 +721,8 @@ public:
         return {};
     }
     Result<void> set_render_filter(RenderFilter filter) override {
+        // The default, "sharp", needs SDL 3.4; before it, the previous default.
+        if (filter == RenderFilter::sharp && !supports(filter)) filter = RenderFilter::linear;
         if (!supports(filter)) filter = RenderFilter::nearest;
         if (filter == render_filter_) return {};
         render_filter_ = filter;
@@ -741,7 +755,7 @@ public:
                            picture.h + static_cast<float>(area.height - viewport.height) * scale_y};
         }
         const bool xbrz = render_filter_ == RenderFilter::xbrz && upscaler_;
-        if (viewport.render_area || xbrz || render_filter_ == RenderFilter::linear) {
+        if (viewport.render_area || xbrz || render_filter_ == RenderFilter::linear || render_filter_ == RenderFilter::sharp) {
             // The frame is drawn 1:1 into a texture, which is then scaled to the window by the shader or,
             // for linear, by the renderer. Scaling the sprites themselves would sample the pixels around
             // each sprite's rectangle in its sheet and show them as a frame around the sprite.
@@ -764,8 +778,7 @@ public:
             if (xbrz) {
                 if (!SDL_SetTextureScaleMode(frame, SDL_SCALEMODE_NEAREST)
                     || !upscaler_->draw(*renderer_, *frame, target)) return error();
-            } else if (!SDL_SetTextureScaleMode(frame, render_filter_ == RenderFilter::linear
-                    ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST)
+            } else if (!SDL_SetTextureScaleMode(frame, scale_mode(render_filter_))
                        || !SDL_RenderTexture(renderer_.get(), frame, nullptr, target)) {
                 return error();
             }
@@ -788,6 +801,14 @@ public:
         return {};
     }
 private:
+    // How the finished frame is scaled to the window by the renderer (xBRZ has its own shader).
+    static SDL_ScaleMode scale_mode(RenderFilter filter) {
+        if (filter == RenderFilter::linear) return SDL_SCALEMODE_LINEAR;
+#if SDL_VERSION_ATLEAST(3, 4, 0)
+        if (filter == RenderFilter::sharp) return SDL_SCALEMODE_PIXELART;
+#endif
+        return SDL_SCALEMODE_NEAREST;
+    }
     // Draws the overlay commands over the whole window, still in viewport coordinates but not
     // clipped to the letterboxed picture: logical presentation is switched off for this pass
     // and replaced by the same scale and centring.
@@ -1251,6 +1272,7 @@ private:
     std::string music_resource_;
     bool music_running_ = false;
     std::set<std::string, std::less<>> reported_;
+    std::set<std::string, std::less<>> silent_; // sounds that cannot be loaded
 };
 }
 Result<std::filesystem::path> settings_directory() {

@@ -56,7 +56,8 @@ function flow.create(options)
     -- OpenLF2's own options (base/game/options), e.g. the unlocked characters.
     user_options.start()
     local state = {active = "launch", title = title.create(options), options = options,
-        launch = require("base/ui/launch").create({menu_seed = options.menu_seed, problem = settings.problem}),
+        launch = require("base/ui/launch").create({menu_seed = options.menu_seed, problem = settings.problem,
+            game_pack = options.game_pack}),
         pointer_x = 0, pointer_y = 0, previous_button = false, volume_frames = 0,
         touch_gamepad = touch_gamepad.create(user_options.current().gamepad, user_options.current().digipad), mouse_touch = false,
         -- Optional mouse input can stand in for touch while testing the on-screen gamepad.
@@ -396,7 +397,7 @@ function flow.update(state, raw, context)
     local local_keys = input.keys
     if state.session then
         unlock.observe(input)
-        if not state.session.pending then input.unlock_bits = unlock.take_pending() end
+        if network.takes_unlock_bits(state.session) then input.unlock_bits = unlock.take_pending() end
         if input.keys[virtual_keys.escape] then
             disconnect(state, i18n.tr("Network game disconnected"))
         else
@@ -483,7 +484,9 @@ function flow.update(state, raw, context)
     end
     music.flush(context)
     recording.tick_status(state.active == "match" and state.match.match.paused)
-    context.speed(speed.fast)
+    -- A relay room paces its own frames (base/game/room): the host asks for ticks as often as it
+    -- can and the session waits for each frame's turn; F5's fast mode cannot speed up a room.
+    context.speed(state.session and network.paced(state.session) or speed.fast)
     -- Show FPS (OpenLF2 extension): measured FPS, nil for a trace unless given; drawn in flow.draw.
     state.fps = input.fps
 end

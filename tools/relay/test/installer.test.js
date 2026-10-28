@@ -361,3 +361,38 @@ test('a rerun keeps the site, the port and the allowed game pages', async () => 
     fs.rmSync(units, { recursive: true, force: true });
   }
 });
+
+test('the admin key for mods is made once, kept for root only, and kept by a rerun', async () => {
+  const os = require('node:os');
+  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-key-'));
+  const env = { ...process.env, LF2_PREFIX: prefix };
+  delete env.ADMIN_KEY;
+  const run = (script, extra = {}) => new Promise((resolve, reject) => execFile('bash', ['-c',
+    `set -euo pipefail; LF2_INSTALLER_LIB=1 source "${installer}"; ${script}`],
+  { env: { ...env, ...extra }, encoding: 'utf8' }, (error, stdout, stderr) => (error ? reject(new Error(stderr)) : resolve(stdout))));
+  try {
+    const first = (await run('keep_admin_key; (umask 077 && printf "ADMIN_KEY=%s\\n" "$ADMIN_KEY" >"$PREFIX/relay.env"); echo "$ADMIN_KEY"')).trim();
+    assert.match(first, /^[0-9a-f]{24}$/);
+    assert.equal(fs.statSync(path.join(prefix, 'relay.env')).mode & 0o777, 0o600);
+    assert.equal((await run('keep_admin_key; echo "$ADMIN_KEY"')).trim(), first, 'a rerun keeps it');
+    assert.equal((await run('keep_admin_key; echo "$ADMIN_KEY"', { ADMIN_KEY: 'my-own.key_1' })).trim(), 'my-own.key_1');
+    await assert.rejects(run('keep_admin_key', { ADMIN_KEY: 'bad key!' }), /ADMIN_KEY/);
+    await assert.rejects(run('keep_admin_key', { ADMIN_KEY: 'short' }), /ADMIN_KEY/);
+  } finally {
+    fs.rmSync(prefix, { recursive: true, force: true });
+  }
+});
+
+test('the relay service reads the packs folder and the admin key file', async () => {
+  const os = require('node:os');
+  const units = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-units-'));
+  try {
+    await bash('RELAY_PORT=8008; ALLOWED_ORIGINS=""; write_relay_unit', { LF2_SYSTEMD_DIR: units, LF2_PREFIX: '/opt/lf2-relay' });
+    const unit = fs.readFileSync(path.join(units, 'lf2-relay.service'), 'utf8');
+    assert.match(unit, /^Environment="PACKS_DIR=\/opt\/lf2-relay\/data\/packs"$/m);
+    assert.match(unit, /^EnvironmentFile=-\/opt\/lf2-relay\/relay\.env$/m);
+    assert.doesNotMatch(unit, /ADMIN_KEY/, 'the key stays out of the world-readable unit');
+  } finally {
+    fs.rmSync(units, { recursive: true, force: true });
+  }
+});

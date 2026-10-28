@@ -9,14 +9,17 @@ local options = {}
 
 options.battlefield_layouts = {"classic", "expand"}
 
--- Every valid value, in the dropdown's order. "xbrz" is a shader: the host offers it only on
--- renderers that can run it (see options.available_filters), but a saved choice stays valid.
-options.upscaling_filters = {"nearest", "linear", "xbrz"}
+-- Every valid value, in the dropdown's order. "xbrz" is a shader and "sharp" (OpenLF2 extension:
+-- pixel-art scaling, even crisp pixels at any size) needs SDL 3.4: the host offers them only when
+-- it can (see options.available_filters), but a saved choice stays valid.
+options.upscaling_filters = {"nearest", "sharp", "linear", "xbrz"}
 -- The values to offer: `features` is what the host reported ({xbrz = true} when it can run the shader).
 function options.available_filters(features)
     local list = {}
     for _, filter in ipairs(options.upscaling_filters) do
-        if filter ~= "xbrz" or (features and features.xbrz) then list[#list + 1] = filter end
+        if (filter ~= "xbrz" or (features and features.xbrz)) and (filter ~= "sharp" or (features and features.sharp)) then
+            list[#list + 1] = filter
+        end
     end
     return list
 end
@@ -54,7 +57,7 @@ local gamepad_defaults = {
     dj = {right = 72, bottom = 165, radius = 26},
     daj = {right = 72, bottom = 80, radius = 26},
 }
-local defaults = {battlefield_layout = "classic", gamepad = gamepad_defaults, unlock_characters = false, upscaling_filter = "linear", fullscreen = false, digipad = true, show_fps = false,
+local defaults = {battlefield_layout = "classic", gamepad = gamepad_defaults, unlock_characters = false, upscaling_filter = "sharp", fullscreen = false, digipad = true, show_fps = false,
     rumble = false, show_gamepad = false, language = "default", font_antialiasing = true,
     character_shading = false, projected_shadows = false,
     light_azimuth = -50, light_elevation = 70, shadow_blur = 2, shadow_opacity = 0.275}

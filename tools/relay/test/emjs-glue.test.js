@@ -10,7 +10,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const {
-  OnlineTransport, STATUS, transportPath, startRelay, peer, until, playFrames, randomInput,
+  OnlineTransport, transportPath, startRelay, peer, until, startRoom, playFrames,
 } = require('./helpers.js');
 
 // EM_JS(ret, name, (params), { body }) -> { name: { params, body } }
@@ -138,25 +138,20 @@ test('a match runs through the EM_JS glue exactly as through online.js', async (
     };
     const host = make('777001', ['Davis', '', '', '']);
     const guest = make('777001', ['Woody', '', '', '']);
-    assert.equal(host.network.start(true, '0.0.0.0'), true);
-    assert.equal(host.online.status(), STATUS.listening);
-    assert.equal(guest.network.start(false, ''), true);
-    await until(() => {
-      for (const side of [host, guest]) {
-        const result = side.network.poll();
-        if (result && result.error) throw new Error(result.error);
-      }
-      return host.network.phase === 'ready' && guest.network.phase === 'ready';
-    });
+    await startRoom([host, guest]);
     assert.ok(host.network.sharedRandom.equals(guest.network.sharedRandom));
     const hostLog = [];
     const guestLog = [];
     await Promise.all([playFrames(host, 120, hostLog), playFrames(guest, 120, guestLog)]);
-    assert.deepEqual(hostLog, guestLog);
+    const strip = (log) => log.map(({ time, ...frame }) => frame);
+    assert.deepEqual(strip(hostLog), strip(guestLog));
 
     guest.online.close(); // the friend closes the tab
-    const outcome = await until(() => host.network.exchange(randomInput(), 42));
-    assert.deepEqual(outcome, { error: 'Relay: the other player left' });
+    await until(() => (host.network.poll(), host.network.left.length > 0));
+    assert.deepEqual(host.network.left, [1]);
+    host.online.close();
+    const outcome = host.network.engine.poll();
+    assert.deepEqual(outcome, { bytes: Buffer.alloc(0) }, 'closing by choice is no error');
   } finally { await relay.close(); }
 });
 

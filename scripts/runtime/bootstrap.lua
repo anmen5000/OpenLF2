@@ -111,7 +111,7 @@ local FrameOpcode = {
 }
 local RumbleTarget = {gamepad = 0, phone = 1}
 local MusicKind = {play = 0, stop = 1, resume = 2, volume = 3}
-local RenderFilter = {nearest = 0, linear = 1, xbrz = 2}
+local RenderFilter = {nearest = 0, linear = 1, xbrz = 2, sharp = 3}
 local TextAlign = {left = 0, center = 1, right = 2}
 local INVALID_ENUM = -1
 local MAX_FRAME_COMMANDS = 4096

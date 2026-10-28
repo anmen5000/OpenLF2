@@ -199,7 +199,7 @@ if(OPENLF2_DEPENDENCY_PROVIDER STREQUAL "web")
     target_link_libraries(openlf2_adapter_settings PRIVATE openlf2_core)
 endif()
 
-add_library(openlf2_resources STATIC src/resources/installer.cpp src/resources/pe_bitmap.cpp
+add_library(openlf2_resources STATIC src/resources/installer.cpp src/resources/pack.cpp src/resources/pe_bitmap.cpp
     src/resources/data_file.cpp src/resources/object_data.cpp src/resources/background_data.cpp
     src/resources/stage_data.cpp src/resources/recording.cpp
     src/resources/bitmap.cpp)

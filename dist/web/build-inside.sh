@@ -50,7 +50,8 @@ if [[ ! -f "$prefix/lib/libavformat.a" ]]; then
             --disable-asm --disable-autodetect --disable-network --disable-pthreads \
             --disable-doc --disable-programs --disable-avdevice --disable-avfilter \
             --disable-postproc --disable-everything --disable-shared --enable-static \
-            --enable-decoder=wmav2 --enable-demuxer=asf --enable-swresample
+            --enable-decoder=wmav1,wmav2,wmapro,mp3float,mp3 --enable-demuxer=asf,mp3 --enable-parser=mpegaudio \
+            --enable-swresample
         make -j4
         make install
     )

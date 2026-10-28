@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: MIT
 //
-// Embeds server.js and package.json into install-vps.sh (base64, between the "generated" markers),
+// Embeds server.js, packs.js and package.json into install-vps.sh (base64, between the "generated" markers),
 // so that the installer is the only file a server has to download. Run after changing either:
 //
 //   node update-installer.js          rewrite install-vps.sh
@@ -20,7 +20,7 @@ function payload(file) {
 }
 
 function render(installer) {
-  const files = [['write_server_js', 'server.js'], ['write_package_json', 'package.json']];
+  const files = [['write_server_js', 'server.js'], ['write_packs_js', 'packs.js'], ['write_package_json', 'package.json']];
   let result = installer;
   for (const [fn, file] of files) {
     const pattern = new RegExp(`(${fn}\\(\\) \\{\\n\\tbase64 -d >"\\$1" <<'LF2_PAYLOAD'\\n)[\\s\\S]*?(LF2_PAYLOAD\\n\\})`);

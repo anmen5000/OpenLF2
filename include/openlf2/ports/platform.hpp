@@ -35,7 +35,8 @@ struct Viewport {
 };
 // How the frame is scaled to the window. `xbrz` is an edge-directed pixel-art scaler that runs as
 // a shader, so only some renderers offer it (Platform::supports).
-enum class RenderFilter { nearest, linear, xbrz };
+// sharp: SDL 3.4's pixel-art scaling, crisp pixels of even size at any zoom (OpenLF2 extension).
+enum class RenderFilter { nearest, linear, xbrz, sharp };
 // Optional CPU lighting for world sprites. Screen Y grows downward; ground_y is the
 // object's floor row, independent of jump height. Angles are in degrees.
 struct SpriteLighting {

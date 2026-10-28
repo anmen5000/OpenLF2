@@ -179,11 +179,7 @@ local function label_font(team)
     return "pe/words0"
 end
 local function glyphs(context, sheet, text, x, y, advance)
-    for position = 1, #text do
-        local code = text:byte(position)
-        context.sprite(sheet, {(code % 16) * 16, math.floor(code / 16) * 16 + 1, 8, 16},
-            x + (position - 1) * advance, y, true)
-    end
+    font.glyphs(context, tonumber(sheet:match("(%d+)$")) or 0, text, x, y, advance)
 end
 
 -- The original passes COLORREF values (0xBBGGRR) to its text routine; font.gdi takes 0xRRGGBB.

@@ -18,6 +18,7 @@
 #include "openlf2/resources/stage_data.hpp"
 #include "openlf2/resources/bitmap.hpp"
 #include "openlf2/resources/installer.hpp"
+#include "openlf2/resources/pack.hpp"
 #include "openlf2/resources/object_data.hpp"
 #include <algorithm>
 #include <array>
@@ -101,6 +102,7 @@ private:
 
 struct Configuration {
     std::filesystem::path installer;
+    std::optional<std::filesystem::path> pack; // --pack: a game folder as a ZIP file instead of the installer
     std::filesystem::path scripts;
     std::vector<std::filesystem::path> mods;
     std::optional<std::filesystem::path> config_directory; // --config-dir
@@ -437,10 +439,11 @@ Result<Configuration> configuration(std::span<const std::string> arguments,
             config.renderer = arguments[index];
         }
         else if (argument == "--installer" || argument == "--scripts" || argument == "--mod"
-                 || argument == "--config-dir" || argument == "--replay") {
+                 || argument == "--config-dir" || argument == "--replay" || argument == "--pack") {
             if (++index == arguments.size()) return fail(ErrorCode::format, argument + " needs a path");
             const auto& value = arguments[index];
             if (argument == "--installer") config.installer = value;
+            else if (argument == "--pack") config.pack = std::filesystem::path(value);
             else if (argument == "--scripts") config.scripts = value;
             else if (argument == "--config-dir") config.config_directory = std::filesystem::path(value);
             else if (argument == "--replay") {
@@ -458,7 +461,7 @@ Result<Configuration> configuration(std::span<const std::string> arguments,
 }
 class GameResources final : public ResourceSource {
 public:
-    GameResources(const InstallerArchive& archive, Bytes executable, std::span<const PackageAsset> assets)
+    GameResources(const ResourceSource& archive, Bytes executable, std::span<const PackageAsset> assets)
         : archive_(archive), executable_(std::move(executable)) {
         for (const auto& asset : assets) assets_.emplace(asset.resource, asset);
     }
@@ -485,7 +488,7 @@ public:
         return converted;
     }
 private:
-    const InstallerArchive& archive_;
+    const ResourceSource& archive_;
     Bytes executable_;
     std::map<std::string, PackageAsset, std::less<>> assets_;
 };
@@ -828,7 +831,9 @@ Result<void> run(const Configuration& config) {
     // Declared in lifetime order: the window reads resources, which read the archive, which
     // uses the decompressor.
     auto decompressor = make_decompressor();
-    std::unique_ptr<InstallerArchive> archive;
+    // The original installer, or a game pack (--pack) in its place.
+    std::unique_ptr<ResourceSource> archive;
+    std::size_t archive_files = 0;
     LoadedResources game_data;
     // The user configuration: --config-dir, otherwise SDL's per-user directory; headless runs
     // without --config-dir keep it in memory so traces never touch the user's file. On the web,
@@ -863,15 +868,25 @@ Result<void> run(const Configuration& config) {
                   << (platform->supports(RenderFilter::xbrz) ? " (xBRZ upscaling available)\n" : "\n");
         if (!platform->supports_text()) std::cout << "Translated languages unavailable: this build has no SDL3_ttf\n";
     }
-    auto installer = locate_installer(config, platform ? std::optional{std::ref(platform->setup_dialog())} : std::nullopt);
-    if (!installer) return std::unexpected(installer.error());
-    if (!*installer) {
-        std::cerr << "OpenLF2 needs LF2_v2.0a.exe or lf2_v20a_Setup.exe; stopping.\n";
-        return {};
+    if (config.pack) {
+        auto opened = PackArchive::open(*config.pack, *decompressor);
+        if (!opened) return std::unexpected(opened.error());
+        std::cout << "Game pack " << config.pack->filename().string() << ": " << (*opened)->file_count()
+                  << " files, executable " << (*opened)->executable_name() << '\n';
+        archive_files = (*opened)->file_count();
+        archive = std::move(*opened);
+    } else {
+        auto installer = locate_installer(config, platform ? std::optional{std::ref(platform->setup_dialog())} : std::nullopt);
+        if (!installer) return std::unexpected(installer.error());
+        if (!*installer) {
+            std::cerr << "OpenLF2 needs LF2_v2.0a.exe or lf2_v20a_Setup.exe; stopping.\n";
+            return {};
+        }
+        auto opened = InstallerArchive::open(**installer, *decompressor);
+        if (!opened) return std::unexpected(opened.error());
+        archive_files = (*opened)->file_count();
+        archive = std::move(*opened);
     }
-    auto opened = InstallerArchive::open(**installer, *decompressor);
-    if (!opened) return std::unexpected(opened.error());
-    archive = std::move(*opened);
     auto executable = archive->read("lf2.exe");
     if (!executable) return std::unexpected(executable.error());
     auto constants = recording_constants(*executable);
@@ -907,9 +922,14 @@ Result<void> run(const Configuration& config) {
     const auto identity = sources + (config.jit ? "\nJIT=1" : "\nJIT=0");
     auto profile = sha256(std::span<const char>(identity.data(), identity.size()));
     if (!profile) return std::unexpected(profile.error());
-    const auto network_options = std::string(config.headless ? ", network_trace=true" : "") + ", network_port=" + std::to_string(config.network_port) +
+    auto network_options = std::string(config.headless ? ", network_trace=true" : "") + ", network_port=" + std::to_string(config.network_port) +
         (config.network_role.empty() ? std::string{} : ", network_role=\"" + config.network_role +
             "\", network_address=\"" + config.network_address + "\"");
+#if defined(__EMSCRIPTEN__)
+    // The browser's transport (dist/web/online.js) reaches a relay room of up to 8 players
+    // (base/game/room), not another computer.
+    network_options += ", network_relay=true";
+#endif
     const auto bundle = "local runtime_settings = {menu_seed=" + std::to_string(menu_seed) +
         ", network_profile=\"" + *profile + "\", recording_version=" + std::to_string(constants->second) + network_options +
 #if defined(__SWITCH__) || defined(__vita__)
@@ -920,7 +940,9 @@ Result<void> run(const Configuration& config) {
         (config.preview_backgrounds ? ", start_screen=\"backgrounds\"" : "") +
         (config.preview_ending ? ", start_screen=\"ending\"" : "") +
         (config.replay ? ", start_screen=\"replay\"" : "") +
-        (config.mouse_touch ? ", mouse_touch=true" : "") + "}\n" + sources;
+        (config.mouse_touch ? ", mouse_touch=true" : "") +
+        // A game pack (--pack) brings its own menu pictures: screens drop what they cut from the original's.
+        (config.pack ? ", game_pack=true" : "") + "}\n" + sources;
     Simulation simulation(std::move(*runtime), !config.headless);
     auto loaded = simulation.load(bundle);
     if (!loaded) return std::unexpected(loaded.error());
@@ -989,7 +1011,7 @@ Result<void> run(const Configuration& config) {
             if (!description) return std::unexpected(description.error());
             std::cout << *description << '\n';
         }
-        std::cout << "Indexed " << archive->file_count() << " files; " << frames.size()
+        std::cout << "Indexed " << archive_files << " files; " << frames.size()
                   << " Lua frame(s), " << loaded_resources.size() << " distinct bitmap resources loaded, "
                   << sound_count << " sound(s) requested from " << played_sounds.size() << " file(s); "
                   << (music_available ? std::to_string(decoded_music.size()) + " music track(s) decoded"
@@ -1168,11 +1190,12 @@ Result<void> run(const Configuration& config) {
             held += " e" + std::to_string(input.screen.left) + ',' + std::to_string(input.screen.top) + ','
                 + std::to_string(input.screen.right) + ',' + std::to_string(input.screen.bottom);
         }
-        // Then " f" and capability letters: x = xBRZ upscaling, w = a real window whose
+        // Then " f" and capability letters: x = xBRZ upscaling, p = pixel-art ("sharp") scaling, w = a real window whose
         // fullscreen state means something to toggle, t = TrueType text for the translated
         // languages. The options page uses these to decide what to offer.
         std::string capabilities;
         if (platform->supports(RenderFilter::xbrz)) capabilities += 'x';
+        if (platform->supports(RenderFilter::sharp)) capabilities += 'p';
         if (platform->supports_fullscreen()) capabilities += 'w';
         if (platform->supports_text()) capabilities += 't';
         if (!capabilities.empty()) held += " f" + capabilities;
@@ -1270,6 +1293,16 @@ Result<void> run(const Configuration& config) {
         if (overlapping) simulation.start(std::move(held));
         auto presented = platform->present(frame->commands, frame->viewport);
         if (!presented) return std::unexpected(presented.error());
+#if defined(__EMSCRIPTEN__)
+        // A page (or a test) that sets globalThis.OpenLF2FrameTimes to an array learns when each frame is shown.
+        EM_ASM({
+            const times = globalThis.OpenLF2FrameTimes;
+            if (Array.isArray(times)) {
+                times.push(performance.now());
+                if (times.length > 2000) times.splice(0, times.length - 1000);
+            }
+        });
+#endif
         auto music = platform->music(frame->music);
         if (!music) return std::unexpected(music.error());
         auto played = platform->play(frame->sounds);
@@ -1300,7 +1333,7 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
         auto config = configuration(arguments, directory);
         if (!config) { std::cerr << config.error().message << '\n'; return 1; }
         if (config->help) {
-            std::cout << "openlf2 [--installer PATH] [--scripts DIR] [--mod DIR] [--headless] [--jit|--no-jit]\n"
+            std::cout << "openlf2 [--installer PATH | --pack FILE.zip] [--scripts DIR] [--mod DIR] [--headless] [--jit|--no-jit]\n"
                          "        [--preview-backgrounds] [--preview-ending] [--input-trace FRAMES] [--seed MS]\n"
                          "        [--config-dir DIR] [--replay FILE] [--renderer NAME] [--mouse-touch] [--default-controller] [FILE.lfr]\n"
                          "--mouse-touch (off by default): a held mouse button stands in for one finger on the\n"
@@ -1320,6 +1353,8 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
                          "        (u d l r a b x y s k), ^x types the character x).\n"
                          "Without --installer, LF2_v2.0a.exe or lf2_v20a_Setup.exe is looked up in the configuration directory; when it is\n"
                          "        missing, a window offers to download it there (headless runs need --installer or --config-dir).\n"
+                         "--pack plays a game folder packed as a ZIP file (an LF2 mod with its own executable, data and pictures)\n"
+                         "        instead of the original installer.\n"
                          "Only explicitly selected, trusted local mod packages are supported.\n";
             return 0;
         }

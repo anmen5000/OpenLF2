@@ -35,6 +35,7 @@ function screen.create(options)
         {{"lf2.net", "open_original_website", 16}, {"openlf2.github.io/OpenLF2", "open_website"}},
     }
     return {page = "menu", background = (options.menu_seed or 0) % 13 + 1, nav = navigation.create(), keyboard = false,
+        game_pack = options.game_pack == true,
         display = {}, capture = nil, name_player = 0, previous_keys = {}, credits = credits,
         message = options.problem and note(i18n.tr("Configuration ignored: %s", options.problem))}
 end
@@ -163,9 +164,10 @@ end
 local function options_entry(state, input)
     local pointed = input.pointer_x >= 0x114 and input.pointer_x <= 0x208
         and input.pointer_y >= options_row.top and input.pointer_y <= options_row.bottom
-    if i18n.active() then
+    if i18n.active() or (state.game_pack and i18n.host_text()) then
         -- The letters only spell "options": a translated language draws the label as text like the other captions
-        -- (size and colors of their baked text), centered in the row.
+        -- (size and colors of their baked text), centered in the row; so does a game pack, whose menu picture has
+        -- other letters.
         local size = 18
         add(state, {"text", i18n.tr("options"), 398, math.floor((options_row.top + options_row.bottom) / 2 - 0.63 * size + 0.5),
             nil, pointed and 0xffffff or 0x5a77d8, nil, "center", size})
