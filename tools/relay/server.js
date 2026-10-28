@@ -15,10 +15,17 @@
 //   {"t":"waiting","room":"482913"}   registered, waiting for the other player
 //   {"t":"paired"}                    both players are present; binary frames now flow
 // Problems close the socket with a 4xxx code and a short ASCII reason, which the game shows.
+//
+// With INSTALLER_FILE set (install-vps.sh does), the relay also serves its copy of the original LF2
+// v2.0a installer at /lf2-installer.data, which the game page downloads before trying archive.org:
+// download managers such as IDM let that name through, while they take over the .exe from archive.org.
 'use strict';
 
+const fs = require('node:fs');
 const http = require('node:http');
 const { WebSocketServer, WebSocket } = require('ws');
+
+const INSTALLER_PATH = '/lf2-installer.data';
 
 const ROOM_PATTERN = /^\d{4,12}$/;
 
@@ -63,6 +70,10 @@ function readConfig(env = process.env) {
     maxBufferedBytes: number('MAX_BUFFERED_BYTES', 1048576),
     // Testing aid: hold every forwarded frame this long, to feel how a distant relay would play.
     forwardDelayMs: number('FORWARD_DELAY_MS', 0),
+    // The LF2 installer served at /lf2-installer.data (empty: not served), and how often one client
+    // address may download it (about 30 MB each time; browsers keep it after the first time).
+    installerFile: env.INSTALLER_FILE || '',
+    installerDownloadsPerHour: number('INSTALLER_DOWNLOADS_PER_HOUR', 20), // 0 = unlimited
     quiet: env.QUIET === '1' || env.QUIET === 'true',
   };
 }
@@ -96,6 +107,9 @@ function createRelay(overrides = {}) {
   const connectionsPerIp = new Map();
   const log = (...parts) => { if (!config.quiet) console.log(new Date().toISOString(), ...parts); };
 
+  const installerDownloads = new Map(); // client address -> { count, until }
+  const installerPaths = new Set([INSTALLER_PATH, config.path.replace(/[^/]*$/, INSTALLER_PATH.slice(1))]);
+
   const server = http.createServer((req, res) => {
     const { pathname } = new URL(req.url, 'http://relay.invalid');
     if (pathname === '/healthz') {
@@ -105,7 +119,11 @@ function createRelay(overrides = {}) {
         'cache-control': 'no-store',
         'access-control-allow-origin': '*',
       });
-      res.end(JSON.stringify({ ok: true, rooms: rooms.size, clients: wss.clients.size }));
+      res.end(JSON.stringify({ ok: true, rooms: rooms.size, clients: wss.clients.size, installer: installerSize() > 0 }));
+      return;
+    }
+    if (installerPaths.has(pathname)) {
+      serveInstaller(req, res);
       return;
     }
     if (pathname === '/' || pathname === config.path) {
@@ -238,6 +256,62 @@ function createRelay(overrides = {}) {
     }
   }
 
+  // Size of the installer file, or 0 when none is configured or readable.
+  function installerSize() {
+    if (!config.installerFile) return 0;
+    try {
+      const stat = fs.statSync(config.installerFile);
+      return stat.isFile() ? stat.size : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function serveInstaller(req, res) {
+    const headers = { 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff' };
+    // Cross-origin: the game page lives elsewhere (GitHub Pages). With an allow-list, only its pages may read it.
+    const origin = normalizeOrigin(req.headers.origin);
+    if (!config.allowedOrigins.length) headers['access-control-allow-origin'] = '*';
+    else if (origin && config.allowedOrigins.includes(origin)) {
+      headers['access-control-allow-origin'] = req.headers.origin;
+      headers.vary = 'Origin';
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { ...headers, allow: 'GET, HEAD' });
+      res.end();
+      return;
+    }
+    const size = installerSize();
+    if (!size) {
+      res.writeHead(404, headers);
+      res.end();
+      return;
+    }
+    if (req.method === 'GET' && config.installerDownloadsPerHour) {
+      const address = clientAddress(req);
+      const now = Date.now();
+      let entry = installerDownloads.get(address);
+      if (!entry || entry.until <= now) {
+        entry = { count: 0, until: now + 3600000 };
+        installerDownloads.set(address, entry);
+      }
+      if (entry.count >= config.installerDownloadsPerHour) {
+        res.writeHead(429, { ...headers, 'retry-after': String(Math.ceil((entry.until - now) / 1000)) });
+        res.end();
+        return;
+      }
+      entry.count += 1;
+    }
+    res.writeHead(200, { ...headers, 'content-type': 'application/octet-stream', 'content-length': String(size) });
+    if (req.method === 'HEAD') {
+      res.end();
+      return;
+    }
+    const stream = fs.createReadStream(config.installerFile);
+    stream.on('error', () => res.destroy());
+    stream.pipe(res);
+  }
+
   function clientAddress(req) {
     if (config.trustProxy) {
       const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
@@ -252,6 +326,8 @@ function createRelay(overrides = {}) {
       ws.isAlive = false;
       try { ws.ping(); } catch { /* closing */ }
     }
+    const now = Date.now();
+    for (const [address, entry] of installerDownloads) if (entry.until <= now) installerDownloads.delete(address);
   }, config.pingIntervalMs);
   heartbeat.unref();
 

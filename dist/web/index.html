@@ -33,7 +33,7 @@
 <body>
 <main>
   <h1><img src="icon.svg" alt="" width="48" height="48">OpenLF2</h1>
-  <p>Press <b>Start game</b> to download the original LF2 v2.0a game data from archive.org (about 30 MB, checked by SHA-256), or select your own <code>LF2_v2.0a.exe</code> or <code>lf2_v20a_Setup.exe</code> installer manually. Your browser saves the installer for future visits; a selected file is not uploaded to a server.</p>
+  <p>Press <b>Start game</b> to download the original LF2 v2.0a game data (about 30 MB, checked by SHA-256) from the online relay when it keeps a copy, else from archive.org, or select your own <code>LF2_v2.0a.exe</code> or <code>lf2_v20a_Setup.exe</code> installer manually. Your browser saves the installer for future visits; a selected file is not uploaded to a server.</p>
   <div class="controls">
     <button id="choose" type="button">Select file manually…</button>
     <input id="installer" type="file" accept=".exe,application/octet-stream" aria-label="LF2 v2.0a installer" hidden>
@@ -114,7 +114,7 @@
         } else if (file) {
           launch(file, false);
         } else {
-          status.textContent = 'Ready. Press Start to download the game data from archive.org, or select your installer manually.';
+          status.textContent = 'Ready. Press Start game to download the game data, or select your installer manually.';
         }
       });
     }
@@ -173,10 +173,10 @@
     progress.hidden = false;
     update();
     try {
-      const blob = await installerDownload((received, total) => {
+      const blob = await installerDownload((received, total, source) => {
         progress.max = total;
         progress.value = received;
-        status.textContent = 'Downloading LF2 v2.0a from archive.org: ' + (received / 1e6).toFixed(1) + ' / ' + (total / 1e6).toFixed(1) + ' MB';
+        status.textContent = 'Downloading LF2 v2.0a game data from ' + source + ': ' + (received / 1e6).toFixed(1) + ' / ' + (total / 1e6).toFixed(1) + ' MB';
       });
       downloading = false;
       progress.hidden = true;
@@ -185,7 +185,7 @@
       downloading = false;
       progress.hidden = true;
       update();
-      status.textContent = 'Download failed. Select your installer manually, then start the game.';
+      status.textContent = 'Download failed. If a download manager (such as IDM) opened, let it save the file, then press "Select file manually…", choose it and start the game.';
       message(String(error));
     }
   }

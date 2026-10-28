@@ -7,6 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync, execFile } = require('node:child_process');
@@ -87,6 +88,97 @@ test('which Node.js builds are tried on CentOS 7 and on newer systems', async ()
 test('the sslip.io name for an address', async () => {
   assert.equal(await bash('sslip_name 203.0.113.5'), '203-0-113-5.sslip.io\n');
   assert.equal(await bash('is_ipv4 203.0.113.5 && echo yes; is_ipv4 "<html>" || echo no'), 'yes\nno\n');
+});
+
+// ss output (CentOS 7 format) with the given owners of ports 80 and 443; '' = free.
+function ssOutput(owner80, owner443) {
+  const lines = ['State      Recv-Q Send-Q Local Address:Port               Peer Address:Port',
+    'LISTEN     0      128          *:22                       *:*                   users:(("sshd",pid=1012,fd=3))'];
+  if (owner80) lines.push(`LISTEN     0      511       :::80                    :::*                   users:(("${owner80}",pid=3001,fd=4),("${owner80}",pid=3002,fd=4))`);
+  if (owner443) lines.push(`LISTEN     0      511       :::443                   :::*                   users:(("${owner443}",pid=3001,fd=6))`);
+  return lines.join('\n') + '\n';
+}
+
+// Runs check_ports against that ss output; `ours` = whether lf2-caddy is active.
+async function portPlan(owner80, owner443, ours = false) {
+  const file = path.join(__dirname, `.ss-plan-${process.pid}-${Math.random().toString(36).slice(2)}.txt`);
+  fs.writeFileSync(file, ssOutput(owner80, owner443));
+  try {
+    return await bash(`ss() { cat "${file}"; }; check_ports; echo "mode=$CADDY_MODE"`,
+      { LF2_SYSTEMCTL: ours ? 'true' : 'false' });
+  } catch (error) {
+    return `exit: ${error.message}`;
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+}
+
+test('which ports Caddy takes, next to another web server', async () => {
+  assert.equal(await portPlan('', ''), 'mode=full\n');
+  const apache80 = await portPlan('httpd', '');
+  assert.match(apache80, /Cong 80 dang do "httpd" dung/);
+  assert.match(apache80, /mode=tls-only\n$/);
+  assert.equal(await portPlan('caddy', 'caddy', true), 'mode=full\n', 'our own Caddy from an earlier run');
+  assert.match(await portPlan('httpd', 'caddy', true), /mode=tls-only\n$/, 'rerun after a tls-only install');
+  const both = await portPlan('httpd', 'httpd');
+  assert.match(both, /^exit: /);
+  assert.match(both, /Cong 443 \(HTTPS\) dang duoc chuong trinh "httpd" dung/);
+  assert.match(both, /systemctl stop httpd\n\s+systemctl disable httpd/);
+  assert.doesNotMatch(both, /--now/, 'CentOS 7 systemd has no --now');
+  const other = await portPlan('', 'java');
+  assert.match(other, /"java"/);
+  assert.doesNotMatch(other, /systemctl stop/, 'no stop command for programs we do not know');
+  assert.match(await portPlan('caddy', ''), /mode=tls-only/, 'someone else\'s Caddy on 80 is not ours');
+});
+
+test('the Caddy configuration for each mode', async () => {
+  const caddyfile = (mode, extra = '') => bash(`CADDY_MODE=${mode}; DOMAIN=203-0-113-5.sslip.io; ${extra} f=$(mktemp); write_caddyfile "$f"; cat "$f"; rm -f "$f"`);
+  assert.equal(await caddyfile('full'), [
+    '# Written by install-vps.sh (full). HTTPS for the OpenLF2 relay; the certificate renews by itself.',
+    '{', '\tadmin off', '}', '', '203-0-113-5.sslip.io {', '\ttls {', '\t\tissuer acme {', '\t\t}', '\t}',
+    '\treverse_proxy 127.0.0.1:8787', '}', ''].join('\n'));
+  assert.equal(await caddyfile('tls-only'), [
+    '# Written by install-vps.sh (tls-only). HTTPS for the OpenLF2 relay; the certificate renews by itself.',
+    '{', '\tadmin off', '\tauto_https disable_redirects', '}', '', '203-0-113-5.sslip.io {', '\ttls {', '\t\tissuer acme {',
+    '\t\t\tdisable_http_challenge', '\t\t}', '\t}', '\treverse_proxy 127.0.0.1:8787', '}', ''].join('\n'));
+  const withTestCa = await caddyfile('tls-only', 'LF2_ACME_DIR=https://localhost:14000/dir LF2_ACME_ROOT=/ca.pem');
+  assert.match(withTestCa, /\t\t\tdir https:\/\/localhost:14000\/dir\n\t\t\ttrusted_roots \/ca.pem\n\t\t\tdisable_http_challenge\n/);
+});
+
+test('the game data is fetched once, checked, and never fatal', async () => {
+  const os = require('node:os');
+  const good = crypto.randomBytes(200000);
+  const sha = crypto.createHash('sha256').update(good).digest('hex');
+  let requests = 0;
+  const server = http.createServer((req, res) => {
+    requests += 1;
+    if (req.url === '/good.exe') { res.end(good); return; }
+    if (req.url === '/bad.exe') { res.end(crypto.randomBytes(200000)); return; }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-data-'));
+  const env = { LF2_PREFIX: prefix, LF2_DATA_SIZE: String(good.length), LF2_DATA_SHA256: sha, no_proxy: '127.0.0.1', NO_PROXY: '127.0.0.1' };
+  try {
+    // The first sources fail (missing, wrong bytes); the third is right.
+    const first = await bash('install_game_data; echo "have=$HAVE_DATA"',
+      { ...env, LF2_DATA_URLS: `${base}/missing.exe ${base}/bad.exe ${base}/good.exe` });
+    assert.match(first, /have=1\n$/);
+    assert.ok(fs.readFileSync(path.join(prefix, 'data', 'lf2-installer.data')).equals(good));
+    const before = requests;
+    const again = await bash('install_game_data; echo "have=$HAVE_DATA"', { ...env, LF2_DATA_URLS: `${base}/good.exe` });
+    assert.match(again, /Du lieu game da co san/);
+    assert.equal(requests, before, 'a good copy is not downloaded again');
+    fs.rmSync(path.join(prefix, 'data'), { recursive: true });
+    const none = await bash('install_game_data; echo "have=$HAVE_DATA"', { ...env, LF2_DATA_URLS: `${base}/bad.exe` });
+    assert.match(none, /trang game se tai tu archive.org/);
+    assert.match(none, /have=0\n$/);
+    assert.ok(!fs.existsSync(path.join(prefix, 'data', 'lf2-installer.data')), 'wrong bytes are never kept');
+  } finally {
+    server.close();
+    fs.rmSync(prefix, { recursive: true, force: true });
+  }
 });
 
 test('who holds ports 80 and 443, from ss output', async () => {

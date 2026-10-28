@@ -53,7 +53,7 @@ test('health endpoint answers', async () => {
   try {
     const response = await fetch(`${relay.http}/healthz`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, rooms: 0, clients: 0 });
+    assert.deepEqual(await response.json(), { ok: true, rooms: 0, clients: 0, installer: false });
   } finally { await relay.close(); }
 });
 
@@ -231,6 +231,65 @@ test('origin allow-list', async () => {
     await allowed.control('waiting');
     allowed.ws.close();
   } finally { await relay.close(); }
+});
+
+test('the installer copy is served for the game page, with CORS and a download limit', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-relay-'));
+  const file = path.join(dir, 'lf2-installer.data');
+  const bytes = crypto.randomBytes(300000);
+  fs.writeFileSync(file, bytes);
+  const relay = await startRelay({ installerFile: file, installerDownloadsPerHour: 3 });
+  try {
+    const health = await (await fetch(`${relay.http}/healthz`)).json();
+    assert.equal(health.installer, true);
+
+    const head = await fetch(`${relay.http}/lf2-installer.data`, { method: 'HEAD' });
+    assert.equal(head.status, 200);
+    assert.equal(head.headers.get('content-length'), String(bytes.length));
+    assert.equal(head.headers.get('access-control-allow-origin'), '*');
+
+    const response = await fetch(`${relay.http}/lf2-installer.data`, { headers: { origin: 'https://friend.github.io' } });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'application/octet-stream');
+    assert.equal(response.headers.get('content-disposition'), null, 'nothing that makes it look like a download');
+    assert.ok(Buffer.from(await response.arrayBuffer()).equals(bytes));
+
+    // Three downloads per hour in this test: two more pass, the next is refused.
+    for (let index = 0; index < 2; index += 1) assert.equal((await fetch(`${relay.http}/lf2-installer.data`)).status, 200);
+    const refused = await fetch(`${relay.http}/lf2-installer.data`);
+    assert.equal(refused.status, 429);
+    assert.ok(Number(refused.headers.get('retry-after')) > 0);
+    assert.equal((await fetch(`${relay.http}/lf2-installer.data`, { method: 'POST' })).status, 405);
+  } finally {
+    await relay.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the installer copy honours the origin allow-list and is absent when not configured', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-relay-'));
+  const file = path.join(dir, 'lf2-installer.data');
+  fs.writeFileSync(file, 'data');
+  const relay = await startRelay({ installerFile: file, allowedOrigins: ['https://friends.github.io'] });
+  const bare = await startRelay();
+  try {
+    const allowed = await fetch(`${relay.http}/lf2-installer.data`, { headers: { origin: 'https://friends.github.io' } });
+    assert.equal(allowed.headers.get('access-control-allow-origin'), 'https://friends.github.io');
+    const other = await fetch(`${relay.http}/lf2-installer.data`, { headers: { origin: 'https://other.example' } });
+    assert.equal(other.headers.get('access-control-allow-origin'), null, 'a browser on another site cannot read it');
+    assert.equal((await fetch(`${bare.http}/lf2-installer.data`)).status, 404);
+    assert.equal((await (await fetch(`${bare.http}/healthz`)).json()).installer, false);
+  } finally {
+    await relay.close();
+    await bare.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('connections per address are limited', async () => {

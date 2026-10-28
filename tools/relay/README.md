@@ -30,8 +30,24 @@ curl -fsSL https://raw.githubusercontent.com/<you>/OpenLF2/main/tools/relay/inst
 It prints the relay address (`wss://203-0-113-5.sslip.io/relay`). Settings go before `bash`:
 `DOMAIN=relay.example.com` uses your own domain, `ALLOWED_ORIGINS=https://you.github.io` limits who
 may use the relay. Running it again updates the installation; `… | bash -s -- --uninstall` removes
-it. Ports 80 and 443 must be free and open. The script embeds `server.js` and `package.json`; after
-changing either, run `node update-installer.js` (the tests check that it was run).
+it. The script embeds `server.js` and `package.json`; after changing either, run
+`node update-installer.js` (the tests check that it was run).
+
+Ports: with 80 and 443 free, Caddy takes both. When another web server (often Apache, `httpd`)
+holds port 80, it is left alone and Caddy listens on 443 only, getting its certificate through the
+TLS-ALPN challenge. When 443 is taken too, the script stops before changing anything and names the
+sites that server runs, with the two commands to stop it if it is not needed.
+
+Game data: the script also keeps a copy of the original LF2 v2.0a installer (freeware by Marti
+Wong and Starsky Wong), downloaded from lf2.net, its Internet Archive snapshot or the Internet
+Archive item and checked against the size and SHA-256 the game itself expects. The relay serves it
+as `/lf2-installer.data`, and the game page downloads it from there before trying archive.org.
+Download managers such as IDM take over the `.exe` from archive.org, which made the page fail;
+they let this name through. A failed download here is not fatal: the page then uses archive.org.
+
+The game page learns the relay address from the Online panel, an invite link, or the site's
+default, which the WebAssembly workflow sets from its `relay` input (or the repository variable
+`OPENLF2_RELAY`) through [`dist/pages/set-relay.py`](../../dist/pages/set-relay.py).
 
 ## How players use it
 
@@ -58,10 +74,12 @@ at full speed, 50 ms at about 63 %, 80 ms at about 40 %. Choose a relay close to
 | `ROOM_WAIT_MS` | `120000` | How long one player may wait for the other |
 | `MESSAGES_PER_SECOND`, `BYTES_PER_SECOND` | `240`, `131072` | Per-connection traffic limits (the game sends ~30 small packets a second) |
 | `FORWARD_DELAY_MS` | `0` | Testing aid: delay every forwarded frame to feel a distant relay |
+| `INSTALLER_FILE` | empty | The LF2 installer served at `/lf2-installer.data` (install-vps.sh sets it) |
+| `INSTALLER_DOWNLOADS_PER_HOUR` | `20` | Downloads of that file per client address and hour (0 = no limit) |
 | `QUIET` | off | No log lines |
 
-`GET /healthz` answers `{"ok":true,"rooms":N,"clients":N}`; the Online panel uses it to show
-whether the relay is reachable and its ping.
+`GET /healthz` answers `{"ok":true,"rooms":N,"clients":N,"installer":true|false}`; the Online
+panel uses it to show whether the relay is reachable, its ping, and whether it keeps the game data.
 
 ## Protocol
 
@@ -81,5 +99,7 @@ npm test   # Node.js 22 or newer
 They cover the relay itself, `dist/web/online.js` driven through a port of
 `scripts/base/game/network.lua` (handshake, random table and lockstep frames between two
 simulated browsers), the JavaScript halves of the `EM_JS` functions in
-`src/adapters/web/transport.cpp`, the frame rate against simulated delay, and the helper
-functions of `install-vps.sh` (Node.js build choice, ports, embedded files).
+`src/adapters/web/transport.cpp`, the frame rate against simulated delay, the game data copy
+(served by the relay, preferred by `dist/web/installer-store.js`, set as a site default by
+`set-relay.py`), and the functions of `install-vps.sh` (Node.js build choice, port modes, Caddy
+configuration, game data download, embedded files).

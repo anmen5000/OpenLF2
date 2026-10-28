@@ -70,6 +70,19 @@
     }
     setRoom(value) { this.room = String(value || '').replace(/\D/g, '').slice(0, 12); }
 
+    // Where the relay keeps its copy of the LF2 installer (installer-store.js tries it before archive.org):
+    // wss://host/relay -> https://host/lf2-installer.data. Empty without a relay.
+    installerUrl() {
+      let url;
+      try { url = new URL(this.relay); } catch (error) { return ''; }
+      if (url.protocol !== 'wss:' && url.protocol !== 'ws:') return '';
+      url.protocol = url.protocol === 'ws:' ? 'http:' : 'https:';
+      url.pathname = url.pathname.replace(/[^/]*$/, 'lf2-installer.data');
+      url.search = '';
+      url.hash = '';
+      return url.href;
+    }
+
     // ---- The game's side (src/adapters/web/transport.cpp) ---------------------------------------
 
     // Starts hosting (host = true) or joining. Returns false with error() set when it cannot start.
@@ -337,6 +350,8 @@
       const link = new URL(root.location.href);
       link.searchParams.set('room', online.room);
       if (online.relay) link.searchParams.set('relay', online.relay);
+      // The project site shows the game further down the page, in its "play" section.
+      link.hash = document.getElementById('play') ? 'play' : '';
       const button = $('online-copy');
       try {
         await root.navigator.clipboard.writeText(link.href);
@@ -369,6 +384,8 @@
       try {
         const first = await request();
         if (!first.ok) throw new Error('status ' + first.status);
+        let info = {};
+        try { info = await first.json(); } catch (error) { /* an older relay: no details */ }
         // Later requests reuse the connection, so the quickest of them is close to the ping.
         let ping = Infinity;
         for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -377,7 +394,7 @@
           ping = Math.min(ping, Math.round(performance.now() - started));
         }
         if (checked === online.relay) {
-          relayCheck.textContent = `relay OK, ${ping} ms`;
+          relayCheck.textContent = `relay OK, ${ping} ms${info && info.installer ? ', game data ready' : ''}`;
           relayCheck.title = 'Full speed needs your ping plus your friend\'s ping to the relay under about 66 ms.';
         }
       } catch (error) {
