@@ -200,3 +200,164 @@ test('who holds ports 80 and 443, from ss output', async () => {
     fs.rmSync(path.join(__dirname, '.ss.tmp.txt'), { force: true });
   }
 });
+
+// --- Behind an existing Apache website (APACHE_SITE) ---------------------------------------------
+
+// `httpd -S` on a CentOS 7 server like the one this mode was written for: the stock ssl.conf host
+// named by the IP, a certbot site with its www alias, and a site served over plain HTTP only.
+const httpdS = [
+  'VirtualHost configuration:',
+  '*:443                  is a NameVirtualHost',
+  '         default server 116.118.45.198 (/etc/httpd/conf.d/ssl.conf:56)',
+  '         port 443 namevhost 116.118.45.198 (/etc/httpd/conf.d/ssl.conf:56)',
+  '         port 443 namevhost sybil.example (/etc/httpd/conf.d/sybil-le-ssl.conf:2)',
+  '                 alias www.sybil.example',
+  '*:80                   is a NameVirtualHost',
+  '         default server sybil.example (/etc/httpd/conf.d/sybil.conf:1)',
+  '         port 80 namevhost sybil.example (/etc/httpd/conf.d/sybil.conf:1)',
+  '                 alias www.sybil.example',
+  '         port 80 namevhost plain.example (/etc/httpd/conf.d/plain.conf:1)',
+  'ServerRoot: "/etc/httpd"',
+  'Main DocumentRoot: "/var/www/html"',
+  'Main ErrorLog: "/etc/httpd/logs/error_log"',
+].join('\n') + '\n';
+
+// A temporary file with `content`, removed after `fn` ran with its path.
+async function withFile(content, fn) {
+  const file = path.join(__dirname, `.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`);
+  fs.writeFileSync(file, content);
+  try {
+    return await fn(file);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+}
+
+test('which sites Apache serves over HTTPS, from httpd -S', async () => {
+  await withFile(httpdS, async (file) => {
+    const serves = (site) => bash(`apache_serves_https ${site} < "${file}" && echo yes || echo no`);
+    assert.equal(await serves('sybil.example'), 'yes\n');
+    assert.equal(await serves('www.sybil.example'), 'yes\n', 'an alias of an HTTPS site');
+    assert.equal(await serves('116.118.45.198'), 'yes\n');
+    assert.equal(await serves('plain.example'), 'no\n', 'served on port 80 only');
+    assert.equal(await serves('other.example'), 'no\n');
+    assert.equal(await bash(`apache_https_names < "${file}"`), '116.118.45.198\nsybil.example\nwww.sybil.example\n');
+  });
+  // One HTTPS site only: httpd -S puts it on the address line.
+  await withFile('VirtualHost configuration:\n*:443                  one.example (/etc/httpd/conf.d/ssl.conf:56)\n*:80                   one.example (/etc/httpd/conf.d/one.conf:1)\n', async (file) => {
+    assert.equal(await bash(`apache_serves_https one.example < "${file}" && echo yes`), 'yes\n');
+    assert.equal(await bash(`apache_https_names < "${file}"`), 'one.example\n');
+  });
+});
+
+test('Apache modules, from httpd -M', async () => {
+  const modules = 'Loaded Modules:\n core_module (static)\n proxy_module (shared)\n proxy_http_module (shared)\n ssl_module (shared)\n';
+  await withFile(modules, async (file) => {
+    const has = (name) => bash(`apache_has_module ${name} < "${file}" && echo yes || echo no`);
+    assert.equal(await has('proxy_module'), 'yes\n');
+    assert.equal(await has('proxy_http_module'), 'yes\n');
+    assert.equal(await has('proxy_wstunnel_module'), 'no\n');
+    assert.equal(await has('http_module'), 'no\n', 'whole names only');
+  });
+});
+
+test('where to reach Apache on this machine, from ss', async () => {
+  const listen = (address) => ssOutput('', '').replace(/\n$/, '') +
+    `\nLISTEN     0      511       ${address}                     *:*                   users:(("httpd",pid=3001,fd=6))\n`;
+  for (const [address, expected] of [['*:443', '127.0.0.1'], [':::443', '127.0.0.1'], ['[::]:443', '127.0.0.1'],
+    ['0.0.0.0:443', '127.0.0.1'], ['116.118.45.198:443', '116.118.45.198']]) {
+    assert.equal(await bash(`apache_listen_address "$(cat <<'SS'\n${listen(address)}SS\n)"`), `${expected}\n`, address);
+  }
+});
+
+test('a free local port for the relay, and SELinux', async () => {
+  const taken = (ports) => ssOutput('httpd', 'httpd').replace(/\n$/, '') + ports.map((port) =>
+    `\nLISTEN     0      128    127.0.0.1:${port}                     *:*                   users:(("java",pid=4001,fd=7))`).join('') + '\n';
+  const pick = (ports, selinux) => withFile(taken(ports), (file) =>
+    bash(`getenforce() { echo ${selinux}; }; pick_relay_port "$(cat "${file}")" && echo || echo none`));
+  assert.equal(await pick([], 'Disabled'), '8787\n');
+  assert.equal(await pick([8787], 'Permissive'), '8008\n');
+  assert.equal(await pick([], 'Enforcing'), '8008\n', 'Apache may only connect to http_port_t ports');
+  assert.equal(await pick([8008], 'Enforcing'), '8009\n');
+  assert.equal(await pick([8008, 8009], 'Enforcing'), 'none\n');
+});
+
+test('the site name, however it was pasted', async () => {
+  assert.equal(await bash('normalize_site "https://Sybil.Example/lf2"'), 'sybil.example');
+  assert.equal(await bash('normalize_site "sybil.example:443"'), 'sybil.example');
+  assert.equal(await bash('normalize_site sybil.example'), 'sybil.example');
+});
+
+test("the domain's addresses, from public DNS", async () => {
+  const doh = '{"Status":0,"TC":false,"Question":[{"name":"www.sybil.example.","type":1}],"Answer":[' +
+    '{"name":"www.sybil.example.","type":5,"TTL":300,"data":"sybil.example."},' +
+    '{"name":"sybil.example.","type":1,"TTL":300,"data":"203.0.113.7"},{"name":"sybil.example.","type":1,"TTL":300,"data":"203.0.113.8"}]}';
+  assert.equal(await bash(`curl() { printf '%s' '${doh}'; }; site_addresses www.sybil.example`), '203.0.113.7\n203.0.113.8\n');
+  const nxdomain = '{"Status":3,"TC":false,"Question":[{"name":"nope.example.","type":1}]}';
+  assert.equal(await bash(`curl() { printf '%s' '${nxdomain}'; }; site_addresses nope.example`), '');
+  // No DNS over HTTPS from this machine: dig, else the system resolver.
+  assert.equal(await bash('curl() { return 7; }; dig() { printf "sybil.example.\\n203.0.113.9\\n"; }; site_addresses sybil.example'), '203.0.113.9\n');
+  // Without dig (a PATH of just the tools the function needs besides it).
+  const os = require('node:os');
+  const tools = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-tools-'));
+  try {
+    for (const tool of ['awk', 'sort', 'grep']) fs.symlinkSync(execFileSync('bash', ['-c', `command -v ${tool}`], { encoding: 'utf8' }).trim(), path.join(tools, tool));
+    assert.equal(await bash(`curl() { return 7; }; getent() { echo "198.51.100.4    STREAM sybil.example"; echo "198.51.100.4    DGRAM"; }; PATH="${tools}"; site_addresses sybil.example`),
+      '198.51.100.4\n');
+  } finally {
+    fs.rmSync(tools, { recursive: true, force: true });
+  }
+  assert.equal(await bash('site_addresses x', { LF2_SITE_ADDRESSES: '192.0.2.1 192.0.2.2' }), '192.0.2.1\n192.0.2.2\n');
+});
+
+test("Apache mode is chosen only next to Apache's HTTPS, with a domain name", async () => {
+  const plan = (owner443, site) => withFile(ssOutput('httpd', owner443), (file) =>
+    bash(`ss() { cat "${file}"; }; APACHE_SITE='${site}'; check_ports; echo "mode=$CADDY_MODE site=$APACHE_SITE"`, { LF2_SYSTEMCTL: 'false' })
+      .catch((error) => `exit: ${error.message}`));
+  assert.match(await plan('httpd', 'https://Sybil.example/'), /mode=apache site=sybil\.example\n$/);
+  const nginx = await plan('nginx', 'sybil.example');
+  assert.match(nginx, /^exit: /);
+  assert.match(nginx, /APACHE_SITE chi dung khi Apache/);
+  assert.match(await plan('httpd', '116.118.45.198'), /khong phai ten mien/);
+  assert.match(await plan('httpd', 'bad name;rm'), /khong phai ten mien/);
+});
+
+test('with port 443 taken by Apache, the message names a site to share', async () => {
+  await withFile(httpdS, async (sFile) => withFile(ssOutput('httpd', 'httpd'), async (ssFile) => {
+    const out = await bash(`ss() { cat "${ssFile}"; }; fake_httpd() { cat "${sFile}"; }; HTTPD=fake_httpd; check_ports`, { LF2_SYSTEMCTL: 'false' })
+      .catch((error) => error.message);
+    assert.match(out, /\.\.\. \| APACHE_SITE=sybil\.example bash/, 'a domain name, not the IP');
+    assert.match(out, /systemctl stop httpd/);
+  }));
+});
+
+test("the Apache file: the relay's two paths, never pooled", async () => {
+  const text = await bash('APACHE_SITE=sybil.example RELAY_PORT=8008; apache_conf_text');
+  assert.match(text, /^# Written by install-vps\.sh/);
+  assert.match(text, /\n\tProxyPass "\/lf2-relay\/relay" "ws:\/\/127\.0\.0\.1:8008\/relay" retry=0 disablereuse=On\n/);
+  assert.match(text, /\n\tProxyPass "\/lf2-relay\/" "http:\/\/127\.0\.0\.1:8008\/" retry=0 disablereuse=On\n/);
+  assert.ok(text.indexOf('/lf2-relay/relay"') < text.indexOf('"/lf2-relay/"'), 'the WebSocket path first (first match wins)');
+  assert.doesNotMatch(text, /VirtualHost|Rewrite|Listen/, 'no new site, rule or port');
+});
+
+test('a rerun keeps the site, the port and the allowed game pages', async () => {
+  const os = require('node:os');
+  const prefix = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-state-'));
+  const units = fs.mkdtempSync(path.join(os.tmpdir(), 'lf2-units-'));
+  try {
+    await bash('APACHE_SITE=sybil.example RELAY_PORT=8008; save_apache_state', { LF2_PREFIX: prefix });
+    assert.equal(await bash('APACHE_SITE=""; load_apache_state; echo "$APACHE_SITE $SAVED_RELAY_PORT"', { LF2_PREFIX: prefix }), 'sybil.example 8008\n');
+    assert.equal(await bash('APACHE_SITE=other.example; load_apache_state; echo "$APACHE_SITE"', { LF2_PREFIX: prefix }), 'other.example\n', 'the command line wins');
+    fs.writeFileSync(path.join(units, 'lf2-relay.service'), '[Service]\nEnvironment="PORT=8008"\nEnvironment="ALLOWED_ORIGINS=https://you.github.io"\n');
+    const env = { ...process.env, LF2_SYSTEMD_DIR: units };
+    delete env.ALLOWED_ORIGINS;
+    const kept = await new Promise((resolve, reject) => execFile('bash', ['-c',
+      `set -euo pipefail; LF2_INSTALLER_LIB=1 source "${installer}"; keep_allowed_origins; echo "[$ALLOWED_ORIGINS]"`],
+    { env, encoding: 'utf8' }, (error, stdout) => (error ? reject(error) : resolve(stdout))));
+    assert.equal(kept, '[https://you.github.io]\n');
+    assert.equal(await bash('keep_allowed_origins; echo "[$ALLOWED_ORIGINS]"', { LF2_SYSTEMD_DIR: units, ALLOWED_ORIGINS: '' }), '[]\n', 'ALLOWED_ORIGINS= clears');
+  } finally {
+    fs.rmSync(prefix, { recursive: true, force: true });
+    fs.rmSync(units, { recursive: true, force: true });
+  }
+});

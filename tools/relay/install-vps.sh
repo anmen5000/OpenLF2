@@ -17,6 +17,14 @@
 # Apache, "httpd") holds port 80, Caddy listens on port 443 only and gets its certificate through
 # the TLS-ALPN challenge there. When port 443 is taken too, the script stops and explains.
 #
+# Sharing an existing Apache (httpd) website instead, when its owner agrees:
+#   curl -fsSL .../install-vps.sh | APACHE_SITE=example.com bash
+# puts the relay behind that site at https://example.com/lf2-relay/ (WebSocket: .../lf2-relay/relay).
+# No Caddy then: one file, /etc/httpd/conf.d/lf2-relay.conf, with ProxyPass lines to 127.0.0.1; it is
+# checked with "apachectl configtest", applied with a graceful reload, verified through Apache (HTTP,
+# and two short games over the WebSocket) and at the address public DNS gives for the site, and
+# removed again, with Apache reloaded as before and the relay stopped, if any step fails.
+#
 # It also keeps a copy of the original LF2 v2.0a installer (freeware, by Marti Wong and Starsky
 # Wong; checked by SHA-256 as the game does), which the relay serves to the game page as
 # /lf2-installer.data: players then need no download manager workaround, and the page falls back to
@@ -27,10 +35,21 @@
 # Messages are Vietnamese without diacritics, so that every terminal shows them.
 set -euo pipefail
 
-INSTALLER_VERSION=3
-CADDY_MODE=full # check_ports decides
+INSTALLER_VERSION=4
+CADDY_MODE=full # check_ports decides: full, tls-only, or apache (no Caddy)
 HAVE_DATA=0     # install_game_data decides
 PREFIX=${LF2_PREFIX:-/opt/lf2-relay}
+APACHE_SITE=${APACHE_SITE:-}
+APACHE_PATH=/lf2-relay
+APACHE_CONF=${LF2_APACHE_CONF:-/etc/httpd/conf.d/lf2-relay.conf}
+APACHE_SERVICE=${LF2_APACHE_SERVICE:-httpd}
+HTTPD=${LF2_HTTPD:-httpd}
+APACHECTL=${LF2_APACHECTL:-apachectl}
+APACHE_ADDRESS=127.0.0.1 # apache_preflight decides, as the next three
+SERVER_IP=""
+SITE_ADDRESSES=""
+SITE_HERE=0
+SAVED_RELAY_PORT=""
 SYSTEMD_DIR=${LF2_SYSTEMD_DIR:-/etc/systemd/system}
 SYSTEMCTL=${LF2_SYSTEMCTL:-systemctl}
 RELAY_PORT=${RELAY_PORT:-8787}
@@ -272,6 +291,17 @@ ensure_user() { # name home
 }
 
 write_units() {
+	write_relay_unit
+	[ "$CADDY_MODE" = apache ] || write_caddy_unit
+}
+
+# A rerun keeps the game pages an earlier run allowed, unless it says otherwise (ALLOWED_ORIGINS= clears).
+keep_allowed_origins() {
+	[ -z "${ALLOWED_ORIGINS+set}" ] || return 0
+	ALLOWED_ORIGINS=$(sed -n 's/^Environment="ALLOWED_ORIGINS=\(.*\)"$/\1/p' "$SYSTEMD_DIR/lf2-relay.service" 2>/dev/null | head -n 1 || true)
+}
+
+write_relay_unit() {
 	cat >"$SYSTEMD_DIR/lf2-relay.service" <<EOF
 # Written by install-vps.sh
 [Unit]
@@ -294,6 +324,9 @@ RestartSec=2
 [Install]
 WantedBy=multi-user.target
 EOF
+}
+
+write_caddy_unit() {
 	cat >"$SYSTEMD_DIR/lf2-caddy.service" <<EOF
 # Written by install-vps.sh
 [Unit]
@@ -363,8 +396,9 @@ other_owner() { # ss-output port
 	printf '%s' "$owner"
 }
 
-# Sets CADDY_MODE: "full" when ports 80 and 443 are free, "tls-only" when another program keeps
-# port 80 (it is left alone). Stops with an explanation when port 443 is taken.
+# Sets CADDY_MODE: "apache" with APACHE_SITE (behind that Apache website, no Caddy); otherwise "full"
+# when ports 80 and 443 are free, "tls-only" when another program keeps port 80 (it is left alone).
+# Stops with an explanation when port 443 is taken.
 check_ports() {
 	local listening="" owner80="" owner443=""
 	CADDY_MODE=full
@@ -372,6 +406,18 @@ check_ports() {
 		listening=$(ss -ltnp 2>/dev/null || true)
 		owner80=$(other_owner "$listening" 80)
 		owner443=$(other_owner "$listening" 443)
+	fi
+	if [ -n "$APACHE_SITE" ]; then
+		APACHE_SITE=$(normalize_site "$APACHE_SITE")
+		if ! [[ $APACHE_SITE =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || is_ipv4 "$APACHE_SITE"; then
+			fail "APACHE_SITE=\"$APACHE_SITE\" khong phai ten mien (vi du dung: APACHE_SITE=example.com). Chua co gi bi thay doi."
+		fi
+		if [ -n "$listening" ] && [ "$owner443" != httpd ]; then
+			fail "APACHE_SITE chi dung khi Apache (httpd) dang chay website o cong 443; o day cong 443 ${owner443:-chua co ai dung}. Chua co gi bi thay doi."
+		fi
+		CADDY_MODE=apache
+		info "Di chung website https://$APACHE_SITE cua Apache (httpd), khong dong toi cac file cua website"
+		return 0
 	fi
 	[ -z "$owner443" ] || port_443_taken "$owner443"
 	if [ -n "$owner80" ]; then
@@ -382,12 +428,17 @@ check_ports() {
 }
 
 port_443_taken() { # owner
+	local example=""
 	{
 		printf '\n[LOI] Cong 443 (HTTPS) dang duoc chuong trinh "%s" dung.\n' "$1"
 		printf '      Relay can rieng cong 443, nen chua cai duoc. Chua co gi bi thay doi.\n'
-		if [ "$1" = httpd ] && command -v httpd >/dev/null 2>&1; then
+		if [ "$1" = httpd ] && command -v "$HTTPD" >/dev/null 2>&1; then
 			printf '      Website ma httpd dang chay:\n'
-			httpd -S 2>/dev/null | grep -oE '(namevhost|default server) [^ ]+' | awk '{print "         " $NF}' | sort -u || true
+			"$HTTPD" -S 2>/dev/null | grep -oE '(namevhost|default server) [^ ]+' | awk '{print "         " $NF}' | sort -u || true
+			example=$("$HTTPD" -S 2>/dev/null | apache_https_names | grep -vE '^[0-9.]+$' | head -n 1 || true)
+			printf '      - Neu chu website dong y cho relay di chung website (qua Apache, khong sua\n'
+			printf '        file nao cua website): chay lai lenh cai dat voi APACHE_SITE=<ten website>\n'
+			printf '        dat truoc chu bash, vi du:  ... | APACHE_SITE=%s bash\n' "${example:-ten-website.com}"
 		fi
 		case "$1" in
 		httpd | nginx | apache2)
@@ -403,8 +454,400 @@ port_443_taken() { # owner
 	exit 1
 }
 
+# --- Behind an existing Apache website (CADDY_MODE=apache) -------------------------------------------
+
+# True when Apache serves HTTPS for $1, reading `httpd -S` on stdin (names, aliases, default servers).
+apache_serves_https() { # site
+	awk -v site="$1" '
+		$1 ~ /:443$/ { in443 = 1; if ($2 == site) found = 1; next }
+		$1 ~ /:[0-9]+$/ { in443 = 0; next }
+		in443 && $1 == "port" && $2 == "443" && $3 == "namevhost" && $4 == site { found = 1 }
+		in443 && $1 == "default" && $2 == "server" && $3 == site { found = 1 }
+		in443 && $1 == "alias" && $2 == site { found = 1 }
+		END { exit found ? 0 : 1 }'
+}
+
+# The names Apache serves over HTTPS, from `httpd -S` on stdin.
+apache_https_names() {
+	awk '
+		$1 ~ /:443$/ { in443 = 1; if ($2 != "is") print $2; next }
+		$1 ~ /:[0-9]+$/ { in443 = 0; next }
+		in443 && $1 == "port" && $3 == "namevhost" { print $4 }
+		in443 && $1 == "alias" { print $2 }' | sort -u
+}
+
+# True when `httpd -M` on stdin lists module $1.
+apache_has_module() { # module
+	grep -qE "^[[:space:]]*$1[[:space:]]"
+}
+
+# Where to reach Apache's port 443 from this machine, from `ss -ltn(p)` output: 127.0.0.1 when it
+# listens on every address (the usual "Listen 443"), else the first IPv4 address it listens on.
+apache_listen_address() { # ss-output
+	printf '%s\n' "$1" | awk '
+		NR > 1 && $4 ~ /:443$/ {
+			address = substr($4, 1, length($4) - 4)
+			if (address == "*" || address == "0.0.0.0" || address == "::" || address == ":::" || address == "[::]") { wildcard = 1 }
+			else if (first == "" && address ~ /^[0-9.]+$/) { first = address }
+		}
+		END { print (wildcard || first == "") ? "127.0.0.1" : first }'
+}
+
+# A free local port for the relay behind Apache, from `ss -ltnp` output. With SELinux enforcing,
+# Apache may connect only to ports labelled http_port_t; 8008 and 8009 are, and are rarely used.
+pick_relay_port() { # ss-output
+	local candidates="8787 8008 8009 18787" port
+	[ "$(getenforce 2>/dev/null || true)" != Enforcing ] || candidates="8008 8009"
+	for port in $candidates; do
+		if [ -z "$(printf '%s\n' "$1" | port_owner "$port" || true)" ]; then
+			printf '%s' "$port"
+			return 0
+		fi
+	done
+	return 1
+}
+
+# "https://Example.com/x" -> "example.com": the site name as Apache knows it, however it was pasted.
+normalize_site() { # site
+	local site=${1#*://}
+	site=${site%%/*}
+	site=${site%%:*}
+	printf '%s' "$site" | tr 'A-Z' 'a-z'
+}
+
+# The IPv4 addresses that players' browsers get for name $1, one per line (none when it has none):
+# from public DNS over HTTPS (Google, then Cloudflare), else dig, else this machine's resolver.
+site_addresses() { # name
+	local answer address
+	if [ -n "${LF2_SITE_ADDRESSES+set}" ]; then # tests
+		for address in $LF2_SITE_ADDRESSES; do printf '%s\n' "$address"; done
+		return 0
+	fi
+	answer=$(curl -fsS --max-time 10 "https://dns.google/resolve?name=$1&type=A" 2>/dev/null ||
+		curl -fsS --max-time 10 -H 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$1&type=A" 2>/dev/null ||
+		true)
+	case "$answer" in
+	*'"Status"'*)
+		printf '%s' "$answer" | grep -oE '"data": *"[0-9]+(\.[0-9]+){3}"' | grep -oE '[0-9]+(\.[0-9]+){3}' | sort -u || true
+		return 0
+		;;
+	esac
+	if command -v dig >/dev/null 2>&1; then
+		dig +short A "$1" 2>/dev/null | grep -E '^[0-9]+(\.[0-9]+){3}$' | sort -u || true
+		return 0
+	fi
+	getent ahostsv4 "$1" 2>/dev/null | awk '{print $1}' | sort -u || true
+}
+
+# This machine's IPv4 addresses, one per line: its public one ($1) and its network interfaces'.
+own_addresses() { # public-ip
+	{
+		[ -z "$1" ] || printf '%s\n' "$1"
+		if command -v ip >/dev/null 2>&1; then
+			ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d / -f 1
+		else
+			hostname -I 2>/dev/null | tr ' ' '\n'
+		fi
+	} | grep -E '^[0-9]+(\.[0-9]+){3}$' | sort -u || true
+}
+
+# Reads the site and port a previous installation in Apache mode used, so a rerun keeps them.
+load_apache_state() {
+	local key value
+	[ -f "$PREFIX/apache-site" ] || return 0
+	while IFS='=' read -r key value; do
+		case "$key" in
+		APACHE_SITE) [ -n "$APACHE_SITE" ] || APACHE_SITE=$value ;;
+		RELAY_PORT) SAVED_RELAY_PORT=$value ;;
+		esac
+	done <"$PREFIX/apache-site"
+}
+
+save_apache_state() {
+	printf 'APACHE_SITE=%s\nRELAY_PORT=%s\n' "$APACHE_SITE" "$RELAY_PORT" >"$PREFIX/apache-site"
+}
+
+# Checks everything before anything is installed: the site, Apache's modules, our file, a port.
+apache_preflight() {
+	local vhosts modules module listening owner own address
+	command -v "$HTTPD" >/dev/null 2>&1 || fail "Khong tim thay Apache (lenh $HTTPD) tren may nay. Chua co gi bi thay doi."
+	[ -d "$(dirname "$APACHE_CONF")" ] || fail "Khong thay thu muc cau hinh $(dirname "$APACHE_CONF") cua Apache. Chua co gi bi thay doi."
+	vhosts=$("$HTTPD" -S 2>/dev/null || true)
+	if ! printf '%s\n' "$vhosts" | apache_serves_https "$APACHE_SITE"; then
+		{
+			printf '\n[LOI] Apache khong co website HTTPS ten "%s". Chua co gi bi thay doi.\n' "$APACHE_SITE"
+			printf '      Cac website HTTPS cua Apache:\n'
+			printf '%s\n' "$vhosts" | apache_https_names | sed 's/^/         /'
+			printf '      Chay lai lenh voi APACHE_SITE= mot ten o tren (ten mien, khong phai so IP).\n'
+		} >&2
+		exit 1
+	fi
+	modules=$("$HTTPD" -M 2>/dev/null || true)
+	for module in proxy_module proxy_http_module proxy_wstunnel_module; do
+		printf '%s\n' "$modules" | apache_has_module "$module" ||
+			fail "Apache chua bat module $module, ma relay can. Chua co gi bi thay doi. Gui thong bao nay cho nguoi huong dan ban."
+	done
+	if [ -f "$APACHE_CONF" ] && ! grep -q 'Written by install-vps.sh' "$APACHE_CONF"; then
+		fail "Da co file $APACHE_CONF khong do trinh cai dat nay tao; khong ghi de. Chua co gi bi thay doi."
+	fi
+	listening=$(ss -ltnp 2>/dev/null || true)
+	if [ -n "$SAVED_RELAY_PORT" ]; then
+		owner=$(printf '%s\n' "$listening" | port_owner "$SAVED_RELAY_PORT" || true)
+		case "$owner" in "" | node) RELAY_PORT=$SAVED_RELAY_PORT ;; *) SAVED_RELAY_PORT="" ;; esac
+	fi
+	if [ -z "$SAVED_RELAY_PORT" ]; then
+		RELAY_PORT=$(pick_relay_port "$listening") ||
+			fail "Khong con cong trong cho relay (8008, 8009...). Chua co gi bi thay doi. Gui thong bao nay cho nguoi huong dan ban."
+	fi
+	APACHE_ADDRESS=$(apache_listen_address "$listening")
+	# Where players' browsers will go for the site: this server, or (through a CDN) maybe not.
+	SERVER_IP=$(public_ip || true)
+	SITE_ADDRESSES=$(site_addresses "$APACHE_SITE" | tr '\n' ' ' | sed 's/ *$//')
+	[ -n "$SITE_ADDRESSES" ] ||
+		fail "Ten mien $APACHE_SITE chua tro ve dia chi IP nao (khong tim thay ban ghi DNS). Chua co gi bi thay doi."
+	own=$(own_addresses "$SERVER_IP")
+	SITE_HERE=0
+	for address in $SITE_ADDRESSES; do
+		if printf '%s\n' "$own" | grep -qxF "$address"; then SITE_HERE=1; fi
+	done
+	if [ "$SITE_HERE" = 1 ]; then
+		info "Ten mien $APACHE_SITE tro ve VPS nay ($SITE_ADDRESSES)"
+	else
+		info "Ten mien $APACHE_SITE tro toi $SITE_ADDRESSES, khong phai IP cua VPS nay (${SERVER_IP:-khong ro});"
+		info "co the qua CDN (vi du Cloudflare): se kiem tra lai sau khi noi relay."
+	fi
+	info "Relay se o 127.0.0.1:$RELAY_PORT, Apache chuyen https://$APACHE_SITE$APACHE_PATH/ toi do"
+}
+
+apache_conf_text() {
+	cat <<EOF
+# Written by install-vps.sh for the OpenLF2 relay (service lf2-relay).
+# https://$APACHE_SITE$APACHE_PATH/ (the same path on this server's other sites too) goes to the relay on
+# 127.0.0.1:$RELAY_PORT; its WebSocket is $APACHE_PATH/relay. Nothing else of the sites changes.
+# To undo: delete this file and run "systemctl reload $APACHE_SERVICE", or run the installer with --uninstall.
+# disablereuse: Apache 2.4.6 (CentOS 7) would otherwise keep a finished WebSocket's connection open and
+# send the next player's handshake down it.
+<IfModule mod_proxy.c>
+	ProxyPass "$APACHE_PATH/relay" "ws://127.0.0.1:$RELAY_PORT/relay" retry=0 disablereuse=On
+	ProxyPass "$APACHE_PATH/" "http://127.0.0.1:$RELAY_PORT/" retry=0 disablereuse=On
+	ProxyPassReverse "$APACHE_PATH/" "http://127.0.0.1:$RELAY_PORT/"
+</IfModule>
+EOF
+}
+
+# Plays two short rounds through the relay's WebSocket at $1 (wss://site/path/relay), reached at
+# address $2 (the TLS name stays the URL's), as a page from origin $3 (may be empty), in rooms $4 and
+# $4+1: a host and a guest pair, bytes pass both ways, the guest leaves and the host is told. Two rounds,
+# because a web server that reuses a finished WebSocket's connection fails only the second. Prints what
+# went wrong, if anything.
+ws_check() { # url address origin room
+	NODE_PATH="$PREFIX/app/node_modules" "$PREFIX/node/bin/node" -e '
+		const WebSocket = require("ws");
+		const [base, address, origin, firstRoom] = process.argv.slice(1);
+		const family = address.includes(":") ? 6 : 4;
+		const lookup = (host, options, callback) =>
+			options && options.all ? callback(null, [{ address, family }]) : callback(null, address, family);
+		const options = { lookup, rejectUnauthorized: false, handshakeTimeout: 10000 };
+		if (origin) options.origin = origin;
+		const fail = (problem) => { console.log(problem); process.exit(1); };
+		setTimeout(() => fail("timeout"), 40000);
+		function open(role, room) {
+			const ws = new WebSocket(base + "?role=" + role + "&room=" + room, options);
+			const got = { texts: [], bytes: 0, close: "" };
+			ws.on("message", (data, binary) => {
+				if (binary) { got.bytes += data.length; return; }
+				let message = {};
+				try { message = JSON.parse(String(data)); } catch (error) { message.t = "? " + String(data).slice(0, 60); }
+				got.texts.push(message.t);
+			});
+			ws.on("unexpected-response", (request, response) => fail(role + ": HTTP " + response.statusCode));
+			ws.on("close", (code, reason) => { got.close = code + " " + String(reason || ""); });
+			ws.on("error", (error) => fail(role + ": " + error.message));
+			return { ws, got };
+		}
+		const until = (problem, test) => new Promise((resolve) => {
+			const started = Date.now();
+			const tick = () => (test() ? resolve() : Date.now() - started > 8000 ? fail(problem) : setTimeout(tick, 20));
+			tick();
+		});
+		async function round(room) {
+			const host = open("host", room);
+			await until("host: no answer", () => host.got.texts.length || host.got.close);
+			if (host.got.texts[0] !== "waiting") fail("host: " + (host.got.close ? "closed " + host.got.close : host.got.texts[0]));
+			const guest = open("join", room);
+			await until("no pairing", () => host.got.texts.includes("paired") && guest.got.texts.includes("paired"));
+			host.ws.send(Buffer.from([1, 2, 3, 4]));
+			guest.ws.send(Buffer.from([5, 6, 7]));
+			await until("bytes did not pass", () => guest.got.bytes === 4 && host.got.bytes === 3);
+			guest.ws.close();
+			await until("host not told that the guest left", () => host.got.close);
+			if (host.got.close.indexOf("4006") !== 0) fail("host closed " + host.got.close);
+		}
+		(async () => {
+			await round(firstRoom);
+			await round(String(Number(firstRoom) + 1));
+			process.exit(0);
+		})();
+	' "$1" "$2" "${3:-}" "$4"
+}
+
+# Checks the relay through Apache (HTTP, then WebSocket). Prints what went wrong, if anything.
+apache_verify() {
+	local base="https://$APACHE_SITE$APACHE_PATH" body="" waited=0 room reason origin
+	# -k: the check is about the route through Apache; the site's own certificate is not our business,
+	# and an old CA bundle on this machine may not know its issuer.
+	while [ "$waited" -lt 20 ]; do
+		body=$(curl -sS --max-time 5 -k --noproxy '*' --resolve "$APACHE_SITE:443:$APACHE_ADDRESS" "$base/healthz" 2>&1 || true)
+		case "$body" in *'"ok":true'*) break ;; esac
+		sleep 2
+		waited=$((waited + 2))
+	done
+	case "$body" in
+	*'"ok":true'*) ;;
+	*)
+		printf '%s/healthz tra ve: %s' "$base" "$(printf '%s' "$body" | head -c 200 | tr '\n' ' ')"
+		return 1
+		;;
+	esac
+	room=$(printf '9%011d' "$((RANDOM * 32768 + RANDOM))")
+	# With ALLOWED_ORIGINS the relay only answers those pages, so the check comes as the first of them.
+	origin=$(printf '%s' "${ALLOWED_ORIGINS:-}" | cut -d , -f 1 | tr -d '[:space:]')
+	if ! reason=$(ws_check "wss://$APACHE_SITE$APACHE_PATH/relay" "$APACHE_ADDRESS" "$origin" "$room"); then
+		printf 'WebSocket qua Apache khong chay (%s)' "$reason"
+		return 1
+	fi
+}
+
+# Checks the relay the way players reach it: $APACHE_SITE at each address public DNS gives for it.
+# Prints what went wrong, if anything.
+apache_public_check() {
+	local address work status server port=${LF2_PUBLIC_PORT:-443}
+	work=$(mktemp -d)
+	for address in $SITE_ADDRESSES; do
+		status=$(curl -sS --connect-timeout 5 --max-time 10 -k --noproxy '*' --resolve "$APACHE_SITE:$port:$address" \
+			-D "$work/headers" -o "$work/body" -w '%{http_code}' "https://$APACHE_SITE:$port$APACHE_PATH/healthz" 2>"$work/error" || true)
+		if grep -q '"ok":true' "$work/body" 2>/dev/null; then continue; fi
+		server=$(grep -i '^server:' "$work/headers" 2>/dev/null | head -n 1 | cut -d : -f 2- | tr -d '\r' | sed 's/^ *//' || true)
+		if [ "${status:-000}" = 000 ]; then
+			printf '%s: %s' "$address" "$(head -c 160 "$work/error" | tr '\n' ' ')"
+		else
+			printf '%s tra ve HTTP %s%s' "$address" "$status" "${server:+, may chu: $server}"
+		fi
+		rm -rf "$work"
+		return 1
+	done
+	rm -rf "$work"
+}
+
+apache_reload() {
+	"$SYSTEMCTL" reload "$APACHE_SERVICE"
+}
+
+# Puts the relay behind Apache: writes $APACHE_CONF, checks Apache's whole configuration, reloads it
+# gracefully, and checks the relay through it. On any failure the file is removed (or the previous one
+# restored) and Apache reloaded as it was, so the websites keep running as before.
+apache_apply() {
+	local previous="" log problem=""
+	log=$(mktemp)
+	if [ -f "$APACHE_CONF" ]; then
+		previous=$(mktemp)
+		cp "$APACHE_CONF" "$previous"
+	fi
+	apache_conf_text >"$APACHE_CONF"
+	chmod 0644 "$APACHE_CONF"
+	if ! "$APACHECTL" configtest >"$log" 2>&1; then
+		apache_undo "$previous" 0
+		{
+			printf '\n[LOI] Apache bao loi cau hinh; da go file vua them, website khong bi anh huong.\n'
+			sed 's/^/      /' "$log"
+			printf '      Gui toan bo thong bao nay cho nguoi huong dan ban.\n'
+		} >&2
+		rm -f "$log"
+		exit 1
+	fi
+	if ! apache_reload >"$log" 2>&1; then
+		apache_undo "$previous" 1
+		{
+			printf '\n[LOI] Apache khong nap lai duoc; da go file vua them.\n'
+			sed 's/^/      /' "$log"
+			printf '      Gui toan bo thong bao nay cho nguoi huong dan ban.\n'
+		} >&2
+		rm -f "$log"
+		exit 1
+	fi
+	rm -f "$log"
+	info "Apache da nap them file $APACHE_CONF (nap lai nhe, website van chay)"
+	problem=$(apache_verify) || true
+	if [ -n "$problem" ]; then
+		apache_undo "$previous" 1
+		{
+			printf '\n[LOI] Relay chua di qua Apache duoc: %s\n' "$problem"
+			printf '      Da go file vua them va nap lai cau hinh cu; website khong bi anh huong.\n'
+			if [ "$(getenforce 2>/dev/null || true)" = Enforcing ]; then
+				printf '      (SELinux dang bat.)\n'
+			fi
+			printf '      Gui toan bo thong bao nay cho nguoi huong dan ban.\n'
+		} >&2
+		exit 1
+	fi
+	info "Da kiem tra: https://$APACHE_SITE$APACHE_PATH/ chuyen toi relay (ca HTTP va WebSocket)"
+	if ! problem=$(apache_public_check); then
+		if [ "$SITE_HERE" = 1 ]; then
+			# The name leads here; this machine may just not reach itself by its public address.
+			info "Ghi chu: tu VPS chua mo duoc relay qua dia chi cong khai ($problem);"
+			info "hay mo https://$APACHE_SITE$APACHE_PATH/healthz tren trinh duyet cua ban de kiem tra."
+		else
+			apache_undo "$previous" 1
+			{
+				printf '\n[LOI] Ten mien %s dang tro toi may chu khac (%s), khong phai VPS nay (%s).\n' \
+					"$APACHE_SITE" "$SITE_ADDRESSES" "${SERVER_IP:-khong ro IP}"
+				printf '      Nguoi choi mo %s se vao may chu kia, khong toi duoc relay tren VPS nay.\n' "$APACHE_SITE"
+				printf '      (%s)\n' "$problem"
+				printf '      Da go file vua them va nap lai cau hinh cu; website khong bi anh huong.\n'
+				printf '      Gui toan bo thong bao nay cho nguoi huong dan ban.\n'
+			} >&2
+			exit 1
+		fi
+	elif [ "$SITE_HERE" = 0 ]; then
+		info "Da kiem tra qua dia chi cong khai cua $APACHE_SITE ($SITE_ADDRESSES): relay tra loi dung"
+	fi
+	rm -f "${previous:-/nonexistent}"
+}
+
+# Undoes apache_apply after a failure: the previous file back (or ours removed), Apache reloaded when it
+# had loaded ours, and on a first installation the relay stopped again, so the server is as it was.
+apache_undo() { # previous-copy reloaded(0/1)
+	apache_restore "$1"
+	[ "$2" = 0 ] || apache_reload >/dev/null 2>&1 || true
+	if [ -z "$1" ]; then
+		"$SYSTEMCTL" stop lf2-relay.service >/dev/null 2>&1 || true
+		"$SYSTEMCTL" disable lf2-relay.service >/dev/null 2>&1 || true
+	fi
+}
+
+apache_restore() { # copy of the previous file, or empty when there was none
+	if [ -n "$1" ]; then
+		cp "$1" "$APACHE_CONF"
+		rm -f "$1"
+	else
+		rm -f "$APACHE_CONF"
+	fi
+}
+
+# Removes the relay's Apache file, if this installer wrote one, and reloads Apache.
+apache_unconfigure() {
+	[ -f "$APACHE_CONF" ] && grep -q 'Written by install-vps.sh' "$APACHE_CONF" || return 0
+	rm -f "$APACHE_CONF"
+	if "$APACHECTL" configtest >/dev/null 2>&1 && apache_reload >/dev/null 2>&1; then
+		info "Da go $APACHE_CONF khoi Apache va nap lai"
+	else
+		info "Da xoa $APACHE_CONF; hay chay: systemctl reload $APACHE_SERVICE"
+	fi
+}
+
 uninstall() {
 	say "Go relay"
+	apache_unconfigure
 	"$SYSTEMCTL" stop lf2-caddy.service lf2-relay.service 2>/dev/null || true
 	"$SYSTEMCTL" disable lf2-caddy.service lf2-relay.service >/dev/null 2>&1 || true
 	rm -f "$SYSTEMD_DIR/lf2-caddy.service" "$SYSTEMD_DIR/lf2-relay.service"
@@ -435,9 +878,14 @@ main() {
 	aarch64 | arm64) NODE_ARCH=arm64 CADDY_ARCH=arm64 ;;
 	*) fail "Kien truc $(uname -m) chua duoc ho tro." ;;
 	esac
+	load_apache_state
 	check_ports
+	keep_allowed_origins
+	[ -z "$ALLOWED_ORIGINS" ] || info "Chi trang game o $ALLOWED_ORIGINS duoc dung relay"
 
-	if [ -z "${DOMAIN:-}" ]; then
+	if [ "$CADDY_MODE" = apache ]; then
+		apache_preflight
+	elif [ -z "${DOMAIN:-}" ]; then
 		local ip
 		ip=$(public_ip || true)
 		[ -n "$ip" ] || fail "Khong tim duoc dia chi IP cong khai cua VPS. Thu lai, hoac chay voi DOMAIN=ten-mien-cua-ban."
@@ -453,28 +901,43 @@ main() {
 
 	say "Cai relay"
 	ensure_user lf2relay "$PREFIX/app"
-	ensure_user lf2caddy "$PREFIX/caddy-data"
+	[ "$CADDY_MODE" = apache ] || ensure_user lf2caddy "$PREFIX/caddy-data"
 	install_app
 	info "Relay da cai vao $PREFIX/app"
 
 	say "Luu du lieu game LF2 tren VPS (khoang 30 MB)"
 	install_game_data
 
-	say "Cai Caddy (HTTPS)"
-	install_caddy
+	if [ "$CADDY_MODE" != apache ]; then
+		say "Cai Caddy (HTTPS)"
+		install_caddy
 
-	say "Mo $(caddy_ports)"
-	open_firewall
+		say "Mo $(caddy_ports)"
+		open_firewall
+	fi
 
 	say "Khoi dong dich vu"
 	write_units
 	"$SYSTEMCTL" daemon-reload
-	"$SYSTEMCTL" enable lf2-relay.service lf2-caddy.service >/dev/null 2>&1 ||
-		fail "Khong bat duoc dich vu. Gui thong bao nay cho nguoi huong dan ban."
+	if [ "$CADDY_MODE" = apache ]; then
+		"$SYSTEMCTL" enable lf2-relay.service >/dev/null 2>&1 ||
+			fail "Khong bat duoc dich vu. Gui thong bao nay cho nguoi huong dan ban."
+	else
+		"$SYSTEMCTL" enable lf2-relay.service lf2-caddy.service >/dev/null 2>&1 ||
+			fail "Khong bat duoc dich vu. Gui thong bao nay cho nguoi huong dan ban."
+	fi
 	"$SYSTEMCTL" restart lf2-relay.service
-	wait_for "http://127.0.0.1:$RELAY_PORT/healthz" 30 ||
+	wait_for "http://127.0.0.1:$RELAY_PORT/healthz" 30 --noproxy '*' ||
 		fail "Relay khong chay. Xem loi bang lenh: journalctl -u lf2-relay -n 30 --no-pager"
 	info "Relay dang chay"
+
+	if [ "$CADDY_MODE" = apache ]; then
+		say "Noi relay vao website $APACHE_SITE (Apache)"
+		apache_apply
+		save_apache_state
+		finish_apache
+		return 0
+	fi
 	"$SYSTEMCTL" restart lf2-caddy.service
 	info "Dang lay chung chi HTTPS cho $DOMAIN (co the mat 1-2 phut)..."
 	# (bash 4.2 on CentOS 7 treats an empty array as unset under set -u, so no array here)
@@ -511,6 +974,27 @@ EOF
 	if [ "$CADDY_MODE" = tls-only ]; then
 		info "Ghi chu: website dang chay o cong 80 van giu nguyen; relay chi dung cong 443."
 	fi
+	if [ "$HAVE_DATA" = 1 ]; then
+		info "Du lieu game: trang game tai tu VPS nay, khong can IDM hay chon file."
+	fi
+}
+
+finish_apache() {
+	cat <<EOF
+
+============================================================
+  XONG! Dia chi relay cua ban:
+
+      wss://$APACHE_SITE$APACHE_PATH/relay
+
+  Dan dia chi nay vao o "Relay" trong khung "Online play"
+  (hoac o "Relay address" khi build trang game).
+  Kiem tra nhanh: mo https://$APACHE_SITE$APACHE_PATH/healthz
+  tren trinh duyet, thay {"ok":true,...} la dung.
+============================================================
+EOF
+	info "Website $APACHE_SITE van chay nhu cu; relay chi dung duong dan $APACHE_PATH/."
+	info "Da them file $APACHE_CONF (go bo: chay lai lenh voi --uninstall)."
 	if [ "$HAVE_DATA" = 1 ]; then
 		info "Du lieu game: trang game tai tu VPS nay, khong can IDM hay chon file."
 	fi
@@ -760,51 +1244,55 @@ JykgewogICAgICByZXMuZW5kKCk7CiAgICAgIHJldHVybjsKICAgIH0KICAgIGNvbnN0IHN0cmVh
 bSA9IGZzLmNyZWF0ZVJlYWRTdHJlYW0oY29uZmlnLmluc3RhbGxlckZpbGUpOwogICAgc3RyZWFt
 Lm9uKCdlcnJvcicsICgpID0+IHJlcy5kZXN0cm95KCkpOwogICAgc3RyZWFtLnBpcGUocmVzKTsK
 ICB9CgogIGZ1bmN0aW9uIGNsaWVudEFkZHJlc3MocmVxKSB7CiAgICBpZiAoY29uZmlnLnRydXN0
-UHJveHkpIHsKICAgICAgY29uc3QgZm9yd2FyZGVkID0gU3RyaW5nKHJlcS5oZWFkZXJzWyd4LWZv
-cndhcmRlZC1mb3InXSB8fCAnJykuc3BsaXQoJywnKVswXS50cmltKCk7CiAgICAgIGlmIChmb3J3
-YXJkZWQpIHJldHVybiBmb3J3YXJkZWQ7CiAgICB9CiAgICByZXR1cm4gcmVxLnNvY2tldC5yZW1v
-dGVBZGRyZXNzIHx8ICd1bmtub3duJzsKICB9CgogIGNvbnN0IGhlYXJ0YmVhdCA9IHNldEludGVy
-dmFsKCgpID0+IHsKICAgIGZvciAoY29uc3Qgd3Mgb2Ygd3NzLmNsaWVudHMpIHsKICAgICAgaWYg
-KCF3cy5pc0FsaXZlKSB7IHdzLnRlcm1pbmF0ZSgpOyBjb250aW51ZTsgfQogICAgICB3cy5pc0Fs
-aXZlID0gZmFsc2U7CiAgICAgIHRyeSB7IHdzLnBpbmcoKTsgfSBjYXRjaCB7IC8qIGNsb3Npbmcg
-Ki8gfQogICAgfQogICAgY29uc3Qgbm93ID0gRGF0ZS5ub3coKTsKICAgIGZvciAoY29uc3QgW2Fk
-ZHJlc3MsIGVudHJ5XSBvZiBpbnN0YWxsZXJEb3dubG9hZHMpIGlmIChlbnRyeS51bnRpbCA8PSBu
-b3cpIGluc3RhbGxlckRvd25sb2Fkcy5kZWxldGUoYWRkcmVzcyk7CiAgfSwgY29uZmlnLnBpbmdJ
-bnRlcnZhbE1zKTsKICBoZWFydGJlYXQudW5yZWYoKTsKCiAgcmV0dXJuIHsKICAgIGNvbmZpZywK
-ICAgIHNlcnZlciwKICAgIHdzcywKICAgIHJvb21zLAogICAgbGlzdGVuKHBvcnQgPSBjb25maWcu
-cG9ydCwgaG9zdCA9IGNvbmZpZy5ob3N0KSB7CiAgICAgIHJldHVybiBuZXcgUHJvbWlzZSgocmVz
-b2x2ZSwgcmVqZWN0KSA9PiB7CiAgICAgICAgc2VydmVyLm9uY2UoJ2Vycm9yJywgcmVqZWN0KTsK
-ICAgICAgICBzZXJ2ZXIubGlzdGVuKHBvcnQsIGhvc3QsICgpID0+IHsKICAgICAgICAgIHNlcnZl
-ci5vZmYoJ2Vycm9yJywgcmVqZWN0KTsKICAgICAgICAgIHJlc29sdmUoc2VydmVyLmFkZHJlc3Mo
-KSk7CiAgICAgICAgfSk7CiAgICAgIH0pOwogICAgfSwKICAgIGNsb3NlKCkgewogICAgICBjbGVh
-ckludGVydmFsKGhlYXJ0YmVhdCk7CiAgICAgIGZvciAoY29uc3Qgcm9vbSBvZiByb29tcy52YWx1
-ZXMoKSkgY2xlYXJUaW1lb3V0KHJvb20udGltZXIpOwogICAgICBmb3IgKGNvbnN0IHdzIG9mIHdz
-cy5jbGllbnRzKSBjbG9zZVdpdGgod3MsIENMT1NFLnNodXRkb3duKTsKICAgICAgcmV0dXJuIG5l
-dyBQcm9taXNlKChyZXNvbHZlKSA9PiB7CiAgICAgICAgd3NzLmNsb3NlKCgpID0+IHNlcnZlci5j
-bG9zZSgoKSA9PiByZXNvbHZlKCkpKTsKICAgICAgICBzZXRUaW1lb3V0KCgpID0+IHsgZm9yIChj
-b25zdCB3cyBvZiB3c3MuY2xpZW50cykgd3MudGVybWluYXRlKCk7IH0sIDEwMDApLnVucmVmKCk7
-CiAgICAgIH0pOwogICAgfSwKICB9Owp9CgpmdW5jdGlvbiBzZW5kQ29udHJvbCh3cywgbWVzc2Fn
-ZSkgewogIGlmICh3cy5yZWFkeVN0YXRlID09PSBXZWJTb2NrZXQuT1BFTikgd3Muc2VuZChKU09O
-LnN0cmluZ2lmeShtZXNzYWdlKSk7Cn0KCmZ1bmN0aW9uIGNsb3NlV2l0aCh3cywgW2NvZGUsIHJl
-YXNvbl0pIHsKICBpZiAod3MucmVhZHlTdGF0ZSA9PT0gV2ViU29ja2V0Lk9QRU4gfHwgd3MucmVh
-ZHlTdGF0ZSA9PT0gV2ViU29ja2V0LkNPTk5FQ1RJTkcpIHsKICAgIHdzLmNsb3NlKGNvZGUsIHJl
-YXNvbik7CiAgICAvLyBEbyBub3Qgd2FpdCBmb3JldmVyIGZvciBhIGNsaWVudCB0aGF0IG5ldmVy
-IGFuc3dlcnMgdGhlIGNsb3NlIGhhbmRzaGFrZS4KICAgIHNldFRpbWVvdXQoKCkgPT4geyBpZiAo
-d3MucmVhZHlTdGF0ZSAhPT0gV2ViU29ja2V0LkNMT1NFRCkgd3MudGVybWluYXRlKCk7IH0sIDMw
-MDApLnVucmVmKCk7CiAgfQp9Cgptb2R1bGUuZXhwb3J0cyA9IHsgY3JlYXRlUmVsYXksIHJlYWRD
-b25maWcsIENMT1NFLCBST09NX1BBVFRFUk4gfTsKCmlmIChyZXF1aXJlLm1haW4gPT09IG1vZHVs
-ZSkgewogIGNvbnN0IHJlbGF5ID0gY3JlYXRlUmVsYXkocmVhZENvbmZpZygpKTsKICByZWxheS5s
-aXN0ZW4oKS50aGVuKChhZGRyZXNzKSA9PiB7CiAgICBjb25zdCB3aGVyZSA9IHR5cGVvZiBhZGRy
-ZXNzID09PSAnc3RyaW5nJyA/IGFkZHJlc3MgOiBgJHthZGRyZXNzLmFkZHJlc3N9OiR7YWRkcmVz
-cy5wb3J0fWA7CiAgICBjb25zb2xlLmxvZyhgT3BlbkxGMiByZWxheSBsaXN0ZW5pbmcgb24gJHt3
-aGVyZX0sIFdlYlNvY2tldCBwYXRoICR7cmVsYXkuY29uZmlnLnBhdGh9YCk7CiAgICBpZiAoIXJl
-bGF5LmNvbmZpZy5hbGxvd2VkT3JpZ2lucy5sZW5ndGgpIHsKICAgICAgY29uc29sZS5sb2coJ0FM
-TE9XRURfT1JJR0lOUyBpcyBlbXB0eTogYW55IHdlYnNpdGUgbWF5IHVzZSB0aGlzIHJlbGF5LiBT
-ZXQgaXQgdG8geW91ciBnYW1lIHBhZ2Ugb3JpZ2luLicpOwogICAgfQogIH0pLmNhdGNoKChlcnJv
-cikgPT4gewogICAgY29uc29sZS5lcnJvcihlcnJvci5tZXNzYWdlKTsKICAgIHByb2Nlc3MuZXhp
-dCgxKTsKICB9KTsKICBjb25zdCBzdG9wID0gKCkgPT4gcmVsYXkuY2xvc2UoKS50aGVuKCgpID0+
-IHByb2Nlc3MuZXhpdCgwKSk7CiAgcHJvY2Vzcy5vbignU0lHSU5UJywgc3RvcCk7CiAgcHJvY2Vz
-cy5vbignU0lHVEVSTScsIHN0b3ApOwp9Cg==
+UHJveHkpIHsKICAgICAgLy8gVGhlIGxhc3QgZW50cnkgaXMgdGhlIG9uZSBvdXIgb3duIHByb3h5
+IGFkZGVkIChBcGFjaGUgYXBwZW5kcywgQ2FkZHkgcmVwbGFjZXMpOyBlbnRyaWVzIGJlZm9yZQog
+ICAgICAvLyBpdCBjb21lIGZyb20gdGhlIGNsaWVudCBhbmQgY291bGQgYmUgbWFkZSB1cCB0byBz
+bGlwIHBhc3QgdGhlIHBlci1hZGRyZXNzIGxpbWl0cy4KICAgICAgY29uc3QgZm9yd2FyZGVkID0g
+U3RyaW5nKHJlcS5oZWFkZXJzWyd4LWZvcndhcmRlZC1mb3InXSB8fCAnJykuc3BsaXQoJywnKS5t
+YXAoKHBhcnQpID0+IHBhcnQudHJpbSgpKS5maWx0ZXIoQm9vbGVhbik7CiAgICAgIGlmIChmb3J3
+YXJkZWQubGVuZ3RoKSByZXR1cm4gZm9yd2FyZGVkW2ZvcndhcmRlZC5sZW5ndGggLSAxXTsKICAg
+IH0KICAgIHJldHVybiByZXEuc29ja2V0LnJlbW90ZUFkZHJlc3MgfHwgJ3Vua25vd24nOwogIH0K
+CiAgY29uc3QgaGVhcnRiZWF0ID0gc2V0SW50ZXJ2YWwoKCkgPT4gewogICAgZm9yIChjb25zdCB3
+cyBvZiB3c3MuY2xpZW50cykgewogICAgICBpZiAoIXdzLmlzQWxpdmUpIHsgd3MudGVybWluYXRl
+KCk7IGNvbnRpbnVlOyB9CiAgICAgIHdzLmlzQWxpdmUgPSBmYWxzZTsKICAgICAgdHJ5IHsgd3Mu
+cGluZygpOyB9IGNhdGNoIHsgLyogY2xvc2luZyAqLyB9CiAgICB9CiAgICBjb25zdCBub3cgPSBE
+YXRlLm5vdygpOwogICAgZm9yIChjb25zdCBbYWRkcmVzcywgZW50cnldIG9mIGluc3RhbGxlckRv
+d25sb2FkcykgaWYgKGVudHJ5LnVudGlsIDw9IG5vdykgaW5zdGFsbGVyRG93bmxvYWRzLmRlbGV0
+ZShhZGRyZXNzKTsKICB9LCBjb25maWcucGluZ0ludGVydmFsTXMpOwogIGhlYXJ0YmVhdC51bnJl
+ZigpOwoKICByZXR1cm4gewogICAgY29uZmlnLAogICAgc2VydmVyLAogICAgd3NzLAogICAgcm9v
+bXMsCiAgICBsaXN0ZW4ocG9ydCA9IGNvbmZpZy5wb3J0LCBob3N0ID0gY29uZmlnLmhvc3QpIHsK
+ICAgICAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlLCByZWplY3QpID0+IHsKICAgICAgICBz
+ZXJ2ZXIub25jZSgnZXJyb3InLCByZWplY3QpOwogICAgICAgIHNlcnZlci5saXN0ZW4ocG9ydCwg
+aG9zdCwgKCkgPT4gewogICAgICAgICAgc2VydmVyLm9mZignZXJyb3InLCByZWplY3QpOwogICAg
+ICAgICAgcmVzb2x2ZShzZXJ2ZXIuYWRkcmVzcygpKTsKICAgICAgICB9KTsKICAgICAgfSk7CiAg
+ICB9LAogICAgY2xvc2UoKSB7CiAgICAgIGNsZWFySW50ZXJ2YWwoaGVhcnRiZWF0KTsKICAgICAg
+Zm9yIChjb25zdCByb29tIG9mIHJvb21zLnZhbHVlcygpKSBjbGVhclRpbWVvdXQocm9vbS50aW1l
+cik7CiAgICAgIGZvciAoY29uc3Qgd3Mgb2Ygd3NzLmNsaWVudHMpIGNsb3NlV2l0aCh3cywgQ0xP
+U0Uuc2h1dGRvd24pOwogICAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUpID0+IHsKICAg
+ICAgICB3c3MuY2xvc2UoKCkgPT4gc2VydmVyLmNsb3NlKCgpID0+IHJlc29sdmUoKSkpOwogICAg
+ICAgIHNldFRpbWVvdXQoKCkgPT4geyBmb3IgKGNvbnN0IHdzIG9mIHdzcy5jbGllbnRzKSB3cy50
+ZXJtaW5hdGUoKTsgfSwgMTAwMCkudW5yZWYoKTsKICAgICAgfSk7CiAgICB9LAogIH07Cn0KCmZ1
+bmN0aW9uIHNlbmRDb250cm9sKHdzLCBtZXNzYWdlKSB7CiAgaWYgKHdzLnJlYWR5U3RhdGUgPT09
+IFdlYlNvY2tldC5PUEVOKSB3cy5zZW5kKEpTT04uc3RyaW5naWZ5KG1lc3NhZ2UpKTsKfQoKZnVu
+Y3Rpb24gY2xvc2VXaXRoKHdzLCBbY29kZSwgcmVhc29uXSkgewogIGlmICh3cy5yZWFkeVN0YXRl
+ID09PSBXZWJTb2NrZXQuT1BFTiB8fCB3cy5yZWFkeVN0YXRlID09PSBXZWJTb2NrZXQuQ09OTkVD
+VElORykgewogICAgd3MuY2xvc2UoY29kZSwgcmVhc29uKTsKICAgIC8vIERvIG5vdCB3YWl0IGZv
+cmV2ZXIgZm9yIGEgY2xpZW50IHRoYXQgbmV2ZXIgYW5zd2VycyB0aGUgY2xvc2UgaGFuZHNoYWtl
+LgogICAgc2V0VGltZW91dCgoKSA9PiB7IGlmICh3cy5yZWFkeVN0YXRlICE9PSBXZWJTb2NrZXQu
+Q0xPU0VEKSB3cy50ZXJtaW5hdGUoKTsgfSwgMzAwMCkudW5yZWYoKTsKICB9Cn0KCm1vZHVsZS5l
+eHBvcnRzID0geyBjcmVhdGVSZWxheSwgcmVhZENvbmZpZywgQ0xPU0UsIFJPT01fUEFUVEVSTiB9
+OwoKaWYgKHJlcXVpcmUubWFpbiA9PT0gbW9kdWxlKSB7CiAgY29uc3QgcmVsYXkgPSBjcmVhdGVS
+ZWxheShyZWFkQ29uZmlnKCkpOwogIHJlbGF5Lmxpc3RlbigpLnRoZW4oKGFkZHJlc3MpID0+IHsK
+ICAgIGNvbnN0IHdoZXJlID0gdHlwZW9mIGFkZHJlc3MgPT09ICdzdHJpbmcnID8gYWRkcmVzcyA6
+IGAke2FkZHJlc3MuYWRkcmVzc306JHthZGRyZXNzLnBvcnR9YDsKICAgIGNvbnNvbGUubG9nKGBP
+cGVuTEYyIHJlbGF5IGxpc3RlbmluZyBvbiAke3doZXJlfSwgV2ViU29ja2V0IHBhdGggJHtyZWxh
+eS5jb25maWcucGF0aH1gKTsKICAgIGlmICghcmVsYXkuY29uZmlnLmFsbG93ZWRPcmlnaW5zLmxl
+bmd0aCkgewogICAgICBjb25zb2xlLmxvZygnQUxMT1dFRF9PUklHSU5TIGlzIGVtcHR5OiBhbnkg
+d2Vic2l0ZSBtYXkgdXNlIHRoaXMgcmVsYXkuIFNldCBpdCB0byB5b3VyIGdhbWUgcGFnZSBvcmln
+aW4uJyk7CiAgICB9CiAgfSkuY2F0Y2goKGVycm9yKSA9PiB7CiAgICBjb25zb2xlLmVycm9yKGVy
+cm9yLm1lc3NhZ2UpOwogICAgcHJvY2Vzcy5leGl0KDEpOwogIH0pOwogIGNvbnN0IHN0b3AgPSAo
+KSA9PiByZWxheS5jbG9zZSgpLnRoZW4oKCkgPT4gcHJvY2Vzcy5leGl0KDApKTsKICBwcm9jZXNz
+Lm9uKCdTSUdJTlQnLCBzdG9wKTsKICBwcm9jZXNzLm9uKCdTSUdURVJNJywgc3RvcCk7Cn0K
 LF2_PAYLOAD
 }
 write_package_json() {

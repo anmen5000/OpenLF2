@@ -314,8 +314,10 @@ function createRelay(overrides = {}) {
 
   function clientAddress(req) {
     if (config.trustProxy) {
-      const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-      if (forwarded) return forwarded;
+      // The last entry is the one our own proxy added (Apache appends, Caddy replaces); entries before
+      // it come from the client and could be made up to slip past the per-address limits.
+      const forwarded = String(req.headers['x-forwarded-for'] || '').split(',').map((part) => part.trim()).filter(Boolean);
+      if (forwarded.length) return forwarded[forwarded.length - 1];
     }
     return req.socket.remoteAddress || 'unknown';
   }

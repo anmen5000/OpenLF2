@@ -292,6 +292,21 @@ test('the installer copy honours the origin allow-list and is absent when not co
   }
 });
 
+test('behind a proxy, the address the proxy added counts, not one the client made up', async () => {
+  const relay = await startRelay({ trustProxy: true, maxConnectionsPerIp: 1 });
+  try {
+    // A client claims other addresses; the proxy (Apache) appends the real one, which stays the same.
+    const first = client(`${relay.url}?role=host&room=${room()}`, { headers: { 'x-forwarded-for': '10.0.0.1, 198.51.100.7' } });
+    await first.control('waiting');
+    const spoofed = client(`${relay.url}?role=host&room=${room()}`, { headers: { 'x-forwarded-for': '10.0.0.2, 198.51.100.7' } });
+    assert.equal((await spoofed.closed).code, CLOSE.tooManyConnections[0]);
+    const other = client(`${relay.url}?role=host&room=${room()}`, { headers: { 'x-forwarded-for': '198.51.100.8' } });
+    await other.control('waiting');
+    first.ws.close();
+    other.ws.close();
+  } finally { await relay.close(); }
+});
+
 test('connections per address are limited', async () => {
   const relay = await startRelay({ maxConnectionsPerIp: 2 });
   try {

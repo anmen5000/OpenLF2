@@ -38,6 +38,30 @@ holds port 80, it is left alone and Caddy listens on 443 only, getting its certi
 TLS-ALPN challenge. When 443 is taken too, the script stops before changing anything and names the
 sites that server runs, with the two commands to stop it if it is not needed.
 
+### Sharing an Apache website
+
+When Apache already serves an HTTPS site on the server and its owner agrees, the relay can live
+under that site instead, with no Caddy and no port of its own:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/<you>/OpenLF2/main/tools/relay/install-vps.sh | APACHE_SITE=example.com bash
+```
+
+The relay is then `wss://example.com/lf2-relay/relay`. The script adds one file,
+`/etc/httpd/conf.d/lf2-relay.conf`, with two `ProxyPass` lines from `/lf2-relay/` to the relay on
+`127.0.0.1` (port 8787, or 8008 when SELinux is enforcing: Apache may connect there by default).
+Nothing of the site's own files or configuration changes. Before anything is installed it checks
+that Apache serves that name over HTTPS, that `mod_proxy`, `mod_proxy_http` and
+`mod_proxy_wstunnel` are loaded, and where public DNS points the name. Then it runs `apachectl
+configtest`, reloads Apache gracefully, and plays two short rounds through `wss://` (pairing, bytes
+both ways, a player leaving) via Apache, then once more through the address public DNS gives. If
+any step fails — the site rewrites every path itself, the name points at another server, Apache
+rejects the file — the file is removed, Apache reloaded as before, and the relay stopped.
+
+`disablereuse=On` is needed on Apache 2.4.6 (CentOS 7): without it, Apache keeps a finished
+WebSocket's backend connection and sends the next player's handshake down it. A rerun keeps the
+site, the port and `ALLOWED_ORIGINS`; `--uninstall` removes the file and reloads Apache.
+
 Game data: the script also keeps a copy of the original LF2 v2.0a installer (freeware by Marti
 Wong and Starsky Wong), downloaded from lf2.net, its Internet Archive snapshot or the Internet
 Archive item and checked against the size and SHA-256 the game itself expects. The relay serves it
@@ -102,4 +126,5 @@ simulated browsers), the JavaScript halves of the `EM_JS` functions in
 `src/adapters/web/transport.cpp`, the frame rate against simulated delay, the game data copy
 (served by the relay, preferred by `dist/web/installer-store.js`, set as a site default by
 `set-relay.py`), and the functions of `install-vps.sh` (Node.js build choice, port modes, Caddy
-configuration, game data download, embedded files).
+configuration, game data download, embedded files, and for Apache mode: reading `httpd -S` and
+`httpd -M`, the port choice under SELinux, public DNS answers, the Apache file, reruns).
