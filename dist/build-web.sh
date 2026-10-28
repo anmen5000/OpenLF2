@@ -54,6 +54,7 @@ docker run --rm --platform linux/amd64 --user "$(id -u):$(id -g)" \
 # The page's icon: the project's SVG itself, plus the raster fallbacks rendered from it.
 cp "$repo_root/dist/io.github.openlf2.OpenLF2.svg" "$build_dir/native/icon.svg"
 cp "$repo_root/dist/web/installer-store.js" "$build_dir/native/installer-store.js"
+cp "$repo_root/dist/web/online.js" "$build_dir/native/online.js"
 cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
     "$build_dir/icons/web/apple-touch-icon.png" "$build_dir/native/"
 python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
@@ -67,7 +68,7 @@ python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
     --local "bzip2=$build_dir/emscripten-cache/ports/bzip2/bzip2-1.0.6/LICENSE"
 (
     cd "$build_dir/native"
-    python3 -m zipfile -c ../OpenLF2-Web.zip index.html installer-store.js icon.svg favicon.ico favicon-32.png apple-touch-icon.png \
+    python3 -m zipfile -c ../OpenLF2-Web.zip index.html installer-store.js online.js icon.svg favicon.ico favicon-32.png apple-touch-icon.png \
         openlf2.js openlf2.wasm openlf2.data licenses
 )
 printf 'Web bundle: %s\n' "$build_dir/OpenLF2-Web.zip"

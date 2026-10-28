@@ -47,6 +47,9 @@
   <details><summary>Diagnostic output</summary><pre id="log"></pre></details>
 </main>
 <script src="installer-store.js"></script>
+<!-- Network play through a relay (online.js). To give everyone on this site a default relay, add before it:
+     <script>window.OPENLF2_RELAY = 'wss://relay.example.com/relay';</script> -->
+<script src="online.js"></script>
 <script>
   const installer = document.getElementById('installer');
   const start = document.getElementById('start');
