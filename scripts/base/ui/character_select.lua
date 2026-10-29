@@ -67,18 +67,14 @@ function selection.create(options)
 end
 
 local function pick_fighter(state)
-    local candidates = {}
-    for index, fighter in ipairs(state.fighters) do
-        if fighter.record >= 1 and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive then
-            local taken = false
-            for slot = 0, 7 do
-                if state.slots[slot].fighter == index then taken = true end
-            end
-            if not taken then candidates[#candidates + 1] = index end
+    local candidates = catalog.random_choices(state.fighters, function(fighter)
+        return fighter.record >= 1 and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive
+    end, function(index)
+        for slot = 0, 7 do
+            if state.slots[slot].fighter == index then return true end
         end
-    end
-    -- The original would read an uninitialized candidate here.
-    assert(#candidates > 0, "no fighter left for a random pick")
+        return false
+    end)
     return candidates[engine.random(#candidates) + 1]
 end
 local function resolve_random(state)

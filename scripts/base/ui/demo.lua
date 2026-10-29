@@ -10,17 +10,14 @@ function demo.reset() picks = {[0] = 0, 0, 0, 0, 0, 0, 0, 0} end
 
 local function pick_all(fighters)
     for slot = 0, 7 do
-        local candidates = {}
-        for index, fighter in ipairs(fighters) do
-            if fighter.record >= 1 and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive then
-                local taken = false
-                for other = 0, 7 do
-                    if picks[other] == index then taken = true end
-                end
-                if not taken then candidates[#candidates + 1] = index end
+        local candidates = catalog.random_choices(fighters, function(fighter)
+            return fighter.record >= 1 and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive
+        end, function(index)
+            for other = 0, 7 do
+                if picks[other] == index then return true end
             end
-        end
-        assert(#candidates > 0, "no fighter left for the demo")
+            return false
+        end)
         picks[slot] = candidates[engine.random(#candidates) + 1]
     end
     return picks

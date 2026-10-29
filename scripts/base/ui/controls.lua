@@ -171,7 +171,12 @@ function controls.current() return loaded end
 local function map_keys(settings, input)
     for slot = 0, 3 do
         local set = settings.sets[slot + 1]
-        if set.device == constants.input_devices.keyboard then
+        -- Player 1's keys also work while the controller of a joystick set is not connected: mods' control.txt
+        -- can give player 1 their author's controller (DragonBallSuper's does), which made the keyboard do
+        -- nothing for anyone who had not saved Control Settings, and a browser shows a controller only once
+        -- one of its buttons is pressed. (Not for players 2-4, whose keys may overlap another player's.)
+        local unplugged = slot == 0 and set.device ~= constants.input_devices.keyboard and not input.pads[set.device]
+        if set.device == constants.input_devices.keyboard or unplugged then
             local letters = {}
             for index, action in ipairs(actions) do
                 if input.keys[set.keys[index]] and not input[slot]:find(action, 1, true) then

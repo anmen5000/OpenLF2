@@ -92,6 +92,26 @@ end
 function catalog.selectable(fighter)
     return not fighter.hidden or require("base/game/unlock").flags.characters == 1
 end
+-- The fighters Random can give one slot, as list positions in file order. `original(fighter)` is
+-- the original's test (below id 30, and so not hidden) and `taken(position)` whether a slot has
+-- that fighter already. The original picks among the fighters its test takes that no slot has;
+-- with none left (a mod with fewer fighters below id 30 than Random slots) it reads an
+-- uninitialized one. Random here goes on to the selectable fighters no slot has, then to every
+-- selectable fighter, so it always gives one.
+function catalog.random_choices(fighters, original, taken)
+    local choices = {}
+    local function gather(test)
+        for position, fighter in ipairs(fighters) do
+            if test(position, fighter) then choices[#choices + 1] = position end
+        end
+        return #choices > 0
+    end
+    local _ = gather(function(position, fighter) return original(fighter) and not taken(position) end)
+        or gather(function(position, fighter) return catalog.selectable(fighter) and not taken(position) end)
+        or gather(function(_, fighter) return catalog.selectable(fighter) end)
+        or gather(function() return true end)
+    return choices
+end
 -- The next (step 1) or previous (step -1) selectable fighter after list position `position`
 -- (0 is Random); running past either end gives Random, as the original's -1.
 function catalog.step(fighters, position, step)

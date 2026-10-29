@@ -230,17 +230,14 @@ local function random_fighters(state)
     for index = 0, 7 do
         local entrant = state.entrants[index]
         if entrant.random then
-            local candidates = {}
-            for position, fighter in ipairs(state.fighters) do
-                local used = false
+            local candidates = catalog.random_choices(state.fighters, function(fighter)
+                return fighter.record ~= 0 and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive
+            end, function(position)
                 for other = 0, 7 do
-                    if state.entrants[other].fighter == position then used = true end
+                    if state.entrants[other].fighter == position then return true end
                 end
-                if fighter.record ~= 0 and not used
-                   and fighter.id < constants.record_id_ranges.random_fighter_end_exclusive then
-                    candidates[#candidates + 1] = position
-                end
-            end
+                return false
+            end)
             entrant.fighter = candidates[random(#candidates) + 1]
         end
     end

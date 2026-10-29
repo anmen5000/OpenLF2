@@ -80,6 +80,12 @@ EM_ASYNC_JS(void, openlf2_wait_display, (int limit), {
         setTimeout(finish, limit);
     });
 });
+// The game has ended: closed from its menus (no message) or stopped by an error (its message). A page that
+// sets globalThis.OpenLF2Stopped to a function shows that, instead of a canvas left black.
+EM_JS(void, openlf2_stopped, (const char* message), {
+    const stopped = globalThis.OpenLF2Stopped;
+    if (typeof stopped === "function") stopped(message ? UTF8ToString(message) : "");
+});
 // Frames at normal speed on the web: started on display refreshes, 33 1/3 ms apart (30 per second, two
 // refreshes at 60 Hz and four at 120 Hz; the original's 33 ms would slip a refresh every 50 frames). A frame
 // due within `slack` after a refresh starts at it, which keeps the frames' place among the refreshes.
@@ -875,6 +881,7 @@ Result<void> run(const Configuration& config) {
     // The original installer, or a game pack (--pack) in its place.
     std::unique_ptr<ResourceSource> archive;
     std::size_t archive_files = 0;
+    std::string pack_executable;
     LoadedResources game_data;
     // The user configuration: --config-dir, otherwise SDL's per-user directory; headless runs
     // without --config-dir keep it in memory so traces never touch the user's file. On the web,
@@ -915,6 +922,7 @@ Result<void> run(const Configuration& config) {
         std::cout << "Game pack " << config.pack->filename().string() << ": " << (*opened)->file_count()
                   << " files, executable " << (*opened)->executable_name() << '\n';
         archive_files = (*opened)->file_count();
+        pack_executable = (*opened)->executable_name();
         archive = std::move(*opened);
     } else {
         auto installer = locate_installer(config, platform ? std::optional{std::ref(platform->setup_dialog())} : std::nullopt);
@@ -930,6 +938,13 @@ Result<void> run(const Configuration& config) {
     }
     auto executable = archive->read("lf2.exe");
     if (!executable) return std::unexpected(executable.error());
+    // Some mods ship their executable packed or protected, with LF2's pictures and the mod's own files compressed
+    // or encrypted inside it (Naruto: The Setting Dawn's NTSD.exe). Nothing in it can be read, so say so rather
+    // than stop at the first picture.
+    if (config.pack && !bitmap_resource(*executable, "WORDS0")) {
+        return fail(ErrorCode::unsupported, "this mod's " + pack_executable + " has none of LF2's pictures: it is "
+            "packed or protected, with the game's files inside it, where OpenLF2 cannot read them");
+    }
     auto constants = recording_constants(*executable);
     if (!constants) return std::unexpected(constants.error());
     const auto& resources = game_data.attach(std::make_unique<GameResources>(*archive, std::move(*executable), scripts->assets));
@@ -1403,7 +1418,13 @@ Result<void> run(const Configuration& config) {
 int run_application(std::span<const std::string> arguments, const std::filesystem::path& directory) {
     try {
         auto config = configuration(arguments, directory);
-        if (!config) { std::cerr << config.error().message << '\n'; return 1; }
+        if (!config) {
+            std::cerr << config.error().message << '\n';
+#ifdef __EMSCRIPTEN__
+            openlf2_stopped(config.error().message.c_str());
+#endif
+            return 1;
+        }
         if (config->help) {
             std::cout << "openlf2 [--installer PATH | --pack FILE.zip] [--scripts DIR] [--mod DIR] [--headless] [--jit|--no-jit]\n"
                          "        [--preview-backgrounds] [--preview-ending] [--input-trace FRAMES] [--seed MS]\n"
@@ -1431,10 +1452,22 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
             return 0;
         }
         auto result = run(*config);
-        if (!result) { std::cerr << result.error().message << '\n'; return 1; }
+        if (!result) {
+            std::cerr << result.error().message << '\n';
+#ifdef __EMSCRIPTEN__
+            openlf2_stopped(result.error().message.c_str());
+#endif
+            return 1;
+        }
+#ifdef __EMSCRIPTEN__
+        openlf2_stopped(nullptr);
+#endif
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "Application failure: " << error.what() << '\n';
+#ifdef __EMSCRIPTEN__
+        openlf2_stopped((std::string("Application failure: ") + error.what()).c_str());
+#endif
         return 1;
     }
 }

@@ -6,6 +6,7 @@
 #include "openlf2/core/result.hpp"
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <locale>
 #include <sstream>
@@ -41,16 +42,21 @@ public:
     [[nodiscard]] bool at_end() const { return end_reached_; }
     [[nodiscard]] std::size_t line() const { return line_; }
 
+    // A token longer than the original's buffer for it (`capacity`, with the terminator) runs on
+    // past the buffer there. Mods have such tokens and play in the original (Dragon Ball Super
+    // Edition's picture paths of up to 47 characters), so the token is kept whole here and reported
+    // to `overrun`, which the parsers add to their diagnostics.
+    void on_overrun(std::function<void(std::string)> overrun) { overrun_ = std::move(overrun); }
+
     // %s. Returns false at end of input and leaves the target unchanged.
     bool word(std::string& target, std::size_t capacity) {
         if (!skip_space()) return false;
         const auto start = position_;
         while (position_ < text_.size() && !is_space(text_[position_])) ++position_;
         if (position_ == text_.size()) end_reached_ = true;
-        if (position_ - start >= capacity) {
-            throw ParseFailure{ErrorCode::unsupported,
-                               "token longer than the original " + std::to_string(capacity - 1) +
-                                   "-character buffer"};
+        if (position_ - start >= capacity && overrun_) {
+            overrun_("token longer than the original " + std::to_string(capacity - 1) +
+                     "-character buffer, kept whole");
         }
         target.assign(text_.substr(start, position_ - start));
         return true;
@@ -135,6 +141,7 @@ private:
         if (position_ == text_.size()) end_reached_ = true;
     }
     std::string_view text_;
+    std::function<void(std::string)> overrun_;
     std::size_t position_ = 0;
     std::size_t line_ = 1;
     bool end_reached_ = false;

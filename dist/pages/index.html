@@ -217,7 +217,7 @@
       <div class="stage" id="stage">
         <canvas id="canvas" width="794" height="550" tabindex="0" aria-label="OpenLF2 game canvas"></canvas>
       </div>
-      <details>
+      <details id="diagnostics">
         <summary>Diagnostic output</summary>
         <pre id="log"></pre>
       </details>
@@ -308,6 +308,18 @@
     log.textContent += value + '\n';
     log.scrollTop = log.scrollHeight;
   }
+  // The game ended (the engine calls this): an error stopped it, which the page says instead of leaving a black
+  // canvas (the first line of the engine's message; Diagnostic output, opened, has all of it), or it was closed.
+  globalThis.OpenLF2Stopped = error => {
+    if (error) {
+      const reason = error.split('\n')[0].replace(/^runtime\/bootstrap:\d+: /, '');
+      status.textContent = 'The game stopped because of an error: ' + reason +
+        ' (Diagnostic output below has the details.) Reload the page to play again.';
+      document.getElementById('diagnostics').open = true;
+    } else {
+      status.textContent = 'The game was closed. Reload the page to play again.';
+    }
+  };
   function update() {
     start.disabled = !(ready || gameSelect.value === 'hf') || started || downloading;
     chooseButton.disabled = started || downloading;

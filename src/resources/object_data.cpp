@@ -18,7 +18,9 @@ constexpr std::size_t max_input = 4 * 1024 * 1024;
 
 class Parser {
 public:
-    explicit Parser(std::string_view text) : stream_(text) {}
+    explicit Parser(std::string_view text) : stream_(text) {
+        stream_.on_overrun([this](std::string message) { note(std::move(message)); });
+    }
 
     ObjectData run() {
         bool first = true;
