@@ -53,7 +53,7 @@ test('health endpoint answers', async () => {
   try {
     const response = await fetch(`${relay.http}/healthz`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, rooms: 0, clients: 0, installer: false, protocols: [1, 2], players: 8, packs: false });
+    assert.deepEqual(await response.json(), { ok: true, rooms: 0, clients: 0, installer: false, protocols: [1, 2], players: 8, packs: false, hf: { rooms: 4, players: 0 } });
   } finally { await relay.close(); }
 });
 

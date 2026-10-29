@@ -28,12 +28,17 @@
 // download managers such as IDM let that name through, while they take over the .exe from archive.org.
 // With PACKS_DIR set, it also keeps game packs (mods played instead of the original game, see
 // packs.js), which whoever holds ADMIN_KEY uploads at /admin.
+//
+// Hero Fighter v0.7+ (the page runs it in Ruffle) plays here too: its rooms on the same WebSocket path,
+//   ws(s)://<server>/relay?game=hf&room=1
+// and stand-ins for herofighter.com's web services (accounts, room list) under /hf/ (see hf.js).
 'use strict';
 
 const fs = require('node:fs');
 const http = require('node:http');
 const { WebSocketServer, WebSocket } = require('ws');
 const { createPacks } = require('./packs.js');
+const { createHf } = require('./hf.js');
 
 const INSTALLER_PATH = '/lf2-installer.data';
 
@@ -116,6 +121,11 @@ function readConfig(env = process.env) {
     adminKey: env.ADMIN_KEY || '',
     maxPackBytes: number('MAX_PACK_BYTES', 1024 * 1024 * 1024),
     packDownloadsPerHour: number('PACK_DOWNLOADS_PER_HOUR', 20), // 0 = unlimited
+    // Hero Fighter (hf.js): how many rooms, their description in the game's room list, and where the
+    // accounts are kept (empty: in <PACKS_DIR>/hf, or only in memory without PACKS_DIR).
+    hfRooms: number('HF_ROOMS', 4),
+    hfRoomDescription: env.HF_ROOM_DESCRIPTION || 'OpenLF2 relay',
+    hfDir: env.HF_DIR || '',
     quiet: env.QUIET === '1' || env.QUIET === 'true',
   };
 }
@@ -155,6 +165,10 @@ function createRelay(overrides = {}) {
   // Beside the WebSocket path, as the installer copy: /x/relay -> /x/lf2-packs.json and /x/admin.
   const relayFolder = config.path.replace(/[^/]*$/, '');
   const packs = createPacks(config, { log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req) });
+  const hf = createHf(config, {
+    log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req),
+    budget: (ws, bytes) => ws.messageBudget.take(1) && ws.byteBudget.take(bytes),
+  });
 
   const server = http.createServer((req, res) => {
     const { pathname } = new URL(req.url, 'http://relay.invalid');
@@ -167,7 +181,7 @@ function createRelay(overrides = {}) {
       });
       res.end(JSON.stringify({
         ok: true, rooms: rooms.size + groups.size, clients: wss.clients.size, installer: installerSize() > 0,
-        protocols: [1, 2], players: config.roomPlayers, packs: Boolean(config.packsDir),
+        protocols: [1, 2], players: config.roomPlayers, packs: Boolean(config.packsDir), hf: hf.describe(),
       }));
       return;
     }
@@ -177,6 +191,7 @@ function createRelay(overrides = {}) {
     }
     const local = relayFolder !== '/' && pathname.startsWith(relayFolder) ? pathname.slice(relayFolder.length - 1) : pathname;
     if (packs.handle(req, res, local)) return;
+    if (hf.handle(req, res, local)) return;
     if (pathname === '/' || pathname === config.path) {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(`OpenLF2 relay is running. Connect with a WebSocket to ${config.path}\n`);
@@ -216,7 +231,8 @@ function createRelay(overrides = {}) {
     }
     const role = url.searchParams.get('role');
     const code = url.searchParams.get('room') || '';
-    if ((role !== 'host' && role !== 'join') || !ROOM_PATTERN.test(code)) {
+    const heroFighter = url.searchParams.get('game') === 'hf'; // a Hero Fighter room (hf.js)
+    if (!heroFighter && ((role !== 'host' && role !== 'join') || !ROOM_PATTERN.test(code))) {
       return closeWith(ws, CLOSE.badRequest);
     }
 
@@ -233,6 +249,7 @@ function createRelay(overrides = {}) {
     });
     ws.messageBudget = new Bucket(config.messagesPerSecond, config.messagesPerSecond * 2);
     ws.byteBudget = new Bucket(config.bytesPerSecond, Math.max(config.bytesPerSecond, config.maxMessageBytes) * 2);
+    if (heroFighter) return hf.connect(ws, req, url);
 
     const version = url.searchParams.get('v');
     if (version === '2') return joinGroup(ws, role, code);
@@ -700,8 +717,10 @@ function createRelay(overrides = {}) {
       });
     },
     groups,
+    hf,
     close() {
       clearInterval(heartbeat);
+      hf.close();
       for (const room of rooms.values()) clearTimeout(room.timer);
       for (const room of [...groups.values()]) endGroup(room, CLOSE.shutdown);
       for (const ws of wss.clients) closeWith(ws, CLOSE.shutdown);

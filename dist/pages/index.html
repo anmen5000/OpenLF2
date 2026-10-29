@@ -102,6 +102,30 @@
   }
   .stage.wide:fullscreen { left: 0; transform: none; width: 100vw; }
   .stage.wide:-webkit-full-screen { left: 0; transform: none; width: 100vw; }
+  /* Hero Fighter (hero-fighter.js): Ruffle's player in the stage instead of the canvas, 16:9, and touch controls over it. */
+  .stage.hf canvas#canvas { display: none; }
+  .stage.hf .hf-player { display: block; width: 100%; height: auto; aspect-ratio: 960 / 540; }
+  .stage.hf.wide { width: min(calc(100vw - 2rem), calc((100vh - 1.5rem) * 960 / 540)); }
+  @supports (height: 100dvh) {
+    .stage.hf.wide { width: min(calc(100vw - 2rem), calc((100dvh - 1.5rem) * 960 / 540)); }
+  }
+  .stage.hf.wide:fullscreen, .stage.hf.wide:-webkit-full-screen { width: 100vw; }
+  .stage.hf:fullscreen .hf-player { height: 100%; aspect-ratio: auto; }
+  .stage.hf:-webkit-full-screen .hf-player { height: 100%; aspect-ratio: auto; }
+  .hf-touch { position: absolute; inset: 0; pointer-events: none; }
+  .hf-touch[hidden] { display: none; }
+  /* The Online panel's (online.js) LF2 room row, hidden for Hero Fighter: its rows are flex boxes, which `hidden` alone loses to. */
+  #online .row[hidden] { display: none; }
+  /* Sizes: from the screen, but at most about half the game's height (--hf-height, set by hero-fighter.js). */
+  .hf-stick { position: absolute; left: 3%; bottom: 7%; width: min(32vmin, 190px, calc(var(--hf-height, 1000px) * .46)); aspect-ratio: 1;
+    border-radius: 50%; background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.35); pointer-events: auto; touch-action: none; }
+  .hf-knob { position: absolute; left: 30%; top: 30%; width: 40%; height: 40%; border-radius: 50%; background: rgba(255,255,255,.40); }
+  .hf-buttons { position: absolute; right: 3%; bottom: 7%; display: grid; grid-template-columns: repeat(2, auto);
+    gap: min(3vmin, 16px, calc(var(--hf-height, 1000px) * .04)); pointer-events: auto; }
+  .hf-buttons button { width: min(15vmin, 80px, calc(var(--hf-height, 1000px) * .21)); aspect-ratio: 1; border-radius: 50%; border: 2px solid rgba(255,255,255,.45);
+    background: rgba(0,0,0,.30); color: #fff; font: 700 1.2rem system-ui, sans-serif; touch-action: none;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .hf-buttons button.down { background: rgba(255,210,60,.65); color: #3a2900; }
   details { margin-top: 1rem; }
   details summary { cursor: pointer; color: var(--text-dim); font-size: .85rem; }
   details pre { max-height: 10rem; overflow: auto; white-space: pre-wrap; font-size: .78rem; background: #000; border-radius: 8px; padding: .6rem .8rem; color: #9fe6ff; }
@@ -171,13 +195,18 @@
       <p class="lede">Mods that come as a whole game folder (their own program, data and pictures) can be played too:
         pick one in <b>Game</b> (the online relay keeps them), or select its <code>.zip</code> file. Everyone in a network
         room must play the same game; invite links carry the choice.</p>
+      <p class="lede"><b>Hero Fighter v0.7+</b> plays here too, in <a href="https://ruffle.rs/">Ruffle</a> (a Flash player):
+        choose it in <b>Game</b>. The online relay keeps the game file when its owner uploaded it, else select your
+        <code>HFv0.7.zip</code> (or <code>HFv0.7+.exe</code>). Log in with any e-mail address and password (the relay keeps the
+        account; the first login creates it), then <b>Network Game</b> lists the relay's rooms.</p>
 
       <div class="play-controls">
         <label class="game-choice">Game <select id="game" aria-label="Game to play">
           <option value="">LF2 v2.0a (original)</option>
+          <option value="hf">Hero Fighter v0.7+</option>
         </select></label>
         <button id="choose" class="btn secondary" type="button">Select file manually…</button>
-        <input id="installer" type="file" accept=".exe,.zip,application/octet-stream,application/zip" aria-label="LF2 v2.0a installer or a mod's ZIP file" hidden>
+        <input id="installer" type="file" accept=".exe,.zip,.swf,application/octet-stream,application/zip" aria-label="LF2 v2.0a installer, a mod's ZIP file, or Hero Fighter's file" hidden>
         <span id="chosen" hidden></span>
         <button id="start" class="btn" disabled>Start game</button>
         <button id="wide" class="btn secondary" type="button" hidden aria-pressed="true">Normal view</button>
@@ -211,6 +240,7 @@
      without an invite link find it set (and its mods listed); a relay typed on the page or in a link wins. -->
 <script>window.OPENLF2_RELAY = 'wss://sybilproxy.com/lf2-relay/relay';</script>
 <script src="online.js"></script>
+<script src="hero-fighter.js"></script>
 <script>
   const installer = document.getElementById('installer');
   const start = document.getElementById('start');
@@ -279,18 +309,22 @@
     log.scrollTop = log.scrollHeight;
   }
   function update() {
-    start.disabled = !ready || started || downloading;
+    start.disabled = !(ready || gameSelect.value === 'hf') || started || downloading;
     chooseButton.disabled = started || downloading;
     // Another game can be chosen while one runs: the page then reloads into it (see the change handler).
     gameSelect.disabled = downloading;
   }
 
-  // The game to play: the original LF2 (""), a mod the relay keeps ("pack:<id>") or a mod's ZIP file from this
-  // computer ("file"). The choice is remembered, an invite link's ?pack= wins, and invite links carry it.
+  // The game to play: the original LF2 (""), a mod the relay keeps ("pack:<id>"), a mod's ZIP file from this
+  // computer ("file"), or Hero Fighter ("hf", hero-fighter.js). The choice is remembered, an invite link's ?pack=
+  // (or ?game=hf) wins, and invite links carry it.
   const gameSelect = document.getElementById('game');
   const pageParams = new URLSearchParams(location.search);
   let packList = [];
   let pendingPack = null; // a mod's ZIP file just selected
+  let pendingHf = null; // Hero Fighter's file just selected
+  let hfPack = null; // the relay's copy of Hero Fighter (packs.js: a Flash pack of game "herofighter")
+  let hfPlayer = null;
   function addOption(value, label) {
     let option = [...gameSelect.options].find(item => item.value === value);
     if (!option) {
@@ -306,15 +340,39 @@
       addOption(value, value.startsWith('pack:') ? value.slice(5) + ' (mod)' : 'Mod file on this computer');
     }
     gameSelect.value = value;
+    panelFor(value);
     try { localStorage.setItem('openlf2-game', value); } catch (error) { /* storage unavailable */ }
     if (window.OpenLF2Online) OpenLF2Online.pack = value.startsWith('pack:') ? value.slice(5) : '';
     // An invite link's address follows the choice, so that reloading it keeps the game chosen last.
     const address = new URL(location.href);
-    if (address.searchParams.has('room') || address.searchParams.has('pack')) {
-      if (value.startsWith('pack:')) address.searchParams.set('pack', value.slice(5));
-      else address.searchParams.delete('pack');
+    if (address.searchParams.has('room') || address.searchParams.has('pack') || address.searchParams.has('game')) {
+      addressFor(address, value);
       if (address.href !== location.href) history.replaceState(history.state, '', address.href);
     }
+  }
+  // The online panel (online.js) is about LF2's rooms; Hero Fighter has its own room list in the game, so the panel keeps
+  // only the relay's address then.
+  let lf2Help = null;
+  function panelFor(value) {
+    const panel = document.getElementById('online');
+    if (!panel) return;
+    const room = panel.querySelector('#online-room');
+    if (room && room.closest('.row')) room.closest('.row').hidden = value === 'hf';
+    const help = panel.querySelector('.help');
+    if (!help) return;
+    if (lf2Help === null) lf2Help = help.innerHTML;
+    help.innerHTML = value === 'hf'
+      ? 'Hero Fighter: <b>Login</b> with any e-mail and password (the first login makes the account, the relay keeps it), then '
+        + '<b>Network Game &rarr; Next</b>: the room list shows this relay\'s rooms. Everyone needs the same Hero Fighter file.'
+      : lf2Help;
+  }
+  // A page address with the game choice in it: ?pack=<id> for a mod the relay keeps, ?game=hf for Hero Fighter.
+  function addressFor(url, value) {
+    if (value.startsWith('pack:')) url.searchParams.set('pack', value.slice(5));
+    else url.searchParams.delete('pack');
+    if (value === 'hf') url.searchParams.set('game', 'hf');
+    else url.searchParams.delete('game');
+    return url;
   }
   let runningGame = null; // the game running in this page ("" for the original), once one runs
   gameSelect.addEventListener('change', () => {
@@ -322,6 +380,9 @@
     if (runningGame === null) {
       selectionChanged = true;
       selectGame(value);
+      update();
+      if (value === 'hf') autoStart();
+      else loadOpenLF2();
       return;
     }
     if (value === runningGame) return;
@@ -334,9 +395,7 @@
       return;
     }
     selectGame(value);
-    const url = new URL(location.href);
-    if (value.startsWith('pack:')) url.searchParams.set('pack', value.slice(5));
-    else url.searchParams.delete('pack');
+    const url = addressFor(new URL(location.href), value);
     if (url.href === location.href) location.reload();
     else location.replace(url.href);
   });
@@ -344,7 +403,8 @@
     let initial = '';
     try { initial = localStorage.getItem('openlf2-game') || ''; } catch (error) { /* storage unavailable */ }
     const invited = (pageParams.get('pack') || '').toLowerCase();
-    if (/^[a-z0-9][a-z0-9-]{0,39}$/.test(invited)) initial = 'pack:' + invited;
+    if (pageParams.get('game') === 'hf') initial = 'hf';
+    else if (/^[a-z0-9][a-z0-9-]{0,39}$/.test(invited)) initial = 'pack:' + invited;
     else if (pageParams.has('room')) initial = initial === 'file' ? 'file' : '';
     selectGame(initial);
   }
@@ -354,7 +414,10 @@
     try {
       const response = await fetch(url, {cache: 'no-store'});
       if (!response.ok) return;
-      packList = ((await response.json()).packs || []).filter(pack => pack && /^[a-z0-9][a-z0-9-]{0,39}$/.test(pack.id));
+      const listed = ((await response.json()).packs || []).filter(pack => pack && /^[a-z0-9][a-z0-9-]{0,39}$/.test(pack.id));
+      hfPack = listed.find(pack => pack.kind === 'flash' && pack.game === 'herofighter') || null;
+      if (hfPack) addOption('hf', 'Hero Fighter v0.7+ (' + Math.round(hfPack.size / 1e6) + ' MB)');
+      packList = listed.filter(pack => pack.kind !== 'flash');
       for (const pack of packList) addOption('pack:' + pack.id, pack.title + ' (mod, ' + Math.round(pack.size / 1e6) + ' MB)');
     } catch (error) {
       message('Mods on the relay unavailable: ' + error);
@@ -383,6 +446,16 @@
   // Starts at once when the chosen game is already saved in this browser.
   async function autoStart() {
     const game = gameSelect.value;
+    if (game === 'hf') {
+      await packsLoaded;
+      const record = await packStore.load('hf').catch(() => null);
+      if (started || downloading || gameSelect.value !== 'hf') return;
+      if (record && record.blob && hfCurrent(record)) return launchHf(record);
+      status.textContent = hfPack ? 'Ready. Press Start game to download Hero Fighter (' + (hfPack.size / 1e6).toFixed(0) + ' MB, once).'
+        : 'Ready. Select Hero Fighter\'s file (HFv0.7.zip) with "Select file manually…", then press Start game.';
+      update();
+      return;
+    }
     if (game.startsWith('pack:') || game === 'file') {
       await packsLoaded;
       const record = await packStore.load(game === 'file' ? 'file' : game).catch(() => null);
@@ -403,7 +476,7 @@
     }
   }
   function running() {
-    Module.canvas.focus({preventScroll: true});
+    (hfPlayer || Module.canvas).focus({preventScroll: true});
     if (canFullscreen) fullscreenButton.hidden = false;
     wideButton.hidden = false;
     applyWide(true);
@@ -473,18 +546,24 @@
   const progress = document.getElementById('progress');
   let downloading = false;
   chooseButton.addEventListener('click', () => installer.click());
-  installer.addEventListener('change', () => {
+  installer.addEventListener('change', async () => {
     selectionChanged = true;
     const file = installer.files[0];
     chosen.hidden = !file;
     chosen.textContent = file ? file.name : '';
-    // A ZIP file is a mod; anything else is taken for the installer.
-    pendingPack = file && /\.zip$/i.test(file.name) ? file : null;
-    if (pendingPack) {
+    // Hero Fighter's file (its ZIP file, its program or its movie); else a ZIP file is a mod and anything else is
+    // taken for LF2's installer.
+    pendingHf = file && await HeroFighter.looksLikeHeroFighter(file).catch(() => false) ? file : null;
+    pendingPack = !pendingHf && file && /\.zip$/i.test(file.name) ? file : null;
+    if (pendingHf) {
+      selectGame('hf');
+    } else if (pendingPack) {
       addOption('file', file.name + ' (mod file on this computer)');
       selectGame('file');
+      loadOpenLF2();
     } else if (file) {
       selectGame('');
+      loadOpenLF2();
     }
     update();
   });
@@ -520,9 +599,79 @@
     }
     await launchPack(record.blob, record.title);
   }
+  // Hero Fighter: the browser's copy when it is the relay's current one (or a file the player selected), else the
+  // relay's, downloaded once; or the file just selected.
+  function hfCurrent(record) {
+    return record.source === 'file' || !hfPack || !hfPack.sha256 || record.sha256 === hfPack.sha256;
+  }
+  async function startHf() {
+    let record = null;
+    if (pendingHf) {
+      status.textContent = 'Reading ' + pendingHf.name + '…';
+      const movie = await HeroFighter.movieFrom(pendingHf);
+      if (!movie) throw new Error(pendingHf.name + ' has no Hero Fighter game inside (select HFv0.7.zip or HFv0.7+.exe)');
+      const blob = new Blob([movie], {type: 'application/x-shockwave-flash'});
+      record = {blob, title: 'Hero Fighter', sha256: await blobSha256(blob), source: 'file', saved: Date.now()};
+      try { await packStore.save('hf', record); }
+      catch (error) { message('Could not save Hero Fighter in browser storage: ' + error); }
+    } else {
+      record = await packStore.load('hf').catch(() => null);
+      if (record && !(record.blob && hfCurrent(record))) record = null;
+    }
+    if (!record) {
+      await packsLoaded;
+      if (!hfPack) throw new Error('the relay does not keep Hero Fighter: select its file (HFv0.7.zip) with "Select file manually…" first');
+      downloading = true;
+      progress.hidden = false;
+      update();
+      try {
+        const blob = await packDownload(OpenLF2Online.relayFile('lf2-packs/' + encodeURIComponent(hfPack.id) + '.swf'), hfPack,
+          (received, total) => showProgress(received, total, 'Hero Fighter'));
+        record = {blob, title: 'Hero Fighter', sha256: hfPack.sha256 || '', source: 'relay', saved: Date.now()};
+        try {
+          status.textContent = 'Saving Hero Fighter in browser storage…';
+          await packStore.save('hf', record);
+        } catch (error) {
+          message('Could not save Hero Fighter in browser storage: ' + error);
+        }
+      } finally {
+        downloading = false;
+        progress.hidden = true;
+      }
+    }
+    await launchHf(record);
+  }
+  async function launchHf(record) {
+    if (started) return;
+    started = true;
+    runningGame = 'hf';
+    update();
+    try {
+      const movie = new Uint8Array(await record.blob.arrayBuffer());
+      hfPlayer = await HeroFighter.start({
+        stage, movie, site: new URL('.', location.href).href, relay: window.OpenLF2Online ? OpenLF2Online.relay : '',
+        status: text => { status.textContent = text; }, log: message,
+      });
+      const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+      status.textContent = 'Running Hero Fighter. Log in with any e-mail and password for Network Game; '
+        + (touch ? 'on the screen: the stick moves, A attacks, J jumps, G guards, C is the command key (turn the phone sideways, '
+          + 'then Fullscreen, for a bigger game). '
+          : 'keyboard: player 1 plays on the number pad, player 2 on W A S D (Key Setting in the game changes them). ')
+        + 'To play another game, choose it under Game.';
+      running();
+    } catch (error) {
+      status.textContent = 'Could not start Hero Fighter: ' + error.message;
+      message(String(error && error.stack || error));
+      started = false;
+      runningGame = null;
+      update();
+    }
+  }
+
   async function startGame() {
     const game = gameSelect.value;
     try {
+      if (game === 'hf') return await startHf();
       if (game.startsWith('pack:')) return await startPack(game.slice(5));
       if (game === 'file') {
         let record = null;
@@ -560,7 +709,23 @@
     }
   }
   start.addEventListener('click', startGame);
+
+  // The WebAssembly game loads unless Hero Fighter is the choice (it runs in Ruffle; choosing another game
+  // first loads it then).
+  let openlf2Requested = false;
+  function loadOpenLF2() {
+    if (openlf2Requested) return;
+    openlf2Requested = true;
+    status.textContent = 'Loading WebAssembly…';
+    const script = document.createElement('script');
+    script.src = 'openlf2.js';
+    script.onerror = () => { status.textContent = 'Could not load the game (openlf2.js). Reload the page.'; };
+    document.body.appendChild(script);
+  }
+  if (gameSelect.value === 'hf') autoStart();
+  else loadOpenLF2();
+  // online.js builds its panel when the page has loaded (its listener comes first).
+  document.addEventListener('DOMContentLoaded', () => panelFor(gameSelect.value));
 </script>
-<script src="openlf2.js"></script>
 </body>
 </html>

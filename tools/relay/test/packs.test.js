@@ -11,7 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const { createRelay } = require('../server.js');
-const { readZip, analyzeZip, writeZip } = require('../packs.js');
+const { readZip, analyzeZip, writeZip, movieOf, flashGame } = require('../packs.js');
 
 // A ZIP file from [name, content] pairs (Deflate, or stored when `stored` is set).
 function makeZip(files, { stored = false } = {}) {
@@ -123,6 +123,55 @@ test('files that are not a game are refused with a reason', async () => {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+// A Flash projector: a program (here only its first bytes), the movie, then the footer.
+function projector(movie) {
+  const footer = Buffer.alloc(8);
+  footer.writeUInt32LE(0xfa123456, 0);
+  footer.writeUInt32LE(movie.length, 4);
+  return Buffer.concat([Buffer.from('MZ' + 'x'.repeat(5000)), movie, footer]);
+}
+// An uncompressed movie with Hero Fighter's version check address in it.
+const HF_MOVIE = Buffer.concat([Buffer.from('FWS\x0a', 'latin1'), Buffer.alloc(4), Buffer.from('....http://www.herofighter.com/ver.txt....', 'latin1')]);
+HF_MOVIE.writeUInt32LE(HF_MOVIE.length, 4);
+
+test('a Flash game: the movie inside its ZIP file or its projector is kept and served', async () => {
+  assert.deepEqual(movieOf(projector(HF_MOVIE)), HF_MOVIE);
+  assert.deepEqual(movieOf(HF_MOVIE), HF_MOVIE);
+  assert.equal(movieOf(Buffer.from('MZ not a projector at all')), null);
+  assert.equal(flashGame(HF_MOVIE), 'herofighter');
+  const dir = scratch();
+  const relay = await startRelay({ packsDir: dir, adminKey: 'secret-key' });
+  try {
+    const put = (id, body) => fetch(`${relay.http}/admin/api/packs/${id}?title=${encodeURIComponent('Hero Fighter v0.7+')}`, {
+      method: 'PUT', headers: { 'x-admin-key': 'secret-key', 'content-type': 'application/zip' }, body,
+    });
+    const zipped = await put('hero-fighter', makeZip([['HFv0.7+.exe', projector(HF_MOVIE)]]));
+    assert.equal(zipped.status, 200, await zipped.clone().text());
+    const result = await zipped.json();
+    assert.equal(result.kind, 'flash');
+    assert.equal(result.game, 'herofighter');
+    assert.equal(result.size, HF_MOVIE.length);
+    assert.deepEqual(fs.readdirSync(dir).sort(), ['hero-fighter.json', 'hero-fighter.swf']);
+    const listed = await (await fetch(`${relay.http}/lf2-packs.json`)).json();
+    assert.deepEqual(listed.packs, [{ id: 'hero-fighter', title: 'Hero Fighter v0.7+', size: HF_MOVIE.length,
+      sha256: crypto.createHash('sha256').update(HF_MOVIE).digest('hex'), kind: 'flash', game: 'herofighter' }]);
+    const download = await fetch(`${relay.http}/lf2-packs/hero-fighter.swf`);
+    assert.equal(download.status, 200);
+    assert.equal(download.headers.get('content-type'), 'application/x-shockwave-flash');
+    assert.deepEqual(Buffer.from(await download.arrayBuffer()), HF_MOVIE);
+    // The program itself, not zipped, works too; a file that is neither is refused with a reason.
+    assert.equal((await put('hf2', projector(HF_MOVIE))).status, 200);
+    const refused = await put('junk', Buffer.from('neither a zip nor a game'));
+    assert.equal(refused.status, 400);
+    assert.match((await refused.json()).error, /không phải game Flash/);
+    const notLf2 = await put('junk', makeZip([['readme.txt', 'hi']]));
+    assert.match((await notLf2.json()).error, /data\/data\.txt/);
+  } finally {
+    await relay.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 async function startRelay(overrides) {
   const relay = createRelay({ quiet: true, ...overrides });
   const address = await relay.listen(0, '127.0.0.1');
@@ -152,7 +201,7 @@ test('the admin uploads, lists and removes packs; pages list and download them',
     assert.deepEqual(fs.readdirSync(dir).sort(), ['my-mod.json', 'my-mod.zip']);
 
     const listed = await (await fetch(`${relay.http}/lf2-packs.json`)).json();
-    assert.deepEqual(listed, { packs: [{ id: 'my-mod', title: 'My Mod: One Piece', size: result.size, sha256: result.sha256 }] });
+    assert.deepEqual(listed, { packs: [{ id: 'my-mod', title: 'My Mod: One Piece', size: result.size, sha256: result.sha256, kind: 'lf2', game: '' }] });
     const download = await fetch(`${relay.http}/lf2-packs/my-mod.zip`, { headers: { origin: 'https://game.example' } });
     assert.equal(download.status, 200);
     assert.equal(download.headers.get('access-control-allow-origin'), 'https://game.example');

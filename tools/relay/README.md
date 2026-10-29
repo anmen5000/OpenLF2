@@ -33,8 +33,8 @@ It prints the relay address (`wss://203-0-113-5.sslip.io/relay`), the address of
 page and its admin key. Settings go before `bash`: `DOMAIN=relay.example.com` uses your own domain,
 `ALLOWED_ORIGINS=https://you.github.io` limits who may use the relay. Running it again updates the
 installation and keeps the admin key; `… | bash -s -- --uninstall` removes it. The script embeds
-`server.js`, `packs.js` and `package.json`; after changing any of them, run `node update-installer.js`
-(the tests check that it was run).
+`server.js`, `packs.js`, `hf.js`, `hf-room.js` and `package.json`; after changing any of them, run
+`node update-installer.js` (the tests check that it was run).
 
 Ports: with 80 and 443 free, Caddy takes both. When another web server (often Apache, `httpd`)
 holds port 80, it is left alone and Caddy listens on 443 only, getting its certificate through the
@@ -102,6 +102,40 @@ When anyone in the room has the hidden characters unlocked (the **Unlock hidden 
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
 setting again.
 
+## Hero Fighter
+
+The game page also runs Hero Fighter v0.7+ (a Flash game by Marti Wong, free from herofighter.com) in
+[Ruffle](https://ruffle.rs), and the relay stands in for the services the game was made for:
+herofighter.com's accounts (closed to new players since 2016) and its room servers, which games
+reach over TCP. The page points the game's addresses here (Ruffle's URL rewrites and socket proxy);
+the game itself is not changed, except for two regular expressions Ruffle reads differently.
+
+- The game file: upload `HFv0.7.zip` (or the `.exe` inside, or a `.swf`) at `/admin` like a mod.
+  The relay keeps only the Flash movie inside the projector (`/lf2-packs/<id>.swf`, listed with
+  `"kind":"flash","game":"herofighter"`), and the page downloads it from there when a player has
+  no copy of his own.
+- Accounts (`hf.js`): logging in with an e-mail address not seen before makes a new account (its
+  name is the part before `@`); registering from the game works too. Every character and story is
+  open from the start, and the experience characters gain is kept. Accounts live in
+  `<PACKS_DIR>/hf/accounts.json` (or `HF_DIR`), with a scrypt hash of each password. A client
+  address may make 20 accounts an hour and get 30 passwords wrong.
+- Rooms (`hf-room.js`): a port of Room Server v0.7+, checked against the original (Java) by sending
+  both the same messages: same lobby, same frames, same timing rules (lockstep, at most 4 computers
+  and 6 fighters a room). `HF_ROOMS` rooms (4) show in the game's room list as "Phong 1", "Phong 2"…
+  Each is a WebSocket on the relay path: `wss://<relay host>/relay?game=hf&room=<n>`, carrying the
+  game's TCP stream as binary messages.
+
+| Path | What |
+| --- | --- |
+| `/hf/ver.txt` | The version check (this version is the newest) |
+| `/hf/s/v0.7/login.php`, `/hf/s/v0.7/lu.php` | Log in; save experience and story progress |
+| `/hf/s/cap.php`, `reg.php`, `namechg_left.php`, `namechg.php`, `pwdchg.php`, `pwdret.php` | Registration code, register, change name or password, forgotten password (not by mail) |
+| `/hf/hf/rlg.php` | The room list, as the game reads it |
+| `/hf/rooms.json` | The rooms for the page: `{"host":"hf.openlf2","rooms":[{"room":1,"port":8888,…}]}` |
+
+Under Apache (`APACHE_SITE`) nothing changes: these are paths below `/lf2-relay/` like the others,
+and the rooms use the relay's WebSocket path.
+
 ## Settings (environment variables)
 
 | Variable | Default | Meaning |
@@ -124,9 +158,12 @@ setting again.
 | `ADMIN_KEY` | empty | The key for uploading mods at `/admin` (empty: no uploads) |
 | `MAX_PACK_BYTES` | 1 GiB | Largest mod upload |
 | `PACK_DOWNLOADS_PER_HOUR` | `20` | Mod downloads per client address and hour (0 = no limit) |
+| `HF_ROOMS` | `4` | Hero Fighter rooms (1 to 20) |
+| `HF_ROOM_DESCRIPTION` | `OpenLF2 relay` | The description of those rooms in the game's room list |
+| `HF_DIR` | `<PACKS_DIR>/hf` | Where Hero Fighter accounts are kept (empty with no `PACKS_DIR`: in memory only) |
 | `QUIET` | off | No log lines |
 
-`GET /healthz` answers `{"ok":true,"rooms":N,"clients":N,"installer":…,"protocols":[1,2],"players":8,"packs":…}`;
+`GET /healthz` answers `{"ok":true,"rooms":N,"clients":N,"installer":…,"protocols":[1,2],"players":8,"packs":…,"hf":{"rooms":4,"players":N}}`;
 the Online panel uses it to show whether the relay is reachable, its ping, whether it keeps the
 game data, and whether it is new enough for the page.
 
@@ -162,7 +199,10 @@ stalled tab, a desync, a player leaving, frames started on display refreshes, hi
 one player came with), the older
 two-player protocol through a port of `scripts/base/game/network.lua`, the JavaScript halves of
 the `EM_JS` functions in `src/adapters/web/transport.cpp`, mods (what an upload keeps, the admin
-API, serving them), the game data copy (served by the relay, preferred by
+API, serving them, Hero Fighter's movie taken from its projector), Hero Fighter's services (login
+answers the game accepts, experience, registration, accounts kept across restarts) and rooms (two
+games meet, start a VS match and get each other's frames; other versions are turned away), the game
+data copy (served by the relay, preferred by
 `dist/web/installer-store.js`, set as a site default by `set-relay.py`), and the functions of
 `install-vps.sh` (Node.js build choice, port modes, Caddy configuration, game data download,
 embedded files, the admin key, and for Apache mode: reading `httpd -S` and `httpd -M`, the port

@@ -41,6 +41,45 @@ if [[ ! -d "$vendor_dir/ffmpeg-7.1.5" ]]; then
     tar -xf "$vendor_dir/ffmpeg-7.1.5.tar.xz" -C "$vendor_dir"
 fi
 
+# Ruffle (MIT OR Apache-2.0), the Flash player the site page runs Hero Fighter in (dist/pages/hero-fighter.js): its
+# self-hosted build, the nightly Hero Fighter was tested with, from its GitHub release (checked) or else the same
+# version from npm. Failing both, the newest Ruffle on npm; failing that too, the bundle has no Ruffle (LF2 still plays).
+ruffle_version=0.8.0-nightly.2026.10.29
+ruffle_zip=ruffle-nightly-2026_10_29-web-selfhosted.zip
+ruffle_url=https://github.com/ruffle-rs/ruffle/releases/download/nightly-2026-10-29/$ruffle_zip
+ruffle_sha256=febf15317b3d2bffd52b623a1feeaa64fdfcb3f52b4daf0da01b690d3ec932e3
+ruffle_dir="$build_dir/ruffle"
+fetch_ruffle() {
+    local zip="$vendor_dir/$ruffle_zip" package="$build_dir/ruffle-package" found
+    rm -rf "$ruffle_dir" "$package"
+    mkdir -p "$package"
+    if [[ ! -f "$zip" ]]; then
+        if curl --fail --location --retry 3 --output "$zip.part" "$ruffle_url"; then mv "$zip.part" "$zip"; else rm -f "$zip.part"; fi
+    fi
+    if [[ -f "$zip" ]] && printf '%s  %s\n' "$ruffle_sha256" "$zip" | sha256sum --check --quiet; then
+        python3 -m zipfile -e "$zip" "$package"
+    elif (cd "$package" && npm pack "@ruffle-rs/ruffle@$ruffle_version" --silent && tar -xzf ./*.tgz); then
+        printf 'Ruffle %s from npm\n' "$ruffle_version"
+    else
+        printf 'warning: Ruffle %s is not available: trying the newest Ruffle on npm\n' "$ruffle_version" >&2
+        rm -rf "$package" && mkdir -p "$package"
+        if ! (cd "$package" && npm pack @ruffle-rs/ruffle --silent && tar -xzf ./*.tgz); then
+            printf 'warning: no Ruffle: Hero Fighter will not start on the site\n' >&2
+            return 0
+        fi
+    fi
+    # ruffle.js and the files it loads (its .wasm builds) sit together.
+    found=$(find "$package" -name ruffle.js -printf '%d %p\n' | sort -n | awk 'NR == 1 { sub(/^[0-9]+ /, ""); print }')
+    if [[ -z "$found" || -z "$(find "$(dirname "$found")" -name '*.wasm' -print -quit)" ]]; then
+        printf 'warning: the Ruffle package has no ruffle.js or .wasm: Hero Fighter will not start on the site\n' >&2
+        return 0
+    fi
+    mkdir -p "$ruffle_dir"
+    cp -r "$(dirname "$found")"/. "$ruffle_dir"/
+    rm -f "$ruffle_dir"/*.map
+}
+fetch_ruffle
+
 # Favicons are rendered from the project's SVG here, on the host, and handed to the container.
 python3 "$repo_root/tools/icons/make_icons.py" "$build_dir/icons"
 
@@ -57,6 +96,14 @@ cp "$repo_root/dist/web/installer-store.js" "$build_dir/native/installer-store.j
 cp "$repo_root/dist/web/online.js" "$build_dir/native/online.js"
 cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
     "$build_dir/icons/web/apple-touch-icon.png" "$build_dir/native/"
+# Hero Fighter on the site page (dist/pages/index.html): its script, the version check it answers, and Ruffle.
+cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-ver.txt" "$build_dir/native/"
+rm -rf "$build_dir/native/ruffle"
+bundle_extra=(hero-fighter.js hf-ver.txt)
+if [[ -f "$ruffle_dir/ruffle.js" ]]; then
+    cp -r "$ruffle_dir" "$build_dir/native/ruffle"
+    bundle_extra+=(ruffle)
+fi
 python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
     --local "ffmpeg=$vendor_dir/ffmpeg-7.1.5/COPYING.LGPLv2.1" \
     --local "ffmpeg-notes=$vendor_dir/ffmpeg-7.1.5/LICENSE.md" \
@@ -69,6 +116,6 @@ python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
 (
     cd "$build_dir/native"
     python3 -m zipfile -c ../OpenLF2-Web.zip index.html installer-store.js online.js icon.svg favicon.ico favicon-32.png apple-touch-icon.png \
-        openlf2.js openlf2.wasm openlf2.data licenses
+        openlf2.js openlf2.wasm openlf2.data licenses "${bundle_extra[@]}"
 )
 printf 'Web bundle: %s\n' "$build_dir/OpenLF2-Web.zip"

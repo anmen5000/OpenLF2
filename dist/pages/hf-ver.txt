@@ -1,0 +1,1 @@
+<ver><res version="700" local="0" /></ver>

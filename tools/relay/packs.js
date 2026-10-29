@@ -7,8 +7,13 @@
 // only the game folder (the one holding data/data.txt nearest the top) without the copies of the
 // game, recordings and notes that mods often carry, so that players download less.
 //
-//   GET  /lf2-packs.json             the packs: {"packs":[{"id","title","size","sha256"}]}
-//   GET  /lf2-packs/<id>.zip         a pack
+// A Flash game (Hero Fighter, which the page runs in Ruffle) can be uploaded the same way: its ZIP file,
+// its Windows program (a Flash projector: the movie is inside) or the movie itself. The relay keeps the
+// movie (.swf) only; such a pack is listed with "kind":"flash" (and "game":"herofighter" for that one).
+//
+//   GET  /lf2-packs.json             the packs: {"packs":[{"id","title","size","sha256","kind","game"}]}
+//   GET  /lf2-packs/<id>.zip         a pack (an LF2 game folder)
+//   GET  /lf2-packs/<id>.swf         a Flash game's movie
 //   GET  /admin                      the page to manage them
 //   GET  /admin/api/packs            the same list, with details (X-Admin-Key)
 //   PUT  /admin/api/packs/<id>?title=<title>   upload a ZIP file as the body (X-Admin-Key)
@@ -21,6 +26,7 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { pipeline } = require('node:stream/promises');
 const { Transform } = require('node:stream');
+const zlib = require('node:zlib');
 
 const PACK_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const MIB = 1024 * 1024;
@@ -122,6 +128,73 @@ function analyzeZip(entries) {
   return { root, executable: main.path, keep, dropped: entries.length - keep.length };
 }
 
+// ---- Flash games ----------------------------------------------------------------------------------
+// A Flash projector (Flash Player for Windows with a movie inside) ends with 0xFA123456 and the movie's
+// length (both 4 bytes, little endian), the movie just before.
+const PROJECTOR_MAGIC = 0xfa123456;
+// Hero Fighter's movies: the one in "HFv0.7+.exe" (Hero Fighter v0.7+, 2021-10-11).
+const HERO_FIGHTER = new Set(['42aec5e683bdcabd5caf6181be5fe74618afe536ec62030734d9536fab1852a8']);
+const HERO_FIGHTER_MARK = Buffer.from('http://www.herofighter.com/ver.txt', 'latin1');
+
+function isSwf(bytes) {
+  return bytes.length > 8 && ['FWS', 'CWS', 'ZWS'].includes(bytes.toString('latin1', 0, 3));
+}
+
+// The movie of a projector or of a movie file; null for anything else.
+function movieOf(bytes) {
+  if (isSwf(bytes)) return bytes;
+  if (bytes.length < 16 || bytes.toString('latin1', 0, 2) !== 'MZ') return null;
+  if (bytes.readUInt32LE(bytes.length - 8) !== PROJECTOR_MAGIC) return null;
+  const length = bytes.readUInt32LE(bytes.length - 4);
+  if (length < 9 || length > bytes.length - 8) return null;
+  const movie = bytes.subarray(bytes.length - 8 - length, bytes.length - 8);
+  return isSwf(movie) ? movie : null;
+}
+
+// Which game a movie is: "herofighter", or "" for one this relay does not know.
+function flashGame(movie) {
+  const sha256 = crypto.createHash('sha256').update(movie).digest('hex');
+  if (HERO_FIGHTER.has(sha256)) return 'herofighter';
+  // An uncompressed movie can be searched as it is (Hero Fighter's projector movies are).
+  if (movie.toString('latin1', 0, 3) === 'FWS' && movie.includes(HERO_FIGHTER_MARK)) return 'herofighter';
+  return '';
+}
+
+// An entry's bytes (stored or Deflate).
+async function readEntry(file, entry) {
+  const handle = await fsp.open(file, 'r');
+  try {
+    const header = Buffer.alloc(30);
+    await handle.read(header, 0, 30, entry.localOffset);
+    if (header.readUInt32LE(0) !== 0x04034b50) throw new PackError('the ZIP file is damaged');
+    const start = entry.localOffset + 30 + header.readUInt16LE(26) + header.readUInt16LE(28);
+    const packed = Buffer.alloc(entry.compressedSize);
+    await handle.read(packed, 0, packed.length, start);
+    if (entry.method === 0) return packed;
+    if (entry.method === 8) return zlib.inflateRawSync(packed, { maxOutputLength: 512 * MIB });
+    throw new PackError(`${entry.name} uses a compression the relay cannot read (zip it again with Deflate)`);
+  } finally {
+    await handle.close();
+  }
+}
+
+// The Flash movie an upload holds (a movie or projector file, or a ZIP file with one), or null.
+async function findMovie(file, zip) {
+  if (!zip) {
+    const { size } = await fsp.stat(file);
+    if (size > 512 * MIB) return null;
+    return movieOf(await fsp.readFile(file));
+  }
+  const candidates = zip.entries
+    .filter((entry) => /\.(swf|exe)$/i.test(entry.name) && !(entry.flags & 1) && entry.size <= 512 * MIB)
+    .sort((a, b) => b.size - a.size);
+  for (const entry of candidates) {
+    const movie = movieOf(await readEntry(file, entry));
+    if (movie) return movie;
+  }
+  return null;
+}
+
 // Writes the kept entries of `source` as a new ZIP file, copying their compressed bytes as they are.
 async function writeZip(source, target, keep) {
   const input = await fsp.open(source, 'r');
@@ -213,9 +286,10 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
       if (!PACK_ID.test(id)) continue;
       try {
         const info = JSON.parse(await fsp.readFile(path.join(directory, name), 'utf8'));
-        const stat = await fsp.stat(path.join(directory, `${id}.zip`));
+        const kind = info.kind === 'flash' ? 'flash' : 'lf2';
+        const stat = await fsp.stat(path.join(directory, `${id}.${kind === 'flash' ? 'swf' : 'zip'}`));
         packs.push({ id, title: String(info.title || id), size: stat.size, sha256: String(info.sha256 || ''),
-          files: info.files, uploaded: info.uploaded, original: info.original });
+          kind, game: String(info.game || ''), files: info.files, uploaded: info.uploaded, original: info.original });
       } catch { /* a half-written or removed pack */ }
     }
     return packs.sort((a, b) => a.title.localeCompare(b.title));
@@ -270,9 +344,33 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
       });
       await pipeline(req, counter, fs.createWriteStream(received));
       if (declared && bytes !== declared) throw new PackError('Tải lên bị ngắt giữa chừng.');
-      const zip = await readZip(received);
+      let zip = null;
+      try { zip = await readZip(received); } catch (error) { if (!(error instanceof PackError)) throw error; }
+      const lf2 = zip && zip.entries.some(({ name }) => /(^|[\\/])data[\\/]data\.txt$/i.test(name));
+      if (!lf2) {
+        // A Flash game, or what readZip/analyzeZip say this is not.
+        const movie = await findMovie(received, zip);
+        if (!movie) {
+          if (!zip) throw new PackError('Đây không phải file .zip, cũng không phải game Flash (.swf hoặc .exe có game Flash bên trong).');
+          analyzeZip(zip.entries); // throws why this is no LF2 game folder
+        }
+        const sha256 = crypto.createHash('sha256').update(movie).digest('hex');
+        const game = flashGame(movie);
+        await fsp.writeFile(slim, movie);
+        for (const old of [`${id}.zip`, `${id}.swf`]) await fsp.rm(path.join(directory, old), { force: true });
+        await fsp.rename(slim, path.join(directory, `${id}.swf`));
+        const info = { title, sha256, files: 1, kind: 'flash', game, uploaded: new Date().toISOString(),
+          original: { size: bytes, files: zip ? zip.entries.length : 1 } };
+        await fsp.writeFile(path.join(directory, `${id}.json`), JSON.stringify(info, null, 2));
+        await fsp.rm(received, { force: true });
+        log(`pack ${id}: ${bytes} bytes uploaded, a Flash movie of ${movie.length} kept${game ? ` (${game})` : ''}`);
+        json(res, 200, { ok: true, id, title, size: movie.length, sha256, files: 1, dropped: info.original.files - 1,
+          kind: 'flash', game, original: info.original });
+        return;
+      }
       const analysis = analyzeZip(zip.entries);
       const written = await writeZip(received, slim, analysis.keep);
+      await fsp.rm(path.join(directory, `${id}.swf`), { force: true });
       await fsp.rename(slim, path.join(directory, `${id}.zip`));
       const info = { title, sha256: written.sha256, files: written.files, executable: analysis.executable,
         uploaded: new Date().toISOString(), original: { size: bytes, files: zip.entries.length } };
@@ -291,14 +389,14 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
     }
   }
 
-  async function servePack(req, res, id) {
+  async function servePack(req, res, id, extension = 'zip') {
     const headers = { 'x-content-type-options': 'nosniff', ...allowOrigin(req) };
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { ...headers, allow: 'GET, HEAD' });
       res.end();
       return;
     }
-    const file = path.join(directory || '/nonexistent', `${id}.zip`);
+    const file = path.join(directory || '/nonexistent', `${id}.${extension}`);
     let stat;
     try { stat = await fsp.stat(file); } catch { stat = null; }
     if (!directory || !stat || !stat.isFile()) {
@@ -315,7 +413,8 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
       }
       quota.add();
     }
-    res.writeHead(200, { ...headers, 'content-type': 'application/zip', 'content-length': String(stat.size),
+    res.writeHead(200, { ...headers, 'content-type': extension === 'swf' ? 'application/x-shockwave-flash' : 'application/zip',
+      'content-length': String(stat.size),
       'cache-control': 'no-cache' });
     if (req.method === 'HEAD') {
       res.end();
@@ -329,13 +428,13 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
   // Returns true when the request was one of the packs' and has been answered (or is being answered).
   function handle(req, res, pathname) {
     if (pathname === '/lf2-packs.json') {
-      list().then((packs) => json(res, 200, { packs: packs.map(({ id, title, size, sha256 }) => ({ id, title, size, sha256 })) },
+      list().then((packs) => json(res, 200, { packs: packs.map(({ id, title, size, sha256, kind, game }) => ({ id, title, size, sha256, kind, game })) },
         { 'access-control-allow-origin': '*' }));
       return true;
     }
-    const pack = pathname.match(/^\/lf2-packs\/([a-z0-9][a-z0-9-]{0,39})\.zip$/);
+    const pack = pathname.match(/^\/lf2-packs\/([a-z0-9][a-z0-9-]{0,39})\.(zip|swf)$/);
     if (pack) {
-      servePack(req, res, pack[1]).catch(() => res.destroy());
+      servePack(req, res, pack[1], pack[2]).catch(() => res.destroy());
       return true;
     }
     if (pathname === '/admin' || pathname === '/admin/') {
@@ -363,7 +462,7 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
       }
       if (req.method === 'DELETE') {
         if (!authorized(req, res)) return true;
-        Promise.all([`${id}.zip`, `${id}.json`].map((name) => fsp.rm(path.join(directory || '/nonexistent', name), { force: true })))
+        Promise.all([`${id}.zip`, `${id}.swf`, `${id}.json`].map((name) => fsp.rm(path.join(directory || '/nonexistent', name), { force: true })))
           .then(() => { log(`pack ${id}: removed`); json(res, 200, { ok: true }); })
           .catch((error) => json(res, 500, { error: String(error.message || error) }));
         return true;
@@ -405,11 +504,13 @@ const ADMIN_PAGE = `<!doctype html>
   <h1>Bản mod cho OpenLF2</h1>
   <p class="note">Tải lên một file .zip chứa cả thư mục game của bản mod (có file .exe và thư mục data, sprite, bgm, bg).
     Relay chỉ giữ lại phần game cần, rồi phát cho trình duyệt của người chơi. Ai cũng chọn cùng một bản mod mới vào chung phòng được.</p>
+  <p class="note">Game Hero Fighter cũng tải lên ở đây: file <code>HFv0.7.zip</code> (hoặc <code>HFv0.7+.exe</code>). Relay giữ phần game Flash bên trong;
+    trên trang game, chọn <b>Hero Fighter</b> ở mục Game.</p>
   <div class="card">
     <label for="key">Mã quản trị (ADMIN_KEY)</label>
     <input id="key" type="password" autocomplete="current-password" placeholder="in ra khi chạy install-vps.sh">
     <label for="file">File .zip của bản mod</label>
-    <input id="file" type="file" accept=".zip,application/zip">
+    <input id="file" type="file" accept=".zip,.exe,.swf,application/zip">
     <label for="title">Tên hiển thị trên trang game</label>
     <input id="title" type="text" maxlength="60" placeholder="ví dụ: One Piece GrandWorld">
     <label for="id">Mã ngắn (dùng trong link mời)</label>
@@ -434,7 +535,8 @@ const ADMIN_PAGE = `<!doctype html>
   $('file').addEventListener('change', () => {
     const file = $('file').files[0];
     if (!file) return;
-    const name = file.name.replace(/\\.zip$/i, '').replace(/[_]+/g, ' ').trim();
+    let name = file.name.replace(/\\.(zip|exe|swf)$/i, '').replace(/[_]+/g, ' ').trim();
+    if (/^hf ?v?0\\.7/i.test(name)) name = 'Hero Fighter v0.7+';
     if (!$('title').value) $('title').value = name;
     if (!$('id').value) $('id').value = slug(name);
   });
@@ -467,8 +569,13 @@ const ADMIN_PAGE = `<!doctype html>
       let body = {};
       try { body = JSON.parse(request.responseText); } catch (error) {}
       if (request.status === 200) {
-        status('Xong: "' + body.title + '" (' + mb(body.size) + ', ' + body.files + ' file, bỏ bớt ' + body.dropped + ' file không cần). '
-          + 'Trên trang game, chọn nó ở mục Game, hoặc gửi link mời có thêm &pack=' + body.id + '.', 'ok');
+        if (body.kind === 'flash') {
+          status('Xong: "' + body.title + '" (game Flash, ' + mb(body.size) + '). '
+            + (body.game === 'herofighter' ? 'Trên trang game, chọn Hero Fighter ở mục Game.' : 'Đây không phải Hero Fighter: trang game chưa chơi được game này.'), body.game ? 'ok' : 'bad');
+        } else {
+          status('Xong: "' + body.title + '" (' + mb(body.size) + ', ' + body.files + ' file, bỏ bớt ' + body.dropped + ' file không cần). '
+            + 'Trên trang game, chọn nó ở mục Game, hoặc gửi link mời có thêm &pack=' + body.id + '.', 'ok');
+        }
         refresh();
       } else status('Không được: ' + (body.error || ('lỗi ' + request.status)), 'bad');
     };
@@ -509,4 +616,4 @@ const ADMIN_PAGE = `<!doctype html>
 </body></html>
 `;
 
-module.exports = { createPacks, readZip, analyzeZip, writeZip, PackError, PACK_ID };
+module.exports = { createPacks, readZip, analyzeZip, writeZip, movieOf, flashGame, PackError, PACK_ID };
