@@ -209,4 +209,6 @@ function network.paced(state) return state.relay == true end
 -- Relay rooms only: who is in the room, and the host's Start.
 function network.lobby(state) return state.relay and room.lobby(state) or nil end
 function network.begin(state) return state.relay and room.begin(state) or false end
+-- Relay rooms: this computer came with the hidden characters unlocked, which unlocks them for the room.
+function network.share_unlocked(state) if state.relay then room.share_unlocked(state) end end
 return network

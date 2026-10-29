@@ -7,6 +7,7 @@
 -- stdout: "E <operation> <hex value>" asks the test for an engine call, answered on stdin by
 -- "ok <hex>" or "err <hex>"; "R <words>" answers a command. Commands (stdin), one per line:
 --   start host|join [address]   poll   lobby   begin   names   slots   backlog   tick
+--   share (room.share_unlocked)   characters 0|1 (the unlock flag, as the game sets it)
 --   exchange <keys of players 1-4, comma separated, "-" for none> <function keys or -> <unlock bits> <hp> [display age]
 local root = assert(arg[1], "usage: lua room-harness.lua <repository root>")
 package.path = root .. "/scripts/?.lua;" .. package.path
@@ -94,6 +95,12 @@ for line in io.lines() do
             lobby.code or "-", #list > 0 and table.concat(list, ",") or "-")
     elseif name == "begin" then
         answer(room.begin(state) and "ok" or "no")
+    elseif name == "share" then
+        room.share_unlocked(state)
+        answer("ok")
+    elseif name == "characters" then
+        require("base/game/unlock").flags.characters = tonumber(command[2])
+        answer("ok")
     elseif name == "slots" then
         local list = {}
         for index = 1, 8 do list[index] = hex(state.names[index] or "") end

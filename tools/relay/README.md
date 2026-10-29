@@ -77,7 +77,8 @@ file of a mod's game folder with the admin key (kept in `/opt/lf2-relay/relay.en
 root only). The relay keeps only the game folder (the one holding `data/data.txt`, its program and
 pictures; not notes, recordings or older copies inside it), lists it at `/lf2-packs.json` and
 serves it at `/lf2-packs/<id>.zip`. The game page offers it under **Game**; invite links carry the
-choice, and everyone in a room must play the same game.
+choice, and everyone in a room must play the same game. Choosing another game while one runs
+reloads the page into it.
 
 The game page learns the relay address from the Online panel, an invite link, or the site's
 default: `window.OPENLF2_RELAY` in `dist/pages/index.html`, or the WebAssembly workflow's `relay`
@@ -96,6 +97,10 @@ Nobody waits for anybody: the relay sends a frame every 33 1/3 ms with whatever 
 player far from the relay (or on a slow connection) only sees his own keys take effect about his
 ping later. A player whose connection cannot keep up with the frames at all is let go, and the
 others play on.
+
+When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
+option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
+setting again.
 
 ## Settings (environment variables)
 
@@ -153,7 +158,8 @@ npm test   # Node.js 22 or newer; LUA=/path/to/lua5.2 for the room tests
 
 They cover the relay itself and its rooms, `scripts/base/game/room.lua` run by a Lua interpreter
 against the relay through `dist/web/online.js` (several games in one room, a distant player, a
-stalled tab, a desync, a player leaving, frames started on display refreshes), the older
+stalled tab, a desync, a player leaving, frames started on display refreshes, hidden characters
+one player came with), the older
 two-player protocol through a port of `scripts/base/game/network.lua`, the JavaScript halves of
 the `EM_JS` functions in `src/adapters/web/transport.cpp`, mods (what an upload keeps, the admin
 API, serving them), the game data copy (served by the relay, preferred by

@@ -156,8 +156,10 @@ local function route(state, input, context)
         state.network = require("base/ui/network").create(state.options)
         state.active = "network"
     elseif requested == "network_ready" then
-        unlock.reset_session()
+        local before = unlock.reset_session()
         state.session = state.network.session
+        -- Hidden characters unlocked here (the option or LF2.NET) are unlocked for the whole room.
+        if before.characters == 1 then network.share_unlocked(state.session) end
         controls.replace_names(state.session.names)
         state.title = title.create(state.options)
         if title.set_replay_disabled then title.set_replay_disabled(state.title, true) end
@@ -308,6 +310,7 @@ end
 local function disconnect(state, message)
     network.close(state.session)
     state.session = nil
+    unlock.end_session()
     controls.replace_names(nil)
     state.active, state.wait_release = "launch", nil
     state.title = title.create(state.options)
@@ -395,11 +398,13 @@ function flow.update(state, raw, context)
         if touched:find(letter, 1, true) and not input[0]:find(letter, 1, true) then input[0] = input[0] .. letter end
     end
     local local_keys = input.keys
+    local left_room = false
     if state.session then
         unlock.observe(input)
         if network.takes_unlock_bits(state.session) then input.unlock_bits = unlock.take_pending() end
         if input.keys[virtual_keys.escape] then
             disconnect(state, i18n.tr("Network game disconnected"))
+            left_room = true
         else
             local hp = state.active == "match" and recording.hp_sum(state.match.match) or 0
             local combined, problem = network.exchange(state.session, input, hp)
@@ -438,6 +443,8 @@ function flow.update(state, raw, context)
     end
     if input.keys[virtual_keys.escape] and not state.escape_held then escape_pressed = true end
     state.escape_held = input.keys[virtual_keys.escape] == true
+    -- The Escape that left a network game does not also ask to exit on the launch screen.
+    if left_room then escape_pressed = false end
     local closed_now = false
     if state.quit_dialog then
         -- While the question is open the screen below is frozen.

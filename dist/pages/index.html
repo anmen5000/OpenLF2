@@ -281,7 +281,8 @@
   function update() {
     start.disabled = !ready || started || downloading;
     chooseButton.disabled = started || downloading;
-    gameSelect.disabled = started || downloading;
+    // Another game can be chosen while one runs: the page then reloads into it (see the change handler).
+    gameSelect.disabled = downloading;
   }
 
   // The game to play: the original LF2 (""), a mod the relay keeps ("pack:<id>") or a mod's ZIP file from this
@@ -307,8 +308,38 @@
     gameSelect.value = value;
     try { localStorage.setItem('openlf2-game', value); } catch (error) { /* storage unavailable */ }
     if (window.OpenLF2Online) OpenLF2Online.pack = value.startsWith('pack:') ? value.slice(5) : '';
+    // An invite link's address follows the choice, so that reloading it keeps the game chosen last.
+    const address = new URL(location.href);
+    if (address.searchParams.has('room') || address.searchParams.has('pack')) {
+      if (value.startsWith('pack:')) address.searchParams.set('pack', value.slice(5));
+      else address.searchParams.delete('pack');
+      if (address.href !== location.href) history.replaceState(history.state, '', address.href);
+    }
   }
-  gameSelect.addEventListener('change', () => { selectionChanged = true; selectGame(gameSelect.value); });
+  let runningGame = null; // the game running in this page ("" for the original), once one runs
+  gameSelect.addEventListener('change', () => {
+    const value = gameSelect.value;
+    if (runningGame === null) {
+      selectionChanged = true;
+      selectGame(value);
+      return;
+    }
+    if (value === runningGame) return;
+    // A running game cannot swap its data: the page reloads into the new choice, which then starts by itself
+    // when this browser keeps it (else Start game downloads it). An invite link's ?pack= follows the choice.
+    const title = gameSelect.selectedOptions[0] ? gameSelect.selectedOptions[0].textContent : value;
+    if (!confirm('Switch to ' + title + '? The page reloads and the game running now stops.')) {
+      gameSelect.value = runningGame;
+      canvas.focus({preventScroll: true});
+      return;
+    }
+    selectGame(value);
+    const url = new URL(location.href);
+    if (value.startsWith('pack:')) url.searchParams.set('pack', value.slice(5));
+    else url.searchParams.delete('pack');
+    if (url.href === location.href) location.reload();
+    else location.replace(url.href);
+  });
   {
     let initial = '';
     try { initial = localStorage.getItem('openlf2-game') || ''; } catch (error) { /* storage unavailable */ }
@@ -380,6 +411,8 @@
   async function launch(file, saveSelection) {
     if (!ready || started) return;
     started = true;
+    runningGame = '';
+    gameSelect.value = '';
     update();
     try {
       status.textContent = 'Loading installer into browser memory…';
@@ -397,7 +430,7 @@
       }
       Module.FS.mkdir('/data');
       Module.FS.writeFile('/data/LF2_v2.0a.exe', bytes);
-      status.textContent = saved ? 'Running OpenLF2' :
+      status.textContent = saved ? 'Running LF2 v2.0a. To play a mod instead, choose it under Game.' :
         'Running OpenLF2. Browser storage is unavailable; select the installer again next visit.';
       Module.callMain(['--config-dir', '/data']);
       running();
@@ -409,6 +442,7 @@
       status.textContent = 'Could not start: ' + error.message;
       message(String(error));
       started = false;
+      runningGame = null;
       update();
     }
   }
@@ -416,19 +450,21 @@
   async function launchPack(blob, title) {
     if (!ready || started) return;
     started = true;
+    runningGame = gameSelect.value;
     update();
     try {
       status.textContent = 'Loading ' + title + ' into browser memory…';
       const bytes = new Uint8Array(await blob.arrayBuffer());
       Module.FS.mkdir('/data');
       Module.FS.writeFile('/data/game.zip', bytes, {canOwn: true});
-      status.textContent = 'Running ' + title + '. Reload the page to play another game.';
+      status.textContent = 'Running ' + title + '. To play another game, choose it under Game.';
       Module.callMain(['--config-dir', '/data', '--pack', '/data/game.zip']);
       running();
     } catch (error) {
       status.textContent = 'Could not start: ' + error.message;
       message(String(error));
       started = false;
+      runningGame = null;
       update();
     }
   }

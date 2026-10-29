@@ -2,8 +2,8 @@
 //
 // The game's own room protocol (scripts/base/game/room.lua, run by a Lua 5.2 interpreter as in the
 // web build) through dist/web/online.js and the relay: several games in one room, a distant player,
-// a player whose tab stalls, a desync and a player leaving. Skipped without a Lua interpreter
-// (set LUA=/path/to/lua5.2 to choose one).
+// a player whose tab stalls, a desync, a player leaving and hidden characters one player came with.
+// Skipped without a Lua interpreter (set LUA=/path/to/lua5.2 to choose one).
 'use strict';
 
 const test = require('node:test');
@@ -239,6 +239,30 @@ test('three games share the room: slots, names, the host\'s random table and ide
     const { mean, worst } = pacing(games[0]);
     assert.ok(mean > 31 && mean < 36, `frames every ${mean.toFixed(1)} ms`);
     assert.ok(worst < 80, `longest gap ${worst.toFixed(1)} ms`);
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
+test('hidden characters one computer came with turn on for the whole room, on the same frame', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  try {
+    await startedGames(relay, 3, [{}, {}, { oneWay: 60 }], games);
+    // The distant guest had them unlocked: its first input carries the news.
+    assert.deepEqual(await games[2].command('share'), ['ok']);
+    await Promise.all(games.map((game) => game.play({ until: (self) => self.frames.length >= 60 })));
+    assertLockstep(games);
+    const toggles = games[0].frames.filter((frame) => frame.unlock === 1);
+    assert.equal(toggles.length, 1, 'one frame turns them on (as LF2.NET typed)');
+    assert.ok(toggles[0].number < 30, `early: frame ${toggles[0].number}`);
+    // Once they are on, more news changes nothing (a toggle would turn them off again).
+    for (const game of games) assert.deepEqual(await game.command('characters 1'), ['ok']);
+    assert.deepEqual(await games[1].command('share'), ['ok']);
+    await Promise.all(games.map((game) => game.play({ until: (self) => self.frames.length >= 120 })));
+    assertLockstep(games);
+    assert.equal(games[0].frames.slice(60).filter((frame) => frame.unlock !== 0).length, 0);
   } finally {
     await Promise.all(games.map((game) => game.quit()));
     await relay.close();

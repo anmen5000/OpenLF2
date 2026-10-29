@@ -12,13 +12,15 @@
 -- computers each gets 4 (players 1-4 and 5-8, as in the original), with 3 they get 3, 3 and 2,
 -- with 4 two each, ... and with 8 one each. A computer's slots take its players 1, 2, ... in turn.
 --
--- An input, at most 16 bytes: byte 1 the unlock words typed (one-shot events), bytes 2 and 3
--- the function keys F1-F8 and F9 held, then one byte per slot of the computer
--- (recording.pack_keys). Inputs are bit sets: the relay merges those of one beat by OR.
+-- An input, at most 16 bytes: byte 1 one-shot events (bits 0 and 1: the unlock words typed; bit 2:
+-- this computer came with the hidden characters unlocked), bytes 2 and 3 the function keys F1-F8
+-- and F9 held, then one byte per slot of the computer (recording.pack_keys). Inputs are bit sets:
+-- the relay merges those of one beat by OR.
 local constants = require("base/game/constants")
 local controls = require("base/ui/controls")
 local recording = require("base/game/recording")
 local i18n = require("base/i18n/i18n")
+local unlock = require("base/game/unlock")
 local room = {}
 
 local kinds = {hello = 0x01, start = 0x02, input = 0x03, ready = 0x04, check = 0x05,
@@ -307,6 +309,10 @@ function room.begin(state)
     return send(state, message(kinds.start, engine.random_state()))
 end
 
+-- The hidden characters were unlocked on this computer before the room (its option or LF2.NET): its
+-- first input says so, and the frame carrying it unlocks them for everyone (see combine).
+function room.share_unlocked(state) state.events = bit_or(state.events, 4) end
+
 -- This computer's input: the function keys held, then its slots' keys (without the events byte).
 local function local_input(state, input)
     local low, high = 0, 0
@@ -338,7 +344,7 @@ local function combine(state, frame)
     local combined = {functions = "", keys = {}, pointer_x = 0, pointer_y = 0, button = false, network = true,
         function_sources = {}, unlock_bits = 0}
     for slot = 0, slot_count - 1 do combined[slot] = "" end
-    local held = {}
+    local held, shared = {}, false
     for index, player in ipairs(state.order) do
         local input = frame.inputs[index]
         local events, low, high = input:byte(1) or 0, input:byte(2) or 0, input:byte(3) or 0
@@ -354,6 +360,12 @@ local function combine(state, frame)
             combined[player.offset + slot] = recording.unpack_keys(input:byte(4 + slot) or 0)
         end
         combined.unlock_bits = bit_or(combined.unlock_bits, events % 4)
+        shared = shared or has(events, 3)
+    end
+    -- Hidden characters some computer came with: off until now on every computer alike, they turn on
+    -- here as if LF2.NET was typed (so that a recording of the match replays the same).
+    if shared and unlock.flags.characters == 0 and not has(combined.unlock_bits, 1) then
+        combined.unlock_bits = combined.unlock_bits + 1
     end
     for key = 1, 9 do
         if held[key] then combined.functions = combined.functions .. key end
