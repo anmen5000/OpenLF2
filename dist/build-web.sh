@@ -42,12 +42,13 @@ if [[ ! -d "$vendor_dir/ffmpeg-7.1.5" ]]; then
 fi
 
 # Ruffle (MIT OR Apache-2.0), the Flash player the site page runs Hero Fighter in (dist/pages/hero-fighter.js): its
-# self-hosted build, the nightly Hero Fighter was tested with, from its GitHub release (checked) or else the same
-# version from npm. Failing both, the newest Ruffle on npm; failing that too, the bundle has no Ruffle (LF2 still plays).
-ruffle_version=0.8.0-nightly.2026.10.29
-ruffle_zip=ruffle-nightly-2026_10_29-web-selfhosted.zip
-ruffle_url=https://github.com/ruffle-rs/ruffle/releases/download/nightly-2026-10-29/$ruffle_zip
-ruffle_sha256=febf15317b3d2bffd52b623a1feeaa64fdfcb3f52b4daf0da01b690d3ec932e3
+# self-hosted build, the stable release (0.7.1 runs Hero Fighter about twice as fast as the October 2026 nightlies),
+# from its GitHub release (checked) or else the same version from npm. Failing both, the newest Ruffle on npm;
+# failing that too, the bundle has no Ruffle (LF2 still plays).
+ruffle_version=0.7.1
+ruffle_zip=ruffle-0.7.1-web-selfhosted.zip
+ruffle_url=https://github.com/ruffle-rs/ruffle/releases/download/v0.7.1/$ruffle_zip
+ruffle_sha256=ef12edbee135d581a9cd523837d746da30a07a64dbf1cf472d2e472c656f4b5e
 ruffle_dir="$build_dir/ruffle"
 fetch_ruffle() {
     local zip="$vendor_dir/$ruffle_zip" package="$build_dir/ruffle-package" found
@@ -68,7 +69,7 @@ fetch_ruffle() {
             return 0
         fi
     fi
-    # ruffle.js and the files it loads (its .wasm builds) sit together.
+    # ruffle.js and the files it loads (its .wasm builds, and core.ruffle.*.js for 0.7) sit together.
     found=$(find "$package" -name ruffle.js -printf '%d %p\n' | sort -n | awk 'NR == 1 { sub(/^[0-9]+ /, ""); print }')
     if [[ -z "$found" || -z "$(find "$(dirname "$found")" -name '*.wasm' -print -quit)" ]]; then
         printf 'warning: the Ruffle package has no ruffle.js or .wasm: Hero Fighter will not start on the site\n' >&2

@@ -599,10 +599,11 @@
     }
     await launchPack(record.blob, record.title);
   }
-  // Hero Fighter: the browser's copy when it is the relay's current one (or a file the player selected), else the
-  // relay's, downloaded once; or the file just selected.
+  // Hero Fighter: the browser's copy when it is the relay's current one, else the relay's, downloaded once; or the file
+  // just selected. A file selected earlier gives way to the relay's copy when they differ: a network room only takes
+  // games with the same movie (and the same Ruffle).
   function hfCurrent(record) {
-    return record.source === 'file' || !hfPack || !hfPack.sha256 || record.sha256 === hfPack.sha256;
+    return !hfPack || !hfPack.sha256 || record.sha256 === hfPack.sha256;
   }
   async function startHf() {
     let record = null;

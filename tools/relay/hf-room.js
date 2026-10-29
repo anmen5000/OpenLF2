@@ -220,6 +220,9 @@ class HfRoom {
     this.table = Array.from({ length: 5000 }, () => this.nextInt(10000));
     this.seed = this.nextInt(5000);
     this.winReported = false; // h.c
+    this.build = null; // the build of the games in the room (acceptsBuild)
+    this.steps = new Map(); // frame -> the random numbers used by then, as the first game reported it
+    this.outOfStep = false;
     this.starting = false; // Main.r: a fight is starting; frames wait until every game has started
     this.countdown = { on: false, count: COUNTDOWN, action: '' }; // T.a, T.b, T.d
     this.fightingNow = false; // Main.am
@@ -274,6 +277,44 @@ class HfRoom {
     this.page = 'WAITROOM';
     this.previousPage = '';
     this.men = Array.from({ length: MEN }, newMan);
+  }
+
+  // A computer player's level with a character: the best a player in the room has, else the game's highest.
+  computerLevel(character) {
+    let level = 0;
+    for (const slot of this.online()) if (slot.levels[character] > level) level = slot.levels[character];
+    return level > 0 ? level : MAX_LEVEL;
+  }
+
+  // Whether a game of this build (its movie and Ruffle, as the page reports them) may join: the same as
+  // the games in the room, whose simulations must match step for step.
+  acceptsBuild(build) {
+    if (!this.online().length) this.build = build;
+    return this.build === build;
+  }
+
+  // Every game reports, every 20 frames, how many random numbers it has used so far (<rpc>); games that
+  // differ no longer show the same fight. The original passed these on and the games themselves closed
+  // the connection on a difference ("Synchronization error"), which threw everyone out of the room; here
+  // the server compares them and ends the fight instead, back to the menus, with everyone still in.
+  checkStep(index, frame, used) {
+    if (!this.fightingNow || this.outOfStep) return;
+    const seen = this.steps.get(frame);
+    if (!seen) {
+      this.steps.set(frame, { used, from: index });
+      if (this.steps.size > 64) this.steps.delete(this.steps.keys().next().value);
+      return;
+    }
+    if (seen.used === used) return;
+    this.outOfStep = true;
+    this.log(`hf room ${this.number}: games ${seen.from} and ${index} out of step at frame ${frame}: ending the fight`);
+    for (const slot of this.online()) {
+      slot.connection.notice('Hai may khong con khop nhau (desync): tran dau dung lai. Bam Next roi Start Fight! de danh lai.');
+    }
+    const countdown = this.countdown;
+    countdown.on = true;
+    countdown.action = 'quitgame';
+    countdown.count = 1;
   }
 
   pickBackground() { this.background = BACKGROUNDS[this.nextInt(BACKGROUNDS.length)]; } // Main.a
@@ -338,6 +379,8 @@ class HfRoom {
 
   // h.a(): the frames of the fight start over.
   resetFrames() {
+    this.steps.clear();
+    this.outOfStep = false;
     for (let index = 0; index < CLIENTS; index += 1) {
       const slot = this.slots[index];
       slot.flushes = 0;
@@ -376,6 +419,13 @@ class HfRoom {
         }
         if (!this.starting) {
           for (const slot of this.slots) if (slot.connection) slot.connection.resetFrames();
+          this.steps.clear();
+          this.outOfStep = false;
+          // Each game reports its experience after a fight and waits for the answer before it starts the
+          // next, sending its characters' levels (<info>) on the way; a restart sends the men before
+          // those come. So every game gets the men again now, with the same levels for everyone (each
+          // game builds the fight from this list once <allstartedgame> comes).
+          this.broadcastMen(0);
           this.newSeed();
           this.broadcast('<allstartedgame></allstartedgame>');
         }
@@ -580,17 +630,18 @@ class HfRoom {
 
 class HfConnection {
   // socket: { write(text), close() }; feed it the received bytes with receive(), and closed() at the end.
-  constructor(room, socket, { address = '' } = {}) {
+  constructor(room, socket, { address = '', build = '' } = {}) {
     this.room = room;
     this.socket = socket;
     this.address = address;
+    this.build = build; // the page's movie and Ruffle (acceptsBuild)
     this.index = -1; // n
     this.name = ''; // o
     this.cc = ''; // p
     this.players = ['', '', '']; // r
     this.lastFrame = -1; // s: the last frame of this game's, in order
     this.nextFrame = 0; // t: the next frame to send this game
-    this.queued = ''; // v: <rpc> lines from the others, sent with the next frames
+    this.queued = ''; // v: <rpc> lines from the others, sent with the next frames (none now: Room.checkStep)
     this.cheat = 0; // x
     this.kicked = false; // b
     this.ended = false;
@@ -678,6 +729,10 @@ class HfConnection {
     const versions = byTag(join, 'ver');
     if (!versions.length) return;
     if (int(valueOf(versions[0])) !== VERSION) return this.refuse('v');
+    if (!room.acceptsBuild(this.build)) {
+      room.log(`hf room ${room.number}: a game of another build (${this.build || 'none'}, the room has ${room.build}) turned away`);
+      return this.refuse('v');
+    }
     if (room.connected >= room.limit) return this.refuse('f');
     if (!room.allowJoinWhenFighting && room.fightingNow) return this.refuse('p');
     if (room.password) {
@@ -809,10 +864,7 @@ class HfConnection {
     }
     if (kind === 't') { int(tagValue(doc, 'd')); return; }
     if (kind === 'rpc') {
-      for (let index = 0; index < CLIENTS; index += 1) {
-        const other = room.slots[index];
-        if (other.fighting && other.connection) other.connection.queued += line;
-      }
+      room.checkStep(this.index, int(tagValue(doc, 'cl')), int(tagValue(doc, 'rp')));
       return;
     }
     if (kind === 'chat') {
@@ -1412,7 +1464,7 @@ class HfConnection {
     man.level = 1;
     const character = CHARACTERS.indexOf(man.char);
     if (character >= 0) {
-      const level = this.slot.levels[character];
+      const level = man.controller === -1 ? room.computerLevel(character) : this.slot.levels[character];
       if (level > 0) {
         man.level = level;
         for (const other of room.men) if (other.exists && other.commander === index) other.level = level;
@@ -1427,8 +1479,10 @@ class HfConnection {
     room.broadcastMen(0);
   }
 
-  // i.d(int): a random character for a man: one the computer has (for a computer player, one any
-  // computer in the room has), not taken by another man before it or not random; the level to match.
+  // i.d(int): a random character for a man: one the computer has, not taken by another man before it
+  // or not random; the level to match. (The original gave a computer player one of the characters some
+  // computer in the room has; here it may be any, the premium ones too, which players' accounts do not
+  // have: see hf.js. Not Yaga, whom the game does not let anyone play.)
   pickCharacter(index) {
     const room = this.room;
     const man = room.men[index];
@@ -1440,7 +1494,7 @@ class HfConnection {
       const list = [];
       for (const name of CHARACTERS) {
         const character = CHARACTERS.indexOf(name);
-        if (human ? slot.levels[character] > 0 : room.online().some((other) => other.levels[character] > 0)) list.push(name);
+        if (human ? slot.levels[character] > 0 : name !== 'yaga') list.push(name);
       }
       return list;
     };
@@ -1457,7 +1511,7 @@ class HfConnection {
     if (human) {
       if (slot.levels[character] > 0) man.level = slot.levels[character];
     } else {
-      for (const other of room.online()) if (other.levels[character] > man.level) man.level = other.levels[character];
+      man.level = room.computerLevel(character);
     }
     for (const other of room.men) if (other.exists && other.commander === index) other.level = man.level;
   }

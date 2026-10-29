@@ -282,8 +282,17 @@ window.HeroFighter = (() => {
     const { stage, site, status, log } = options;
     status('Starting Ruffle (the Flash player)…');
     const ruffle = await loadRuffle(new URL('ruffle/', site).href);
+    // This page's own Ruffle, even when the browser has the Ruffle extension (another version): every game in a
+    // network room must run the same Flash player, else their fights drift apart ("Synchronization error").
+    const source = (ruffle.sources && ruffle.sources.local) || (typeof ruffle.local === 'function' && ruffle.local()) || ruffle.newest();
     const { bytes, fixed } = await patchMovie(options.movie);
     if (fixed < 2) log('Hero Fighter: ' + fixed + ' of the 2 e-mail/password checks fixed for Ruffle (another version of the game?)');
+    // The build the relay's rooms compare: this movie and this Ruffle.
+    let build = 'ruffle' + (source.version || '?');
+    try {
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+      build = Array.from(digest.subarray(0, 8), (byte) => byte.toString(16).padStart(2, '0')).join('') + '-' + build;
+    } catch (error) { /* no crypto.subtle (not https): the Ruffle version alone */ }
 
     // The relay: rooms and accounts, when it has them (relays installed before Hero Fighter do not).
     const rewrites = [
@@ -307,7 +316,8 @@ window.HeroFighter = (() => {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const info = await response.json();
         for (const room of info.rooms || []) {
-          sockets.push({ host: info.host, port: room.port, proxyUrl: relay + (relay.includes('?') ? '&' : '?') + 'game=hf&room=' + room.room });
+          sockets.push({ host: info.host, port: room.port,
+            proxyUrl: relay + (relay.includes('?') ? '&' : '?') + 'game=hf&room=' + room.room + '&build=' + encodeURIComponent(build) });
         }
         rewrites.push([/^https?:\/\/s\.herofighter\.com\//, relayHttp + 'hf/s/']);
         rewrites.push([/^https?:\/\/(www\.)?herofighter\.com\/hf\//, relayHttp + 'hf/hf/']);
@@ -318,7 +328,7 @@ window.HeroFighter = (() => {
     }
 
     stage.classList.add('hf');
-    const player = ruffle.newest().createPlayer();
+    const player = source.createPlayer();
     player.className = 'hf-player';
     player.tabIndex = 0;
     stage.appendChild(player);
@@ -335,6 +345,9 @@ window.HeroFighter = (() => {
       splashScreen: true,
       // Loading the game's pictures takes a while on slow phones: more than Ruffle's 15 s for one script.
       maxExecutionDuration: 60,
+      // No anti-aliasing: the game is drawn from pictures (pixel art), and what Ruffle draws for it on the GPU
+      // (turned or flipped pictures, shadows) costs much less without it.
+      quality: 'low',
       socketProxy: sockets,
       urlRewriteRules: rewrites,
       logLevel: 'warn',

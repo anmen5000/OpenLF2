@@ -115,21 +115,33 @@ the game itself is not changed, except for two regular expressions Ruffle reads 
   `"kind":"flash","game":"herofighter"`), and the page downloads it from there when a player has
   no copy of his own.
 - Accounts (`hf.js`): logging in with an e-mail address not seen before makes a new account (its
-  name is the part before `@`); registering from the game works too. Every character and story is
-  open from the start, and the experience characters gain is kept. Accounts live in
+  name is the part before `@`); registering from the game works too. Every story is open from the
+  start, and every character a player may have is at level 16, the game's highest (accounts made
+  before follow this from their next login). The premium characters (Leo, Eason, Iczzy, Heater,
+  Raye, Livermore), too strong for players, stay locked for them, and so does Yaga, whom the game
+  keeps for itself; computer players may be any character but Yaga, at level 16. The game's offer to
+  unlock the premium characters opens a page saying there is nothing to buy. Accounts live in
   `<PACKS_DIR>/hf/accounts.json` (or `HF_DIR`), with a scrypt hash of each password. A client
   address may make 20 accounts an hour and get 30 passwords wrong.
 - Rooms (`hf-room.js`): a port of Room Server v0.7+, checked against the original (Java) by sending
   both the same messages: same lobby, same frames, same timing rules (lockstep, at most 4 computers
-  and 6 fighters a room). `HF_ROOMS` rooms (4) show in the game's room list as "Phong 1", "Phong 2"…
-  Each is a WebSocket on the relay path: `wss://<relay host>/relay?game=hf&room=<n>`, carrying the
-  game's TCP stream as binary messages.
+  and 6 fighters a room; a computer may have up to 3 players). `HF_ROOMS` rooms (4) show in the
+  game's room list as "Phong 1", "Phong 2"… Each is a WebSocket on the relay path:
+  `wss://<relay host>/relay?game=hf&room=<n>&build=<b>`, carrying the game's TCP stream as binary
+  messages; `b` is the page's build (a hash of the movie and the Ruffle version), and a room takes
+  only games of the build its first game had, since others would not play the same fight.
+- Out of step: every 20 frames each game reports where it is in the random numbers all of them share
+  (`<rpc>`). The original server passes these on and a game that finds another's different closes
+  its connection ("Synchronization error"), which ends the match for everyone; the relay compares
+  them itself and, when two differ, ends that fight only (the games go back to the room's menu,
+  with a notice) so that the players can start another.
 
 | Path | What |
 | --- | --- |
 | `/hf/ver.txt` | The version check (this version is the newest) |
 | `/hf/s/v0.7/login.php`, `/hf/s/v0.7/lu.php` | Log in; save experience and story progress |
 | `/hf/s/cap.php`, `reg.php`, `namechg_left.php`, `namechg.php`, `pwdchg.php`, `pwdret.php` | Registration code, register, change name or password, forgotten password (not by mail) |
+| `/hf/s/premium` | The page the game's premium offer opens (nothing to buy) |
 | `/hf/hf/rlg.php` | The room list, as the game reads it |
 | `/hf/rooms.json` | The rooms for the page: `{"host":"hf.openlf2","rooms":[{"room":1,"port":8888,…}]}` |
 
@@ -200,8 +212,9 @@ one player came with), the older
 two-player protocol through a port of `scripts/base/game/network.lua`, the JavaScript halves of
 the `EM_JS` functions in `src/adapters/web/transport.cpp`, mods (what an upload keeps, the admin
 API, serving them, Hero Fighter's movie taken from its projector), Hero Fighter's services (login
-answers the game accepts, experience, registration, accounts kept across restarts) and rooms (two
-games meet, start a VS match and get each other's frames; other versions are turned away), the game
+answers the game accepts, levels and locked characters, experience, registration, accounts kept
+across restarts) and rooms (two games meet, start a VS match and get each other's frames; other
+versions and builds are turned away; computer players' characters; a fight out of step), the game
 data copy (served by the relay, preferred by
 `dist/web/installer-store.js`, set as a site default by `set-relay.py`), and the functions of
 `install-vps.sh` (Node.js build choice, port modes, Caddy configuration, game data download,

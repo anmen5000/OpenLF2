@@ -8,11 +8,16 @@
 //   GET  <relay folder>/hf/s/v0.7/login.php?em=&pw=   log in; an e-mail address not seen before is a new account
 //   GET  <relay folder>/hf/s/v0.7/lu.php?...          the experience the account's characters gained
 //   GET  <relay folder>/hf/s/cap.php, reg.php, namechg_left.php, namechg.php, pwdchg.php, pwdret.php
+//   GET  <relay folder>/hf/s/premium?...              the game's "unlock the premium characters" link: a page
+//                                                    saying there is nothing to buy here
 //   GET  <relay folder>/hf/hf/rlg.php                 the room list: this relay's rooms
 //   GET  <relay folder>/hf/rooms.json                 the rooms for the page (its socket proxy settings)
-//   WebSocket <relay path>?game=hf&room=<n>          room n (hf-room.js)
+//   WebSocket <relay path>?game=hf&room=<n>&build=<b> room n (hf-room.js); b: the page's movie and Ruffle, which
+//                                                    must be the same for every game in a room
 // Accounts (name, a hash of the password, each character's level and experience, story progress)
-// are kept in <PACKS_DIR>/hf/accounts.json (or HF_DIR); every character and story is open from the start.
+// are kept in <PACKS_DIR>/hf/accounts.json (or HF_DIR). Every story is open, and every character a player
+// may have is at level 16 from the start; the premium characters (and Yaga, whom the game keeps for
+// itself) stay locked for players. Computer players get any of them (hf-room.js).
 'use strict';
 
 const crypto = require('node:crypto');
@@ -22,7 +27,21 @@ const { HfRoom, HfConnection, CHARACTERS } = require('./hf-room.js');
 
 const STORIES = 6; // Global.storyChosen_max: the last story episode
 const MAX_EXPERIENCE = 16999; // level 16 (the game's highest; more is taken for a cheat), 999 experience
-const START_EXPERIENCE = 1000; // level 1, all characters open
+const START_EXPERIENCE = 16000; // level 16: nobody has to play for levels
+// The account's values (c1..c30, one per character, CHARACTERS' order) the game gets no character for:
+// the premium ones (leo, eason and with it eason0, iczzy, heater, raye, livermore), which are too strong
+// for players, and yaga ("unavailable"). A value of 0 keeps a character locked; a non-premium account
+// (statusCode below) keeps the premium ones locked whatever their value.
+const LOCKED = new Set([5, 7, 8, 14, 15, 16, 18]);
+const PLAYABLE = 19; // c1..c19 are characters; c20..c30 are not used
+// The values an account has: the playable characters at level 16 at least, the locked ones at 0.
+function settledValues(values) {
+  return Array.from({ length: 30 }, (_, k) => {
+    if (k >= PLAYABLE) return Number(values && values[k]) || 0;
+    if (LOCKED.has(k)) return 0;
+    return Math.min(MAX_EXPERIENCE, Math.max(START_EXPERIENCE, Number(values && values[k]) || 0));
+  });
+}
 
 // The game checks login answers with a code over the numbers in them (Global.LoginStatusMessage):
 // with n = v[8], m = v[9+2n..+7] and x = v[16+2n..+7], (9999998 - x - m) / 3 must be the sum below
@@ -47,6 +66,23 @@ function encodeNumber(number) {
   for (let k = 0; k < 18 - n * 2; k += 1) text += digit();
   return text;
 }
+
+// What the game's premium offer (it shows one by the locked characters) opens in a new tab.
+const PREMIUM_PAGE = `<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero Fighter: Premium</title>
+<style>body{font:17px/1.55 system-ui,sans-serif;max-width:36rem;margin:3rem auto;padding:0 16px;color:#1d1d1d;background:#f7f7f5}
+h1{font-size:1.35rem}.en{color:#6a6a6a;font-size:.95rem}
+@media (prefers-color-scheme:dark){body{color:#ececec;background:#1a1a1a}.en{color:#a0a0a0}}</style></head>
+<body><h1>Không cần mua gì cả</h1>
+<p>Trên máy chủ này, các nhân vật Premium (Leo, Eason, Iczzy, Heater, Raye, Livermore) bị khóa với người chơi vì quá
+mạnh; máy (Com Player) vẫn dùng được. Mọi nhân vật khác đều đã ở Level 16.</p>
+<p>Đóng trang này và quay lại game.</p>
+<p class="en" lang="en">Nothing to buy here: on this server the premium characters are locked for players (they are too
+strong), and computer players may still have them. Every other character is at level 16. Close this page and go back
+to the game.</p>
+</body></html>
+`;
 
 function xmlText(value) {
   return String(value).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
@@ -99,7 +135,7 @@ function createAccounts(file, log) {
       for (let k = 2; this.byName(unique); k += 1) unique = `${name.slice(0, 17)}${k}`;
       const account = {
         id: nextId++, name: unique, cc: cc || 'VN', salt, hash: hashPassword(password, salt),
-        session: crypto.randomInt(100000, 1000000000), values: Array.from({ length: 30 }, (_, k) => (k < 19 ? START_EXPERIENCE : 0)),
+        session: crypto.randomInt(100000, 1000000000), values: settledValues(null),
         stage: STORIES, nameChanges: 9, created: new Date().toISOString(), // (name changes are not counted down)
       };
       accounts[email] = account;
@@ -158,7 +194,7 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
   function loginXml(account, root = 'login') {
     const values = account.values;
     const fields = values.map((value, index) => `<c${index + 1}>${value}</c${index + 1}>`).join('');
-    const code = statusCode(values, account.id, 0, account.stage, account.session, true);
+    const code = statusCode(values, account.id, 0, account.stage, account.session, false);
     return `<${root}>${fields}<i>${account.id}</i><n>${xmlText(account.name)}</n><cc>${xmlText(account.cc)}</cc>`
       + `<s>${account.session}</s><acctype>0</acctype><stage>${account.stage}</stage><v>${code}</v></${root}>`;
   }
@@ -210,6 +246,12 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         failedTry(address);
         return '<login><error>pw</error></login>';
       }
+      // Accounts made before the characters' rules were what they are now follow them from their next login.
+      const settled = settledValues(account.values);
+      if (settled.some((value, k) => value !== account.values[k])) {
+        account.values = settled;
+        accounts.save();
+      }
       return loginXml(account);
     }
     if (service === 'v0.7/lu.php') {
@@ -221,10 +263,8 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         if (!Number.isInteger(index) || index < 1 || index > CHARACTERS.length - 1 || !Number.isFinite(to)) continue;
         account.values[index - 1] = Math.max(account.values[index - 1], Math.min(MAX_EXPERIENCE, Math.floor(to)));
       }
-      const unlocked = Number(get('uli'));
-      if (Number.isInteger(unlocked) && unlocked >= 1 && unlocked <= 30) {
-        account.values[unlocked - 1] = Math.max(account.values[unlocked - 1], START_EXPERIENCE);
-      }
+      // (uli, a character a story unlocks: every character a player may have is unlocked already.)
+      account.values = settledValues(account.values);
       const stage = Number(get('stg'));
       if (Number.isInteger(stage)) account.stage = Math.max(account.stage, Math.min(STORIES, stage));
       accounts.save();
@@ -328,6 +368,11 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
       send(200, 'text/xml; charset=utf-8', roomListXml());
       return true;
     }
+    if (local === 's/premium') {
+      res.setHeader('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'");
+      send(200, 'text/html; charset=utf-8', PREMIUM_PAGE);
+      return true;
+    }
     if (local.startsWith('s/')) {
       // The game posts its forms with the values in the address; a body, if any, is read as a form too.
       let body = '';
@@ -370,7 +415,7 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         ws.send(Buffer.from(text, 'utf8'), { binary: true });
       },
       close() { if (ws.readyState === 0 || ws.readyState === 1) ws.close(1000, 'Relay: room left'); },
-    }, { address: clientAddress(req) });
+    }, { address: clientAddress(req), build: String(url.searchParams.get('build') || '').replace(/[^\w.+-]/g, '').slice(0, 80) });
     ws.on('message', (data) => {
       if (budget && !budget(ws, data.length)) {
         ws.close(4007, 'Relay: too much traffic');
@@ -400,4 +445,4 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
 const HOST = 'hf.openlf2';
 const PORT = 8888;
 
-module.exports = { createHf, statusCode, encodeNumber, HOST, PORT };
+module.exports = { createHf, statusCode, encodeNumber, settledValues, LOCKED, HOST, PORT };
