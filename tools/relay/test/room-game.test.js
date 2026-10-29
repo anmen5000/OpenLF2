@@ -129,13 +129,15 @@ class Game {
   }
 
   // The game loop of a page: one tick every few milliseconds, as the engine does while a room paces it.
-  async play({ until, input = () => ({}), hp = (frame) => (frame * 37) % 3000, pause }) {
+  // `display`: the refresh interval (ms) of a display the page tells the game about, as the web build does.
+  async play({ until, input = () => ({}), hp = (frame) => (frame * 37) % 3000, pause, display }) {
     for (;;) {
       if (until(this)) return;
       if (pause) await pause(this);
       const keys = input(this) || {};
       const next = this.frames.length ? this.frames.at(-1).number + 1 : 0;
-      const line = `exchange ${(keys.players || ['-', '-', '-', '-']).map((one) => one || '-').join(',')} ${keys.functions || '-'} ${keys.unlock || 0} ${hp(next, this)}`;
+      const age = display ? ` ${Math.round(performance.now() % display)}` : '';
+      const line = `exchange ${(keys.players || ['-', '-', '-', '-']).map((one) => one || '-').join(',')} ${keys.functions || '-'} ${keys.unlock || 0} ${hp(next, this)}${age}`;
       const reply = await this.command(line);
       if (reply[0] === 'frame') {
         this.frames.push({ number: Number(reply[1]), slots: reply[2], functions: reply[3], sources: reply[4], unlock: Number(reply[5]),
@@ -237,6 +239,31 @@ test('three games share the room: slots, names, the host\'s random table and ide
     const { mean, worst } = pacing(games[0]);
     assert.ok(mean > 31 && mean < 36, `frames every ${mean.toFixed(1)} ms`);
     assert.ok(worst < 80, `longest gap ${worst.toFixed(1)} ms`);
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
+test('the beat is 33 1/3 ms; in a browser frames start just after a display refresh, two refreshes apart', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  const refresh = 1000 / 60;
+  try {
+    await startedGames(relay, 2, [], games);
+    assert.deepEqual(await games[0].command('tick'), ['33.3333']);
+    await Promise.all(games.map((game) => game.play({ until: (self) => self.frames.length >= 100, display: refresh })));
+    assertLockstep(games);
+    for (const game of games) {
+      const frames = game.frames.slice(20);
+      // Each frame starts (its reply arrives) within a few milliseconds after a refresh...
+      const late = frames.map((frame) => frame.time % refresh).sort((a, b) => a - b);
+      assert.ok(late[Math.floor(late.length * 0.9)] < 9, `90% start within ${late[Math.floor(late.length * 0.9)].toFixed(1)} ms of a refresh`);
+      // ...and the next one two refreshes later (rarely one or three).
+      const gaps = frames.slice(1).map((frame, index) => Math.round((frame.time - frames[index].time) / refresh));
+      const two = gaps.filter((gap) => gap === 2).length;
+      assert.ok(two >= gaps.length * 0.85, `${two} of ${gaps.length} frames two refreshes apart (${gaps.join(' ')})`);
+    }
   } finally {
     await Promise.all(games.map((game) => game.quit()));
     await relay.close();

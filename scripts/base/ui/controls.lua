@@ -270,6 +270,8 @@ function controls.read(settings, raw)
             text = given_filters:find("t", 1, true) ~= nil, sharp = given_filters:find("p", 1, true) ~= nil}
         -- " s": measured FPS for Show FPS (live only; traces have no wall-clock time).
         input.fps = tonumber(raw:match(" s(%d+)"))
+        -- " v": milliseconds since the display last refreshed (web only), for network rooms (base/game/room.lua).
+        input.display_age = tonumber(raw:match(" v(%d+)"))
         if x then
             input.pointer_x, input.pointer_y = tonumber(x), tonumber(y)
             input.button = button == "1"

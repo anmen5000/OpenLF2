@@ -285,7 +285,7 @@ test('the lobby lists who said hello; the host starts once two are in, nobody el
   try {
     const guest = player(relay, code);
     const welcome = await guest.next(KIND.welcome);
-    assert.equal(welcome.payload[1], 0); // not the host
+    assert.equal(welcome.payload[1], 2); // not the host (bit 0); the beat is 33 ms (byte 3) and 1/3 (bits 1-2)
     assert.equal(welcome.payload[2], 8);
     assert.equal(welcome.payload[3], 33);
     assert.equal(welcome.payload[4], code.length);
@@ -293,7 +293,7 @@ test('the lobby lists who said hello; the host starts once two are in, nobody el
     guest.hello(undefined, 'Guest');
     await guest.until(() => guest.messages.some((message) => message.kind === KIND.lobby && message.payload[0] === 1));
     const host = player(relay, code, 'host');
-    assert.equal((await host.next(KIND.welcome)).payload[1], 1);
+    assert.equal((await host.next(KIND.welcome)).payload[1], 3);
     assert.deepEqual(readPlayers((await host.next(KIND.lobby)).payload).players.map((one) => one.info), ['Guest']);
     host.hello(undefined, 'Host');
     await guest.until(() => guest.messages.some((message) => message.kind === KIND.lobby && message.payload[0] === 2));

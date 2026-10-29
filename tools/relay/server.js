@@ -9,7 +9,7 @@
 // Protocol 2, rooms of up to 8 players (the web build's own; see "Rooms" below):
 //   ws(s)://<server>/relay?v=2&role=host&room=482913   Network Game > Host
 //   ws(s)://<server>/relay?v=2&role=join&room=482913   Network Game > Connect, room code as the address
-// The relay keeps the beat: every 33 ms it sends each player one frame holding the newest input of
+// The relay keeps the beat: every 33 1/3 ms (30 per second) it sends each player one frame holding the newest input of
 // every player, so nobody waits for the slowest connection.
 //
 // Protocol 1, two players (older game pages): the relay pairs host and guest and copies binary frames
@@ -101,7 +101,8 @@ function readConfig(env = process.env) {
     // long a room may wait for its host to press start, how long the relay waits for every game to
     // be ready after the start, and after how many beats without news a player's keys count as released.
     roomPlayers: Math.min(ROOM_LIMITS.players, Math.max(2, number('ROOM_PLAYERS', ROOM_LIMITS.players))),
-    tickMs: Math.max(1, number('TICK_MS', 33)),
+    // 33 1/3 ms: 30 beats per second, two refreshes of a 60 Hz display each (whole thirds of a ms only).
+    tickMs: Math.max(1, Math.round(number('TICK_MS', 100 / 3) * 3) / 3),
     lobbyWaitMs: number('LOBBY_WAIT_MS', 1800000),
     startGraceMs: number('START_GRACE_MS', 5000),
     repeatLimit: number('REPEAT_LIMIT', 15),
@@ -378,9 +379,11 @@ function createRelay(overrides = {}) {
     sendControl(ws, { t: 'welcome', v: 2, room: code, host: member.host });
     const welcome = Buffer.alloc(5 + code.length);
     welcome[0] = member.id;
-    welcome[1] = member.host ? 1 : 0;
+    // Flags: bit 0 the host; bits 1-2 the beat's thirds of a millisecond beyond welcome[3].
+    const thirds = Math.round(config.tickMs * 3);
+    welcome[1] = (member.host ? 1 : 0) | ((thirds % 3) << 1);
     welcome[2] = config.roomPlayers;
-    welcome[3] = Math.min(255, Math.round(config.tickMs));
+    welcome[3] = Math.min(255, Math.floor(thirds / 3));
     welcome[4] = code.length;
     welcome.write(code, 5, 'latin1');
     sendBinary(ws, packet(KIND.welcome, welcome));

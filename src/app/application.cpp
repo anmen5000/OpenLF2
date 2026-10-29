@@ -56,6 +56,47 @@ void wait_milliseconds(std::uint32_t milliseconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
 #endif
 }
+#ifdef __EMSCRIPTEN__
+// Browsers put the canvas on screen at their display refresh. A requestAnimationFrame loop notes when the page
+// last refreshed, so that frames can start just after a refresh: then each frame stays up for the same whole
+// number of refreshes (two at 60 Hz), where frames started by a timer near a refresh show up once or three times.
+EM_JS(void, openlf2_watch_display, (), {
+    if (globalThis.OpenLF2Display) return;
+    const display = globalThis.OpenLF2Display = {time: -1, count: 0};
+    const refresh = (time) => { display.time = time; display.count += 1; requestAnimationFrame(refresh); };
+    requestAnimationFrame(refresh);
+});
+// Milliseconds since the latest display refresh; -1 before the first.
+EM_JS(double, openlf2_display_age, (), {
+    const display = globalThis.OpenLF2Display;
+    return display && display.time >= 0 ? performance.now() - display.time : -1;
+});
+// Waits for the next display refresh, at most `limit` milliseconds (a hidden page has no refreshes).
+EM_ASYNC_JS(void, openlf2_wait_display, (int limit), {
+    await new Promise((resolve) => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        requestAnimationFrame(finish);
+        setTimeout(finish, limit);
+    });
+});
+// Frames at normal speed on the web: started on display refreshes, 33 1/3 ms apart (30 per second, two
+// refreshes at 60 Hz and four at 120 Hz; the original's 33 ms would slip a refresh every 50 frames). A frame
+// due within `slack` after a refresh starts at it, which keeps the frames' place among the refreshes.
+class DisplayPacer {
+public:
+    void restart(double now) { next_ = now; }
+    [[nodiscard]] bool due(double now) {
+        if (now + slack < next_) return false;
+        if (now - next_ > max_lag) next_ = now - max_lag;
+        next_ += step;
+        return true;
+    }
+private:
+    static constexpr double step = 100.0 / 3.0, slack = 4.0, max_lag = 100.0;
+    double next_ = 0;
+};
+#endif
 double elapsed_ms(std::chrono::steady_clock::time_point start) {
     return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
 }
@@ -1030,13 +1071,19 @@ Result<void> run(const Configuration& config) {
               << ", else data/control.txt); F1-F9 are the original's function keys.\n"
                  "Close the window to exit.\n";
     // Script frames (logic and drawing) follow the original 33 ms schedule, independent of
-    // the display refresh rate; events are still pumped on every loop iteration.
+    // the display refresh rate (the web build: 33 1/3 ms on display refreshes, see DisplayPacer);
+    // events are still pumped on every loop iteration.
     const auto origin = std::chrono::steady_clock::now();
     const auto milliseconds = [origin] {
         return static_cast<std::uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - origin).count());
     };
     FrameClock clock(milliseconds());
+#ifdef __EMSCRIPTEN__
+    openlf2_watch_display();
+    DisplayPacer pacer;
+    bool display_paced = false; // the previous frame started on a display refresh (DisplayPacer)
+#endif
     bool fast = false;
     bool waiting_network = false;
     // "Show FPS" (OpenLF2 extension): an exponential moving average of the real time between
@@ -1102,7 +1149,25 @@ Result<void> run(const Configuration& config) {
         // Drain a queued frame immediately when returning to current-frame
         // rendering. Its input tick was already scheduled and simulated.
         const bool draining = ready_frame && !ready_frame->waiting && !pipeline.active();
+#ifdef __EMSCRIPTEN__
+        // At normal speed, frames start on display refreshes. F5's fast mode and network rooms keep the timer:
+        // a room polls the network every few milliseconds and starts its frames after a refresh itself (" v").
+        const bool display_frame = !draining && !waiting_network && !fast;
+        if (display_frame) {
+            const double now = emscripten_get_now();
+            if (!display_paced) pacer.restart(now);
+            display_paced = true;
+            if (!pacer.due(now)) {
+                openlf2_wait_display(100);
+                continue;
+            }
+        } else {
+            display_paced = false;
+        }
+        if (!display_frame && !draining && !waiting_network && !clock.due(milliseconds(), fast)) {
+#else
         if (!draining && !waiting_network && !clock.due(milliseconds(), fast)) {
+#endif
             const auto wait = clock.sleep_ms(milliseconds(), fast);
             if (wait > 0) wait_milliseconds(wait);
             continue;
@@ -1203,6 +1268,13 @@ Result<void> run(const Configuration& config) {
         // real time between script frames actually run, not the nominal 33/3 ms tick), for the
         // "Show FPS" option (OpenLF2 extension; the original has no such display).
         held += " s" + std::to_string(static_cast<long long>(std::lround(measured_fps)));
+#ifdef __EMSCRIPTEN__
+        // Then " v" and how many milliseconds ago the display last refreshed: a network room starts its frames
+        // just after a refresh (base/game/room.lua), as DisplayPacer does at normal speed.
+        if (const double age = openlf2_display_age(); age >= 0) {
+            held += " v" + std::to_string(static_cast<long long>(std::lround(std::min(age, 600000.0))));
+        }
+#endif
         if (pipeline.active() && !ready_frame) {
             // Introduce the bounded queue by retaining one completed frame. The
             // previous image stays on screen; its actions/audio are not repeated.

@@ -6,8 +6,8 @@
 --
 -- stdout: "E <operation> <hex value>" asks the test for an engine call, answered on stdin by
 -- "ok <hex>" or "err <hex>"; "R <words>" answers a command. Commands (stdin), one per line:
---   start host|join [address]   poll   lobby   begin   names   slots   backlog
---   exchange <keys of players 1-4, comma separated, "-" for none> <function keys or -> <unlock bits> <hp>
+--   start host|join [address]   poll   lobby   begin   names   slots   backlog   tick
+--   exchange <keys of players 1-4, comma separated, "-" for none> <function keys or -> <unlock bits> <hp> [display age]
 local root = assert(arg[1], "usage: lua room-harness.lua <repository root>")
 package.path = root .. "/scripts/?.lua;" .. package.path
 
@@ -101,8 +101,11 @@ for line in io.lines() do
         answer(own.offset, own.count, table.concat(list, ","))
     elseif name == "backlog" then
         answer(room.backlog(state))
+    elseif name == "tick" then
+        answer(string.format("%.4f", state.tick))
     elseif name == "exchange" then
-        local input = {functions = command[3] ~= "-" and command[3] or "", unlock_bits = tonumber(command[4])}
+        local input = {functions = command[3] ~= "-" and command[3] or "", unlock_bits = tonumber(command[4]),
+            display_age = tonumber(command[6])}
         local index = 0
         for keys in (command[2] .. ","):gmatch("([^,]*),") do
             input[index] = keys ~= "-" and keys or ""

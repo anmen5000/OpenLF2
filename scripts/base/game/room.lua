@@ -2,7 +2,7 @@
 -- Copyright (c) 2026 OpenLF2 contributors
 
 -- Network play in a relay room (OpenLF2 extension; the web build): protocol 2 of
--- tools/relay/server.js. 2 to 8 computers play one game and the relay keeps the beat: every 33 ms
+-- tools/relay/server.js. 2 to 8 computers play one game and the relay keeps the beat: every 33 1/3 ms
 -- it sends each computer a frame holding the input of every computer, and each computer runs
 -- exactly the frames it receives, in order, so all stay in step without waiting for each other.
 -- A computer far from the relay sees the game a little later and its own keys take a little
@@ -26,6 +26,7 @@ local kinds = {hello = 0x01, start = 0x02, input = 0x03, ready = 0x04, check = 0
 local slot_count = 8
 local most_players = 8
 local connect_timeout, frame_timeout = 30000, 30000 -- ms
+local display_slack, display_catch_up = 4, 50 -- ms (see room.exchange)
 local check_interval = 8 -- frames between two desync checks sent
 local history_size = 1024 -- frames whose own checks are kept for comparison
 local max_backlog = 9000 -- frames (5 minutes) received and not run yet
@@ -193,7 +194,8 @@ local function handle(state, kind, payload)
         local id, flags, most, tick, length = payload:byte(1, 5)
         if not length or #payload ~= 5 + length then return nil, "Invalid network welcome" end
         state.id, state.host, state.most = id, flags % 2 == 1, math.min(most, most_players)
-        state.tick = tick > 0 and tick or 33
+        -- The beat: whole milliseconds, plus thirds of one in flags bits 1-2 (33 1/3 ms: 30 per second).
+        state.tick = (tick > 0 and tick or 33) + (math.floor(flags / 2) % 4 % 3) / 3
         state.code = payload:sub(6)
     elseif kind == kinds.lobby then
         if state.phase == "ready" then return true end
@@ -374,7 +376,16 @@ function room.exchange(state, input, hp)
         if now > state.deadline then return failed(state, "Network input timed out") end
         return nil
     end
-    if state.target and now < state.tick * frame.number + state.target then return nil end
+    if state.target then
+        local due = state.tick * frame.number + state.target
+        local age = input.display_age
+        if age then
+            -- In a browser the frame starts just after the first display refresh at (or a little before) its
+            -- time, so that frames reach the screen a steady number of refreshes apart (two at 60 Hz) instead
+            -- of wherever the timer was; a frame far behind runs at once.
+            if now - age < due - display_slack and now < due + display_catch_up then return nil end
+        elseif now < due then return nil end
+    end
     state.queue[state.queue_first] = nil
     state.queue_first = state.queue_first + 1
     -- Desync check: this computer's state at the start of the frame, against the others'. Its own
