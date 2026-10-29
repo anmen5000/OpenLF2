@@ -81,6 +81,81 @@ fetch_ruffle() {
 }
 fetch_ruffle
 
+# Then the same Ruffle 0.7.1 built from its source with OpenLF2's change in dist/ruffle-hf: a bitmap
+# drawn turned, flipped or scaled (Hero Fighter draws its fighters, shadows and effects so, in every
+# frame) is drawn on the CPU when the target's pixels are there, rather than on the GPU and copied
+# back at the next CPU operation. Built in Docker, in about 20 minutes; if any step fails, the stock
+# 0.7.1 above stays (Hero Fighter plays the same, only slower on some computers). RUFFLE_HF=0 skips it.
+# When it builds, the stock one goes in ruffle-stock/ beside it.
+ruffle_hf_commit=89a7049965f3090e706265670df309a5128233ac # v0.7.1
+ruffle_stock_dir="$build_dir/ruffle-stock"
+ruffle_hf_log="$build_dir/ruffle-hf.log"
+rm -rf "$ruffle_stock_dir" "$ruffle_hf_log"
+build_ruffle_hf() {
+    local work="$build_dir/ruffle-hf" image=openlf2-ruffle-hf container copied=0
+    local src="$work/ruffle"
+    rm -rf "$work"
+    mkdir -p "$work"
+    git clone --quiet --depth 1 --branch v0.7.1 --filter=blob:none --sparse \
+        https://github.com/ruffle-rs/ruffle.git "$src" || return 1
+    # Everything but the test movies (thousands of files the web build does not read).
+    git -C "$src" sparse-checkout set --no-cone '/*' '!/tests/tests/swfs/' || return 1
+    if [[ "$(git -C "$src" rev-parse HEAD)" != "$ruffle_hf_commit" ]]; then
+        printf 'warning: Ruffle v0.7.1 is not commit %s\n' "$ruffle_hf_commit" >&2
+        return 1
+    fi
+    cp "$repo_root/dist/ruffle-hf/draw_on_cpu.rs" "$src/core/src/bitmap/operations/draw_on_cpu.rs" || return 1
+    git -C "$src" apply "$repo_root/dist/ruffle-hf/operations.patch" || return 1
+    printf 'ruffle/.git\nruffle/target\nruffle/web/node_modules\n' > "$work/.dockerignore"
+    docker build --progress=plain --platform linux/amd64 -t "$image" \
+        -f "$repo_root/dist/ruffle-hf/Dockerfile" "$work" 2>&1 | tee "$ruffle_hf_log"
+    if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+        return 1
+    fi
+    container=$(docker create --platform linux/amd64 "$image") || return 1
+    docker cp "$container:/ruffle/web/packages/selfhosted/dist" "$work/dist" || copied=1
+    docker rm "$container" > /dev/null || true
+    docker rmi "$image" > /dev/null 2>&1 || true
+    docker builder prune --force > /dev/null 2>&1 || true
+    if [[ $copied -ne 0 || ! -f "$work/dist/ruffle.js" || -z "$(find "$work/dist" -maxdepth 1 -name '*.wasm' -print -quit)" ]]; then
+        printf 'warning: the Ruffle build made no ruffle.js or .wasm\n' >&2
+        return 1
+    fi
+    rm -f "$work/dist"/*.map
+    cp "$repo_root/dist/ruffle-hf/draw_on_cpu.rs" "$repo_root/dist/ruffle-hf/operations.patch" "$work/dist"/ || return 1
+    printf 'Ruffle 0.7.1 (https://github.com/ruffle-rs/ruffle, commit %s), built with OpenLF2'"'"'s change:\ndraw_on_cpu.rs (new: core/src/bitmap/operations/draw_on_cpu.rs) and operations.patch.\nRuffle is MIT or Apache-2.0 licensed (LICENSE_MIT, LICENSE_APACHE); so is the change.\n' \
+        "$ruffle_hf_commit" > "$work/dist/OPENLF2.txt" || return 1
+    # The stock one stays beside it, for pages opened with ruffle=stock (dist/pages/hero-fighter.js).
+    rm -rf "$ruffle_stock_dir"
+    if [[ -d "$ruffle_dir" ]]; then mv "$ruffle_dir" "$ruffle_stock_dir"; fi
+    mv "$work/dist" "$ruffle_dir"
+    rm -rf "$work"
+}
+if [[ "${RUFFLE_HF:-1}" != 0 ]]; then
+    if build_ruffle_hf; then
+        printf 'Ruffle for Hero Fighter: 0.7.1 with OpenLF2'"'"'s CPU drawing\n'
+    else
+        printf 'warning: Ruffle with OpenLF2'"'"'s change did not build: the site keeps the stock Ruffle 0.7.1\n' >&2
+        # On GitHub, also a note on the run's page with the build's last lines (the log is long).
+        if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+            note="Ruffle with OpenLF2's change did not build; the site keeps the stock Ruffle 0.7.1."
+            if [[ -f "$ruffle_hf_log" ]]; then
+                # Rust's errors (each with the lines that explain it), else the end of the log.
+                errors=$(grep -E -m 6 -A 10 'error(\[E[0-9]+\])?: ' "$ruffle_hf_log" | head -n 60 || true)
+                if [[ -z "$errors" ]]; then
+                    errors=$(tail -n 30 "$ruffle_hf_log")
+                fi
+                note+=$'\n'"$errors"
+            fi
+            note=${note//'%'/'%25'}
+            note=${note//$'\r'/'%0D'}
+            note=${note//$'\n'/'%0A'}
+            printf '::warning title=Ruffle for Hero Fighter::%s\n' "$note"
+        fi
+        rm -rf "$build_dir/ruffle-hf"
+    fi
+fi
+
 # Favicons are rendered from the project's SVG here, on the host, and handed to the container.
 python3 "$repo_root/tools/icons/make_icons.py" "$build_dir/icons"
 
@@ -99,11 +174,15 @@ cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
     "$build_dir/icons/web/apple-touch-icon.png" "$build_dir/native/"
 # Hero Fighter on the site page (dist/pages/index.html): its script, the version check it answers, and Ruffle.
 cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-ver.txt" "$build_dir/native/"
-rm -rf "$build_dir/native/ruffle"
+rm -rf "$build_dir/native/ruffle" "$build_dir/native/ruffle-stock"
 bundle_extra=(hero-fighter.js hf-ver.txt)
 if [[ -f "$ruffle_dir/ruffle.js" ]]; then
     cp -r "$ruffle_dir" "$build_dir/native/ruffle"
     bundle_extra+=(ruffle)
+fi
+if [[ -f "$ruffle_stock_dir/ruffle.js" ]]; then
+    cp -r "$ruffle_stock_dir" "$build_dir/native/ruffle-stock"
+    bundle_extra+=(ruffle-stock)
 fi
 python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
     --local "ffmpeg=$vendor_dir/ffmpeg-7.1.5/COPYING.LGPLv2.1" \

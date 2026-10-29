@@ -166,7 +166,7 @@ window.HeroFighter = (() => {
     rufflePromise = new Promise((resolve, reject) => {
       window.RufflePlayer = window.RufflePlayer || {};
       // Its files are beside ruffle.js; it should not look for other Flash content on the page.
-      window.RufflePlayer.config = Object.assign({ publicPath: folder, polyfills: false }, window.RufflePlayer.config || {});
+      window.RufflePlayer.config = Object.assign({}, window.RufflePlayer.config || {}, { publicPath: folder, polyfills: false });
       const script = document.createElement('script');
       script.src = folder + 'ruffle.js';
       script.onload = () => {
@@ -281,10 +281,26 @@ window.HeroFighter = (() => {
   async function start(options) {
     const { stage, site, status, log } = options;
     status('Starting Ruffle (the Flash player)…');
-    const ruffle = await loadRuffle(new URL('ruffle/', site).href);
+    // The site's Ruffle (ruffle/: built with OpenLF2's change when that build worked), or with ruffle=stock in the
+    // page's address the stock one beside it (ruffle-stock/), if the site has it.
+    let folder = new URL('ruffle/', site).href;
+    let ruffle = null;
+    if (/[?&]ruffle=stock(&|$)/.test(location.search)) {
+      try {
+        ruffle = await loadRuffle(new URL('ruffle-stock/', site).href);
+        folder = new URL('ruffle-stock/', site).href;
+      } catch (error) {
+        log('Hero Fighter: no stock Ruffle on this site (' + error.message + '): the usual one then');
+      }
+    }
+    if (!ruffle) ruffle = await loadRuffle(folder);
     // This page's own Ruffle, even when the browser has the Ruffle extension (another version): every game in a
     // network room must run the same Flash player, else their fights drift apart ("Synchronization error").
     const source = (ruffle.sources && ruffle.sources.local) || (typeof ruffle.local === 'function' && ruffle.local()) || ruffle.newest();
+    // For the log: which Ruffle this is (the site's own build, dist/ruffle-hf's CPU drawing, comes with OPENLF2.txt).
+    fetch(new URL('OPENLF2.txt', folder).href, { method: 'HEAD', cache: 'no-store' })
+      .then((response) => log('Hero Fighter: Ruffle ' + (source.version || '?') + (response.ok ? ", with OpenLF2's CPU drawing" : '')))
+      .catch(() => { /* only for the log */ });
     const { bytes, fixed } = await patchMovie(options.movie);
     if (fixed < 2) log('Hero Fighter: ' + fixed + ' of the 2 e-mail/password checks fixed for Ruffle (another version of the game?)');
     // The build the relay's rooms compare: this movie and this Ruffle.

@@ -1,0 +1,82 @@
+--- a/core/src/bitmap/operations.rs
++++ b/core/src/bitmap/operations.rs
+@@ -21,6 +21,7 @@
+ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
+ 
+ mod copy_on_cpu;
++mod draw_on_cpu;
+ 
+ /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
+ /// Instead of directly manipulating the BitmapData in each place, they should call
+@@ -1463,6 +1464,71 @@
+                 return Ok(());
+             }
+         }
++
++        // OpenLF2: any other draw of a bitmap goes on the CPU too, when the target's pixels are
++        // there and the blend mode is one the GPU does with fixed blending; on the GPU, it would
++        // cost a GPU -> CPU copy at the target's next CPU operation. See `draw_on_cpu`.
++        if let Some(cpu_blend) = draw_on_cpu::CpuBlend::for_mode(blend_mode) {
++            let whole_target = PixelRegion::for_whole_size(target.width(), target.height());
++            let matrix = draw_on_cpu::PixelMatrix {
++                a: f64::from(transform.matrix.a),
++                b: f64::from(transform.matrix.b),
++                c: f64::from(transform.matrix.c),
++                d: f64::from(transform.matrix.d),
++                tx: transform.matrix.tx.to_pixels(),
++                ty: transform.matrix.ty.to_pixels(),
++            };
++            if !source.ptr_eq(target)
++                && target.can_read(whole_target)
++                && draw_on_cpu::can_draw(&matrix)
++            {
++                let mut area = dirty_region;
++                if let Some(clip_rect) = &clip_rect {
++                    // The target pixels whose centres are in the clip rectangle (which the
++                    // matrix does not move, as in Flash).
++                    let edge = |twips: Twips| (twips.to_pixels() - 0.5).ceil().max(0.0) as u32;
++                    area.x_min = area.x_min.max(edge(clip_rect.x_min));
++                    area.y_min = area.y_min.max(edge(clip_rect.y_min));
++                    area.x_max = area.x_max.min(edge(clip_rect.x_max));
++                    area.y_max = area.y_max.min(edge(clip_rect.y_max));
++                }
++                if area.x_min >= area.x_max || area.y_min >= area.y_max {
++                    return Ok(());
++                }
++                let color_transform = if transform.color_transform == ColorTransform::default() {
++                    None
++                } else {
++                    Some(&transform.color_transform)
++                };
++                let mut target_data = target.sync(context.renderer).borrow_mut(context.gc());
++                // (A source drawn on the GPU comes back to the CPU once, here.)
++                let source_data = source.read_area(
++                    PixelRegion::for_whole_size(source.width(), source.height()),
++                    context.renderer,
++                );
++                let width = target_data.width();
++                let opaque = !target_data.transparency();
++                let drawn = draw_on_cpu::draw_bitmap(
++                    draw_on_cpu::Pixels {
++                        pixels: source_data.raw_pixels(),
++                        width: source_data.width(),
++                        height: source_data.height(),
++                    },
++                    target_data.raw_pixels_mut(),
++                    width,
++                    opaque,
++                    [area.x_min, area.y_min, area.x_max, area.y_max],
++                    matrix,
++                    color_transform,
++                    smoothing,
++                    cpu_blend,
++                );
++                if drawn {
++                    target_data.set_cpu_dirty(context.gc(), area);
++                    return Ok(());
++                }
++            }
++        }
+     }
+ 
+     let mut transform_stack = ruffle_render::transform::TransformStack::new();
