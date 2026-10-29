@@ -281,7 +281,10 @@ end
 function flow.draw(state, context)
     context.replay_drop(can_drop_replay(state))
     local shown_options = user_options.current()
-    context.render_filter(shown_options.upscaling_filter)
+    -- xBRZ is a shader some hosts cannot run (they say so every frame): those draw with the pixel-art filter.
+    local filter = shown_options.upscaling_filter
+    if filter == "xbrz" and state.filters and not state.filters.xbrz then filter = "sharp" end
+    context.render_filter(filter)
     -- Fullscreen (OpenLF2 extension): no-op without a real window; reasserted every frame
     -- like the filter above.
     context.fullscreen(shown_options.fullscreen)

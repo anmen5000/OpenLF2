@@ -57,10 +57,15 @@ local gamepad_defaults = {
     dj = {right = 72, bottom = 165, radius = 26},
     daj = {right = 72, bottom = 80, radius = 26},
 }
-local defaults = {battlefield_layout = "classic", gamepad = gamepad_defaults, unlock_characters = false, upscaling_filter = "sharp", fullscreen = false, digipad = true, show_fps = false,
-    rumble = false, show_gamepad = false, language = "default", font_antialiasing = true,
-    character_shading = false, projected_shadows = false,
+-- The defaults are the web version's look: xBRZ, shading and shadows, the FPS counter, rumble and the
+-- hidden characters (where xBRZ cannot run, base/ui/flow draws with "sharp" instead).
+local defaults = {battlefield_layout = "classic", gamepad = gamepad_defaults, unlock_characters = true, upscaling_filter = "xbrz", fullscreen = false, digipad = true, show_fps = true,
+    rumble = true, show_gamepad = false, language = "default", font_antialiasing = true,
+    character_shading = true, projected_shadows = true,
     light_azimuth = -50, light_elevation = 70, shadow_blur = 2, shadow_opacity = 0.275}
+-- Options saved before these defaults (no "defaults_version": the first start wrote every option, the old
+-- defaults included) take them once, keeping a filter other than the old default "sharp"; see options.load.
+local defaults_version = 2
 local current
 
 local function valid_filter(value)
@@ -99,7 +104,8 @@ local function copy(values)
         light_elevation = angle(values.light_elevation, defaults.light_elevation, 12, 89),
         shadow_blur = math.floor(angle(values.shadow_blur, defaults.shadow_blur, 0, 8)),
         shadow_opacity = angle(values.shadow_opacity, defaults.shadow_opacity, 0, 1),
-        language = i18n.is_language(values.language) and values.language or defaults.language}
+        language = i18n.is_language(values.language) and values.language or defaults.language,
+        defaults_version = defaults_version}
 end
 
 -- The saved options, or the defaults for anything missing or invalid.
@@ -145,6 +151,12 @@ function options.load()
     if type(saved) == "table" then values.gamepad = copy_gamepad(saved.gamepad) end
     if type(saved) == "table" and (saved.battlefield_layout == "classic" or saved.battlefield_layout == "expand") then
         values.battlefield_layout = saved.battlefield_layout
+    end
+    if type(saved) == "table" and saved.defaults_version ~= defaults_version then
+        if values.upscaling_filter == "sharp" then values.upscaling_filter = defaults.upscaling_filter end
+        for _, key in ipairs({"unlock_characters", "show_fps", "rumble", "character_shading", "projected_shadows"}) do
+            values[key] = defaults[key]
+        end
     end
     current = values
     return copy(values)

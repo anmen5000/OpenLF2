@@ -9,6 +9,21 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+// Whether the browser draws without a graphics card (WebGL names the real one behind an extension): SwiftShader,
+// llvmpipe or Windows' Basic Render Driver run the xBRZ program at a third of the frame rate or less.
+EM_JS(int, openlf2_webgl_in_software, (), {
+    var gl = GL.currentContext && GL.currentContext.GLctx;
+    if (!gl) return 0;
+    var info = gl.getExtension("WEBGL_debug_renderer_info");
+    var name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || "");
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name) ? 1 : 0;
+});
+#endif
 
 namespace openlf2 {
 namespace {
@@ -232,6 +247,12 @@ std::unique_ptr<FrameUpscaler> make_gl_upscaler(SDL_Renderer& renderer) {
     const bool es = name == "opengles2";
     if (!es && name != "opengl") return nullptr;
     if (SDL_GL_GetCurrentContext() == nullptr) return nullptr;
+#ifdef __EMSCRIPTEN__
+    if (openlf2_webgl_in_software() != 0) {
+        std::cerr << "xBRZ: off, this browser draws without a graphics card (too slow for it)\n";
+        return nullptr;
+    }
+#endif
     Functions gl;
     if (!load_functions(gl)) return nullptr;
     while (gl.get_error() != gl_no_error) {} // leave the renderer's error state clean
