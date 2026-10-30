@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>INSANE! — máy tự học chiêu của mọi mod · LF2 Online của Xôi</title>
-<meta name="description" content="INSANE! là mức máy chơi trên CRAZY! của LF2 Online (OpenLF2): máy tự học bộ chiêu của từng nhân vật từ dữ liệu mod rồi đánh bằng dự đoán. Giới thiệu cách hoạt động, kết quả thử nghiệm và chỗ mã nguồn để phát triển thêm.">
+<title>INSANE! — the computer player that learns any mod's fighters · LF2 Online by Xôi</title>
+<meta name="description" content="INSANE! is the computer-player level above CRAZY! in LF2 Online (an OpenLF2 build): before each match it learns every fighter's moves from the mod's own data, then fights by prediction. How it works, benchmark results, and where the code is so you can build on it.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="alternate icon" href="favicon.ico" sizes="any">
@@ -47,7 +47,7 @@
   .hero img { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
   .hero .kicker { color: var(--text-dim); margin: 1rem 0 0; font-size: .95rem; letter-spacing: .08em; text-transform: uppercase; }
   .hero h1 { font-size: 2.8rem; margin: .3rem 0 .4rem; letter-spacing: -.02em; color: var(--hot); text-shadow: 0 0 30px rgba(255,107,107,.35); }
-  .hero p.tagline { font-size: 1.15rem; color: var(--text-dim); max-width: 44rem; margin: 0 auto 1.6rem; }
+  .hero p.tagline { font-size: 1.15rem; color: var(--text-dim); max-width: 46rem; margin: 0 auto 1.6rem; }
   .cta-row { display: flex; gap: .9rem; justify-content: center; flex-wrap: wrap; }
   .btn {
     display: inline-block; padding: .7rem 1.4rem; border-radius: 999px; font-weight: 600;
@@ -61,11 +61,8 @@
 
   section { padding: 2.6rem 0 1.2rem; }
   section h2 { font-size: 1.55rem; margin-bottom: .3rem; }
+  section h3 { font-size: 1.1rem; margin: 1.6rem 0 .4rem; }
   section p.lede { color: var(--text-dim); margin-top: 0; max-width: 48rem; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1.4rem; }
-  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 1.2rem 1.3rem; }
-  .card h3 { margin: 0 0 .4rem; font-size: 1.05rem; }
-  .card p { margin: 0; color: var(--text-dim); font-size: .93rem; }
   .steps { counter-reset: step; list-style: none; padding: 0; margin: 1.2rem 0 0; display: grid; gap: .8rem; }
   .steps li { position: relative; padding: .9rem 1rem .9rem 3.4rem; background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; color: var(--text-dim); }
   .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 1rem; top: .85rem; width: 1.7rem; height: 1.7rem; border-radius: 50%;
@@ -80,154 +77,153 @@
   .path { display: grid; grid-template-columns: max-content 1fr; gap: .4rem 1rem; margin-top: 1rem; font-size: .93rem; }
   .path code { white-space: nowrap; }
   .path span { color: var(--text-dim); }
+  ul.plain { color: var(--text-dim); font-size: .93rem; padding-left: 1.2rem; }
+  ul.plain li { margin: .3rem 0; }
   @media (max-width: 640px) { .path { grid-template-columns: 1fr; } .path span { margin-bottom: .4rem; } .hero h1 { font-size: 2.2rem; } }
   footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; margin-top: 2rem; }
   footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
-  .en h2, .en h3 { font-style: normal; }
-  .lang-tag { display: inline-block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--bg); background: var(--accent); border-radius: 999px; padding: .15rem .6rem; margin-left: .5rem; vertical-align: middle; }
 </style>
 </head>
 <body>
   <header class="hero">
     <div class="wrap">
       <img src="icon.svg" alt="">
-      <p class="kicker">LF2 Online của Xôi · mức máy thứ năm</p>
+      <p class="kicker">LF2 Online by Xôi · the fifth computer-player level</p>
       <h1>INSANE!</h1>
-      <p class="tagline">Mức máy chơi <strong>trên CRAZY!</strong>: máy không chơi theo kịch bản viết sẵn cho từng nhân vật mà
-        <strong>tự học bộ chiêu của nhân vật từ dữ liệu của mod</strong> ngay trước trận, rồi đánh bằng cách dự đoán
-        đòn nào trúng, khi nào đối thủ kịp đỡ hay đánh trả. Chạy với mọi mod chơi được trên trang này.</p>
+      <p class="tagline">A computer player <strong>above CRAZY!</strong> that follows no hand-written script for any
+        fighter. Right before the match it <strong>learns the fighter's moves from the mod's own data</strong>, then
+        fights by predicting which blow lands, and when the opponent can guard or strike back. It works with every mod
+        this site plays.</p>
       <div class="cta-row">
-        <a class="btn primary" href="./">Chơi ngay</a>
-        <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua">Xem mã nguồn AI</a>
-        <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2">Kho mã nguồn trên GitHub</a>
+        <a class="btn primary" href="./">Play now</a>
+        <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua">Read the AI source</a>
+        <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2">Repository on GitHub</a>
       </div>
     </div>
   </header>
 
   <div class="wrap">
     <section id="what">
-      <h2>INSANE! là gì?</h2>
-      <p class="lede">Little Fighter 2 gốc có bốn mức máy: Easy, Normal, Difficult và CRAZY!. Máy ở các mức đó đánh theo
-        bộ quy tắc viết sẵn cho mười mấy nhân vật gốc; sang mod (One Piece GrandWorld, Naruto: The Setting Dawn, KT-LF2,
-        Sx2…) nó không biết chiêu mới là gì, nên thường chỉ đấm, đá và tung bừa vài chiêu D+A.</p>
-      <p class="lede"><b>INSANE!</b> là mức thứ năm, chọn ngay sau CRAZY! ở màn chọn nhân vật (và trong Tournament, Battle).
-        Nó không chứa một dòng nào nói về Luffy hay Naruto: tất cả những gì nó biết về một nhân vật là do nó
-        <b>tự chơi thử từng chiêu trong một bản sao riêng của trận đấu</b> trước khi vào trận. Vì thế nó dùng được
-        cả chiêu của những mod chưa ai từng viết AI cho.</p>
-      <div class="callout">Cách chọn: ở màn chọn nhân vật, bấm chuyển mức khó qua Easy → Normal → Difficult → CRAZY! → <b>INSANE!</b>.
-        Trong phòng mạng, chủ phòng chọn mức; mọi máy trong phòng tính giống hệt nhau nên trận đấu và bản ghi (replay) luôn khớp.</div>
+      <h2>What INSANE! is</h2>
+      <p class="lede">The original Little Fighter 2 has four computer levels: Easy, Normal, Difficult and CRAZY!. Its
+        computer player is a set of rules written for the original fighters, keyed by their ids. Put it in a mod
+        (One Piece GrandWorld, Naruto: The Setting Dawn, KT-LF2, Sx2…) and it has no idea what the new moves are, so it
+        mostly punches, kicks and throws the odd D+A at random.</p>
+      <p class="lede"><b>INSANE!</b> is a fifth level, selected right after CRAZY! on the character selection screen (and in
+        Tournament and Battle mode). It contains no line about Luffy or Naruto: everything it knows about a fighter comes
+        from <b>playing each of that fighter's moves itself, in a private copy of the match</b>, before the match begins.
+        That is why it can use the moves of mods nobody has ever written an AI for.</p>
+      <div class="callout">How to select it: on the character selection screen, cycle the difficulty Easy → Normal → Difficult
+        → CRAZY! → <b>INSANE!</b>. In a network room the host picks the level; every machine in the room computes exactly the
+        same thing, so the match and its recording (replay) always stay in sync.</div>
     </section>
 
     <section id="how">
-      <h2>Nó học và đánh như thế nào</h2>
-      <p class="lede">Toàn bộ nằm trong một tệp Lua, không cần huấn luyện trước, không cần GPU: mọi "kiến thức" được tính lại từ dữ liệu
-        của mod mỗi khi vào trận, theo cùng một cách trên mọi máy.</p>
+      <h2>How it learns and fights</h2>
+      <p class="lede">All of it lives in one Lua file. There is no training step and no GPU: all of its "knowledge" is
+        recomputed from the mod's data when a match starts, in exactly the same way on every machine.</p>
       <ol class="steps">
-        <li><b>Học chiêu.</b> Với mỗi nhân vật, máy tạo một bản sao thu nhỏ của trận đấu (chỉ có nó và một hình nộm), rồi bấm từng tổ hợp
-          phím: D+A, D+J theo bốn hướng, D+J+A, đấm, đấm khi chạy, đấm khi nhảy, lướt, và cả các phím bấm tiếp trong lúc đang ra chiêu
-          (chuỗi chiêu). Nó ghi lại chiêu đó đánh ở đâu, vào lúc nào, mạnh bao nhiêu, tốn bao nhiêu MP, khi nào mình rảnh tay trở lại,
-          và cả những vật thể chiêu tạo ra (chưởng, phân thân, vùng khựng) bay đi đâu.</li>
-        <li><b>Dự đoán.</b> Trong trận, mỗi khung hình máy tính xem đòn nào của đối thủ sắp chạm mình (kể cả chưởng đang bay),
-          đối thủ còn bị khựng/ngã bao lâu, đang nhấp nháy bất tử hay không, và từng chiêu của mình sẽ trúng sau bao nhiêu khung hình
-          nếu bấm ngay bây giờ.</li>
-        <li><b>Chọn đòn.</b> Mỗi chiêu được chấm điểm: sát thương, khả năng bị đỡ, nguy cơ đối thủ đánh trả trước khi chiêu kịp trúng,
-          chi phí MP, thời gian "hở sườn" sau chiêu. Chiêu dài hơi (ví dụ chiêu 585 sát thương của Luffy mất 44 khung hình mới ra)
-          chỉ được dùng khi đối thủ còn bị khóa đủ lâu. Chiêu chưa dùng trong trận được ưu tiên hơn một chút, để người xem thấy đủ bộ chiêu.</li>
-        <li><b>Phòng thủ và vị trí.</b> Đỡ hoặc tránh đòn sắp tới, không đỡ đòn phá đỡ, đứng ngay ngoài tầm tay đối thủ để nó phải bước vào
-          đòn của mình, tránh vùng nguy hiểm, vòng qua vật cản, chạy khi xa, nhảy vào hoặc lướt tới khi một chiêu trên không sẽ trúng.</li>
-        <li><b>Thế đứng và nạp năng lượng.</b> Chiêu kiểu "giữ phím" (vùng tối của Blackbeard, nạp chakra trong Naruto) được giữ chừng nào còn
-          có ích và rời đúng lúc; nạp MP khi đối thủ ở xa hoặc đang nằm.</li>
-        <li><b>Ngã và dậy.</b> Khi bị đánh bay, máy chỉ lộn dậy sớm nếu chỗ đáp an toàn; nếu đối thủ đang chờ sẵn, nó để ngã hẳn
-          (lúc nằm không bị đánh) rồi đứng dậy trong lúc nhấp nháy bất tử, và tận dụng khoảng bất tử đó để đánh trước.</li>
+        <li><b>Learning the moves.</b> For each fighter, the AI builds a small private copy of the match (just the fighter
+          and a dummy) and presses every key combination: D+A and D+J in each direction, D+J+A, the punches, the running,
+          jumping and dashing attacks, and the keys pressed during a move (chains, including counters out of the guard).
+          It records where and when each move hits, how hard, what it costs in MP, when the fighter is free again, and
+          where the things the move spawns (projectiles, clones, fields) fly.</li>
+        <li><b>Predicting.</b> Every frame of the match it works out which enemy attack is about to reach it (including
+          projectiles in flight), how long the opponent stays stunned or down, whether the opponent is blinking
+          (invulnerable), and after how many frames each of its own moves would land if started now.</li>
+        <li><b>Choosing a move.</b> Each move is scored: damage, the chance of being guarded, the risk that the opponent
+          hits back before the move lands, MP cost, how long the fighter is left open afterwards. Slow moves (Luffy's
+          585-damage special takes 44 frames to come out) are used only when the opponent is locked down long enough.
+          A move not yet used in the match gets a small bonus, so spectators see the whole kit.</li>
+        <li><b>Defence and positioning.</b> Guard or sidestep what is coming, never guard a blow that would break the
+          guard, stand just outside the opponent's arms so it has to walk into the AI's own blow, avoid the danger zones
+          of its quick strong moves, walk around obstacles, run when far away, jump in or dash in when an air move
+          would land.</li>
+        <li><b>Stances and charging.</b> Held moves (Blackbeard's dark field, the chakra charge in Naruto) are kept as long
+          as they serve and left in time; MP is charged when the opponent is far away or lying down.</li>
+        <li><b>Knocked down.</b> When sent flying, the AI flips back up early only if the landing spot is safe; if the
+          opponent is waiting there, it lets the fall finish (a lying fighter cannot be hit), gets up during the
+          invulnerability blink, and uses that blink to strike first.</li>
       </ol>
-      <p class="note">Nhân vật của mod đã có kịch bản AI riêng đủ lớn (ví dụ Dragon Ball Super) vẫn chơi bằng kịch bản đó ở mức CRAZY!,
-        vì tác giả mod hiểu nhân vật của họ hơn.</p>
+      <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
+        script at CRAZY! strength, because the mod's author knows their fighter better.</p>
     </section>
 
     <section id="results">
-      <h2>Kết quả thử nghiệm</h2>
-      <p class="lede">INSANE! đấu với CRAZY! (máy gốc của chính mod đó), mỗi mod 40 trận 1-chọi-1 với 10 cặp nhân vật khác nhau,
-        giới hạn 9000 khung hình một trận; hạt giống ngẫu nhiên cố định nên ai cũng chạy lại được cùng kết quả.</p>
+      <h2>Benchmark results</h2>
+      <p class="lede">INSANE! against CRAZY! (the mod's own computer player), 40 one-on-one games per mod over 10 different
+        fighter pairs, 9000 frames per game at most, with a fixed random seed so anyone can reproduce the exact
+        result.</p>
       <table>
-        <thead><tr><th>Mod</th><th>INSANE! thắng</th><th>CRAZY! thắng</th><th>Hòa</th><th>Máu còn lại trung bình (INSANE! / CRAZY!)</th></tr></thead>
-        <tbody id="results-body">
+        <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
+        <tbody>
           <tr><td>One Piece GrandWorld</td><td class="num">34</td><td class="num">4</td><td class="num">2</td><td class="num">422 / 44</td></tr>
           <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">299 / 16</td></tr>
-          <tr><td>KT-LF2 v3.0 (nhân vật LF2 gốc + mới)</td><td class="num">24</td><td class="num">16</td><td class="num">0</td><td class="num">139 / 88</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">24</td><td class="num">16</td><td class="num">0</td><td class="num">139 / 88</td></tr>
           <tr><td>Sx2 ~ The power of emancipation</td><td class="num">27</td><td class="num">13</td><td class="num">0</td><td class="num">149 / 59</td></tr>
         </tbody>
       </table>
-      <p class="note">Số liệu của bản 16 với hạt giống <code>--seed 12345</code>; một hạt giống khác (777) cho 37–2, 36–4, 23–17 và 29–11.
-        "Máu còn lại" là trung bình trên cả 40 trận, kể cả trận thua (0). Với KT-LF2 máy gốc đã biết sẵn chiêu của các nhân vật LF2
-        gốc nên hai bên gần ngang nhau; với các mod có nhân vật mới, máy gốc gần như không biết dùng chiêu.</p>
+      <p class="note">Version 16 figures with <code>--seed 12345</code>; another seed (777) gives 37–2, 36–4, 23–17 and 29–11.
+        "HP left" is the average over all 40 games, lost games counting as 0. In KT-LF2 the original computer player already
+        knows the original fighters' moves, so the two are close; in mods with new fighters it barely knows how to use them.</p>
     </section>
 
     <section id="code">
-      <h2>Mã nguồn và phát triển thêm</h2>
-      <p class="lede">Toàn bộ dự án theo giấy phép MIT (không gồm trò chơi gốc và các mod). AI nằm gọn trong một tệp, viết bằng Lua 5.2,
-        chạy y hệt trên web, Windows, Linux, macOS, Android. Mời bạn đọc, sửa và gửi pull request.</p>
+      <h2>Source code and building on it</h2>
+      <p class="lede">The whole project is MIT-licensed (the original game and the mods are not covered). The AI is a single
+        Lua 5.2 file that runs identically on the web, Windows, Linux, macOS and Android. Read it, change it, send a pull
+        request.</p>
       <div class="path">
-        <code>scripts/base/game/smart_ai.lua</code><span>Toàn bộ INSANE!: học chiêu (<code>analyze</code>, <code>play</code>), dự đoán
-          (<code>earliest_threat</code>, <code>move_hits</code>), chấm điểm và chọn đòn (<code>best_attack</code>, <code>attack_score</code>,
-          <code>approach_attack</code>), phòng thủ (<code>answer</code>), và vòng điều khiển mỗi khung hình (<code>smart.control</code>).</span>
-        <code>scripts/base/game/ai_scripts.lua</code><span>Chạy kịch bản AI riêng của mod (tệp <code>ai/*.as</code>) và quyết định nhân vật nào
-          giữ kịch bản của mod thay vì INSANE!.</span>
-        <code>scripts/base/game/ai.lua</code><span>Máy gốc của LF2 (Easy → CRAZY!), để so sánh.</span>
-        <code>scripts/base/game/match.lua</code><span>Nơi gọi AI mỗi khung hình (<code>read_input</code>) và học trước các nhân vật khi tạo trận.</span>
-        <code>scripts/base/ui/character_select.lua</code><span>Thêm mức INSANE! vào vòng chọn mức khó (Tournament và Battle có tệp riêng cùng thư mục).</span>
-        <code>tools/ai-bench/</code><span>Bộ chạy thử: cho INSANE! đấu với máy gốc hàng loạt, in bảng chiêu máy đã học và tần suất dùng,
-          so sánh hai phiên bản của tệp AI.</span>
+        <code>scripts/base/game/smart_ai.lua</code><span>All of INSANE!: learning (<code>analyze</code>, <code>play</code>),
+          prediction (<code>earliest_threat</code>, <code>move_hits</code>), scoring and choosing (<code>best_attack</code>,
+          <code>attack_score</code>, <code>approach_attack</code>), defence (<code>answer</code>), and the per-frame control
+          loop (<code>smart.control</code>).</span>
+        <code>scripts/base/game/ai_scripts.lua</code><span>Runs a mod's own AI scripts (<code>ai/*.as</code>) and decides which
+          fighters keep the mod's script instead of INSANE!.</span>
+        <code>scripts/base/game/ai.lua</code><span>The original LF2 computer player (Easy to CRAZY!), for comparison.</span>
+        <code>scripts/base/game/match.lua</code><span>Where the AI is called each frame (<code>read_input</code>) and where the
+          fighters are learned when a match is created.</span>
+        <code>scripts/base/ui/character_select.lua</code><span>Adds INSANE! to the difficulty cycle (Tournament and Battle mode
+          have their own files in the same folder).</span>
+        <code>tools/ai-bench/</code><span>The test bench: runs INSANE! against the original computer player in bulk, lists what
+          the AI learned about a fighter and how often it uses each move, compares two versions of the AI file.</span>
       </div>
-      <h3>Vài chỗ dễ bắt đầu</h3>
-      <ul class="note">
-        <li><code>smart.levels</code>: thời gian phản ứng của từng mức; thêm mức mới chỉ là thêm một dòng.</li>
-        <li><code>attack_score</code>: công thức chấm điểm một đòn. Muốn máy liều hơn hay cẩn thận hơn, sửa ở đây.</li>
-        <li><code>danger_at</code>, <code>preferred_range</code>: cách máy chọn chỗ đứng.</li>
-        <li><code>approach_attack</code>: nhảy vào và lướt tới; <code>stance_exit</code>: thế đứng kiểu giữ phím.</li>
-        <li>Những gì chưa làm: chiêu dịch chuyển tới đối thủ (<code>teleport</code>) mới được ghi nhận chứ chưa dùng đúng cách; chiêu hồi máu/buff
-          không gây sát thương chưa có cách chấm điểm; phối hợp đồng đội trong trận 2-chọi-2.</li>
+      <h3>Good places to start</h3>
+      <ul class="plain">
+        <li><code>smart.levels</code>: the reaction time of each level; a new level is one more line.</li>
+        <li><code>attack_score</code>: the formula that scores a blow. To make the AI bolder or more careful, change it here.</li>
+        <li><code>danger_at</code>, <code>preferred_range</code>: how the AI chooses where to stand.</li>
+        <li><code>approach_attack</code>: jumping in and dashing in; <code>stance_exit</code>: held stances.</li>
+        <li>Not done yet: teleport-to-enemy moves (<code>teleport</code>) are recorded but not used properly; healing and
+          buff moves that deal no damage have no score yet; no teamwork in 2-on-2.</li>
       </ul>
-      <pre><code># Chạy thử trên máy (xem tools/ai-bench/README.md): 40 trận INSANE! đấu CRAZY! của mod One Piece
+      <pre><code># Run the bench on your machine (see tools/ai-bench/README.md): 40 games of INSANE! against CRAZY! in the One Piece mod
 openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""</code></pre>
-      <p class="note">Mọi quyết định của máy chỉ phụ thuộc vào trạng thái trận đấu, không dùng số ngẫu nhiên riêng, nên bản ghi và
-        trận mạng luôn tái hiện đúng. Khi sửa AI, nhớ chạy <code>replaytest</code> trong bộ chạy thử để chắc điều đó còn đúng.</p>
+      <p class="note">Every decision depends only on the state of the match — the AI draws no random numbers of its own — so
+        recordings and network games always replay exactly. After changing the AI, run <code>replaytest</code> in the bench
+        to make sure that still holds.</p>
     </section>
 
     <section id="credits">
-      <h2>Về bản dựng này</h2>
-      <p class="lede"><b>LF2 Online</b> là bản dựng OpenLF2 do <b>Xôi</b> duy trì: trang chơi trên web, máy chủ phòng mạng (relay) kèm
-        kho mod, tài liệu tiếng Việt và mức máy INSANE!. Mức INSANE! do Xôi đặt bài toán, kiểm thử trên từng mod và góp ý qua
-        nhiều bản; phần lập trình được thực hiện cùng Claude (Anthropic). OpenLF2 là dự án mã nguồn mở của
-        <a href="https://github.com/OpenLF2/OpenLF2">cộng đồng OpenLF2</a>.</p>
-    </section>
-
-    <section id="english" class="en">
-      <h2>In English <span class="lang-tag">EN</span></h2>
-      <p class="lede"><b>INSANE!</b> is a fifth computer-player level above CRAZY! in this OpenLF2 build (LF2 Online, maintained by Xôi).
-        Instead of hand-written rules for the original fighters, it <b>learns every fighter's moves from the mod's own data</b> right
-        before the match: it plays each key combination (D+A, D+J, D+J+A, the punches, air, run and dash attacks, and the keys pressed
-        during a move) in a private copy of the game and records where, when and how hard each one hits, what it spawns, what it costs
-        and when the fighter is free again. In the match it predicts what is about to hit it, how long the opponent stays stunned or
-        down, and when each of its own moves would land, then scores the moves (damage, chance of being guarded, the opponent's counter,
-        MP, recovery) and picks one; it holds charging and field stances while they serve, jumps or dashes in when an air move would land,
-        stays down when flipping up would be punished, and uses its get-up invulnerability. Everything is deterministic, so replays and
-        network games stay in sync. Fighters whose mod ships a substantial AI script of its own keep that script at CRAZY!.</p>
-      <p class="lede">The whole thing is one MIT-licensed Lua file: <a href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua"><code>scripts/base/game/smart_ai.lua</code></a>
-        in <a href="https://github.com/anmen5000/OpenLF2">anmen5000/OpenLF2</a>, with a test bench under <code>tools/ai-bench/</code>.
-        Pull requests are welcome.</p>
+      <h2>About this build</h2>
+      <p class="lede"><b>LF2 Online</b> is the OpenLF2 build maintained by <b>Xôi</b>: the web page, the relay server for
+        network rooms with its library of mods, the Vietnamese player guide, and the INSANE! computer player. INSANE! was
+        Xôi's problem statement; Xôi tested it mod by mod and gave feedback over many versions, and the programming was done
+        together with Claude (Anthropic). OpenLF2 itself is the open-source project of the
+        <a href="https://github.com/OpenLF2/OpenLF2">OpenLF2 community</a>.</p>
     </section>
   </div>
 
   <footer>
     <div class="wrap">
-      <div>LF2 Online — bản dựng OpenLF2 của Xôi. OpenLF2 không liên quan tới và không được các tác giả của
-        <a href="https://www.lf2.net/">Little Fighter 2</a> bảo trợ.</div>
+      <div>LF2 Online — Xôi's build of OpenLF2. OpenLF2 is not affiliated with or endorsed by the creators of
+        <a href="https://www.lf2.net/">Little Fighter 2</a>.</div>
       <div class="links">
-        <a href="./">Chơi</a>
-        <a href="https://github.com/anmen5000/OpenLF2">GitHub của Xôi</a>
+        <a href="./">Play</a>
+        <a href="https://github.com/anmen5000/OpenLF2">Xôi's GitHub</a>
         <a href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua">smart_ai.lua</a>
-        <a href="https://github.com/OpenLF2/OpenLF2">OpenLF2 gốc</a>
-        <a href="https://github.com/anmen5000/OpenLF2/blob/main/LICENSE">Giấy phép MIT</a>
+        <a href="https://github.com/OpenLF2/OpenLF2">OpenLF2 upstream</a>
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/LICENSE">MIT License</a>
       </div>
     </div>
   </footer>

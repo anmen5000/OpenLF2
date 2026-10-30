@@ -1,9 +1,15 @@
 name: WebAssembly
 
 'on':
-  #push:
-  #pull_request:
+  # Every push to main publishes the site (the Windows emulator test only runs when started by hand).
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      windows_test:
+        description: After publishing, play the relay's Naruto mod on the Windows emulator page for a while and keep screenshots and Wine's output in the windows-test branch
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -46,9 +52,53 @@ jobs:
             out/OpenLF2-Web.zip.sha256
           if-no-files-found: error
 
+  # The Windows emulator for mods OpenLF2 cannot read (dist/boxedwine/build.sh): built once and kept in the
+  # Actions cache until its build script changes.
+  windows:
+    name: Windows emulator (BoxedWine)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write # only to keep a failed build's log in the windows-test branch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the emulator
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: out/windows
+          key: windows-${{ hashFiles('dist/boxedwine/build.sh', 'dist/boxedwine/patch-shell.py') }}
+      - name: Build the emulator
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          sudo apt-get update
+          sudo apt-get install -y cabextract
+          mkdir -p out/windows-log
+          bash dist/boxedwine/build.sh out/windows 2>&1 | tee out/windows-log/build.log
+      - name: Keep the emulator for later runs
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: out/windows
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+      - name: Keep the failed build's log in the windows-test branch
+        if: ${{ failure() }}
+        run: |
+          mkdir -p out/windows-log
+          cd out/windows-log
+          printf 'The Windows emulator build failed, run %s (%s)\n' "${{ github.run_id }}" "$(date -u)" > README.txt
+          git init -q
+          git checkout -q -b windows-test
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Windows emulator build failed, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" windows-test
+
   pages:
     name: Publish GitHub Pages
-    needs: web
+    needs: [web, windows]
+    # The site goes out without the emulator when that build failed.
+    if: ${{ always() && needs.web.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -57,6 +107,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Download web bundle
@@ -64,14 +116,58 @@ jobs:
         with:
           name: OpenLF2-Web
           path: artifact-download
+      - name: Restore the Windows emulator
+        if: ${{ needs.windows.result == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: out/windows
+          key: windows-${{ hashFiles('dist/boxedwine/build.sh', 'dist/boxedwine/patch-shell.py') }}
       - name: Assemble site
         run: |
           mkdir -p site
           python3 -m zipfile -e artifact-download/OpenLF2-Web.zip site
           rm site/index.html
           cp dist/pages/index.html site/index.html
+          cp dist/pages/windows.html site/windows.html
+          cp dist/pages/insane.html site/insane.html
+          if [ -f out/windows/build.json ]; then cp -r out/windows site/windows; else echo "No Windows emulator in this site"; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Plays a relay mod on the published emulator page and keeps what happened in the windows-test branch (one
+  # commit, replaced every time), where it can be read without downloading anything from the run.
+  windows-test:
+    name: Test the Windows emulator page
+    needs: [windows, pages]
+    if: ${{ inputs.windows_test && needs.windows.result == 'success' && needs.pages.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Play
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/playwright"
+          cd "$RUNNER_TEMP/playwright"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+          sleep 60 # GitHub Pages takes a moment to serve a new deployment
+          NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node "$GITHUB_WORKSPACE/dist/boxedwine/smoke-test.js" \
+            "${{ needs.pages.outputs.page_url }}windows.html" "$GITHUB_WORKSPACE/out/windows-test" 12
+      - name: Keep the results in the windows-test branch
+        if: ${{ always() }}
+        run: |
+          mkdir -p out/windows-test
+          cd out/windows-test
+          printf 'Windows emulator test of %s, run %s (%s)\n' "${{ needs.pages.outputs.page_url }}" "${{ github.run_id }}" "$(date -u)" > README.txt
+          git init -q
+          git checkout -q -b windows-test
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -q -m "Windows emulator test, run ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" windows-test

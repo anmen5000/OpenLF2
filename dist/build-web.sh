@@ -174,8 +174,11 @@ cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
     "$build_dir/icons/web/apple-touch-icon.png" "$build_dir/native/"
 # Hero Fighter on the site page (dist/pages/index.html): its script, the version check it answers, and Ruffle.
 cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-ver.txt" "$build_dir/native/"
+# The site's other pages travel in the bundle too, so that a Pages job that only swaps index.html in (an older
+# .github/workflows/web.yml, which a file upload to GitHub does not replace) still publishes them.
+cp "$repo_root/dist/pages/insane.html" "$repo_root/dist/pages/windows.html" "$build_dir/native/"
 rm -rf "$build_dir/native/ruffle" "$build_dir/native/ruffle-stock"
-bundle_extra=(hero-fighter.js hf-ver.txt)
+bundle_extra=(hero-fighter.js hf-ver.txt insane.html windows.html)
 if [[ -f "$ruffle_dir/ruffle.js" ]]; then
     cp -r "$ruffle_dir" "$build_dir/native/ruffle"
     bundle_extra+=(ruffle)

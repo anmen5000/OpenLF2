@@ -47,12 +47,3 @@ sandbox), geometry (`predict`, `move_hits`), threats (`earliest_threat`), choosi
 `attack_score`, `best_attack`, `approach_attack`, `answer`), and the per-frame `smart.control`. `smart.levels`
 holds the levels' reaction times. The debugging hooks `smart.trace`, `smart.on_start`, `smart.watch` and
 `smart.internals` are what the jobs above use.
-
----
-
-**Tiếng Việt.** Thư mục này là một gói mod biến OpenLF2 thành bộ chạy thử cho máy chơi INSANE!
-(`scripts/base/game/smart_ai.lua`): thay menu bằng một "job" đọc từ `config.lua`, chạy ngay khung hình đầu và in ra
-log của game; `--input-trace ""` chạy không cần cửa sổ. Lệnh mẫu ở trên: `duel` cho INSANE! đấu máy gốc hàng loạt,
-`moves` in bảng chiêu máy đã học, `usage = true` cho biết chiêu nào máy thật sự dùng, `replaytest` kiểm tra tính
-xác định (phải in SAME). `--seed` cố định số ngẫu nhiên để lặp lại y hệt; `--scripts <thư mục>` để so sánh hai
-phiên bản của tệp AI.
