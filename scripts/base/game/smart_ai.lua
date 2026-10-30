@@ -149,8 +149,14 @@ local function set_keys(value, held)
 end
 
 -- Puts the fighter of a fresh copy where a move of this context starts. Returns false when it cannot.
+-- A fighter whose frame 0 only leads to its standing frames (Blackbeard of One Piece GrandWorld: 0 to 329 to
+-- 1-4) gets there first.
 local function enter_context(state, me, context, step)
     step()
+    for _ = 1, 120 do
+        if me.record.frame(me.frame).state == states.standing and me.y_int == 0 then break end
+        step()
+    end
     if context == "ground" then return me.record.frame(me.frame).state == states.standing end
     if context == "air" then
         set_keys(me, {jump = true}); step()
@@ -337,6 +343,10 @@ local function play(record, entry)
         if smart.watch then smart.watch(state, me, entry) end
     end
     if not enter_context(state, me, entry.context, step) then return nil end
+    if entry.walking then
+        set_keys(me, {right = true}); step()
+        if me.record.frame(me.frame).state ~= states.walking then return nil end
+    end
     local start_frame = me.frame
     local origin = {x = me.x_int, y = me.y_int, z = me.z_int}
     local start_mp, start_hp, start_record = me.mp, me.hp, me.record
@@ -356,6 +366,8 @@ local function play(record, entry)
     for t = 1, horizon_ticks do
         step()
         set_keys(me, nil)
+        -- A chain is not over while a key of it is still to come (a stance between its keys may look free).
+        local pending_link = entry.chain and chain_step <= #entry.chain
         -- A chained move: its key, pressed as soon as the fighter is in a frame that takes it there.
         local link = entry.chain and entry.chain[chain_step]
         if link and me.record.frame(me.frame).hits[link.key] == link.target then
@@ -396,7 +408,7 @@ local function play(record, entry)
         end
         if me.record ~= start_record and not move.transform then move.transform = me.record end
         if me.record.frame(me.frame).state == states.teleport_to_enemy and not move.teleport then move.teleport = t end
-        if move.ready == horizon_ticks and t > 1 and is_free(me) then move.ready = t end
+        if move.ready == horizon_ticks and t > 1 and is_free(me) and not pending_link then move.ready = t end
         if move.ready < horizon_ticks then
             quiet = objects_active and 0 or quiet + 1
             if quiet > 2 or t > move.ready + 45 then break end
@@ -514,12 +526,15 @@ local function analyze(record)
                 local frame = data.frames[frame_id]
                 local target = frame and frame.hits[spec.field] or 0
                 if target ~= 0 then
-                    want({context = context, sequence = spec.sequence, field = spec.field, frame = target})
+                    -- A key only the walking frames carry (Blackbeard of One Piece GrandWorld) is pressed walking.
+                    want({context = context, sequence = spec.sequence, field = spec.field, frame = target,
+                        walking = context == "ground" and frame_id == frames.walking or nil})
                     break
                 end
             end
         end
     end
+    if data.frames[frames.defend] then want({context = "ground", frame = frames.defend, basic = "defend"}) end
     if data.frames[frames.punch] then want({context = "ground", frame = frames.punch, basic = "attack"}) end
     if data.frames[frames.punch + 5] then want({context = "ground", frame = frames.punch + 5, basic = "attack2"}) end
     if data.frames[frames.super_punch] then want({context = "ground", frame = frames.super_punch, basic = "super_punch"}) end
@@ -532,6 +547,17 @@ local function analyze(record)
         engine.set_random_state(random_table(), 0, 0)
         local ok, move = pcall(play, record, entry)
         local signature
+        if ok and move and entry.basic == "defend" then
+            -- The defend key guards when it leads to defending frames at once; otherwise it is one of the
+            -- fighter's moves (Blackbeard's dark field in One Piece GrandWorld), kept only as such.
+            local guards = false
+            for t = 1, min(3, move.length) do
+                local id = move.frames[t]
+                if id and record.frame(id).state == states.defending then guards = true end
+            end
+            analysis.guard = guards
+            if guards then move = nil end
+        end
         if ok and move then
             local parts = {entry.context, entry.sequence or entry.basic or "", move.mp}
             for t = 1, min(move.length, 40) do parts[#parts + 1] = move.frames[t] end
@@ -686,6 +712,37 @@ local function lock_of(record, analysis, frame_id)
     return total
 end
 
+-- A stance: frames that go round without ever reaching a free one until a key ends them (a chakra charge in
+-- Naruto: The Setting Dawn, Blackbeard's dark field in One Piece GrandWorld). For a frame in one, the key of the
+-- frame that frees the fighter soonest and how long that takes; nil for any other frame.
+local function stance_exit(record, analysis, frame_id)
+    local current, seen, cycles = frame_id, {}, false
+    for _ = 1, 60 do
+        local frame = record.frames[current]
+        if not frame or free_states[frame.state] then return nil end
+        if seen[current] then cycles = true; break end
+        seen[current] = true
+        local next_id = frame.next
+        if next_id == 0 or next_id == 999 or next_id >= 1000 then return nil end
+        if next_id < 0 then next_id = -next_id end
+        current = next_id
+    end
+    if not cycles then return nil end
+    local hits = record.frames[frame_id].hits
+    local best_key, best_lock
+    for _, key in ipairs({"d", "a", "j"}) do
+        local target = hits[key]
+        if target == 999 then
+            best_key, best_lock = key, 0
+            break
+        elseif target > 0 and record.frames[target] then
+            local lock = lock_of(record, analysis, target)
+            if not best_lock or lock < best_lock then best_key, best_lock = key, lock end
+        end
+    end
+    return best_key, best_lock
+end
+
 -- Frames a fighter stays in its guard after pressing defend (frame 110 and what follows it while defending).
 local function defend_ticks(record, analysis)
     if analysis.defend_ticks then return analysis.defend_ticks end
@@ -766,11 +823,13 @@ local function touches(value, frame, x, y, bx1, bx2, by1, by2)
 end
 
 -- The first frame from now (1..horizon) at which `move` of `attacker` (facing `face`: 1 right, -1 left), which is
--- `from_t` frames into it, hits `victim`, and the box. The victim is where victim_at(k) puts it (x, y, z).
+-- `from_t` frames into it, hits `victim`, and the box. The victim is where victim_at(k) puts it (x, y, z), in
+-- the frame `vframe`, or vframe(k) when that is a function (a busy victim's frames to come).
 -- Attacks of things the move spawned before now are left to the flying-attack check.
 local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at, horizon)
     local boxes = move.boxes
-    if #boxes == 0 or #vframe.bodies == 0 then return nil end
+    local frame_at = type(vframe) == "function" and vframe or nil
+    if #boxes == 0 or (not frame_at and #vframe.bodies == 0) then return nil end
     local traj_x, traj_y, traj_z = move.traj_x, move.traj_y, move.traj_z
     local ax, ay, az = attacker.x_int, attacker.y_int, attacker.z_int
     local nx, ny, nz = traj_x[from_t] or 0, traj_y[from_t] or 0, traj_z[from_t] or 0
@@ -811,7 +870,8 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
                 local bx1, bx2
                 if face == 1 then bx1, bx2 = ax + ox + box.x1, ax + ox + box.x2
                 else bx1, bx2 = ax - ox - box.x2, ax - ox - box.x1 end
-                if touches(victim, vframe, px, py, bx1, bx2, ay + oy + box.y1, ay + oy + box.y2) then return k, box end
+                local vf = frame_at and frame_at(k) or vframe
+                if touches(victim, vf, px, py, bx1, bx2, ay + oy + box.y1, ay + oy + box.y2) then return k, box end
             end
         end
     end
@@ -940,6 +1000,7 @@ local function can_start(self, frame, fstate, move)
     if self.weapon ~= weapon_none then return false end
     local basic = entry.basic
     if basic == "attack" then return fstate == states.standing or fstate == states.walking end
+    if basic == "defend" then return (fstate == states.standing or fstate == states.walking) and self.defend_lock == 0 end
     -- Attacking a staggered fighter that offers the window (its kind-6 interaction) throws the super punch.
     if basic == "super_punch" then return (fstate == states.standing or fstate == states.walking) and self.super_window > 0 end
     if basic == "jump_attack" then return fstate == states.jumping and self.y_int < 0 end
@@ -974,6 +1035,11 @@ local function start(self, move, target)
     if entry.basic == "attack" and target then
         if target.x_int > self.x_int then press(self, "right") elseif target.x_int < self.x_int then press(self, "left") end
     end
+    if entry.basic == "defend" then
+        if target and target.x_int > self.x_int then press(self, "right") elseif target and target.x_int < self.x_int then press(self, "left") end
+        fresh(self, "defend")
+        return
+    end
     fresh(self, "attack")
 end
 
@@ -983,8 +1049,10 @@ local function worth(target, box, blocked, move)
     if not box.own and move and move.hit_damage then injury = max(injury, move.hit_damage) end
     if target.armor > 0 then injury = floor(injury * 100 / target.armor) end
     if blocked then
+        -- A guarded blow: a tenth of its damage, or a broken guard (the super punch follows); one that does
+        -- neither is hardly worth the recovery it costs.
         if box.bdefend + target.timer_b8 >= break_threshold then return floor(injury / 10) + 15 end
-        return floor(injury / 10) + 1
+        return floor(injury / 10)
     end
     local value = injury
     if box.kind == attack_kinds.catch then value = max(value, 45) end
@@ -1093,7 +1161,61 @@ local function danger_at(target, analysis, x, z)
             worst = max(worst, zone.damage * weight)
         end
     end
+    -- Within a free enemy's quick blows it has the first move: a place to stay out of, though no reason to run.
+    local reach = melee_reach(analysis)
+    if reach > 0 and dz < 15 and dx < reach + 22 then worst = max(worst, 15) end
     return worst
+end
+
+-- Frames from now for which `target` cannot be hit: while it blinks, and, down, until it has got up and its
+-- blinking after that (base/game/animation: not stage soldiers) is over; `lock` is how long it stays down.
+local function untouchable_for(context, target, tstate, lock)
+    local frames_left = abs(target.blink)
+    if tstate == states.lying or tstate == states.falling then
+        local state = context.state
+        local blink = constants.blink.get_up_frames
+        if (state.mode == mode_stage or state.mode == constants.modes.battle) and target.team == team_enemies
+           and floor(target.record.id / 10) == 3 and target.record.id ~= constants.fighter_ids.bat then
+            blink = 0
+        end
+        frames_left = max(frames_left, lock + blink)
+    end
+    return frames_left
+end
+
+-- The standing frame a fighter can be hit in (frame 0, or the first of its standing frames with a body: some
+-- mods' fighters stand in frames 1-4 and keep frame 0 for an entrance).
+local function standing_frame(record)
+    for id = 0, 4 do
+        local frame = record.frames[id]
+        if frame and frame.state == states.standing then
+            for _, body in ipairs(frame.bodies) do
+                if abs(body.y) < 1000 then return frame end
+            end
+        end
+    end
+    return record.frame(frames.standing)
+end
+
+-- The frame `target` will be in k steps from now, as far as its move or stun tells: its move's frames
+-- (context.target_where), then standing; a stunned fighter's own frame until it is free.
+local function target_frame_at_fn(context, target, tframe, stunned)
+    local where = context.target_where
+    local standing = standing_frame(target.record)
+    if where and where.value == target then
+        return function(k)
+            local id = where.move.frames[where.now + k]
+            if id then return target.record.frame(id) end
+            return standing
+        end
+    end
+    if stunned > 0 then
+        return function(k)
+            if k > stunned then return standing end
+            return tframe
+        end
+    end
+    return tframe
 end
 
 -- The best move to start now against `target`: move, frames until it hits, score. Moves that would land only
@@ -1104,20 +1226,24 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local tstate = tframe.state
     local best, best_t, best_score = nil, nil, 0
     local stunned = context.target_lock or 0
+    local untouchable = untouchable_for(context, target, tstate, stunned)
     local toward = target.x_int >= self.x_int and 1 or -1
     local function target_at(k) return predict(target, k, tstate) end
+    local target_frame = target_frame_at_fn(context, target, tframe, stunned)
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and can_start(self, frame, fstate, move) then
             local face = turns(move) and toward or (self.facing == facing_right and 1 or -1)
-            local t, box = move_hits(self, face, move, 0, target, tframe, target_at, horizon)
+            local t, box = move_hits(self, face, move, 0, target, target_frame, target_at, horizon)
             -- Attack picks one of two punches: both must land, the later counts.
             if t and entry.basic == "attack" and not entry.chain and analysis.punch2 then
-                local t2, box2 = move_hits(self, face, analysis.punch2, 0, target, tframe, target_at, horizon)
+                local t2, box2 = move_hits(self, face, analysis.punch2, 0, target, target_frame, target_at, horizon)
                 if not t2 then t = nil
                 elseif t2 > t then t, box = t2, box2 end
             end
+            -- Nothing lands while the target blinks (and, down, it gets up blinking).
+            if t and t <= untouchable then t = nil end
             -- Landing together with the target's quickest answer is a trade at worst: it has not started it yet.
             if t and (not danger or t < danger or (t == danger and stunned == 0)) then
                 local blocked = would_block(target, target_state_at(context, target, t - 1), face == 1 and facing_right or facing_left, box)
@@ -1243,7 +1369,7 @@ end
 local function answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, source)
     local analysis = context.analysis_of(self)
     local can_defend = (fstate == states.standing or fstate == states.walking) and self.defend_lock == 0
-        and self.weapon ~= record_kinds.heavy_item
+        and self.weapon ~= record_kinds.heavy_item and analysis.guard ~= false
     -- A guard takes a tenth of the damage; it holds unless the defence points reach the break threshold.
     local guardable = threat_box.bdefend < 61
     local blockable = guardable and threat_box.bdefend + self.timer_b8 < break_threshold
@@ -1321,12 +1447,14 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         memory.note = "back off"
         return true
     end
-    if guardable and fstate == states.defending then
+    -- A guard that would break (the points of the last blows still count) leaves the fighter helpless for the
+    -- super punch that follows, unguarded: the blow itself, taken, costs less in the end.
+    if blockable and fstate == states.defending then
         face_against(self, source)
         memory.note = "keep broken guard"
         return true
     end
-    if guardable and can_defend and threat_t <= guard and threat_t <= 3 then
+    if blockable and can_defend and threat_t <= guard and threat_t <= 3 then
         face_against(self, source)
         fresh(self, "defend")
         memory.note = "defend late " .. threat_t
@@ -1353,7 +1481,7 @@ function smart.control(state, index)
     end
     local context = state.smart_context
     if not context then
-        context = {}
+        context = {state = state}
         function context.analysis_of(value) return analyze(value.record) end
         state.smart_context = context
     end
@@ -1391,17 +1519,25 @@ function smart.control(state, index)
 
     -- A move in progress: continue it into a follow-up that lands before the target can hit back.
     if not free then
+        local analysis = context.analysis_of(self)
         if target then
-            local chains = context.analysis_of(self).chains[self.frame]
+            local chains = analysis.chains[self.frame]
             if chains then
                 local tframe = target.record.frame(target.frame)
                 local lock = target_lock_of(context, target, tframe)
                 local counter = counter_time(context, target, self, lock)
                 local function target_at(k) return predict(target, k, tframe.state) end
                 local own_face = self.facing == facing_right and 1 or -1
+                context.target_where = nil
+                if not is_free(target) then
+                    local twhere = where_of(target.record, context.analysis_of(target), target)
+                    if twhere then context.target_where = {value = target, move = twhere.move, now = twhere.t + target.wait_counter} end
+                end
+                local target_frame = target_frame_at_fn(context, target, tframe, lock)
                 for _, move in ipairs(chains) do
                     if can_start(self, frame, fstate, move) then
-                        local t = move_hits(self, own_face, move, 0, target, tframe, target_at, 20)
+                        local t = move_hits(self, own_face, move, 0, target, target_frame, target_at, 20)
+                        if t and t <= untouchable_for(context, target, tframe.state, lock) then t = nil end
                         if t and (not counter or t < counter) then
                             start(self, move, target)
                             memory.note = "follow up"
@@ -1409,6 +1545,37 @@ function smart.control(state, index)
                         end
                     end
                 end
+            end
+        end
+        -- A stance that goes on until a key ends it: kept while it serves (a charge fills MP while nothing can
+        -- reach us; a field holds the target within it), left in time otherwise.
+        -- (In the air the frames go round until landing: not a stance.)
+        local exit_key, exit_lock
+        if self.y_int == 0 then exit_key, exit_lock = stance_exit(self.record, analysis, self.frame) end
+        if exit_key then
+            local where = where_of(self.record, analysis, self)
+            local stay = not earliest_threat(state, index, self, exit_lock + 6, nil, level.reaction, context)
+            if stay and where then
+                if where.move.mp < 0 and not where.move.first then
+                    local tlock = target and target_lock_of(context, target, target.record.frame(target.frame)) or 99
+                    stay = self.mp < constants.points.full
+                        and (not target or abs(target.x_int - self.x_int) > 200 or tlock > exit_lock + 10)
+                elseif target then
+                    local tframe = target.record.frame(target.frame)
+                    local function target_at(k) return predict(target, k, tframe.state) end
+                    local own_face = self.facing == facing_right and 1 or -1
+                    stay = move_hits(self, own_face, where.move, where.t + self.wait_counter, target, tframe, target_at, 8) ~= nil
+                else
+                    stay = false
+                end
+            elseif stay then
+                stay = false
+            end
+            if stay then
+                memory.note = "hold stance"
+            else
+                fresh(self, exit_key)
+                memory.note = "leave stance"
             end
         end
         return
@@ -1468,9 +1635,13 @@ function smart.control(state, index)
             end
         end
     end
-    if grounded and fstate ~= states.running and abs(target.x_int - self.x_int) > 380 and self.mp < 300 then
+    -- Charging MP (a fighter that can): when the target is well outside its quick reach or down for a while,
+    -- nothing is about to reach us, and MP is wanted.
+    if grounded and fstate ~= states.running and self.mp < constants.points.full - 80
+       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 85 or target_lock > 25) then
         for _, candidate in ipairs(context.analysis_of(self).moves) do
-            if candidate.charge and can_start(self, frame, fstate, candidate) then
+            if candidate.charge and can_start(self, frame, fstate, candidate)
+               and not earliest_threat(state, index, self, 24, nil, level.reaction, context) then
                 start(self, candidate, target)
                 memory.note = "charge"
                 return
@@ -1481,6 +1652,12 @@ function smart.control(state, index)
     -- Positioning.
     if fstate == states.jumping or fstate == states.dashing then
         face(self, target.x_int)
+        return
+    end
+    -- In the guard a direction key only turns the fighter (and a guard holds only facing the attacker).
+    if fstate == states.defending then
+        face(self, target.x_int)
+        memory.note = "guard"
         return
     end
     local range, range_z = preferred_range(context, self)
@@ -1518,9 +1695,11 @@ function smart.control(state, index)
     else
         -- Toward the target until a move reaches it (nothing did this frame), unless much too close; against
         -- longer arms, just outside them until the target commits.
+        -- Just outside a free enemy's arms (unless ours are clearly longer): it has to come to us, and walks
+        -- into our blow; a long standoff ends the patience.
         local hold = range
         local their_reach = melee_reach(context.analysis_of(target)) + 25
-        if their_reach > range + 20 and target_lock == 0 and context.aggression < 0.5 then hold = their_reach + 15 end
+        if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 then hold = max(range, their_reach + 15) end
         if distance > max(hold - 20, 10) then want_dx = dx > 0 and 1 or -1
         elseif distance < max(hold - 50, 8) and target_lock == 0 then want_dx = dx > 0 and -1 or 1 end
         if want_dx ~= 0 and (want_dx < 0) == (dx > 0) and ((want_dx < 0 and self.x_int < 80) or (want_dx > 0 and self.x_int > width - 80)) then
@@ -1530,6 +1709,37 @@ function smart.control(state, index)
         memory.note = string.format("move %d %d (hold %d)", want_dx, want_dz, hold)
     end
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
+    if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end
+    if want_dz > 0 and far - self.z_int < 6 then want_dz = 0 end
+    -- Not a step into a blow that misses where we stand (turning toward the target is a step too).
+    local turn = want_dx == 0 and ((dx > 0 and self.facing == facing_left) or (dx < 0 and self.facing == facing_right))
+    if (want_dx ~= 0 or want_dz ~= 0 or turn) and fstate ~= states.running and not threat_t then
+        local movement = self.record.movement or {}
+        local speed, speedz = movement.walking_speed or 4, movement.walking_speedz or 2
+        local step_x = want_dx ~= 0 and want_dx or (dx > 0 and 1 or -1)
+        local plan = function(k) return trunc(step_x * speed * k), 0, trunc(want_dz * speedz * k) end
+        if earliest_threat(state, index, self, 12, plan, level.reaction, context) then
+            want_dx, want_dz, turn = 0, 0, false
+            memory.note = "hold still"
+        end
+    end
+    -- Blocked (a barrel or crate in the way, another fighter): two steps that moved nothing → around it in depth.
+    if want_dx ~= 0 and grounded and fstate ~= states.running and memory.step_x == want_dx
+       and memory.step_at_x == self.x_int and memory.step_at_z == self.z_int and self.x_int > 30 and self.x_int < width - 30 then
+        memory.blocked = (memory.blocked or 0) + 1
+    else
+        memory.blocked = 0
+    end
+    memory.step_x, memory.step_at_x, memory.step_at_z = want_dx, self.x_int, self.z_int
+    if memory.detour_until and state.frame_number < memory.detour_until then
+        want_dz = memory.detour
+    elseif memory.blocked >= 2 then
+        if dz ~= 0 then memory.detour = dz > 0 and 1 or -1
+        else memory.detour = (far - self.z_int > self.z_int - near) and 1 or -1 end
+        memory.detour_until = state.frame_number + 14
+        memory.blocked = 0
+        want_dz = memory.detour
+    end
     if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end
     if want_dz > 0 and far - self.z_int < 6 then want_dz = 0 end
     if fstate == states.running then
@@ -1543,9 +1753,10 @@ function smart.control(state, index)
     end
     if want_dx ~= 0 then
         local key = want_dx > 0 and "right" or "left"
-        press(self, key)
-        if distance > range + 240 and want_dx == (dx > 0 and 1 or -1) and not self.previous_keys[key] then fresh(self, key) end
-    else
+        -- A long way to go: run, which takes two taps (a release between them) rather than a held key.
+        local run = distance > range + 200 and want_dx == (dx > 0 and 1 or -1) and grounded and fstate ~= states.running
+        if not (run and self.previous_keys[key]) then press(self, key) end
+    elseif turn then
         face(self, target.x_int)
     end
     if want_dz ~= 0 then press(self, want_dz > 0 and "down" or "up") end

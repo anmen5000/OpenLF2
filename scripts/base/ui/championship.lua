@@ -44,8 +44,10 @@ local option_highlights = {
     [0] = {{407, 183, 126, 21}, 92, 16}, {{379, 206, 186, 21}, 64, 39}, {{355, 231, 235, 21}, 40, 64},
     {{330, 254, 279, 22}, 15, 87}, {{352, 278, 228, 22}, 37, 111}, {{416, 304, 111, 19}, 101, 137},
 }
+-- The original offers Easy to Difficult here; with the unlock, CRAZY! and OpenLF2's INSANE! follow as in 1 on 1.
 local difficulties = {[constants.difficulties.easy] = "Easy", [constants.difficulties.normal] = "Normal",
-    [constants.difficulties.difficult] = "Difficult", [constants.difficulties.crazy] = "Difficult"}
+    [constants.difficulties.difficult] = "Difficult", [constants.difficulties.crazy] = "CRAZY!",
+    [constants.difficulties.insane] = "INSANE!"}
 local clip3_frames = {[16] = {364, 455, 429, 6}, [17] = {367, 469, 63, 26}, [18] = {487, 469, 63, 26},
     [19] = {607, 469, 63, 26}, [20] = {727, 469, 63, 26}, [21] = {285, 458, 63, 21}}
 
@@ -304,7 +306,9 @@ local function options_panel(state, key)
         end
     elseif row == option_rows.difficulty then
         options.difficulty = options.difficulty - 1
-        if options.difficulty < constants.difficulties.difficult then
+        local unlocked = require("base/game/unlock").flags.characters
+        if (options.difficulty < constants.difficulties.difficult and unlocked == 0)
+           or options.difficulty < constants.difficulties.insane then
             options.difficulty = constants.difficulties.easy
         end
         sounds.direct(state, "ok")
@@ -362,8 +366,8 @@ local function next_teams(state, key)
         state.wins[state.pair[3 - winner]] = state.wins[state.pair[3 - winner]] + 1
         if state.wins[first] == 6 then state.wins[first] = 7 end
         if state.wins[second] == 6 then state.wins[second] = 7 end
-        -- No clamp of the difficulty here, unlike 1 on 1.
-        local spread = state.options.difficulty
+        -- No clamp of the difficulty here, unlike 1 on 1 (INSANE! counts as CRAZY!).
+        local spread = math.max(state.options.difficulty, constants.difficulties.crazy)
         local roll = random(spread * 18 + 15)
         state.hp[first] = cdiv((roll - spread * 18 + 85) * state.hp[first], 100)
         roll = random(spread * 18 + 15)
@@ -414,10 +418,11 @@ local function next_pair(state, key)
         state.wins[won] = state.wins[won] + 2
         state.wins[state.pair[1 - winner]] = state.wins[state.pair[1 - winner]] + 1
         if state.wins[won] == 6 then state.wins[won] = 7 end
-        local spread = state.options.difficulty
+        local difficulty = math.max(state.options.difficulty, constants.difficulties.crazy)
+        local spread = difficulty
         if spread < -1 then spread = 0 end
         spread = random(spread * 12 + 15)
-        state.hp[won] = cdiv((spread - state.options.difficulty * 12 + 85) * state.hp[won], 100)
+        state.hp[won] = cdiv((spread - difficulty * 12 + 85) * state.hp[won], 100)
     else
         state.state = championship_states.claiming
         state.counter = 0

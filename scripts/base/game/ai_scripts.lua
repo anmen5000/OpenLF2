@@ -408,7 +408,13 @@ local function compile(path)
             if not chunk then cached = {problem = path .. ": " .. tostring(message)}
             else
                 local made, factory = pcall(chunk)
-                if made then cached = {factory = factory} else cached = {problem = path .. ": " .. tostring(factory)} end
+                if made then
+                    -- How much the script says, without comments and spacing (see ai_scripts.has).
+                    local code = source:gsub("/%*.-%*/", ""):gsub("//[^\n]*", ""):gsub("%s+", "")
+                    cached = {factory = factory, size = #code}
+                else
+                    cached = {problem = path .. ": " .. tostring(factory)}
+                end
             end
         end
         if cached.problem then report(cached.problem .. "; the built-in AI plays this character") end
@@ -489,10 +495,17 @@ function ai_scripts.ego(state, index, target_index)
 end
 
 -- id() in place of the whole AI for the computer player at `index`: true when it ran.
--- Whether the fighter at `index` has its mod's own AI script (ai/<id>.as with id() or ego()).
+-- Whether the fighter at `index` has an AI of its own from its mod: ai/<id>.as with id() (the whole AI), or
+-- with an ego() of some length. An ego() of a few lines only adds a special move or two under a condition
+-- (KT-LF2's), which INSANE!'s players, knowing every move, do better; a long one carries a strategy for that
+-- fighter (Dragon Ball Super Edition's, which beat them).
+local substantial_script = 800
 function ai_scripts.has(state, index)
-    local script = instance(state, state.items[index].record.id)
-    return script and (script.id or script.ego) and true or false
+    local id = state.items[index].record.id
+    local script = instance(state, id)
+    if not script then return false end
+    if script.id then return true end
+    return script.ego ~= nil and (compiled["ai/" .. id .. ".as"].size or 0) >= substantial_script
 end
 
 function ai_scripts.id(state, index)

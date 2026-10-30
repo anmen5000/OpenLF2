@@ -39,8 +39,8 @@ public:
                 note("ignored top-level token `" + token_ + "`");
             }
         }
-        for (std::int32_t index = 0; index < frame_count; ++index) {
-            const auto& frame = data_.frames[static_cast<std::size_t>(index)];
+        for (std::size_t index = 0; index < data_.frames.size(); ++index) {
+            const auto& frame = data_.frames[index];
             if (frame.defined && !find_picture(data_, frame.picture)) {
                 note("frame " + std::to_string(index) + " picture " +
                      std::to_string(frame.picture) + " is outside every sprite sheet");
@@ -332,8 +332,18 @@ private:
         if (stream_.integer(index) != TokenStream::Scan::value) {
             throw ParseFailure{ErrorCode::unsupported, "<frame> without a frame number"};
         }
-        if (index < 0 || index >= frame_count) {
-            throw ParseFailure{ErrorCode::unsupported, "frame number outside 0-399: " + std::to_string(index)};
+        if (index < 0 || index >= extended_frame_count) {
+            throw ParseFailure{ErrorCode::unsupported, "frame number outside 0-998: " + std::to_string(index)};
+        }
+        if (index >= frame_count) {
+            // The original's program has room for 400 frames; mods whose own program has more use them
+            // (Sx2 ~ The power of emancipation's fighters go up to 445).
+            if (data_.frames.size() <= static_cast<std::size_t>(index)) {
+                if (data_.frames.size() == static_cast<std::size_t>(frame_count)) {
+                    note("frame " + std::to_string(index) + " is beyond the original's 0-399 (the mod's own program allows more)");
+                }
+                data_.frames.resize(static_cast<std::size_t>(index) + 1);
+            }
         }
         auto& frame = data_.frames[static_cast<std::size_t>(index)];
         if (frame.defined) note("frame " + std::to_string(index) + " redefined; earlier fields kept");
@@ -381,15 +391,22 @@ private:
             } else if (token_ == "cpoint:") block("cpoint_end:", [&] { return catch_point(frame.cpoint); });
             else if (token_ == "wpoint:") block("wpoint_end:", [&] { return weapon_point(frame.wpoint); });
             else if (token_ == "itr:") {
-                // The original allocates room for five records on the first block.
+                // The original allocates room for five records on the first block; a mod's own program may
+                // have room for more (Sx2 ~ The power of emancipation's Davis has seven), so more are kept.
                 if (frame.interactions.size() == max_frame_blocks) {
-                    throw ParseFailure{ErrorCode::unsupported, "more than five itr blocks in a frame"};
+                    note("more than five itr blocks in a frame (the mod's own program allows more)");
+                }
+                if (frame.interactions.size() >= extended_frame_blocks) {
+                    throw ParseFailure{ErrorCode::unsupported, "more than 32 itr blocks in a frame"};
                 }
                 auto& interaction = frame.interactions.emplace_back();
                 block("itr_end:", [&] { return interaction_block_field(interaction); });
             } else if (token_ == "bdy:") {
                 if (frame.bodies.size() == max_frame_blocks) {
-                    throw ParseFailure{ErrorCode::unsupported, "more than five bdy blocks in a frame"};
+                    note("more than five bdy blocks in a frame (the mod's own program allows more)");
+                }
+                if (frame.bodies.size() >= extended_frame_blocks) {
+                    throw ParseFailure{ErrorCode::unsupported, "more than 32 bdy blocks in a frame"};
                 }
                 auto& body = frame.bodies.emplace_back();
                 block("bdy_end:", [&] {

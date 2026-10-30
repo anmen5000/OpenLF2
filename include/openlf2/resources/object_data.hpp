@@ -15,8 +15,13 @@
 
 namespace openlf2::object_data {
 inline constexpr std::int32_t frame_count = 400;
+// Frames beyond the original's 400 (0-399) that a mod with its own, extended program may define: up to 998,
+// since 999 and above select what happens next (back to standing, removal, blinking) rather than frames.
+inline constexpr std::int32_t extended_frame_count = 999;
 inline constexpr std::size_t max_sheets = 10;
 inline constexpr std::size_t max_frame_blocks = 5;
+// itr/bdy blocks a frame may have in a mod whose own program has room for more than the original's five.
+inline constexpr std::size_t extended_frame_blocks = 32;
 inline constexpr std::size_t strength_entries = 10;
 inline constexpr std::int32_t max_sheet_cells = 500;
 

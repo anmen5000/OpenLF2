@@ -158,8 +158,9 @@ return {
         width = 794,
         height = 550,
     },
-    -- A character, weapon or effect has fewer frames than this.
-    frame_limit = 400,
+    -- Frame numbers below this are frames (the original's program has 400, 0-399; a mod's own program may allow
+    -- more, and its data files then use them); 999 and above select what happens next instead.
+    frame_limit = 999,
     -- Frame dvx/dvy/dvz above the threshold encode an absolute velocity as value - offset.
     velocity_encoding = {
         absolute_threshold = 500,

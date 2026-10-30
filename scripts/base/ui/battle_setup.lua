@@ -418,8 +418,10 @@ local function reroll(state)
     end
 end
 
+-- The original offers Easy to Difficult here; with the unlock, CRAZY! and OpenLF2's INSANE! follow as in 1 on 1.
 local difficulties = {[constants.difficulties.easy] = "Easy", [constants.difficulties.normal] = "Normal",
-    [constants.difficulties.difficult] = "Difficult", [constants.difficulties.crazy] = "Difficult"}
+    [constants.difficulties.difficult] = "Difficult", [constants.difficulties.crazy] = "CRAZY!",
+    [constants.difficulties.insane] = "INSANE!"}
 local function background_name(characters, row)
     if row == constants.background_rows.lee_on_road then return "Lee On Road" end
     if row == constants.background_rows.random then return "Random" end
@@ -479,7 +481,9 @@ local function options_keys(state, key, context)
         end
     elseif row == option_rows.difficulty then
         options.difficulty = options.difficulty - 1
-        if options.difficulty < constants.difficulties.difficult then
+        local unlocked = require("base/game/unlock").flags.characters
+        if (options.difficulty < constants.difficulties.difficult and unlocked == 0)
+           or options.difficulty < constants.difficulties.insane then
             options.difficulty = constants.difficulties.easy
         end
         sounds.direct(state, "ok")
