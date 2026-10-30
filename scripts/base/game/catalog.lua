@@ -10,7 +10,18 @@ local function canonical(path)
     assert(path:match("^[a-z0-9_./-]+$"), "unsupported original resource path")
     return path
 end
+-- The original opens its data files in text mode (Microsoft's C library): every CR LF pair reaches
+-- it as LF, and a file ends at its first Ctrl-Z. Encoded files are decoded after that.
+local function text_mode(source)
+    local stop = source:find("\26", 1, true)
+    if stop then source = source:sub(1, stop - 1) end
+    return (source:gsub("\r\n", "\n"))
+end
+local function data_text()
+    return text_mode(engine.read_resource("data/data.txt"))
+end
 local function decode(source)
+    source = text_mode(source)
     assert(#source >= 123, "truncated character data")
     local key = "SiuHungIsAGoodBearBecauseHeIsVeryGood"
     local result = {}
@@ -21,7 +32,7 @@ local function decode(source)
 end
 function catalog.load()
     if cached then return cached end
-    local source = engine.read_resource("data/data.txt")
+    local source = data_text()
     local section = assert(source:match("<object>(.-)<object_end>"), "missing object catalog")
     local fighters = {}
     local record = -1
@@ -51,7 +62,7 @@ function catalog.load()
     return cached
 end
 function catalog.words_checksum()
-    local source = engine.read_resource("data/data.txt")
+    local source = data_text()
     local words = {}
     for word in source:gmatch("%S+") do words[#words + 1] = word end
     local sum, position, last = 0, 1, nil
@@ -124,7 +135,7 @@ end
 -- takes the first record with a given id.
 function catalog.objects()
     if cached_objects then return cached_objects end
-    local source = engine.read_resource("data/data.txt")
+    local source = data_text()
     local section = assert(source:match("<object>(.-)<object_end>"), "missing object catalog")
     local objects, by_id = {}, {}
     for id, kind, path in section:gmatch("id:%s*(%d+)%s+type:%s*(%d+)%s+file:%s*(%S+)") do
@@ -139,7 +150,7 @@ end
 
 function catalog.backgrounds()
     if cached_backgrounds then return cached_backgrounds end
-    local source = engine.read_resource("data/data.txt")
+    local source = data_text()
     local section = assert(source:match("<background>(.-)<background_end>"), "missing background catalog")
     local backgrounds = {}
     for id, path in section:gmatch("id:%s*(%d+)%s+%S+%s+(%S+)") do

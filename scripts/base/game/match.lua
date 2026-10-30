@@ -30,6 +30,7 @@ local animation = require("base/game/animation")
 local camera = require("base/game/camera")
 local combat = require("base/game/combat")
 local ai = require("base/game/ai")
+local ai_scripts = require("base/game/ai_scripts")
 local objects = require("base/game/objects")
 local grab = require("base/game/grab")
 local weapons = require("base/game/weapons")
@@ -357,7 +358,8 @@ local function read_input(state, held)
         if value then
             if value.record.kind == record_kinds.character then
                 if not scan and ai.prepare then scan = ai.prepare(state) end
-                ai.control(state, index, state.mode, scan)
+                -- A mod's AI script with id() takes the place of the whole AI (base/game/ai_scripts).
+                if not ai_scripts.id(state, index) then ai.control(state, index, state.mode, scan) end
             elseif value.record.frame(value.frame).hits.Fa > 0 then
                 objects.update(state, index)
                 scan = nil
@@ -774,7 +776,11 @@ function match.step(state, held)
         if replay_input then
             -- Every 150 frames the hp of slots 0-19 must match the recording.
             local expected = recording.replay_checksum(state.replay)
-            if expected and expected ~= recording.hp_sum(state) then return "replay_error" end
+            if expected and expected ~= recording.hp_sum(state) then
+                engine.log(string.format("Replay stopped at frame %d: the fighters' hp differs from the recording's (%d, recorded %d)",
+                    state.replay.frame, recording.hp_sum(state), expected))
+                return "replay_error"
+            end
             recording.replay_advance(state.replay)
         elseif state.recording and not state.recording.saved then
             local bytes = {0, 0, 0, 0, 0, 0, 0, 0, state.function_flags, state.unlock_bits or 0}

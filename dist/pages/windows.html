@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenLF2 — mods in a Windows emulator</title>
+<meta name="description" content="Plays LF2 mods whose program OpenLF2 cannot read in BoxedWine, a Windows emulator that runs in the browser.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<style>
+  :root {
+    --bg: #0d1226; --bg-alt: #161d3c; --card: #1b2246; --card-border: #2c356b;
+    --text: #f1f3f7; --text-dim: #b7c0e6; --accent: #50c8ef; --accent-2: #ffd23c; --link: #a9c7ff; --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+  a { color: var(--link); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  h1 { font-size: 1.7rem; margin: .4rem 0 .3rem; }
+  p.lede { color: var(--text-dim); margin: .4rem 0; max-width: 52rem; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.1rem; margin-top: 1.2rem; }
+  label.choice { display: flex; align-items: center; gap: .5rem; color: var(--text-dim); font-size: .92rem; }
+  select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 999px; padding: .55rem .9rem; max-width: 24rem; }
+  button { font: inherit; cursor: pointer; border-radius: 999px; border: 1px solid var(--card-border);
+    background: var(--card); color: var(--text); padding: .6rem 1.1rem; }
+  button#start { border: none; font-weight: 700; background: var(--accent-2); color: #3a2900; padding: .72rem 1.3rem; }
+  button:disabled { background: #4a5079 !important; color: #9aa1c4 !important; cursor: default; }
+  progress { display: block; width: 100%; height: .6rem; margin-top: .9rem; accent-color: var(--accent); }
+  progress[hidden] { display: none; }
+  #status { margin: .8rem 0 0; color: var(--text-dim); font-size: .92rem; min-height: 1.3em; }
+  #screen { position: relative; margin-top: 1rem; background: #000; border: 1px solid var(--card-border);
+    border-radius: 12px; overflow: hidden; aspect-ratio: 1366 / 768; width: 100%; }
+  #screen[hidden] { display: none; }
+  #screen iframe { display: block; width: 100%; height: 100%; border: 0; }
+  #screen:fullscreen { width: 100vw; height: 100vh; border: 0; border-radius: 0; aspect-ratio: auto; }
+  .keys { color: var(--text-dim); font-size: .9rem; margin: .7rem 0 0; }
+  kbd { background: var(--card); border: 1px solid var(--card-border); border-radius: 5px; padding: 0 .35em; font-size: .85em; }
+  details { margin-top: 1.2rem; color: var(--text-dim); }
+  pre#log { max-height: 22rem; overflow: auto; background: #070a18; border: 1px solid var(--card-border); border-radius: 8px;
+    padding: .7rem; font-size: .78rem; white-space: pre-wrap; word-break: break-all; color: #cfd6f5; }
+  @media (max-width: 480px) { .wrap { padding: 1rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="./">&larr; OpenLF2</a>
+  <h1>Mods in a Windows emulator</h1>
+  <p class="lede">Some LF2 mods (Naruto: The Setting Dawn, for one) pack their program and game files into a protected
+    <code>.exe</code> that OpenLF2 cannot read. This page plays them as they are, in
+    <a href="https://github.com/danoon2/Boxedwine">BoxedWine</a>: a Windows emulator that runs Wine in your browser.
+    It is much slower than OpenLF2 and than a PC, and needs a recent desktop browser with plenty of memory.</p>
+  <p class="lede">The first start downloads the emulator with Wine (about <span id="wine-size">200</span>&nbsp;MB) and the mod
+    from the online relay; your browser keeps them for later visits. Windows then takes a minute or more to start the
+    game. Network play does not work here; everyone plays at one keyboard.</p>
+
+  <div class="controls">
+    <label class="choice">Mod <select id="pack" aria-label="Mod to play"><option value="">Loading the relay's mods…</option></select></label>
+    <button id="start" disabled>Start</button>
+    <button id="fullscreen" type="button" hidden>Fullscreen</button>
+  </div>
+  <progress id="progress" hidden></progress>
+  <p id="status" role="status"></p>
+  <div id="screen" hidden></div>
+  <p class="keys" id="keys" hidden>Click the game first, so that it gets your keys. The mod's own keys apply
+    (<code>data/control.txt</code>): player 1 usually moves with <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> and
+    uses <kbd>J</kbd> attack, <kbd>K</kbd> jump, <kbd>L</kbd> defend; <kbd>F1</kbd> pauses, <kbd>Esc</kbd> leaves a match.</p>
+  <details id="diagnostics">
+    <summary>What Windows says (for reporting problems)</summary>
+    <pre id="log"></pre>
+  </details>
+  <p class="keys">The emulator is <a href="https://github.com/danoon2/Boxedwine">BoxedWine</a> (GNU GPL 2.0 or later)
+    with <a href="https://www.winehq.org/">Wine</a> (GNU LGPL 2.1 or later): what it is made of and its terms are in
+    <a href="windows/LICENSES.txt">LICENSES.txt</a>. The mods belong to their authors; this site plays the copies its
+    relay keeps.</p>
+</div>
+
+<script src="installer-store.js"></script>
+<!-- The site's relay (online.js reads it): the same as on the main page; a relay chosen there or in a link wins. -->
+<script>window.OPENLF2_RELAY = 'wss://sybilproxy.com/lf2-relay/relay';</script>
+<script src="online.js"></script>
+<script>
+(() => {
+  'use strict';
+  const select = document.getElementById('pack');
+  const startButton = document.getElementById('start');
+  const fullscreenButton = document.getElementById('fullscreen');
+  const progress = document.getElementById('progress');
+  const status = document.getElementById('status');
+  const screen = document.getElementById('screen');
+  const logView = document.getElementById('log');
+  const params = new URLSearchParams(location.search);
+  const EMULATOR = 'windows/';
+  const CACHE = 'openlf2-windows';
+  let packs = [];
+  let build = null;
+  let running = false;
+
+  // ---- What Wine prints (the patched BoxedWine shell calls this; dist/boxedwine/patch-shell.py) ----
+  const logLines = [];
+  window.OpenLF2WindowsLog = logLines;
+  let logPending = false;
+  window.OpenLF2BoxedwineLog = text => {
+    logLines.push(String(text));
+    if (logLines.length > 4000) logLines.splice(0, logLines.length - 4000);
+    if (!logPending) {
+      logPending = true;
+      setTimeout(() => {
+        logPending = false;
+        logView.textContent = logLines.slice(-600).join('\n');
+      }, 500);
+    }
+  };
+  function say(text) { status.textContent = text; }
+  function showProgress(received, total, what) {
+    progress.hidden = false;
+    progress.max = total || received || 1;
+    progress.value = received;
+    say('Downloading ' + what + ': ' + (received / 1e6).toFixed(1) + (total ? ' / ' + (total / 1e6).toFixed(1) : '') + ' MB');
+  }
+
+  // ---- The emulator's files: kept in the browser's cache storage, by the build they belong to ----
+  async function emulatorFile(name, what, size) {
+    const url = new URL(EMULATOR + name + '?build=' + encodeURIComponent(build.version), location.href).href;
+    let cache = null;
+    try { cache = await caches.open(CACHE); } catch (error) { /* no cache storage (private window): download each time */ }
+    if (cache) {
+      const kept = await cache.match(url).catch(() => null);
+      if (kept) return new Uint8Array(await kept.arrayBuffer());
+    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(name + ': HTTP ' + response.status);
+    const total = Number(response.headers.get('content-length')) || size || 0;
+    const reader = response.body.getReader();
+    const chunks = [];
+    let received = 0;
+    for (;;) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      showProgress(received, total, what);
+    }
+    const blob = new Blob(chunks);
+    if (cache) {
+      try {
+        say('Saving ' + what + ' in the browser…');
+        // Older builds' copies go: they are large.
+        for (const request of await cache.keys()) {
+          if (request.url.includes('/' + EMULATOR + name + '?') && request.url !== url) await cache.delete(request);
+        }
+        await cache.put(url, new Response(blob));
+      } catch (error) {
+        logLines.push('Could not keep ' + name + ' in the browser: ' + error);
+      }
+    }
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  // ---- The mod: the relay's ZIP file, kept like the main page keeps it (installer-store.js) ----
+  async function modFile(id) {
+    const listed = packs.find(pack => pack.id === id);
+    let record = await packStore.load('pack:' + id).catch(() => null);
+    if (record && listed && listed.sha256 && record.sha256 !== listed.sha256) record = null;
+    if (!record || !record.blob) {
+      if (!listed) throw new Error('the relay does not have the mod "' + id + '"');
+      const blob = await packDownload(OpenLF2Online.packUrl(id), listed, (received, total) => showProgress(received, total, listed.title));
+      record = {blob, title: listed.title, sha256: listed.sha256 || '', saved: Date.now()};
+      try {
+        say('Saving ' + listed.title + ' in the browser…');
+        await packStore.save('pack:' + id, record);
+      } catch (error) {
+        logLines.push('Could not keep the mod in the browser: ' + error);
+      }
+    }
+    return {bytes: new Uint8Array(await record.blob.arrayBuffer()), title: record.title || id};
+  }
+
+  // The game folder in a mod's ZIP file, as the relay finds it (tools/relay/packs.js): the folder holding
+  // data/data.txt nearest the top, and its program: lf2.exe, else the largest .exe beside the data folder.
+  function gameFolder(bytes) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let end = -1;
+    for (let at = bytes.length - 22; at >= Math.max(0, bytes.length - 22 - 65535); at -= 1) {
+      if (view.getUint32(at, true) === 0x06054b50) { end = at; break; }
+    }
+    if (end < 0) throw new Error('the mod is not a ZIP file');
+    const count = view.getUint16(end + 10, true);
+    let at = view.getUint32(end + 16, true);
+    const utf8 = new TextDecoder('utf-8');
+    const latin1 = new TextDecoder('windows-1252');
+    const entries = [];
+    for (let index = 0; index < count; index += 1) {
+      if (view.getUint32(at, true) !== 0x02014b50) throw new Error('the mod\'s ZIP file is damaged');
+      const flags = view.getUint16(at + 8, true);
+      const size = view.getUint32(at + 24, true);
+      const nameLength = view.getUint16(at + 28, true);
+      const raw = bytes.subarray(at + 46, at + 46 + nameLength);
+      const name = (flags & 0x800 ? utf8 : latin1).decode(raw).replace(/\\/g, '/');
+      entries.push({name, size});
+      at += 46 + nameLength + view.getUint16(at + 30, true) + view.getUint16(at + 32, true);
+    }
+    let root = null;
+    for (const {name} of entries) {
+      const lower = name.toLowerCase();
+      if (lower === 'data/data.txt' || lower.endsWith('/data/data.txt')) {
+        const folder = name.slice(0, name.length - 'data/data.txt'.length);
+        if (root === null || folder.length < root.length) root = folder;
+      }
+    }
+    if (root === null) throw new Error('the mod has no data/data.txt');
+    const programs = entries.filter(({name}) => name.startsWith(root) && !name.slice(root.length).includes('/')
+      && /\.exe$/i.test(name));
+    if (!programs.length) throw new Error('the mod has no program (.exe) beside its data folder');
+    const main = programs.find(({name}) => name.slice(root.length).toLowerCase() === 'lf2.exe')
+      || programs.reduce((largest, item) => (item.size > largest.size ? item : largest));
+    return {root: root.replace(/\/$/, ''), program: main.name.slice(root.length)};
+  }
+
+  // ---- Start ----
+  async function start() {
+    const id = select.value;
+    if (!id || running) return;
+    running = true;
+    startButton.disabled = true;
+    select.disabled = true;
+    try {
+      const mod = await modFile(id);
+      const folder = gameFolder(mod.bytes);
+      const wine = await emulatorFile('wine.zip', 'Windows (Wine)', build.wine_size);
+      const vc80 = await emulatorFile('vc80.zip', 'Microsoft MFC 8.0', 0);
+      progress.hidden = true;
+      say('Starting Windows… (' + mod.title + ': ' + (folder.root ? folder.root + '/' : '') + folder.program + ')');
+      window.OpenLF2BoxedwineFiles = {'wine.zip': wine, 'game.zip': mod.bytes, 'vc80.zip': vc80};
+      const renderer = params.get('renderer') === 'gl' ? 'gl' : 'gdi';
+      const query = [
+        ['root', 'wine.zip'], ['overlay', 'vc80.zip'], ['app', 'game'],
+        ['p', folder.program], ['w', 'c:/files' + (folder.root ? '/' + folder.root : '')],
+        ['registry', '[' + renderer + ']'], ['wine-override', '[nomono]'],
+        ['resolution', params.get('resolution') || '1366x768'], ['sound', params.get('sound') === 'false' ? 'false' : 'true'],
+        ['auto', 'true'], ['rootfs', 'memory'], ['storage', 'memory'],
+      ].map(([key, value]) => key + '=' + encodeURIComponent(value)).join('&');
+      const frame = document.createElement('iframe');
+      frame.title = mod.title + ' in BoxedWine';
+      frame.allow = 'autoplay; fullscreen';
+      frame.addEventListener('load', () => {
+        // BoxedWine's page shows its own buttons and console; this page has its own.
+        try {
+          const style = frame.contentDocument.createElement('style');
+          style.textContent = '#controls, #console, hr { display: none !important; } body { background: #000; }'
+            + ' #dropzone { padding: 0 !important; }';
+          frame.contentDocument.head.appendChild(style);
+        } catch (error) { /* another origin: leave it */ }
+        frame.focus();
+      });
+      frame.src = EMULATOR + 'boxedwine.html?' + query;
+      screen.replaceChildren(frame);
+      screen.hidden = false;
+      fullscreenButton.hidden = false;
+      document.getElementById('keys').hidden = false;
+      screen.addEventListener('click', () => frame.focus());
+      say(mod.title + ' is starting in Windows: this takes a while. Click the game to play.');
+    } catch (error) {
+      progress.hidden = true;
+      say('Could not start: ' + (error && error.message ? error.message : error));
+      document.getElementById('diagnostics').open = true;
+      logLines.push(String(error && error.stack ? error.stack : error));
+      window.OpenLF2BoxedwineLog('');
+      running = false;
+      startButton.disabled = false;
+      select.disabled = false;
+    }
+  }
+  startButton.addEventListener('click', start);
+  select.addEventListener('change', () => {
+    startButton.disabled = !select.value;
+    try { localStorage.setItem('openlf2-windows-pack', select.value); } catch (error) { /* no storage */ }
+  });
+  fullscreenButton.addEventListener('click', () => {
+    if (screen.requestFullscreen) screen.requestFullscreen().catch(() => {});
+    const frame = screen.querySelector('iframe');
+    if (frame) frame.focus();
+  });
+
+  // ---- The relay's mods and this site's emulator build ----
+  (async () => {
+    try {
+      const response = await fetch(EMULATOR + 'build.json', {cache: 'no-store'});
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      build = await response.json();
+      build.version = (build.wine_sha256 || '').slice(0, 12) + '-' + String(build.boxedwine || '').slice(0, 12);
+      if (build.wine_size) document.getElementById('wine-size').textContent = Math.round(build.wine_size / 1e6);
+    } catch (error) {
+      say('This site has no Windows emulator yet (its build is missing: ' + error.message + ').');
+      select.replaceChildren(new Option('—', ''));
+      return;
+    }
+    try {
+      if (!OpenLF2Online.packsUrl()) throw new Error('no relay is set');
+      const response = await fetch(OpenLF2Online.packsUrl(), {cache: 'no-store'});
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const list = await response.json();
+      packs = (list.packs || []).filter(pack => pack.kind !== 'flash');
+    } catch (error) {
+      say('The relay\'s mods are unavailable: ' + error.message);
+    }
+    let wanted = params.get('pack') || '';
+    if (!wanted) { try { wanted = localStorage.getItem('openlf2-windows-pack') || ''; } catch (error) { /* no storage */ } }
+    select.replaceChildren(new Option(packs.length ? 'Choose a mod…' : 'The relay has no mods', ''));
+    for (const pack of packs) {
+      const option = new Option(pack.title + (pack.size ? ' (' + Math.round(pack.size / 1e6) + ' MB)' : ''), pack.id);
+      select.add(option);
+    }
+    if (packs.some(pack => pack.id === wanted)) select.value = wanted;
+    startButton.disabled = !select.value;
+    if (!status.textContent) say(select.value ? 'Press Start.' : 'Choose a mod the relay keeps, then press Start.');
+    if (params.get('autostart') === '1' && select.value) start();
+  })();
+})();
+</script>
+</body>
+</html>

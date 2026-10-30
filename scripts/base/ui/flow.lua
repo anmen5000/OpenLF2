@@ -52,6 +52,7 @@ local function can_drop_replay(state)
         or (state.active == "launch" and state.launch.page == "menu"))
 end
 function flow.create(options)
+    require("base/game/combat").set_armor_by_id(options.armor_by_id)
     local settings = controls.load(options.default_controller)
     -- OpenLF2's own options (base/game/options), e.g. the unlocked characters.
     user_options.start()
@@ -98,6 +99,7 @@ end
 local function start_replay(state, block)
     local replay, problem = recording.open(block, state.options.recording_version or 0)
     if not replay then
+        engine.log("Replay: " .. problem)
         recording.status = {kind = constants.recording_statuses.error, text = i18n.clip(i18n.tr(problem), 96), count = 0}
         return
     end
@@ -221,6 +223,7 @@ local function route(state, input, context)
         leave_replay(state)
     elseif requested == "round_over" and state.match.match.replay then
         -- After a replay, the game returns to the title.
+        engine.log(string.format("Replay finished after %d frames", state.match.match.replay.frame))
         leave_replay(state)
     elseif requested == "demo" or (requested == "round_over" and state.match.match.mode == constants.modes.demo) then
         if requested == "round_over" and not state.match.match.random_game then

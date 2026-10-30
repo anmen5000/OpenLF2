@@ -9,6 +9,7 @@
 #include "openlf2/engine/frame_clock.hpp"
 #include "openlf2/engine/packages.hpp"
 #include "openlf2/resources/recording.hpp"
+#include "openlf2/resources/executable_patches.hpp"
 #include <cstdio>
 #include <ctime>
 #include "openlf2/ports/download.hpp"
@@ -947,6 +948,19 @@ Result<void> run(const Configuration& config) {
     }
     auto constants = recording_constants(*executable);
     if (!constants) return std::unexpected(constants.error());
+    // Some mods changed how their lf2.exe plays (Dragon Ball Super Edition: armor for some fighters); the scripts
+    // play the same where they know the change.
+    std::string executable_settings;
+    if (auto patches = read_executable_patches(*executable); !patches) {
+        std::cerr << patches.error().message << "; this mod may play differently here\n";
+    } else if (!patches->armor_by_id.empty()) {
+        std::cout << "lf2.exe changes: " << patches->description << '\n';
+        executable_settings = ", armor_by_id={";
+        for (const auto& [id, armor] : patches->armor_by_id) {
+            executable_settings += "[" + std::to_string(id) + "]=" + std::to_string(armor) + ",";
+        }
+        executable_settings += "}";
+    }
     const auto& resources = game_data.attach(std::make_unique<GameResources>(*archive, std::move(*executable), scripts->assets));
     auto bootstrap = read_file(config.scripts / "runtime/bootstrap.lua", 1024 * 1024);
     if (!bootstrap) return std::unexpected(bootstrap.error());
@@ -988,6 +1002,7 @@ Result<void> run(const Configuration& config) {
 #endif
     const auto bundle = "local runtime_settings = {menu_seed=" + std::to_string(menu_seed) +
         ", network_profile=\"" + *profile + "\", recording_version=" + std::to_string(constants->second) + network_options +
+        executable_settings +
 #if defined(__SWITCH__) || defined(__vita__)
         ", default_controller=true" +
 #else

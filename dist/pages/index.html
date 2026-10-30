@@ -194,7 +194,9 @@
         saves the installer for future visits; a selected file is never uploaded anywhere.</p>
       <p class="lede">Mods that come as a whole game folder (their own program, data and pictures) can be played too:
         pick one in <b>Game</b> (the online relay keeps them), or select its <code>.zip</code> file. Everyone in a network
-        room must play the same game; invite links carry the choice.</p>
+        room must play the same game; invite links carry the choice. A mod whose program is packed or protected
+        (OpenLF2 cannot read it, Naruto: The Setting Dawn for one) plays in the slower
+        <a href="windows.html">Windows emulator</a> instead.</p>
       <p class="lede"><b>Hero Fighter v0.7+</b> plays here too, in <a href="https://ruffle.rs/">Ruffle</a> (a Flash player):
         choose it in <b>Game</b>. The online relay keeps the game file when its owner uploaded it, else select your
         <code>HFv0.7.zip</code> (or <code>HFv0.7+.exe</code>). Log in with any e-mail address and password (the relay keeps the
@@ -315,6 +317,13 @@
       const reason = error.split('\n')[0].replace(/^runtime\/bootstrap:\d+: /, '');
       status.textContent = 'The game stopped because of an error: ' + reason +
         ' (Diagnostic output below has the details.) Reload the page to play again.';
+      // A mod whose program is packed or protected (application.cpp): the Windows emulator page plays it as it is.
+      if (/packed or protected/.test(reason) && String(runningGame || '').startsWith('pack:')) {
+        const link = document.createElement('a');
+        link.href = 'windows.html?pack=' + encodeURIComponent(runningGame.slice(5));
+        link.textContent = 'Play this mod in the Windows emulator instead (slower)';
+        status.append(' ', link);
+      }
       document.getElementById('diagnostics').open = true;
     } else {
       status.textContent = 'The game was closed. Reload the page to play again.';

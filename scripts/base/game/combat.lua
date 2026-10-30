@@ -339,6 +339,11 @@ function combat.detect(state)
     merge.update(state)
 end
 
+-- Armor that a mod's own lf2.exe gives some fighters, by id (Dragon Ball Super Edition's), from the host
+-- (runtime_settings.armor_by_id, read from the executable); none for the original game.
+local armor_by_id = {}
+function combat.set_armor_by_id(table) armor_by_id = table or {} end
+
 -- Characters that absorb hits while their defense meter is low.
 local function armored(attacker, victim, itr)
     local effect = itr.effect
@@ -1077,7 +1082,13 @@ function combat.apply(state, p)
                 local exposed = itr.bdefend == 100 or victim_frame.state == constants.frame_states.broken_defend or victim_frame.state == constants.frame_states.injured
                     or victim_frame.state == state_falling or victim_frame.state == state_frozen or victim_frame.state == constants.frame_states.lying
                     or victim_frame.state == constants.frame_states.dizzy or victim_frame.state == state_burning
-                if not exposed then defended = armored(attacker, victim, itr) end
+                if not exposed then
+                    -- Where such a mod's executable reads the victim's id for the armor below, it first sets the
+                    -- victim's own armor (damage = injury * 100 / armor), which stays.
+                    local armor = armor_by_id[victim.record.id]
+                    if armor then victim.armor = armor end
+                    defended = armored(attacker, victim, itr)
+                end
                 if not defended and victim_frame.state == state_defending and itr.bdefend < 61
                    and (attacker.facing ~= victim.facing or itr.dvx < 0 or attacker.record.id == constants.item_ids.boomerang
                         or attacker.record.id == constants.object_ids.jan_chase or attacker.record.id == constants.object_ids.firzen_chase_fire or attacker.record.id == constants.object_ids.firzen_chase_ice)

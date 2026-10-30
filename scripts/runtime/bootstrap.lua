@@ -27,6 +27,24 @@ local unpack_values = unpack or table.unpack
 local traceback = debug.traceback
 local protected_call = xpcall
 local module_definitions, module_cache, loading = {}, {}, {}
+local print_line = print
+
+-- Lua text that a script made (base/game/angelscript compiles mods' AI scripts to it), compiled to run
+-- with the environment it gives: text only, never bytecode, and never the real globals.
+local function compile_text(source, name, environment)
+    if type(source) ~= "string" or source:byte(1) == 27 then return nil, "only Lua text can be compiled" end
+    if type(name) ~= "string" or type(environment) ~= "table" then return nil, "compile_text needs a name and an environment" end
+    local chunk, message
+    if set_environment then
+        chunk, message = compile(source, "=" .. name)
+        if chunk then set_environment(chunk, environment) end
+    else
+        chunk, message = compile(source, "=" .. name, "t", environment)
+    end
+    return chunk, message
+end
+-- A line in the game's output (the web page's Diagnostic output).
+local function log(text) print_line(tostring(text)) end
 
 local function copy_library(library)
     local copy = {}
@@ -49,7 +67,7 @@ local function evaluate(declaration, previous)
             random_state = random_state, set_random_state = set_random_state,
             reset_random_sequence = reset_random_sequence, save_recording = save_recording,
             take_recording = take_recording, local_time = local_time, build_label = build_label,
-            network = network, network_time = network_time},
+            network = network, network_time = network_time, compile_text = compile_text, log = log},
     }
     environment.math.random = nil
     environment.math.randomseed = nil

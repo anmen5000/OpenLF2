@@ -46,6 +46,7 @@ local record_kinds = constants.record_kinds
 -- Computer control follows the original game's main, attack and special-move routines. Keep
 -- condition order for random-call compatibility; weapon/drink keys run before attack decisions.
 local objects = require("base/game/objects")
+local ai_scripts = require("base/game/ai_scripts")
 
 local ai = {}
 local abs = math.abs
@@ -1004,7 +1005,15 @@ function ai.control(state, index, mode, context)
         if T.z_int < S.z_int - 2 then press(S, "up") end
         return
     end
-    if specials(context, T, S, other_state, danger_aligned, nearest_distance, close_target) then return end
+    -- A mod's AI script with ego() takes the place of the special moves (base/game/ai_scripts).
+    do
+        local scripted = ai_scripts.ego(state, index, target)
+        if scripted ~= nil then
+            if scripted ~= 0 then return end
+        elseif specials(context, T, S, other_state, danger_aligned, nearest_distance, close_target) then
+            return
+        end
+    end
     if S.follow_order ~= 0 and far_from(S, T) then goto weapon_check end
     if (right == 1 or context.edge_flag == 1) and self_state == state_running and S.facing == facing_right then press(S, "left") end
     if left == 1 and self_state == state_running and S.facing == facing_left then press(S, "right") end
