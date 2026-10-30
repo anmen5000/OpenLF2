@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OpenLF2 — an open-source Little Fighter 2 reimplementation</title>
-<meta name="description" content="OpenLF2 is a playable, open-source reimplementation of Little Fighter 2 v2.0a. Play it in your browser or build it from source.">
+<title>LF2 Online by Xôi — Little Fighter 2 and its mods in your browser, with the INSANE! computer player</title>
+<meta name="description" content="LF2 Online is Xôi's build of OpenLF2, the open-source Little Fighter 2 reimplementation: play LF2 v2.0a and whole-game mods in your browser, online through a relay, against the INSANE! computer player that learns every mod's moves.">
 <!-- The icon files ship inside the web build's zip; the "pages" job in .github/workflows/web.yml extracts it, then swaps this file in as index.html. -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -131,6 +131,10 @@
   details pre { max-height: 10rem; overflow: auto; white-space: pre-wrap; font-size: .78rem; background: #000; border-radius: 8px; padding: .6rem .8rem; color: #9fe6ff; }
   .note { font-size: .85rem; color: var(--text-dim); }
 
+  .hero p.by { margin: -1rem 0 1.6rem; color: var(--accent-2); font-size: .95rem; letter-spacing: .02em; }
+  .features .card.insane { border-color: rgba(255,107,107,.55); background: linear-gradient(160deg, rgba(255,107,107,.14), var(--card) 60%); }
+  .features .card.insane h3 { color: #ff8a8a; }
+  .features .card a.more { display: inline-block; margin-top: .6rem; font-size: .9rem; }
   footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; }
   footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
 </style>
@@ -139,12 +143,15 @@
   <header class="hero">
     <div class="wrap">
       <img src="icon.svg" alt="">
-      <h1>OpenLF2</h1>
+      <h1>LF2 Online</h1>
       <p class="tagline">A playable, open-source reimplementation of <strong>Little Fighter 2 v2.0a</strong> —
-        the same fast, side-view fighting gameplay, with support for mods.</p>
+        the same fast, side-view fighting gameplay, with support for mods, network rooms through a relay, and the
+        <strong>INSANE!</strong> computer player that learns any mod's fighters.</p>
+      <p class="by">Bản dựng OpenLF2 của <strong>Xôi</strong> · a build of OpenLF2 maintained by <strong>Xôi</strong></p>
       <div class="cta-row">
         <a class="btn primary" href="#play">Play in your browser</a>
-        <a class="btn secondary" href="https://github.com/OpenLF2/OpenLF2">View source on GitHub</a>
+        <a class="btn secondary" href="insane.html">INSANE! AI — how it works</a>
+        <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2">View source on GitHub</a>
         <a class="btn secondary" href="https://github.com/OpenLF2/OpenLF2/releases">Download</a>
       </div>
     </div>
@@ -156,6 +163,13 @@
       <p class="lede">OpenLF2 is under active development. We continue to refine gameplay compatibility
         with the original game.</p>
       <div class="features">
+        <div class="card insane">
+          <h3>INSANE! computer players</h3>
+          <p>A fifth level above CRAZY!: the computer learns each fighter's moves from the mod's own data before the
+            match — specials, chains, air and dash attacks, charging — and fights by prediction. Works with every mod here;
+            replays and network games stay in sync.</p>
+          <a class="more" href="insane.html">Giới thiệu, kết quả thử nghiệm và mã nguồn AI →</a>
+        </div>
         <div class="card">
           <h3>Game modes</h3>
           <p>Versus, Stage, Battle, Championship, Team Championship, and Demo.</p>
@@ -179,7 +193,8 @@
         </div>
         <div class="card">
           <h3>MIT-licensed</h3>
-          <p>OpenLF2's code, scripts, and documentation are MIT-licensed. This does not cover the
+          <p>OpenLF2's code, scripts, and documentation are MIT-licensed, and so are this build's additions
+            (<a href="https://github.com/anmen5000/OpenLF2">anmen5000/OpenLF2</a>). This does not cover the
             original game, its executable, or its assets.</p>
         </div>
       </div>
@@ -228,10 +243,15 @@
 
   <footer>
     <div class="wrap">
-      <div>OpenLF2 is not affiliated with or endorsed by the creators of <a href="https://www.lf2.net/">Little Fighter 2</a>.</div>
+      <div><b>LF2 Online</b> is Xôi's build of <a href="https://github.com/OpenLF2/OpenLF2">OpenLF2</a> (the web page, the relay with its
+        mods, the Vietnamese guide and the INSANE! computer player). OpenLF2 is not affiliated with or endorsed by the creators of
+        <a href="https://www.lf2.net/">Little Fighter 2</a>.</div>
       <div class="links">
-        <a href="https://github.com/OpenLF2/OpenLF2">GitHub</a>
-        <a href="https://github.com/OpenLF2/OpenLF2/blob/main/LICENSE">MIT License</a>
+        <a href="https://github.com/anmen5000/OpenLF2">Xôi's GitHub (this build)</a>
+        <a href="insane.html">INSANE! AI</a>
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua">smart_ai.lua</a>
+        <a href="https://github.com/OpenLF2/OpenLF2">OpenLF2 upstream</a>
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/LICENSE">MIT License</a>
         <a href="licenses/THIRD-PARTY-NOTICES.md">Third-party notices</a>
       </div>
     </div>

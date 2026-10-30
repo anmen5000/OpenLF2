@@ -194,6 +194,30 @@ for frame = 1, 4 do
     spark_frames[frame + 5] = {0x3d * frame, 0x50, 0x3d, 0x30}
     spark_frames[frame + 15] = {0x3d * frame, 0xd0, 0x3d, 0x30}
 end
+-- A mod whose own program keeps the sparks in sprite/sys/spark.png (Sx2 ~ The power of emancipation) lays them
+-- out as a grid of 100 x 80 cells (rows: big and small yellow, big and small red); the picture stands in for
+-- the executable's and is read once to tell.
+local sparks_checked = false
+local function spark_source(frame)
+    if not sparks_checked then
+        sparks_checked = true
+        local ok, bytes = pcall(engine.read_resource, "pe/spark")
+        if ok and type(bytes) == "string" and #bytes >= 24 and bytes:sub(2, 4) == "PNG" then
+            local function be32(at) local a, b, c, d = bytes:byte(at, at + 3) return ((a * 256 + b) * 256 + c) * 256 + d end
+            if be32(17) == 500 and be32(21) == 320 then
+                local grid = {}
+                for index = 1, 4 do
+                    grid[index] = {100 * index, 0, 100, 80}
+                    grid[index + 5] = {100 * index, 80, 100, 80}
+                    grid[index + 10] = {100 * index, 160, 100, 80}
+                    grid[index + 15] = {100 * index, 240, 100, 80}
+                end
+                spark_frames = grid
+            end
+        end
+    end
+    return spark_frames[frame]
+end
 
 local function draw_item(context, stage, view, entry, bounds, lighting)
     local frame = entry.record.frame(entry.frame)
@@ -271,7 +295,7 @@ local function draw_item(context, stage, view, entry, bounds, lighting)
         glyphs(context, sheet, label, x, entry.z + 3, 9)
     end
     for _, spark in ipairs(entry.sparks) do
-        local source = spark_frames[spark.frame]
+        local source = spark_source(spark.frame)
         -- Frames 0, 5, 10 and 15 are never given a rectangle (assumed empty; see docs).
         if source then context.sprite("pe/spark", source, entry.draw_offset + spark.x - camera, spark.y, true) end
     end
