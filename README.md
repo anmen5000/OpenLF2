@@ -47,6 +47,9 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   moves (damage, guard, the opponent's counter, MP, recovery) and picks one, guards or steps out of
   reach, jumps or dashes in when an air move would land, holds charging and field stances while they
   serve, and uses its own get-up invulnerability.
+- It watches how its opponent plays as the match goes (blows guarded against blows taken, attacks started
+  when in reach, falls flipped out of, jumps) and adjusts: guard breakers against a guard-happy opponent,
+  walking up to a passive one, striking where a flipper's roll ends.
 - Everything depends only on the match's state (no random numbers of its own), so replays and network
   games stay in sync; the learned moves depend only on the fighter's data.
 - Fighters whose mod ships a substantial AI script keep that script at CRAZY!.

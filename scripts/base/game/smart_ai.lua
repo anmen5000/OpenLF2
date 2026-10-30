@@ -85,6 +85,7 @@ local function random_table()
 end
 
 local free_states = {[states.standing] = true, [states.walking] = true, [states.running] = true}
+local no_body_frame = {bodies = {}, center_x = 0, center_y = 0} -- a frame nothing can hit
 local function is_free(value)
     local frame = value.record.frame(value.frame)
     if free_states[frame.state] then return true end
@@ -1234,8 +1235,11 @@ end
 
 -- Frames from now for which `target` cannot be hit: while it blinks, and, down, until it has got up and its
 -- blinking after that (base/game/animation: not stage soldiers) is over; `lock` is how long it stays down.
+-- A target expected to flip up (context.target_path) is hittable along its roll instead.
 local function untouchable_for(context, target, tstate, lock)
     local frames_left = abs(target.blink)
+    local path = context.target_path
+    if path and path.value == target then return frames_left end
     if tstate == states.lying or tstate == states.falling then
         local state = context.state
         local blink = constants.blink.get_up_frames
@@ -1267,6 +1271,14 @@ end
 local function target_frame_at_fn(context, target, tframe, stunned)
     local where = context.target_where
     local standing = standing_frame(target.record)
+    local path = context.target_path
+    if path and path.value == target then
+        local frames = path.path.frames
+        return function(k)
+            if k <= 0 then return tframe end
+            return frames[min(k, #path.path.x)] or no_body_frame
+        end
+    end
     if where and where.value == target then
         return function(k)
             local id = where.move.frames[where.now + k]
@@ -1283,24 +1295,196 @@ local function target_frame_at_fn(context, target, tframe, stunned)
     return tframe
 end
 
+-- A knocked fighter's two ways down, k = 1..recovery_horizon frames from now: flipping back onto its feet now
+-- (the recovery frames, carried by the roll's speed until it lands, the landing crouch, standing), or letting the
+-- fall finish (the falling frames in the air, then lying until it gets up, blinking). Each is the frame it would be
+-- in (nil where nothing can hit it) and where it would be, relative to now.
+local recovery_horizon = 30
+local function hittable(frame)
+    if not frame then return nil end
+    for _, body in ipairs(frame.bodies) do
+        if abs(body.y) < 1000 then return frame end
+    end
+    return nil
+end
+local function recovery_paths(self, analysis)
+    local record = self.record
+    local movement = record.movement or {}
+    local roll, roll_height = movement.rowing_distance or 0, movement.rowing_height or 0
+    local standing = hittable(standing_frame(record))
+    local flip, fall = {frames = {}, x = {}, y = {}}, {frames = {}, x = {}, y = {}}
+    -- Flipping (base/game/control recovering, physics landing).
+    local current
+    if self.facing == facing_right then current = self.vx <= 0.0 and 100 or 108 else current = self.vx >= 0.0 and 100 or 108 end
+    if not record.frames[current] then current = nil end
+    local vx
+    if self.vx < 1.0 and self.vx > -1.0 then vx = self.facing == facing_left and roll or -roll
+    else vx = self.vx > 0.0 and roll or -roll end
+    local x, y, vy = 0, self.y, min(self.vy, roll_height)
+    local left = current and record.frames[current].wait + 1 or 0
+    local landed = false
+    for k = 1, recovery_horizon do
+        x = x + vx
+        if landed then
+            if vx > 0 then vx = max(vx - 1, 0) elseif vx < 0 then vx = min(vx + 1, 0) end
+        else
+            y = y + vy
+            if y >= 0 then
+                y, landed, vx = 0, true, vx / 3
+                current = record.frames[frames.crouch_alternate] and frames.crouch_alternate or nil
+                left = current and record.frames[current].wait + 1 or 0
+            else
+                vy = vy + 1.7
+            end
+        end
+        flip.frames[k] = current and hittable(record.frames[current]) or (not current and standing) or nil
+        flip.x[k], flip.y[k] = trunc(x), trunc(y)
+        if current then
+            left = left - 1
+            if left <= 0 then
+                local next_id = record.frames[current].next
+                if next_id < 0 then next_id = -next_id end
+                if next_id == 0 or next_id == 999 or next_id >= 1000 or not record.frames[next_id] then current = nil
+                else current = next_id; left = record.frames[current].wait + 1 end
+            end
+        end
+    end
+    -- Letting the fall finish.
+    local falling = hittable(record.frame(self.frame))
+    local lying_id = self.frame >= 186 and frames.lying + 1 or frames.lying
+    local lying = hittable(record.frames[lying_id])
+    local lying_lock = record.frames[lying_id] and lock_of(record, analysis, lying_id) or 0
+    x, y, vy, vx, landed = 0, self.y, self.vy, self.vx, false
+    local down = 0
+    for k = 1, recovery_horizon do
+        if landed then
+            down = down + 1
+            fall.frames[k] = down <= lying_lock and lying or nil
+        else
+            x, y = x + vx, y + vy
+            if y >= 0 then
+                y, landed = 0, true
+                fall.frames[k] = lying
+            else
+                vy = vy + 1.7
+                fall.frames[k] = falling
+            end
+        end
+        fall.x[k], fall.y[k] = trunc(x), trunc(y)
+    end
+    return flip, fall
+end
+
+-- A path's place and frame k frames from now, for earliest_threat.
+local function path_plan(self, path)
+    local base_y = self.y_int
+    return function(k)
+        if k <= 0 then return 0, 0, 0 end
+        k = min(k, recovery_horizon)
+        return path.x[k], path.y[k] - base_y, 0
+    end
+end
+local function path_frames(self, path)
+    local now = self.record.frame(self.frame)
+    return function(k)
+        if k <= 0 then return now end
+        return path.frames[min(k, recovery_horizon)] or no_body_frame
+    end
+end
+
+---------------------------------------------------------------------------------------------------------------
+-- Knowing the opponent. Its data says what it can do; how it plays says what it will do. Each fighter in the
+-- match is watched as the frames go by (once a frame, by whoever looks at it first): the blows it guarded and
+-- the blows that landed on it while it was free, the attacks it started when an enemy was within its reach and
+-- the frames it had the chance to, the falls it flipped out of, the jumps it took. Only the match's own state
+-- goes in, so every machine of a network game counts the same.
+---------------------------------------------------------------------------------------------------------------
+
+local function model_of(context, value)
+    local models = context.models
+    if not models then models = {}; context.models = models end
+    local model = models[value]
+    if not model then
+        model = {guards = 0, hits = 0, attacks = 0, chances = 0, falls = 0, flips = 0, jumps = 0, frames = 0,
+            frame = value.frame, hp = value.hp, b8 = value.timer_b8, free = true, fstate = states.standing, seen = -1}
+        models[value] = model
+    end
+    return model
+end
+
+-- One frame of watching `value`; `nearby` says whether an enemy stands within its reach (a chance to attack).
+local function watch(context, value, nearby)
+    local model = model_of(context, value)
+    local now = context.state.frame_number
+    if model.seen == now then return model end
+    model.seen = now
+    local frame = value.record.frame(value.frame)
+    local fstate = frame.state
+    local free_now = is_free(value) or fstate == states.defending
+    if fstate == states.defending and value.timer_b8 > model.b8 then model.guards = model.guards + 1 end
+    if value.hp < model.hp - 6 and model.free and exposed_states[fstate] then model.hits = model.hits + 1 end
+    if model.free and not free_now and not exposed_states[fstate] and fstate ~= states.lying and fstate ~= states.caught
+       and fstate ~= states.catching and where_of(value.record, context.analysis_of(value), value) then
+        model.attacks = model.attacks + 1
+    end
+    if model.free and nearby then model.chances = model.chances + 1 end
+    if fstate == states.jumping and model.fstate ~= states.jumping and value.y_int == 0 then model.jumps = model.jumps + 1 end
+    local recovering = value.frame == 182 or value.frame == 188
+    local was_recovering = model.frame == 182 or model.frame == 188
+    if recovering and not was_recovering then model.falls = model.falls + 1 end
+    if was_recovering and (value.frame == 100 or value.frame == 108) then model.flips = model.flips + 1 end
+    model.frames = model.frames + 1
+    model.frame, model.hp, model.b8, model.free, model.fstate = value.frame, value.hp, value.timer_b8, free_now, fstate
+    return model
+end
+
+-- Where a target expected to flip up (context.target_path) will be k frames from now, or nil for no such path.
+local function path_position_fn(context, target)
+    local path = context.target_path
+    if not (path and path.value == target) then return nil end
+    local xs, ys = path.path.x, path.path.y
+    local x0, y0, z0 = target.x_int, target.y_int, target.z_int
+    return function(k)
+        if k <= 0 then return x0, y0, z0 end
+        k = min(k, #xs)
+        return x0 + xs[k], ys[k], z0
+    end
+end
+
+-- How likely this fighter is to guard a blow it sees coming (what it did so far, around a middling prior).
+local function guard_rate(model)
+    return (model.guards + 1.3) / (model.guards + model.hits + 2)
+end
+-- Attacks a second when an enemy is within its reach (how pressing it is), once there is something to go on.
+local function pressure(model)
+    if model.chances < 90 then return nil end
+    return model.attacks / (model.chances + 30) * 30
+end
+-- Whether it flips back up out of a fall as soon as it may (humans mostly do; the original computer player does
+-- not), once seen a couple of times.
+local function flips_up(model)
+    return model.falls >= 2 and model.flips * 2 >= model.falls
+end
+
 -- What `move` (started `lead` frames from now) landing its box `box` on `target` after `t` frames is worth:
 -- damage weighed by how sure the hit is, what a guard would cost, MP, and what being busy afterwards would cost.
 local function attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, lead)
     local blocked = would_block(target, target_state_at(context, target, t - 1), face == 1 and facing_right or facing_left, box)
-    local damage = worth(target, box, blocked, move)
     -- A hit is sure while the target cannot act; otherwise it may step away or guard in time.
     local sure = 1.0
     if t > stunned then sure = max(0.2, 1.0 - (t - stunned) * 0.04) end
     if danger and t > danger - 2 then sure = sure * 0.6 end
-    local score = damage * sure
-    -- A free target facing the blow can raise its guard at once (mods' fighters then often strike back
-    -- from the guard): the longer the blow takes, the likelier, and a guarded blow is wasted.
-    -- The longer nothing has happened, the more it is worth trying (a standoff ends).
+    -- A free target facing the blow can raise its guard in time (mods' fighters then often strike back from
+    -- the guard): the likelier the longer the blow takes, and the more this one has guarded so far; a guarded
+    -- blow is worth a tenth, or a broken guard. The longer nothing has happened, the more it is worth trying.
+    local guarded = blocked and 1 or 0
     if not blocked and t > stunned and box.bdefend < 61 and (tstate == states.standing or tstate == states.walking)
        and target.facing ~= (face == 1 and facing_right or facing_left) then
-        local guarded = min(0.8, 1 - 0.9 ^ (t - stunned)) * (1 - 0.5 * (context.aggression or 0))
-        score = score * (1 - guarded) - guarded * (context.guard_counter or 20)
+        guarded = guard_rate(model_of(context, target)) * min(1, (1 - 0.9 ^ (t - stunned)) * 1.25) * (1 - 0.5 * (context.aggression or 0))
     end
+    local damage = worth(target, box, false, move) * (1 - guarded) + worth(target, box, true, move) * guarded
+    local score = damage * sure
+    if not blocked and guarded > 0 then score = score - guarded * (context.guard_counter or 20) end
     score = score - move.mp * 0.06 - max(move.hp, 0) * 0.5
     score = score * 14 / (t + 10)
     -- Still busy when the target, back on its feet, could land its quickest blow: that blow is the price.
@@ -1331,7 +1515,7 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local stunned = context.target_lock or 0
     local untouchable = untouchable_for(context, target, tstate, stunned)
     local toward = target.x_int >= self.x_int and 1 or -1
-    local function target_at(k) return predict(target, k, tstate) end
+    local target_at = path_position_fn(context, target) or function(k) return predict(target, k, tstate) end
     local target_frame = target_frame_at_fn(context, target, tframe, stunned)
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
     for _, move in ipairs(analysis.moves) do
@@ -1420,6 +1604,7 @@ local function approach_attack(context, self, fstate, target, danger)
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
     local dir = target.x_int >= self.x_int and 1 or -1
     local target_frame = target_frame_at_fn(context, target, tframe, stunned)
+    local along = path_position_fn(context, target)
     local virtual = {x_int = 0, y_int = 0, z_int = self.z_int, vx = 0, vy = 0, facing = self.facing}
     local best, best_t, best_score = nil, nil, 0
     local y, vy, flown = 0, height, 0
@@ -1428,7 +1613,10 @@ local function approach_attack(context, self, fstate, target, danger)
         if y >= -8 then break end
         virtual.x_int, virtual.y_int, virtual.vx, virtual.vy = self.x_int + trunc(dir * speed * s), trunc(y), dir * speed, vy
         local offset = lead + s
-        local function target_at(k) return predict(target, offset + k, tstate) end
+        local function target_at(k)
+            if along then return along(offset + k) end
+            return predict(target, offset + k, tstate)
+        end
         local frame_at = target_frame
         if type(target_frame) == "function" then frame_at = function(k) return target_frame(offset + k) end end
         for _, move in ipairs(analysis.moves) do
@@ -1516,6 +1704,10 @@ local function choose_target(state, index, self, memory)
             local tstate = value.record.frame(value.frame).state
             if exposed_states[tstate] then distance = distance - 60 end
             if tstate == states.lying then distance = distance + 120 end
+            -- Among several enemies (a team, a stage): one busy with a move cannot answer, one low on HP is
+            -- soonest out of the fight.
+            if not is_free(value) and not exposed_states[tstate] and tstate ~= states.lying then distance = distance - 40 end
+            if value.hp < 150 then distance = distance - 40 end
             if not best_score or distance < best_score then best, best_score = other, distance end
         end
     end
@@ -1642,104 +1834,6 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
 end
 
 -- One frame of control for the computer player at `index`.
--- A knocked fighter's two ways down, k = 1..recovery_horizon frames from now: flipping back onto its feet now
--- (the recovery frames, carried by the roll's speed until it lands, the landing crouch, standing), or letting the
--- fall finish (the falling frames in the air, then lying until it gets up, blinking). Each is the frame it would be
--- in (nil where nothing can hit it) and where it would be, relative to now.
-local recovery_horizon = 30
-local no_body_frame = {bodies = {}, center_x = 0, center_y = 0}
-local function hittable(frame)
-    if not frame then return nil end
-    for _, body in ipairs(frame.bodies) do
-        if abs(body.y) < 1000 then return frame end
-    end
-    return nil
-end
-local function recovery_paths(self, analysis)
-    local record = self.record
-    local movement = record.movement or {}
-    local roll, roll_height = movement.rowing_distance or 0, movement.rowing_height or 0
-    local standing = hittable(standing_frame(record))
-    local flip, fall = {frames = {}, x = {}, y = {}}, {frames = {}, x = {}, y = {}}
-    -- Flipping (base/game/control recovering, physics landing).
-    local current
-    if self.facing == facing_right then current = self.vx <= 0.0 and 100 or 108 else current = self.vx >= 0.0 and 100 or 108 end
-    if not record.frames[current] then current = nil end
-    local vx
-    if self.vx < 1.0 and self.vx > -1.0 then vx = self.facing == facing_left and roll or -roll
-    else vx = self.vx > 0.0 and roll or -roll end
-    local x, y, vy = 0, self.y, min(self.vy, roll_height)
-    local left = current and record.frames[current].wait + 1 or 0
-    local landed = false
-    for k = 1, recovery_horizon do
-        x = x + vx
-        if landed then
-            if vx > 0 then vx = max(vx - 1, 0) elseif vx < 0 then vx = min(vx + 1, 0) end
-        else
-            y = y + vy
-            if y >= 0 then
-                y, landed, vx = 0, true, vx / 3
-                current = record.frames[frames.crouch_alternate] and frames.crouch_alternate or nil
-                left = current and record.frames[current].wait + 1 or 0
-            else
-                vy = vy + 1.7
-            end
-        end
-        flip.frames[k] = current and hittable(record.frames[current]) or (not current and standing) or nil
-        flip.x[k], flip.y[k] = trunc(x), trunc(y)
-        if current then
-            left = left - 1
-            if left <= 0 then
-                local next_id = record.frames[current].next
-                if next_id < 0 then next_id = -next_id end
-                if next_id == 0 or next_id == 999 or next_id >= 1000 or not record.frames[next_id] then current = nil
-                else current = next_id; left = record.frames[current].wait + 1 end
-            end
-        end
-    end
-    -- Letting the fall finish.
-    local falling = hittable(record.frame(self.frame))
-    local lying_id = self.frame >= 186 and frames.lying + 1 or frames.lying
-    local lying = hittable(record.frames[lying_id])
-    local lying_lock = record.frames[lying_id] and lock_of(record, analysis, lying_id) or 0
-    x, y, vy, vx, landed = 0, self.y, self.vy, self.vx, false
-    local down = 0
-    for k = 1, recovery_horizon do
-        if landed then
-            down = down + 1
-            fall.frames[k] = down <= lying_lock and lying or nil
-        else
-            x, y = x + vx, y + vy
-            if y >= 0 then
-                y, landed = 0, true
-                fall.frames[k] = lying
-            else
-                vy = vy + 1.7
-                fall.frames[k] = falling
-            end
-        end
-        fall.x[k], fall.y[k] = trunc(x), trunc(y)
-    end
-    return flip, fall
-end
-
--- A path's place and frame k frames from now, for earliest_threat.
-local function path_plan(self, path)
-    local base_y = self.y_int
-    return function(k)
-        if k <= 0 then return 0, 0, 0 end
-        k = min(k, recovery_horizon)
-        return path.x[k], path.y[k] - base_y, 0
-    end
-end
-local function path_frames(self, path)
-    local now = self.record.frame(self.frame)
-    return function(k)
-        if k <= 0 then return now end
-        return path.frames[min(k, recovery_horizon)] or no_body_frame
-    end
-end
-
 function smart.control(state, index)
     local items = state.items
     local self = items[index]
@@ -1824,6 +1918,13 @@ function smart.control(state, index)
 
     local target_index = choose_target(state, index, self, memory)
     local target = target_index and items[target_index]
+    -- What this opponent does: watched every frame it is the target, busy or not (a blow of ours lands while
+    -- we are still in the move).
+    local model
+    if target then
+        model = watch(context, target, abs(target.x_int - self.x_int) < melee_reach(context.analysis_of(target)) + 80
+            and abs(target.z_int - self.z_int) < 40)
+    end
 
     -- A move in progress: continue it into a follow-up that lands before the target can hit back.
     if not free then
@@ -1898,12 +1999,22 @@ function smart.control(state, index)
     local tframe = target.record.frame(target.frame)
     local target_lock = target_lock_of(context, target, tframe)
     context.target_lock = target_lock
-    -- Frames since the last blow between the two: a standoff makes it bolder.
+    local target_analysis = context.analysis_of(target)
+    -- Frames since the last blow between the two: a standoff makes it bolder; so does an opponent that hardly
+    -- ever attacks when it could (nothing to bait, everything to walk up to).
     -- (A guarded blow's tenth does not count: a guard that only soaks up jabs is a standoff too.)
     local hp_sum = self.hp + target.hp
     if memory.hp_sum and hp_sum < memory.hp_sum - 6 then memory.calm = 0 else memory.calm = (memory.calm or 0) + 1 end
     memory.hp_sum = hp_sum
     context.aggression = min(1, max(0, (memory.calm - 90) / 150))
+    local target_pressure = pressure(model)
+    if target_pressure and target_pressure < 0.2 then context.aggression = max(context.aggression, 0.6) end
+    -- A target that flips up out of its falls as soon as it may: where its roll takes it is where to strike.
+    context.target_path = nil
+    if (target.frame == 182 or target.frame == 188) and flips_up(model) then
+        local flip = recovery_paths(target, target_analysis)
+        context.target_path = {value = target, path = flip}
+    end
     memory.last_use = memory.last_use or {}
     context.last_use, context.now = memory.last_use, state.frame_number
     context.target_where = nil
@@ -2062,7 +2173,9 @@ function smart.control(state, index)
         -- into our blow; a long standoff ends the patience.
         local hold = range
         local their_reach = melee_reach(context.analysis_of(target)) + 25
-        if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 then hold = max(range, their_reach + 15) end
+        if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 and (target_pressure or 1) >= 0.2 then
+            hold = max(range, their_reach + 15)
+        end
         if distance > max(hold - 20, 10) then want_dx = dx > 0 and 1 or -1
         elseif distance < max(hold - 50, 8) and target_lock == 0 then want_dx = dx > 0 and -1 or 1 end
         if want_dx ~= 0 and (want_dx < 0) == (dx > 0) and ((want_dx < 0 and self.x_int < 80) or (want_dx > 0 and self.x_int > width - 80)) then

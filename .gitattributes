@@ -1,0 +1,8 @@
+# Text files keep LF everywhere (scripts run in Docker and on the VPS; Windows checkouts stay byte-identical).
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.jpg binary
+*.wav binary
+*.ttf binary
+*.zip binary

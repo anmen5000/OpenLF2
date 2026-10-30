@@ -144,6 +144,12 @@
         <li><b>Knocked down.</b> When sent flying, the AI flips back up early only if the landing spot is safe; if the
           opponent is waiting there, it lets the fall finish (a lying fighter cannot be hit), gets up during the
           invulnerability blink, and uses that blink to strike first.</li>
+        <li><b>Knowing the opponent.</b> The opponent's data says what it <em>can</em> do; how it plays says what it
+          <em>will</em> do. During the match the AI counts what its opponent does: the blows it guards against the blows
+          that land, how often it attacks when someone is within its reach, whether it flips up out of every fall, how
+          much it jumps. A guard-happy opponent makes guard-breaking moves and grabs worth more and ordinary blows worth
+          less; a passive one is walked up to instead of baited; one that always flips up is met where its roll ends.
+          Everything is counted from the match state alone, so network games stay in sync.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -194,8 +200,11 @@
         <li><code>attack_score</code>: the formula that scores a blow. To make the AI bolder or more careful, change it here.</li>
         <li><code>danger_at</code>, <code>preferred_range</code>: how the AI chooses where to stand.</li>
         <li><code>approach_attack</code>: jumping in and dashing in; <code>stance_exit</code>: held stances.</li>
+        <li><code>watch</code>, <code>guard_rate</code>, <code>pressure</code>, <code>flips_up</code>: the opponent model,
+          counted once a frame; add a habit there and use it in <code>attack_score</code> or the positioning.</li>
         <li>Not done yet: teleport-to-enemy moves (<code>teleport</code>) are recorded but not used properly; healing and
-          buff moves that deal no damage have no score yet; no teamwork in 2-on-2.</li>
+          buff moves that deal no damage have no score yet; little teamwork in 2-on-2 beyond picking the busiest or
+          weakest enemy; no weapons.</li>
       </ul>
       <pre><code># Run the bench on your machine (see tools/ai-bench/README.md): 40 games of INSANE! against CRAZY! in the One Piece mod
 openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""</code></pre>

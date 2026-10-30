@@ -193,6 +193,13 @@ function duel.run(config)
             games = games + 1
             hp_left[1], hp_left[2] = hp_left[1] + hp[1], hp_left[2] + hp[2]
             total_ticks = total_ticks + ticks
+            if config.models and state.smart_context and state.smart_context.models then
+                for value, m in pairs(state.smart_context.models) do
+                    engine.log(string.format("  model of %d (%s): guards %d hits %d | attacks %d in %d chance frames (%.2f/s) | falls %d flips %d | jumps %d | %d frames",
+                        value.record.id, value.brain or "?", m.guards, m.hits, m.attacks, m.chances, m.chances > 0 and m.attacks / (m.chances + 30) * 30 or 0,
+                        m.falls, m.flips, m.jumps, m.frames))
+                end
+            end
             if config.verbose then
                 engine.log(string.format("game %d: %s(%d) vs %s(%d): hp %d - %d, %d ticks, winner %s", games,
                     config.brains[1], pair[1], config.brains[2], pair[2], hp[1], hp[2], ticks, tostring(winner and config.brains[winner] or "draw")))
