@@ -2,6 +2,39 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+LF2 Online, Xôi's build of OpenLF2 (<https://anmen5000.github.io/OpenLF2/>). The INSANE! computer
+player's own version numbers (shown in the game as "INSANE! vN" and on the site's INSANE! page) are
+`smart.version` in `scripts/base/game/smart_ai.lua`.
+
+### Added
+- INSANE!, a fifth computer-player level above CRAZY! (`scripts/base/game/smart_ai.lua`): learns every fighter's
+  moves from the game's or mod's data in a private copy of the match before it starts, then fights by prediction;
+  selectable in the character selection, Tournament and Battle mode; fighters whose mod ships a substantial AI
+  script keep that script (v14)
+- INSANE!: stances and charging moves, defend keys that are moves, moves that start from walking, get-up
+  invulnerability, running, obstacles, no guarding into a guard break (v15)
+- INSANE!: the whole kit — jumping in and dashing in with air moves, slow specials while the target is held,
+  MP charging, striking out of the guard, leaving stances in time, flipping up or staying down by the blows on
+  their way (v16)
+- INSANE!: an opponent model counted from the match state — guard rate, how pressing the opponent is, whether it
+  flips up — that changes the choice of moves, the spacing and the timing; the busy and the weak are preferred
+  among several enemies (v19)
+- INSANE!: weapons (walks onto a lying knife, stick, stone or drink when nothing presses, learns the fighter's
+  moves with it in hand and swings, throws or drinks accordingly), moves that teleport to the enemy aimed from
+  where they land, the second fighter of a pair going round to the other side, passive opponents walked up to and
+  struck; the level's version is shown in the match and on the site (v20)
+- `tools/ai-bench/`: a mod package that runs INSANE! against the original computer player in bulk (`duel`), lists
+  what it learned (`moves`), checks determinism (`replaytest`) and weapon handling (`weapontest`), and more
+- The site (`dist/pages/`): the start page with the mod library and network rooms, the INSANE! page
+  (`insane.html`, with the AI's version and history read from the build), the Windows emulator page for mods
+  OpenLF2 cannot run (`windows.html`, `dist/boxedwine/`), the Hero Fighter page; built and published by the
+  WebAssembly workflow on every push to `main`
+- The relay server for network rooms and the mod library (`tools/relay/`), with a one-command installer for a
+  Linux server
+- Sx2's interface pictures; game packs up to 256 MiB
+
 ## [1.1.2] - 2026-10-26
 
 ### Changed

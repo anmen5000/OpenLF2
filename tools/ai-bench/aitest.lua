@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Checks that a mod's AI scripts compile and make instances: aitest.lua with config.ids.
 local t = {}
 function t.run(config)

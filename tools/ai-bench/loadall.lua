@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Loads every object of the mod (as a match would) and reports what fails: loadall.lua.
 local catalog = require("base/game/catalog")
 local object_data = require("base/game/object_data")

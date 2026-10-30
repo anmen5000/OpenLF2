@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Frames a fighter passes through from the start with no input: settle.lua with config.id, config.ticks.
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")

@@ -15,6 +15,28 @@ It recreates the original’s fast, side-view fighting gameplay and supports mod
 OpenLF2 is under active development. We continue to refine gameplay compatibility
 with the original game.
 
+## LF2 Online — this fork
+
+This repository is **LF2 Online**, Xôi's build of OpenLF2, played at
+<https://anmen5000.github.io/OpenLF2/>. On top of OpenLF2 it adds:
+
+- the **INSANE!** computer-player level, which learns any fighter's moves from the mod's own data
+  (`scripts/base/game/smart_ai.lua`; see [INSANE! computer players](#insane-computer-players) and
+  the [introduction page](https://anmen5000.github.io/OpenLF2/insane.html), which shows the AI's
+  current version and history);
+- the web site (`dist/pages/`), built and published by the WebAssembly workflow on every push to
+  `main`; its network rooms and library of mods run on a relay (`tools/relay/`) whose address is the
+  `window.OPENLF2_RELAY` line in `dist/pages/index.html` and `dist/pages/windows.html` — change it to
+  your own relay when you fork;
+- a page that plays mods whose program OpenLF2 cannot read in a Windows emulator in the browser
+  (`dist/pages/windows.html`, `dist/boxedwine/`), and a Hero Fighter page (`dist/pages/hero-fighter.js`);
+- a test bench for the computer players (`tools/ai-bench/`).
+
+Everything here is MIT-licensed like OpenLF2; the games and mods are not part of the repository and
+are not covered. Forks and pull requests are welcome: the AI's decisions must stay deterministic
+(run the bench's `replaytest` after a change) and the bench's `duel` is how a change is measured.
+The upstream project is [OpenLF2/OpenLF2](https://github.com/OpenLF2/OpenLF2).
+
 ## Beyond the original
 
 - Keyboard, controller, and touch navigation on every menu — the original's launch
@@ -50,6 +72,9 @@ Battle), is `scripts/base/game/smart_ai.lua`:
 - It watches how its opponent plays as the match goes (blows guarded against blows taken, attacks started
   when in reach, falls flipped out of, jumps) and adjusts: guard breakers against a guard-happy opponent,
   walking up to a passive one, striking where a flipper's roll ends.
+- It picks up weapons lying nearby when nothing presses (knives, sticks, stones, drinks), having played its
+  moves again with each weapon in hand, aims moves that teleport to the enemy from where they land, and in
+  2-on-2 goes round to the other side of an enemy its partner is already on.
 - Everything depends only on the match's state (no random numbers of its own), so replays and network
   games stay in sync; the learned moves depend only on the fighter's data.
 - Fighters whose mod ships a substantial AI script keep that script at CRAZY!.

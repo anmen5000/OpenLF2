@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Puts a fighter into a frame with little MP and reports its MP as the frames run (charging moves).
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")

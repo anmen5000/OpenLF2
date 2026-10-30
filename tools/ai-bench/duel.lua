@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- AI against AI: config.pairs of fighter ids, config.brains = {"smart", "classic"}, config.games per pair.
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")

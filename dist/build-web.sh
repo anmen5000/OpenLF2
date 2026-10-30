@@ -177,8 +177,19 @@ cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-ver.txt" "$
 # The site's other pages travel in the bundle too, so that a Pages job that only swaps index.html in (an older
 # .github/workflows/web.yml, which a file upload to GitHub does not replace) still publishes them.
 cp "$repo_root/dist/pages/insane.html" "$repo_root/dist/pages/windows.html" "$build_dir/native/"
+# The INSANE! computer player's version and history (scripts/base/game/smart_ai.lua), for the pages to show.
+python3 - "$repo_root/scripts/base/game/smart_ai.lua" "$build_dir/native/insane-version.json" <<'PY'
+import json, re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+version = int(re.search(r'^smart\.version = (\d+)', source, re.M).group(1))
+history = [{"version": int(v), "date": d, "text": t}
+           for v, d, t in re.findall(r'^\s*\{(\d+), "(\d{4}-\d{2}-\d{2})", "((?:[^"\\]|\\.)*)"\},?\s*$', source, re.M)]
+date = next((entry["date"] for entry in history if entry["version"] == version), "")
+with open(sys.argv[2], 'w', encoding='utf-8') as out:
+    json.dump({"version": version, "date": date, "history": history}, out, indent=1, ensure_ascii=False)
+PY
 rm -rf "$build_dir/native/ruffle" "$build_dir/native/ruffle-stock"
-bundle_extra=(hero-fighter.js hf-ver.txt insane.html windows.html)
+bundle_extra=(hero-fighter.js hf-ver.txt insane.html windows.html insane-version.json)
 if [[ -f "$ruffle_dir/ruffle.js" ]]; then
     cp -r "$ruffle_dir" "$build_dir/native/ruffle"
     bundle_extra+=(ruffle)

@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Runs the same INSANE! match twice from the same random state (first with the moves unlearned, then learned)
 -- and compares the fighters every 30 frames: replaytest.lua with config.pair, config.limit.
 local catalog = require("base/game/catalog")

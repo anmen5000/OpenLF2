@@ -68,7 +68,8 @@
   .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 1rem; top: .85rem; width: 1.7rem; height: 1.7rem; border-radius: 50%;
     background: var(--hot); color: #2a0000; font-weight: 700; display: grid; place-items: center; font-size: .9rem; }
   .steps li b { color: var(--text); }
-  table { border-collapse: collapse; width: 100%; margin-top: 1.2rem; font-size: .95rem; }
+  .table-wrap { overflow-x: auto; margin-top: 1.2rem; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .95rem; }
   th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--card-border); vertical-align: top; }
   th { color: var(--text-dim); font-weight: 600; }
   td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -80,6 +81,18 @@
   ul.plain { color: var(--text-dim); font-size: .93rem; padding-left: 1.2rem; }
   ul.plain li { margin: .3rem 0; }
   @media (max-width: 640px) { .path { grid-template-columns: 1fr; } .path span { margin-bottom: .4rem; } .hero h1 { font-size: 2.2rem; } }
+  .badge { display: inline-block; margin-top: .9rem; padding: .35rem .9rem; border-radius: 999px; background: rgba(80,200,239,.15); border: 1px solid rgba(80,200,239,.45);
+    color: var(--accent); font-weight: 600; font-size: .9rem; letter-spacing: .02em; }
+  .badge[hidden] { display: none; }
+  .status { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .status.done { background: rgba(93, 214, 140, .18); color: #7fe3a5; }
+  .status.partial { background: rgba(255, 210, 60, .18); color: #ffd23c; }
+  .status.planned { background: rgba(183, 192, 230, .14); color: var(--text-dim); }
+  .history { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .6rem; }
+  .history li { display: grid; grid-template-columns: 5.5rem 1fr; gap: .8rem; padding: .7rem .9rem; background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; color: var(--text-dim); font-size: .93rem; }
+  .history li b { color: var(--text); white-space: nowrap; }
+  .history li small { display: block; color: var(--text-dim); font-weight: 400; font-size: .78rem; }
+  @media (max-width: 640px) { .history li { grid-template-columns: 1fr; gap: .2rem; } }
   footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; margin-top: 2rem; }
   footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
 </style>
@@ -90,6 +103,7 @@
       <img src="icon.svg" alt="">
       <p class="kicker">LF2 Online by Xôi · the fifth computer-player level</p>
       <h1>INSANE!</h1>
+      <p class="badge" id="ai-version" hidden></p>
       <p class="tagline">A computer player <strong>above CRAZY!</strong> that follows no hand-written script for any
         fighter. Right before the match it <strong>learns the fighter's moves from the mod's own data</strong>, then
         fights by predicting which blow lands, and when the opponent can guard or strike back. It works with every mod
@@ -150,9 +164,42 @@
           much it jumps. A guard-happy opponent makes guard-breaking moves and grabs worth more and ordinary blows worth
           less; a passive one is walked up to instead of baited; one that always flips up is met where its roll ends.
           Everything is counted from the match state alone, so network games stay in sync.</li>
+        <li><b>Weapons, teleports and a partner.</b> A knife, stick, stone or drink lying nearby is walked onto and picked
+          up when nothing presses; the AI plays its moves again with the weapon in hand, so it knows what the fighter does
+          with it (swing, throw, drink) and uses it like any other move — a knife is thrown at the opponent, a drink is kept
+          for when HP or MP run low. Moves that teleport to the enemy are aimed from where the fighter lands, not from where
+          it stands. Two against one, the second fighter goes round to the other side so the enemy cannot guard both.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
+    </section>
+
+    <section id="awareness">
+      <h2>What INSANE! is aware of — and where it stands</h2>
+      <p class="lede">A summary of what the computer player perceives, what it can do with it, and what is still to come.
+        Each line names the version that brought it; the page's version badge above is read from the game build itself.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Awareness / ability</th><th>Status</th><th>Since</th><th>What it means in a fight</th></tr></thead>
+        <tbody>
+          <tr><td>Its own moves, learned from the data</td><td><span class="status done">Done</span></td><td class="num">v14</td><td>Every D-combo, punch, air, run and dash attack of any fighter in any mod: where and when it hits, what it costs, when the fighter is free again.</td></tr>
+          <tr><td>Chains, stances, charging, guard counters</td><td><span class="status done">Done</span></td><td class="num">v15–16</td><td>Keys pressed during a move, held moves left in time, MP charged when safe, striking out of the guard.</td></tr>
+          <tr><td>Jumping in and dashing in</td><td><span class="status done">Done</span></td><td class="num">v16</td><td>The air kit is used when a jump would land a move; the flight is computed from the fighter's own jump data.</td></tr>
+          <tr><td>The opponent's moves and projectiles</td><td><span class="status done">Done</span></td><td class="num">v14</td><td>What is about to hit, from which frame of which move, and everything in flight; its reach and danger zones shape the spacing.</td></tr>
+          <tr><td>Timing: stuns, knockdowns, invulnerability</td><td><span class="status done">Done</span></td><td class="num">v15–16</td><td>Attacks land as the opponent becomes hittable; flips up or stays down by the blows on their way; strikes first while blinking.</td></tr>
+          <tr><td>The opponent's habits</td><td><span class="status done">Done</span></td><td class="num">v19</td><td>Guard rate, how pressing it is, whether it flips up: guard breakers against turtles, walking up to passive players, meeting flippers where the roll ends.</td></tr>
+          <tr><td>Weapons</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Picks up knives, sticks, stones and drinks when nothing presses; swings, throws or drinks by what it learned with the weapon in hand.</td></tr>
+          <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land, 120 in front of the target.</td></tr>
+          <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
+          <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
+          <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">How smart is it now? Against the mods' own computer players at CRAZY! it wins most fights (table below); against the
+        original fighters, which CRAZY! already knows by heart, it is only somewhat ahead; a human who keeps changing habits is still
+        the hardest opponent, because every habit it learns takes some seconds of play to show.</p>
+      <h3>Version history</h3>
+      <ul class="history" id="ai-history"><li><b>…</b><span>The history is read from the game build (insane-version.json); it is in
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua"><code>smart_ai.lua</code></a> as well.</span></li></ul>
     </section>
 
     <section id="results">
@@ -160,16 +207,17 @@
       <p class="lede">INSANE! against CRAZY! (the mod's own computer player), 40 one-on-one games per mod over 10 different
         fighter pairs, 9000 frames per game at most, with a fixed random seed so anyone can reproduce the exact
         result.</p>
-      <table>
+      <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">34</td><td class="num">4</td><td class="num">2</td><td class="num">422 / 44</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">299 / 16</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">24</td><td class="num">16</td><td class="num">0</td><td class="num">139 / 88</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">27</td><td class="num">13</td><td class="num">0</td><td class="num">149 / 59</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">35</td><td class="num">5</td><td class="num">0</td><td class="num">414 / 34</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">5</td><td class="num">0</td><td class="num">309 / 15</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">28</td><td class="num">12</td><td class="num">0</td><td class="num">168 / 66</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">162 / 62</td></tr>
         </tbody>
-      </table>
-      <p class="note">Version 16 figures with <code>--seed 12345</code>; another seed (777) gives 37–2, 36–4, 23–17 and 29–11.
+      </table></div>
+      <p class="note">Version 20 figures with <code>--seed 12345</code> (version 16 gave 34–4, 35–4, 24–16 and 27–13 on the same
+        games; the LuaJIT desktop build and the Lua 5.2 web build give the same result frame for frame). Another seed (777) gives 32–6 (2 draws), 38–2, 26–14 and 34–6.
         "HP left" is the average over all 40 games, lost games counting as 0. In KT-LF2 the original computer player already
         knows the original fighters' moves, so the two are close; in mods with new fighters it barely knows how to use them.</p>
     </section>
@@ -202,9 +250,11 @@
         <li><code>approach_attack</code>: jumping in and dashing in; <code>stance_exit</code>: held stances.</li>
         <li><code>watch</code>, <code>guard_rate</code>, <code>pressure</code>, <code>flips_up</code>: the opponent model,
           counted once a frame; add a habit there and use it in <code>attack_score</code> or the positioning.</li>
-        <li>Not done yet: teleport-to-enemy moves (<code>teleport</code>) are recorded but not used properly; healing and
-          buff moves that deal no damage have no score yet; little teamwork in 2-on-2 beyond picking the busiest or
-          weakest enemy; no weapons.</li>
+        <li><code>weapon_to_take</code>, <code>over_weapon</code>, <code>armed_analysis</code>, <code>view_of</code>: which
+          weapon is worth picking up, and the fighter's moves re-learned with each kind of weapon in hand.</li>
+        <li>Not done yet: healing, buff and summon moves that deal no damage have no score yet (they are used only when they
+          also charge MP or heal); 2-on-2 play is limited to choosing the enemy and the side to attack from — there is no
+          shared plan between partners; habits are learned within a match only.</li>
       </ul>
       <pre><code># Run the bench on your machine (see tools/ai-bench/README.md): 40 games of INSANE! against CRAZY! in the One Piece mod
 openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""</code></pre>
@@ -236,5 +286,30 @@ openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""</
       </div>
     </div>
   </footer>
+<script>
+  // The computer player's version and history come from the build (dist/build-web.sh writes insane-version.json
+  // from scripts/base/game/smart_ai.lua), so this page never lags behind the game.
+  fetch('insane-version.json', {cache: 'no-store'}).then(response => response.ok ? response.json() : null).then(info => {
+    if (!info) return;
+    const badge = document.getElementById('ai-version');
+    badge.textContent = 'INSANE! version ' + info.version + (info.date ? ' · ' + info.date : '');
+    badge.hidden = false;
+    const list = document.getElementById('ai-history');
+    if (Array.isArray(info.history) && info.history.length) {
+      list.replaceChildren(...info.history.map(entry => {
+        const item = document.createElement('li');
+        const head = document.createElement('b');
+        head.textContent = 'v' + entry.version;
+        const date = document.createElement('small');
+        date.textContent = entry.date || '';
+        head.appendChild(date);
+        const text = document.createElement('span');
+        text.textContent = entry.text || '';
+        item.append(head, text);
+        return item;
+      }));
+    }
+  }).catch(() => {});
+</script>
 </body>
 </html>

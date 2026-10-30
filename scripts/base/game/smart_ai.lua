@@ -48,6 +48,17 @@ local weapon_none = constants.weapon_holder_codes.none
 smart.levels = {
     [constants.difficulties.insane] = {reaction = 1, eagerness = 100},
 }
+-- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
+-- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
+-- what changed in one line (newest first).
+smart.version = 20
+smart.history = {
+    {20, "2026-10-31", "Weapons: walks onto a lying knife, stick, stone or drink when nothing presses, learns what the fighter does with it in hand and swings, throws or drinks accordingly; moves that teleport to the enemy are aimed from where they land; two on one, the second fighter goes round to the other side; a passive opponent is walked up to and struck"},
+    {19, "2026-10-31", "Knows the opponent: how often it guards, how pressing it is and whether it flips up out of falls are counted in the match and change the choice of moves, the spacing and the timing; among several enemies the busy and the weak are preferred"},
+    {16, "2026-10-31", "Uses the whole kit: jumps in and dashes with air moves, slow specials when the target is held, charges MP, strikes out of the guard, leaves stances in time, flips up or stays down by the blows on their way, never steps into a blow"},
+    {15, "2026-10-30", "Stances, defend keys that are moves, moves that start from walking, get-up invulnerability, running, obstacles, no guarding into a break; chosen in Tournament and Battle mode too"},
+    {14, "2026-10-30", "INSANE! is born: every fighter's moves learned in a private copy of the match, then prediction of what hits, when the opponent can act, and what each move is worth"},
+}
 -- Whether the computer player at `index` plays this way: at INSANE!, unless its mod gave the fighter an AI
 -- script of its own (made for that fighter, which then plays as at CRAZY!).
 function smart.enabled(state, value, index)
@@ -86,6 +97,7 @@ end
 
 local free_states = {[states.standing] = true, [states.walking] = true, [states.running] = true}
 local no_body_frame = {bodies = {}, center_x = 0, center_y = 0} -- a frame nothing can hit
+local resting_states = {[states.resting_light_item] = true, [states.resting_heavy_item] = true} -- a weapon lying on the ground
 local function is_free(value)
     local frame = value.record.frame(value.frame)
     if free_states[frame.state] then return true end
@@ -152,13 +164,17 @@ end
 -- Puts the fighter of a fresh copy where a move of this context starts. Returns false when it cannot.
 -- A fighter whose frame 0 only leads to its standing frames (Blackbeard of One Piece GrandWorld: 0 to 329 to
 -- 1-4) gets there first.
-local function enter_context(state, me, context, step)
+local function enter_context(state, me, context, step, heavy)
     step()
     for _ = 1, 120 do
-        if me.record.frame(me.frame).state == states.standing and me.y_int == 0 then break end
+        local fstate = me.record.frame(me.frame).state
+        if (fstate == states.standing or (heavy and fstate == states.walking)) and me.y_int == 0 then break end
         step()
     end
-    if context == "ground" then return me.record.frame(me.frame).state == states.standing end
+    if context == "ground" then
+        local fstate = me.record.frame(me.frame).state
+        return fstate == states.standing or (heavy and fstate == states.walking)
+    end
     if context == "air" then
         set_keys(me, {jump = true}); step()
         set_keys(me, nil)
@@ -337,15 +353,17 @@ end
 -- Plays one move in a fresh copy and returns what it does, or nil when it does not start. The fighter has
 -- full MP unless `mp` says otherwise.
 smart.plays = 0
-local function play(record, entry, mp)
+local arm -- defined with the weapons below
+local function play(record, entry, mp, weapon_record)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
     if mp then me.mp = mp end
+    if weapon_record then arm(state, me, weapon_record) end
     local function step()
         if smart.full_sandbox then require("base/game/match").step(state, held_nothing) else sandbox_step(state) end
         if smart.watch then smart.watch(state, me, entry) end
     end
-    if not enter_context(state, me, entry.context, step) then return nil end
+    if not enter_context(state, me, entry.context, step, weapon_record and weapon_record.kind == record_kinds.heavy_item) then return nil end
     if entry.walking then
         set_keys(me, {right = true}); step()
         if me.record.frame(me.frame).state ~= states.walking then return nil end
@@ -404,6 +422,17 @@ local function play(record, entry, mp)
                             add_box(move.boxes, t, value, object_frame, area, origin, false, me)
                             move.boxes[#move.boxes].spawn = spawned[value]
                             objects_active = true
+                        elseif area.kind == attack_kinds.held_item and value.holder == me.slot and me.held_item == index then
+                            -- A weapon in the hand strikes with the holder's strength entry (base/game/combat
+                            -- weapon_strike); it moves with the holder, so its box is the holder's own.
+                            local strike = me.record.frame(at_pass).wpoint.attacking
+                            local strength = strike > 0 and value.record.data.strengths[strike]
+                            if strength and (strength.injury or 0) > 0 then
+                                add_box(move.boxes, t, value, object_frame, {x = area.x, y = area.y, width = area.width,
+                                    height = area.height, zwidth = strength.zwidth or 0, injury = strength.injury or 0,
+                                    fall = strength.fall or 0, bdefend = strength.bdefend or 0, dvx = strength.dvx or 0,
+                                    kind = attack_kinds.plain, effect = strength.effect or 0}, origin, true, me)
+                            end
                         end
                     end
                 end
@@ -663,6 +692,132 @@ local function analyze(record)
 end
 smart.analyze = analyze
 
+---------------------------------------------------------------------------------------------------------------
+-- Weapons. What a fighter does with one in hand is learned like its moves, in a copy where it holds the weapon:
+-- the swing, the jumping, running and dashing strikes, the throw, the drink. The weapon's own frames carry the
+-- blows (its kind-5 interactions and the holder's strength entries), so the same play() sees them.
+---------------------------------------------------------------------------------------------------------------
+
+local weapon_kinds = {[record_kinds.light_item] = true, [record_kinds.heavy_item] = true,
+    [record_kinds.baseball] = true, [record_kinds.drink] = true}
+-- The holder code a picked-up item gives (base/game/combat pick_up): knife and boomerang have their own.
+local function holder_code(weapon_record)
+    if weapon_record.kind == record_kinds.light_item then
+        local id = weapon_record.id
+        if id == constants.item_ids.knife or id == constants.item_ids.boomerang then return constants.weapon_holder_codes.knife_or_boomerang end
+        return record_kinds.light_item
+    end
+    return weapon_record.kind
+end
+-- Puts a weapon into the copy's fighter's hand (slot 2 of the copy), as a pick-up does.
+arm = function(state, me, weapon_record)
+    local weapon = item.create(weapon_record)
+    weapon.drop_counter = weapon_record.data.weapon and weapon_record.data.weapon.hp or 0
+    weapon.x_int, weapon.y_int, weapon.z_int = me.x_int, 0, me.z_int
+    weapon.x, weapon.y, weapon.z = me.x_int, 0.0, me.z_int
+    weapon.vx, weapon.vy, weapon.vz = 0.0, 0.0, 0.0
+    weapon.slot, weapon.human = 2, false
+    state.items[2] = weapon
+    local code = holder_code(weapon_record)
+    me.weapon, me.held_item = code, 2
+    weapon.weapon, weapon.holder, weapon.owner, weapon.team = -code, me.slot, me.slot, me.team
+end
+
+local light_codes = {[record_kinds.light_item] = true, [constants.weapon_holder_codes.knife_or_boomerang] = true}
+-- The moves a weapon gives its holder: entries by the code the weapon is held with.
+local function weapon_entries(code)
+    if light_codes[code] then
+        local entries = {
+            {context = "ground", frame = frames.weapon_attack, basic = "weapon_attack", held = light_codes},
+            {context = "ground", frame = frames.weapon_attack + 5, basic = "weapon_attack2", held = light_codes},
+            {context = "air", frame = frames.jump_weapon_attack, basic = "weapon_jump", held = light_codes},
+            {context = "run", frame = frames.run_weapon_attack, basic = "weapon_run", held = light_codes},
+            {context = "dash", frame = frames.dash_weapon_attack, basic = "weapon_dash", held = light_codes},
+            {context = "air", frame = frames.jump_light_weapon_throw, basic = "weapon_jump_throw", held = light_codes, direction = true},
+        }
+        -- A knife or boomerang is thrown from standing with a direction; a stick or hoe only out of a run.
+        if code == constants.weapon_holder_codes.knife_or_boomerang then
+            entries[#entries + 1] = {context = "ground", frame = frames.light_weapon_throw, basic = "weapon_throw",
+                held = {[code] = true}, direction = true}
+        else
+            entries[#entries + 1] = {context = "run", frame = frames.light_weapon_throw, basic = "weapon_run_throw",
+                held = {[code] = true}, direction = true}
+        end
+        return entries
+    end
+    if code == record_kinds.heavy_item then
+        return {{context = "ground", frame = frames.heavy_weapon_throw, basic = "heavy_throw", held = {[code] = true}}}
+    end
+    if code == record_kinds.baseball then
+        return {{context = "ground", frame = frames.light_weapon_throw, basic = "weapon_throw", held = {[code] = true}},
+            {context = "air", frame = frames.jump_light_weapon_throw, basic = "weapon_jump_throw", held = {[code] = true}, direction = true}}
+    end
+    if code == record_kinds.drink then
+        return {{context = "ground", frame = frames.drinking, basic = "drink", held = {[code] = true}},
+            {context = "run", frame = frames.light_weapon_throw, basic = "weapon_run_throw", held = {[code] = true}, direction = true},
+            {context = "air", frame = frames.jump_light_weapon_throw, basic = "weapon_jump_throw", held = {[code] = true}, direction = true}}
+    end
+    return {}
+end
+
+local weapon_analyses = {} -- [record.data][weapon_record.data]
+-- What `record` does with `weapon_record` in hand: moves (indexed after the fighter's own) and their frames.
+local function armed_analysis(record, weapon_record, first_index)
+    local by_fighter = weapon_analyses[record.data]
+    if not by_fighter then by_fighter = {}; weapon_analyses[record.data] = by_fighter end
+    local found = by_fighter[weapon_record.data]
+    if found then return found end
+    local armed = {moves = {}, frames = {}, code = holder_code(weapon_record), weapon = weapon_record}
+    by_fighter[weapon_record.data] = armed
+    local saved_table, saved_index, saved_sequence = engine.random_state()
+    local runtime = require("base/game/ai_scripts").runtime
+    local saved_self_o, saved_self_n = runtime.self.o, runtime.self.n
+    local saved_target_o, saved_target_n = runtime.target.o, runtime.target.n
+    for _, entry in ipairs(weapon_entries(armed.code)) do
+        engine.set_random_state(random_table(), 0, 0)
+        local ok, move = pcall(play, record, entry, nil, weapon_record)
+        if ok and move then
+            if move.hp < 0 then move.heal = -move.hp end
+            if move.mp < 0 and not move.first then move.charge = -move.mp end
+            move.weapon = armed.code
+            move.index = first_index + #armed.moves
+            armed.moves[#armed.moves + 1] = move
+            for t = 1, move.length do
+                local frame_id = move.frames[t]
+                if frame_id and not armed.frames[frame_id] then armed.frames[frame_id] = {move = move, t = t} end
+            end
+        end
+    end
+    engine.set_random_state(saved_table, saved_index, saved_sequence)
+    runtime.self.o, runtime.self.n = saved_self_o, saved_self_n
+    runtime.target.o, runtime.target.n = saved_target_o, saved_target_n
+    return armed
+end
+
+-- A fighter's analysis as it stands: its own when its hands are empty, else its own moves together with the
+-- weapon's (a view, cached per weapon; the caches of reach, zones and range are the view's own).
+local function view_of(context, value)
+    local analysis = analyze(value.record)
+    local items = context.state.items
+    local held = value.held_item and items[value.held_item]
+    if value.weapon == weapon_none or value.weapon < 0 or not held or items[held.holder] ~= value then return analysis end
+    analysis.views = analysis.views or {}
+    local view = analysis.views[held.record.data]
+    if view then return view end
+    local armed = armed_analysis(value.record, held.record, #analysis.moves + 1)
+    analysis.extra = analysis.extra or {}
+    view = {moves = {}, frames = {}, lock = analysis.lock, extra = analysis.extra, chains = analysis.chains,
+        guard = analysis.guard, punch = analysis.punch, punch2 = analysis.punch2, by_sequence = analysis.by_sequence,
+        entries = analysis.entries, armed = armed}
+    for index, move in ipairs(analysis.moves) do view.moves[index] = move end
+    for _, move in ipairs(armed.moves) do view.moves[#view.moves + 1] = move end
+    for frame_id, where in pairs(analysis.frames) do view.frames[frame_id] = where end
+    for frame_id, where in pairs(armed.frames) do view.frames[frame_id] = where end
+    analysis.views[held.record.data] = view
+    return view
+end
+smart.view_of = view_of
+
 -- Whether a frame, or one of the few after it, can attack or spawn something.
 local function may_attack(record, frame_id)
     local current = frame_id
@@ -860,7 +1015,17 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
     local dvx = attacker.vx * face - (move.vel_x[from_t] or 0)
     local dvy = attacker.vy - (move.vel_y[from_t] or 0)
     local airborne = attacker.y_int < 0
-    if from_t == 0 then
+    -- A move that teleports to the enemy (state 400) goes on from 120 in front of the victim, at its depth, on
+    -- the ground, still (base/game/frame_rules): the boxes after that moment are placed from there.
+    local tp = move.teleport
+    local tp_dx, tp_dy, tp_dz
+    if tp and tp > from_t then
+        local px, _, pz = victim_at(tp - from_t)
+        tp_dx = (px - 120 * face - ax) * face - ((traj_x[tp] or 0) - nx)
+        tp_dy = -ay - ((traj_y[tp] or 0) - ny)
+        tp_dz = (pz + 1 - az) - ((traj_z[tp] or 0) - nz)
+    end
+    if from_t == 0 and not tp then
         -- Quick reject on the whole move's reach.
         local dx = (victim.x_int - ax) * face
         if dx < move.reach_x1 - 150 or dx > move.reach_x2 + 150 then return nil end
@@ -876,14 +1041,22 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
         if k >= (from_t > 0 and 0 or 1) and (box.own or box.spawn > from_t) then
             local ox, oy, oz
             if box.own then
-                ox = traj_x[t] - nx + drift(dvx, k, airborne)
-                oy = traj_y[t] - ny + (airborne and dvy * k or 0)
-                oz = traj_z[t] - nz
+                if tp_dx and t >= tp then
+                    ox, oy, oz = traj_x[t] - nx + tp_dx, traj_y[t] - ny + tp_dy, traj_z[t] - nz + tp_dz
+                else
+                    ox = traj_x[t] - nx + drift(dvx, k, airborne)
+                    oy = traj_y[t] - ny + (airborne and dvy * k or 0)
+                    oz = traj_z[t] - nz
+                end
             else
                 local ks = box.spawn - from_t
-                ox = -nx + drift(dvx, ks, airborne)
-                oy = -ny + (airborne and dvy * ks or 0)
-                oz = -nz
+                if tp_dx and box.spawn >= tp then
+                    ox, oy, oz = -nx + tp_dx, -ny + tp_dy, -nz + tp_dz
+                else
+                    ox = -nx + drift(dvx, ks, airborne)
+                    oy = -ny + (airborne and dvy * ks or 0)
+                    oz = -nz
+                end
             end
             if k ~= last_k then
                 px, py, pz = victim_at(k)
@@ -940,8 +1113,10 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                         end
                     end
                 end
-            elseif abs(value.x_int - sx) < 1200 and abs(value.z_int - sz) < 300 then
-                -- Something flying: the attack boxes of its frames to come, carried along by its speed.
+            elseif abs(value.x_int - sx) < 1200 and abs(value.z_int - sz) < 300
+                   and not resting_states[value.record.frame(value.frame).state] and not (value.weapon < 0) then
+                -- Something flying (not a weapon lying on the ground or held in a hand: a held one strikes as
+                -- its holder's move): the attack boxes of its frames to come, carried along by its speed.
                 local record = value.record
                 local frame_id = value.frame
                 local frame = record.frame(frame_id)
@@ -1017,6 +1192,15 @@ local exposed_states = {[states.broken_defend] = true, [states.injured] = true, 
 local function can_start(self, frame, fstate, move)
     local entry = move.entry
     if self.mp < move.mp or (move.hp > 0 and self.hp <= move.hp + 20) then return false end
+    if entry.held then
+        -- A weapon's move: the weapon in hand, and the stance the move starts from.
+        if not entry.held[self.weapon] then return false end
+        local basic = entry.basic
+        if basic == "weapon_jump" or basic == "weapon_jump_throw" then return fstate == states.jumping and self.y_int < 0 end
+        if basic == "weapon_run" or basic == "weapon_run_throw" then return fstate == states.running end
+        if basic == "weapon_dash" then return fstate == states.dashing end
+        return fstate == states.standing or fstate == states.walking
+    end
     if entry.parent then return frame.hits[entry.key] == entry.frame end
     if entry.sequence then
         if self.weapon == record_kinds.heavy_item then return false end
@@ -1040,6 +1224,7 @@ end
 local function turns(move)
     local entry = move.entry
     return entry.sequence == combo.right_attack or entry.sequence == combo.right_jump or entry.basic == "attack"
+        or entry.basic == "weapon_attack" or entry.direction == true
 end
 
 local function start(self, move, target)
@@ -1047,6 +1232,15 @@ local function start(self, move, target)
     local entry = move.entry
     if entry.parent then
         fresh(self, entry.button)
+        return
+    end
+    if entry.held then
+        -- A weapon's move: attack, with the direction toward the target where the move takes one (throws) or
+        -- turns with it (the swing from standing).
+        if target and (entry.direction or entry.basic == "weapon_attack") then
+            if target.x_int > self.x_int then press(self, "right") elseif target.x_int < self.x_int then press(self, "left") end
+        end
+        fresh(self, "attack")
         return
     end
     if entry.chain then
@@ -1173,7 +1367,7 @@ local function melee_reach(analysis)
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
         if move.first and move.first <= 10 and move.damage >= 15 and not entry.parent
-           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2") then
+           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack") then
             for _, box in ipairs(move.boxes) do
                 if box.own and box.t <= move.first + 4 then reach = max(reach, box.x2 + (move.traj_x[box.t] or 0)) end
             end
@@ -1190,8 +1384,8 @@ local function danger_zones(analysis)
     local zones = {}
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
-        if move.first and move.first <= 16 and not entry.parent and entry.context == "ground"
-           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2") then
+        if move.first and move.first <= 16 and not entry.parent and entry.context == "ground" and not move.teleport
+           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack") then
             local damage = max(move.damage, move.hit_damage or 0)
             if damage >= 25 then
                 local x1, x2, z, unguardable, bdefend = 100000, -100000, 0, false, 0
@@ -1520,8 +1714,8 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
-        if move.first and move.first <= horizon and entry.basic ~= "attack2" and not (excluded and excluded[move])
-           and can_start(self, frame, fstate, move) then
+        if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
+           and not (excluded and excluded[move]) and can_start(self, frame, fstate, move) then
             local face = turns(move) and toward or (self.facing == facing_right and 1 or -1)
             local t, box = move_hits(self, face, move, 0, target, target_frame, target_at, horizon)
             -- Attack picks one of two punches: both must land, the later counts.
@@ -1642,8 +1836,8 @@ local function preferred_range(context, self)
     local best, best_value, best_far = nil, -1, 0
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
-        if move.first and move.first <= 12 and move.mp <= 30 and not entry.parent and not entry.chain
-           and (entry.sequence or entry.basic == "attack") then
+        if move.first and move.first <= 12 and move.mp <= 30 and not entry.parent and not entry.chain and not move.teleport
+           and (entry.sequence or entry.basic == "attack" or entry.basic == "weapon_attack") then
             local near, far = 100000, -100000
             for _, box in ipairs(move.boxes) do
                 if box.t > move.first + 3 then break end
@@ -1705,9 +1899,22 @@ local function choose_target(state, index, self, memory)
             if exposed_states[tstate] then distance = distance - 60 end
             if tstate == states.lying then distance = distance + 120 end
             -- Among several enemies (a team, a stage): one busy with a move cannot answer, one low on HP is
-            -- soonest out of the fight.
+            -- soonest out of the fight, one holding a teammate or standing over a fallen one must be dealt with.
             if not is_free(value) and not exposed_states[tstate] and tstate ~= states.lying then distance = distance - 40 end
             if value.hp < 150 then distance = distance - 40 end
+            if tstate == states.catching then distance = distance - 100 end
+            for mate_index = 0, constants.item_slots - 1 do
+                local mate = items[mate_index]
+                if mate and mate_index ~= index and mate_index ~= other and mate.team == self.team and mate.hp > 0
+                   and mate.record.kind == record_kinds.character then
+                    local mstate = mate.record.frame(mate.frame).state
+                    if (exposed_states[mstate] or mstate == states.lying or mstate == states.caught)
+                       and abs(mate.x_int - value.x_int) < 120 and abs(mate.z_int - value.z_int) < 40 then
+                        distance = distance - 60
+                        break
+                    end
+                end
+            end
             if not best_score or distance < best_score then best, best_score = other, distance end
         end
     end
@@ -1833,6 +2040,70 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     return false
 end
 
+-- The lying weapon worth walking to (a drink when HP or MP is wanted, a light weapon, a heavy one when the
+-- target is far: it slows the walk), within a few steps, or nil.
+local function weapon_to_take(state, self, target)
+    local best, best_value
+    local far = abs(target.x_int - self.x_int) > 250
+    for other = 0, constants.item_slots - 1 do
+        local value = state.items[other]
+        if value and weapon_kinds[value.record.kind] and value.weapon == weapon_none and value.hp > 0
+           and resting_states[value.record.frame(value.frame).state] then
+            local distance = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int) * 2
+            if distance <= 220 then
+                local kind = value.record.kind
+                local worth
+                if kind == record_kinds.drink then
+                    worth = (self.hp < self.dark_hp - 60 or self.mp < 250) and 120 or 0
+                elseif kind == record_kinds.light_item then
+                    worth = holder_code(value.record) == constants.weapon_holder_codes.knife_or_boomerang and 80 or 70
+                elseif kind == record_kinds.baseball then worth = 40
+                else worth = far and 50 or 0 end
+                worth = worth - distance * 0.25
+                if worth > 0 and (not best_value or worth > best_value) then best, best_value = value, worth end
+            end
+        end
+    end
+    return best
+end
+-- Whether the fighter stands on the weapon now: the attack key starts the punch, whose first frame carries the
+-- pick-up area (a kind-2 interaction at the feet) that takes a lying weapon it meets.
+local function over_weapon(self, frame, weapon)
+    local wframe = weapon.record.frame(weapon.frame)
+    local record = self.record
+    for _, candidate in ipairs({frame, record.frames[frames.punch], record.frames[frames.punch + 5]}) do
+        if candidate then
+            for _, area in ipairs(candidate.interactions) do
+                if area.kind == attack_kinds.pick_up then
+                    local zw = area.zwidth ~= 0 and area.zwidth or default_zwidth
+                    if abs(self.z_int - weapon.z_int) < zw then
+                        local x = area_x(self, candidate, area)
+                        local y = area.y + self.y_int - candidate.center_y
+                        if touches(weapon, wframe, weapon.x_int, weapon.y_int, x, x + area.width, y, y + area.height) then return true end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+-- A teammate fighting the target from the fighter's own side, nearer to it (two on one from one side).
+local function mate_on_side(state, index, self, target)
+    local side = self.x_int >= target.x_int and 1 or -1
+    local own = abs(self.x_int - target.x_int)
+    for other = 0, constants.item_slots - 1 do
+        local mate = state.items[other]
+        if mate and other ~= index and mate.team == self.team and mate.hp > 0 and mate.record.kind == record_kinds.character
+           and mate.team ~= constants.teams.independent then
+            local mdx = mate.x_int - target.x_int
+            if (mdx >= 0 and 1 or -1) == side and abs(mdx) < own and abs(mdx) < 200 and abs(mate.z_int - target.z_int) < 60 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 -- One frame of control for the computer player at `index`.
 function smart.control(state, index)
     local items = state.items
@@ -1846,7 +2117,7 @@ function smart.control(state, index)
     local context = state.smart_context
     if not context then
         context = {state = state}
-        function context.analysis_of(value) return analyze(value.record) end
+        function context.analysis_of(value) return view_of(context, value) end
         state.smart_context = context
     end
     clear_keys(self)
@@ -1967,11 +2238,14 @@ function smart.control(state, index)
             local where = where_of(self.record, analysis, self)
             local stay = not earliest_threat(state, index, self, exit_lock + 6, nil, level.reaction, context)
             if stay and where then
-                if where.move.mp < 0 and not where.move.first then
+                if (where.move.mp < 0 or where.move.heal) and not where.move.first then
                     -- (Kept while the target stays outside its quick reach, with a margin below the one the charge
-                    -- was started at, so that it is not left and started again every few frames.)
+                    -- was started at, so that it is not left and started again every few frames.) A drink is held
+                    -- while it still heals or fills.
                     local tlock = target and target_lock_of(context, target, target.record.frame(target.frame)) or 99
-                    stay = self.mp < constants.points.full
+                    local wanted = (where.move.mp < 0 and self.mp < constants.points.full)
+                        or (where.move.heal and self.hp < self.dark_hp - 5)
+                    stay = wanted
                         and (not target or abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 50
                              or tlock > exit_lock + 10)
                 elseif target then
@@ -2040,6 +2314,9 @@ function smart.control(state, index)
     local danger = counter_time(context, target, self, target_lock)
     -- Blinking, the counter can only land once the blinking is over: the time to strike freely.
     if danger and blinking > 0 then danger = max(danger, blinking + 1) end
+    -- An opponent that hardly ever attacks when it could is not expected to answer this blow either (the model
+    -- changes its mind as soon as it does attack).
+    if target_pressure and target_pressure < 0.2 then danger = nil end
 
     -- Attacking (a slow move too, when the target is held long enough for it).
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
@@ -2071,6 +2348,7 @@ function smart.control(state, index)
     -- target (its moves in the air are as much its own as those on the ground), and nothing reaches it as it
     -- takes off. Not twice in a row: a landing is a moment to be used, not to jump again.
     if grounded and not threat_t and target.y_int >= 0 and (memory.next_jump or 0) <= state.frame_number
+       and self.weapon ~= record_kinds.heavy_item
        and (fstate == states.standing or fstate == states.walking or fstate == states.running) then
         local distance = abs(target.x_int - self.x_int)
         if distance > 50 and distance < 460 then
@@ -2118,6 +2396,46 @@ function smart.control(state, index)
             end
         end
     end
+    -- A drink in hand: drunk when HP or MP is wanted and nothing is about to reach us (the stance is left for a
+    -- threat, see above).
+    if grounded and self.weapon == record_kinds.drink and (fstate == states.standing or fstate == states.walking)
+       and (self.hp < self.dark_hp - 30 or self.mp < constants.points.full - 100)
+       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 100 or target_lock > 25)
+       and not earliest_threat(state, index, self, 24, nil, level.reaction, context) then
+        for _, candidate in ipairs(context.analysis_of(self).moves) do
+            if candidate.entry.basic == "drink" and can_start(self, frame, fstate, candidate) then
+                start(self, candidate, target)
+                memory.note = "drink"
+                return
+            end
+        end
+    end
+    -- A weapon lying within a few steps, when nothing presses and the hands are empty: walk onto it and take
+    -- it (the attack key over a lying weapon picks it up, base/game/combat pick_up).
+    if grounded and self.weapon == weapon_none and not threat_t
+       and (fstate == states.standing or fstate == states.walking or fstate == states.running)
+       and (target_lock >= 15 or abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 90) then
+        local pick = weapon_to_take(state, self, target)
+        if pick then
+            local wdx, wdz = pick.x_int - self.x_int, pick.z_int - self.z_int
+            if fstate == states.running then
+                -- Running: on past a weapon still far ahead; stopped (the key against the run) near it or behind it.
+                local ahead = (wdx > 0) == (self.facing == facing_right)
+                if not ahead or abs(wdx) < 70 then press(self, self.facing == facing_right and "left" or "right") end
+                memory.note = "to weapon"
+                return
+            end
+            if over_weapon(self, frame, pick) then
+                fresh(self, "attack")
+                memory.note = "pick up"
+                return
+            end
+            if wdx > 4 then press(self, "right") elseif wdx < -4 then press(self, "left") end
+            if wdz > 2 then press(self, "down") elseif wdz < -2 then press(self, "up") end
+            memory.note = "to weapon"
+            return
+        end
+    end
 
     -- Positioning.
     if fstate == states.jumping or fstate == states.dashing then
@@ -2149,8 +2467,12 @@ function smart.control(state, index)
         if want_dz < 0 and self.z_int - near_z < 12 then want_dz = 1 end
         if want_dz > 0 and far_z - self.z_int < 12 then want_dz = -1 end
         memory.note = "leave air line"
-    elseif target_lock == 0 and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= 30 + 60 * context.aggression then
-        -- Where the free enemy's quick, strong moves land: step to the nearest spot they do not reach.
+    elseif target_lock == 0 and not (target_pressure and target_pressure < 0.2)
+           and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= 30 + 60 * context.aggression - (memory.leaving == state.frame_number - 1 and 20 or 0) then
+        -- Where the free enemy's quick, strong moves land: step to the nearest spot they do not reach (and on
+        -- out of them for a while once started, rather than stepping in and out at their edge). An opponent
+        -- that hardly attacks is not kept out of reach of.
+        memory.leaving = state.frame_number
         local analysis = context.analysis_of(target)
         local movement = self.record.movement or {}
         local step_x, step_z = (movement.walking_speed or 4) * 6, (movement.walking_speedz or 2) * 6
@@ -2183,6 +2505,18 @@ function smart.control(state, index)
         end
         if abs(dz) > range_z then want_dz = dz > 0 and 1 or -1 end
         memory.note = string.format("move %d %d (hold %d)", want_dx, want_dz, hold)
+        -- Two on one: a teammate already fighting the target from this side → round to the other side, in
+        -- depth first (not through the target's arms), then past it.
+        if mate_on_side(state, index, self, target) and distance < 260 then
+            if abs(dz) < 36 then
+                want_dx = 0
+                want_dz = (far_z - self.z_int > self.z_int - near_z) and 1 or -1
+            else
+                want_dx = dx > 0 and 1 or -1
+                want_dz = 0
+            end
+            memory.note = "flank"
+        end
     end
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end

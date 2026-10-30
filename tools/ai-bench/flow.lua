@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Test harness: runs the job named in bench/config on the first frame instead of the game's menus.
 local flow = {}
 function flow.create(options)

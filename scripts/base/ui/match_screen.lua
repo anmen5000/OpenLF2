@@ -166,8 +166,12 @@ mode_line = function(context, current, replaying)
     end
     if base then
         local suffixes = {[0] = "(Difficult)", [1] = "(Normal)", [2] = "(Easy)", [-1] = "(CRAZY!)", [-2] = "(INSANE!)"}
-        -- `base` ends with a space; its parts are translated one by one.
-        mode_text = i18n.tr(base:sub(1, -2)) .. " " .. i18n.tr(suffixes[current.difficulty] or "")
+        -- `base` ends with a space; its parts are translated one by one. INSANE! shows its version (smart_ai).
+        local suffix = i18n.tr(suffixes[current.difficulty] or "")
+        if current.difficulty == constants.difficulties.insane then
+            suffix = suffix:gsub("%)$", " v" .. require("base/game/smart_ai").version .. ")")
+        end
+        mode_text = i18n.tr(base:sub(1, -2)) .. " " .. suffix
     end
     if mode_text ~= "" then bold_text(context, mode_text, 0x316 - font.width(mode_text), replaying and 0x1fe or 0x213) end
 end

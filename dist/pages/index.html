@@ -135,6 +135,8 @@
   .features .card.insane { border-color: rgba(255,107,107,.55); background: linear-gradient(160deg, rgba(255,107,107,.14), var(--card) 60%); }
   .features .card.insane h3 { color: #ff8a8a; }
   .features .card a.more { display: inline-block; margin-top: .6rem; font-size: .9rem; }
+  .features .card p.version { margin-top: .6rem; font-size: .82rem; color: #ff8a8a; }
+  .features .card p.version[hidden] { display: none; }
   footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; }
   footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
 </style>
@@ -169,6 +171,7 @@
             match — specials, chains, air and dash attacks, charging — and fights by prediction. Works with every mod here;
             replays and network games stay in sync.</p>
           <a class="more" href="insane.html">How it works, benchmark results and the AI source →</a>
+          <p class="version" id="ai-version" hidden></p>
         </div>
         <div class="card">
           <h3>Game modes</h3>
@@ -257,6 +260,15 @@
     </div>
   </footer>
 
+<script>
+  // The INSANE! computer player's version, from the build (insane-version.json, see dist/build-web.sh).
+  fetch('insane-version.json', {cache: 'no-store'}).then(response => response.ok ? response.json() : null).then(info => {
+    if (!info) return;
+    const line = document.getElementById('ai-version');
+    line.textContent = 'AI version ' + info.version + (info.date ? ' (' + info.date + ')' : '') + ' — see the version history on the INSANE! page.';
+    line.hidden = false;
+  }).catch(() => {});
+</script>
 <script src="installer-store.js"></script>
 <!-- Network play through a relay (online.js). This site's default relay, so that players who open the site
      without an invite link find it set (and its mods listed); a relay typed on the page or in a link wins. -->

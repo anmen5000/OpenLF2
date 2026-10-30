@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Prints what base/game/smart_ai learned about some fighters.
 local catalog = require("base/game/catalog")
 local object_data = require("base/game/object_data")

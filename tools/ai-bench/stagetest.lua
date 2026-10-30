@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- An INSANE! Stage mode run with computer players: stagetest.lua with config.ids, config.level, config.limit.
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")

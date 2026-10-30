@@ -237,8 +237,21 @@
     </release>
     <release version="1.1.0" date="2026-10-17">
       <description>
+        <p>Added:</p>
+        <ul>
+          <li>Windows installer (Inno Setup, English, German, Chinese) replaces the zip: optional download of the original game installer, .lfr file type registration, Start menu entry and uninstaller</li>
+          <li>Language option (default, english, chinese, german): translated text is drawn with bundled TrueType fonts through SDL3_ttf, rendered once per text and cached; the default language keeps the bitmap font</li>
+          <li>Font antialiasing option, shown when a translated language is selected</li>
+          <li>Translation system for scripts (i18n.tr, one module per language) and a text draw command for the host</li>
+          <li>Translated languages also replace the text baked into the original's menu bitmaps; english shows only the English part of the original's bilingual strings</li>
+          <li>The open-file dialog for recordings, the desktop entry, the AppStream metadata and the MIME type description are translated (German, Traditional Chinese)</li>
+          <li>Alt+Enter switches between fullscreen and window at any time (also in the setup dialogs), without any other action</li>
+        </ul>
         <p>Changed:</p>
         <ul>
+          <li>The summary screen ends with a fresh attack or jump press of any player or a controller's south button, like the demo, so it also works in replays</li>
+          <li>A window that leaves the maximized or fullscreen state returns to the original resolution instead of its previous size</li>
+          <li>Without --renderer, xBRZ upscaling is looked for in the SDL_GPU renderer, then in OpenGL, before settling for the system's default renderer, so it is offered on Windows machines whose GPU renderer cannot run it</li>
           <li>Automatically overlap live simulation with rendering when the frame budget is exceeded, returning to current-frame rendering when there is enough headroom; fall back to synchronous execution when threads are unavailable</li>
           <li>Reduced Lua/C++ frame overhead by sending drawing, audio and control commands in one typed opcode batch</li>
           <li>Reduced sound scaling work with a bounded cache of volume/pan variants and faster sample rounding</li>

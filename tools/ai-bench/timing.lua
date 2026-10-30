@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Times the learning of some fighters: timing.lua with config.ids.
 local catalog = require("base/game/catalog")
 local object_data = require("base/game/object_data")

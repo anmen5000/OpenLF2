@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Prints chosen frames of a fighter: frames.lua with config.id and config.frames.
 local catalog = require("base/game/catalog")
 local object_data = require("base/game/object_data")

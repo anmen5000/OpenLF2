@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: MIT
+-- Copyright (c) 2026 OpenLF2 contributors
 -- Plays one fighter's analysis with a frame-by-frame log of the fighter and its objects (config.id, config.full).
 local catalog = require("base/game/catalog")
 local object_data = require("base/game/object_data")
