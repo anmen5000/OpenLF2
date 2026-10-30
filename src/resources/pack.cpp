@@ -19,7 +19,7 @@ constexpr std::size_t local_size = 30;
 constexpr std::size_t max_comment = 65535;
 constexpr std::size_t max_directory = 32 * 1024 * 1024;
 constexpr std::size_t max_entries = 65535;
-constexpr std::uint32_t max_entry_size = 64 * 1024 * 1024; // the decompressor's limit
+constexpr std::uint32_t max_entry_size = 256 * 1024 * 1024; // the decompressor's limit
 
 Result<Bytes> read_range(std::ifstream& file, std::uintmax_t offset, std::size_t size) {
     Bytes bytes(size);
@@ -111,7 +111,7 @@ Result<void> PackArchive::index() {
             if (method != 0 && method != 8) {
                 throw FormatError("ZIP entry " + name + " uses an unsupported compression method (use Deflate)");
             }
-            if (size > max_entry_size) throw FormatError("ZIP entry " + name + " exceeds 64 MiB");
+            if (size > max_entry_size) throw FormatError("ZIP entry " + name + " exceeds 256 MiB");
             found.push_back({std::move(name), Entry{offset, compressed, size,
                 method == 8 ? Compression::deflate : Compression::stored}});
         }

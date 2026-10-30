@@ -591,6 +591,8 @@ public:
     }
     void restore(const RandomState& state) noexcept override { generator_.restore(state.table, state.index); }
     void reset_sequence() noexcept override { generator_.reset_sequence(); }
+    [[nodiscard]] std::int32_t sequence() const noexcept override { return generator_.sequence(); }
+    void restore_sequence(std::int32_t sequence) noexcept override { generator_.restore_sequence(sequence); }
 private:
     CompatibilityRandom generator_;
 };

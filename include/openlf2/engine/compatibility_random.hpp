@@ -34,6 +34,8 @@ public:
     }
     std::int32_t crt() { return crt_.next(); }
     void reset_sequence() { sequence_ = 0; }
+    [[nodiscard]] std::int32_t sequence() const { return sequence_; }
+    void restore_sequence(std::int32_t sequence) { sequence_ = sequence; }
     [[nodiscard]] const std::array<std::uint8_t, table_size>& table() const { return table_; }
     [[nodiscard]] std::int32_t index() const { return index_; }
     void restore(const std::array<std::uint8_t, table_size>& table, std::int32_t index) {

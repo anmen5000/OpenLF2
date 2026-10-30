@@ -532,15 +532,17 @@ Result<ScriptValue> table_value(lua_State* state, int index, int depth) noexcept
         return fail(ErrorCode::script, "settings conversion failed");
     }
 }
-// engine.random_state(): the table (3000 bytes) and its index, as a recording stores them.
+// engine.random_state(): the table (3000 bytes) and its index, as a recording stores them, and the sequence
+// counter that a recording does not keep.
 int random_state(lua_State* state) {
     auto* bridge = resource_bridge(state);
     const auto current = bridge->random.state();
     lua_pushlstring(state, reinterpret_cast<const char*>(current.table.data()), current.table.size());
     lua_pushnumber(state, static_cast<lua_Number>(current.index));
-    return 2;
+    lua_pushnumber(state, static_cast<lua_Number>(bridge->random.sequence()));
+    return 3;
 }
-// engine.set_random_state(table, index)
+// engine.set_random_state(table, index[, sequence]): without a sequence the counter stays as it is.
 int set_random_state(lua_State* state) {
     auto* bridge = resource_bridge(state);
     if (lua_type(state, 1) != LUA_TSTRING || lua_type(state, 2) != LUA_TNUMBER) {
@@ -553,9 +555,15 @@ int set_random_state(lua_State* state) {
     if (size != restored.table.size() || index < 0 || index >= 3000 || index != std::floor(index)) {
         return luaL_error(state, "invalid random state");
     }
+    const bool with_sequence = lua_type(state, 3) == LUA_TNUMBER;
+    const auto sequence = with_sequence ? lua_tonumber(state, 3) : 0;
+    if (with_sequence && (sequence < 0 || sequence >= 1234 || sequence != std::floor(sequence))) {
+        return luaL_error(state, "invalid random sequence");
+    }
     std::memcpy(restored.table.data(), table, size);
     restored.index = static_cast<std::int32_t>(index);
     bridge->random.restore(restored);
+    if (with_sequence) bridge->random.restore_sequence(static_cast<std::int32_t>(sequence));
     return 0;
 }
 int reset_random_sequence(lua_State* state) {

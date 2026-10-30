@@ -56,6 +56,36 @@ local empty_phase = {bound = -1, music = "", when_clear_goto_phase = -1, entry_c
 local function stage_data(run) return stage_list()[run.id] or {phase_count = -1, phases = {}} end
 local function phase_data(run, index) return stage_data(run).phases[index] or empty_phase end
 
+-- The record ids the current stage brings in (for the Bandit/Hunter selectors, what they may pick; a random
+-- fighter is left out), so that INSANE!'s computer players can learn their moves before they come.
+function stage.enemy_ids(run)
+    local ids, seen = {}, {}
+    local function add(id)
+        if id >= 0 and not seen[id] then
+            seen[id] = true
+            ids[#ids + 1] = id
+        end
+    end
+    local data = stage_data(run)
+    for index = 0, math.max(data.phase_count or 0, 0) do
+        local phase = data.phases[index]
+        for _, entry in ipairs(phase and phase.entries or {}) do
+            local id = entry.id
+            if id == constants.stage_record_selectors.random_fighter then
+                -- One of many: learned when it comes.
+            elseif id == constants.stage_record_selectors.random_stage_enemy
+                or id == constants.stage_record_selectors.random_stage_enemy_with_rare then
+                add(constants.fighter_ids.bandit)
+                add(constants.fighter_ids.bandit + 1)
+                if id == constants.stage_record_selectors.random_stage_enemy_with_rare then add(constants.fighter_ids.mark) end
+            else
+                add(id)
+            end
+        end
+    end
+    return ids
+end
+
 function stage.create(level)
     return {id = level, phase = -1, phase_done = 0, boss_alive = 0, last_phase = 0, go = 70,
         shutter = 0, result = 0, survival = -1, survival_blink = 0, runtime = {}, marked = {},
@@ -72,7 +102,7 @@ local function spawn(state, run, entry, runtime, slot)
         end
     end
     local health, id = entry.hp, entry.id
-    if state.difficulty == constants.difficulties.crazy then
+    if state.difficulty <= constants.difficulties.crazy then
         if id ~= constants.record_ids.criminal then health = trunc(health * constants.stage_health.crazy_multiplier) end
     elseif state.difficulty == constants.difficulties.easy then
         if id ~= constants.record_ids.criminal then health = trunc(health * constants.stage_health.easy_multiplier) end
@@ -138,6 +168,8 @@ end
 
 local function next_stage(state, run)
     run.id = run.id + 1
+    local smart_ai = require("base/game/smart_ai")
+    if smart_ai.levels[state.difficulty] then smart_ai.prepare(state) end
     run.go, run.result, run.last_phase, run.phase, run.survival = 70, 0, 0, -1, -1
     run.runtime = {}
     state.camera_step, state.camera = 0, 0
@@ -218,7 +250,7 @@ local function start_phase(state, run)
             if value.record.id == constants.fighter_ids.julian then characters = characters + 2 end
         end
     end
-    if state.difficulty == constants.difficulties.crazy then characters = trunc(characters * 1.5 + 1.0) end
+    if state.difficulty <= constants.difficulties.crazy then characters = trunc(characters * 1.5 + 1.0) end
     run.runtime[run.phase] = {}
     for position, entry in ipairs(data.entries) do
         local runtime = {count = 0, ids = {}}

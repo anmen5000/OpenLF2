@@ -45,8 +45,8 @@ return {
     ["Loading error!  Recording file may be corrupted!!"] = "Ladefehler! Die Aufnahmedatei ist möglicherweise beschädigt!",
     ["Recording file error! Replaying canceled!"] = "Fehler in der Aufnahmedatei! Wiedergabe abgebrochen!",
     -- Labels the scripts build while playing and in the character menus.
-    ["Easy"] = "Leicht", ["Difficult"] = "Schwer", ["CRAZY!"] = "VERRÜCKT!",
-    ["(Easy)"] = "(Leicht)", ["(Difficult)"] = "(Schwer)", ["(CRAZY!)"] = "(VERRÜCKT!)",
+    ["Easy"] = "Leicht", ["Difficult"] = "Schwer", ["CRAZY!"] = "VERRÜCKT!", ["INSANE!"] = "WAHNSINN!",
+    ["(Easy)"] = "(Leicht)", ["(Difficult)"] = "(Schwer)", ["(CRAZY!)"] = "(VERRÜCKT!)", ["(INSANE!)"] = "(WAHNSINN!)",
     ["Random"] = "Zufall", [" Random"] = " Zufall", ["   Join?"] = "   Mitmachen?", ["Independent"] = "Unabhängig",
     [" Human"] = " Mensch", ["Man:"] = "Mann:", ["HP:"] = "LP:", ["Reserve:"] = "Reserve:", ["Die:"] = "Tode:", ["Survival Stage:"] = "Überlebens-Stage:", ["Open a recording"] = "Aufnahme öffnen", ["LF2 recording files (*.lfr)"] = "LF2-Aufnahmedateien (*.lfr)", ["Open"] = "Öffnen", ["Music: %s"] = "Musik: %s", ["(Press Left/Right to change)"] = "(Links/Rechts: ändern)", ["Main Theme"] = "Hauptthema", ["Final Boss"] = "Endgegner", ["OFF"] = "AUS", ["ON"] = "AN",
     ["Author:"] = "Autor:", ["VS mode"] = "VS-Modus", ["1 on 1"] = "1 vs 1", ["2 on 2"] = "2 vs 2",

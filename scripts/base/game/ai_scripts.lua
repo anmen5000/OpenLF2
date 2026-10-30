@@ -442,7 +442,9 @@ end
 local function prepare(state, index)
     items = state.items
     local g = R.globals
-    g.difficulty, g.mode, g.elapsed_time = state.difficulty or 0, state.mode or 0, state.elapsed or 0
+    -- Scripts know the original's levels; INSANE! plays them as CRAZY!.
+    g.difficulty = math.max(state.difficulty or 0, constants.difficulties.crazy)
+    g.mode, g.elapsed_time = state.mode or 0, state.elapsed or 0
     local stage = state.stage or {}
     g.background = state.background_id or 0
     g.bg_width = stage.width or 0
@@ -487,6 +489,12 @@ function ai_scripts.ego(state, index, target_index)
 end
 
 -- id() in place of the whole AI for the computer player at `index`: true when it ran.
+-- Whether the fighter at `index` has its mod's own AI script (ai/<id>.as with id() or ego()).
+function ai_scripts.has(state, index)
+    local script = instance(state, state.items[index].record.id)
+    return script and (script.id or script.ego) and true or false
+end
+
 function ai_scripts.id(state, index)
     local value = state.items[index]
     local script = instance(state, value.record.id)

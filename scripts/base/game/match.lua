@@ -31,6 +31,7 @@ local camera = require("base/game/camera")
 local combat = require("base/game/combat")
 local ai = require("base/game/ai")
 local ai_scripts = require("base/game/ai_scripts")
+local smart_ai = require("base/game/smart_ai")
 local objects = require("base/game/objects")
 local grab = require("base/game/grab")
 local weapons = require("base/game/weapons")
@@ -153,6 +154,8 @@ function match.create(options)
     elseif options.record then
         start_recording(state, options)
     end
+    -- INSANE!'s computer players learn the fighters' moves: now, before the fight, rather than in it.
+    if smart_ai.levels[state.difficulty] then smart_ai.prepare(state) end
     return state
 end
 
@@ -358,8 +361,10 @@ local function read_input(state, held)
         if value then
             if value.record.kind == record_kinds.character then
                 if not scan and ai.prepare then scan = ai.prepare(state) end
-                -- A mod's AI script with id() takes the place of the whole AI (base/game/ai_scripts).
-                if not ai_scripts.id(state, index) then ai.control(state, index, state.mode, scan) end
+                -- INSANE!'s computer players (base/game/smart_ai); otherwise a mod's AI script with id() takes the
+                -- place of the whole AI (base/game/ai_scripts).
+                if smart_ai.enabled(state, value, index) then smart_ai.control(state, index)
+                elseif not ai_scripts.id(state, index) then ai.control(state, index, state.mode, scan) end
             elseif value.record.frame(value.frame).hits.Fa > 0 then
                 objects.update(state, index)
                 scan = nil

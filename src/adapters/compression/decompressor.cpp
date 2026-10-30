@@ -172,9 +172,10 @@ class StreamDecompressor final : public Decompressor {
 public:
     Result<Bytes> decode(Compression method, std::span<const char> input,
                          std::size_t expected_size) const override {
-        constexpr std::size_t maximum = 64 * 1024 * 1024;
+        // Mods' pictures can be big: one sprite sheet of a mod is over 64 MiB as a BMP.
+        constexpr std::size_t maximum = 256 * 1024 * 1024;
         if (expected_size > maximum || input.size() > maximum) {
-            return fail(ErrorCode::limit, "compressed entry exceeds 64 MiB limit");
+            return fail(ErrorCode::limit, "compressed entry exceeds 256 MiB limit");
         }
         if (method == Compression::nsis_deflate) return decode_nsis(input, expected_size);
         if (method == Compression::stored) {

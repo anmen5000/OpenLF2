@@ -122,7 +122,8 @@ function analyzeZip(entries) {
     if (item.entry.method !== 0 && item.entry.method !== 8) {
       throw new PackError(`${item.entry.name} uses a compression the game cannot read (zip it again with Deflate)`);
     }
-    if (item.entry.size > 64 * MIB) throw new PackError(`${item.entry.name} is larger than 64 MB`);
+    // The game reads files up to 256 MiB from a pack (src/resources/pack.cpp).
+    if (item.entry.size > 256 * MIB) throw new PackError(`${item.entry.name} is larger than 256 MB`);
     keep.push(item.entry);
   }
   return { root, executable: main.path, keep, dropped: entries.length - keep.length };

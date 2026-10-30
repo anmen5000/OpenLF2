@@ -35,6 +35,10 @@ public:
     [[nodiscard]] virtual RandomState state() const noexcept = 0;
     virtual void restore(const RandomState& state) noexcept = 0;
     virtual void reset_sequence() noexcept = 0;
+    // The counter next() adds to table entries (0..1233): with state(), all of the generator, so that a script
+    // can draw numbers privately and put the generator back as it was.
+    [[nodiscard]] virtual std::int32_t sequence() const noexcept = 0;
+    virtual void restore_sequence(std::int32_t sequence) noexcept = 0;
     virtual std::int32_t next(std::int32_t range) noexcept = 0;
     // The C runtime rand() stream (0..32767) the original also calls directly. Must not throw.
     virtual std::int32_t crt() noexcept = 0;

@@ -392,6 +392,9 @@ return {
         in_the_sky = 0,
     },
     difficulties = {
+        -- OpenLF2's own level above CRAZY!: computer players that learn every fighter's moves (base/game/smart_ai).
+        -- The game's rules otherwise play as in CRAZY!.
+        insane = -2,
         crazy = -1,
         difficult = 0,
         normal = 1,

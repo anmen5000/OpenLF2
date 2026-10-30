@@ -165,7 +165,7 @@ mode_line = function(context, current, replaying)
         base = names[current.mode]
     end
     if base then
-        local suffixes = {[0] = "(Difficult)", [1] = "(Normal)", [2] = "(Easy)", [-1] = "(CRAZY!)"}
+        local suffixes = {[0] = "(Difficult)", [1] = "(Normal)", [2] = "(Easy)", [-1] = "(CRAZY!)", [-2] = "(INSANE!)"}
         -- `base` ends with a space; its parts are translated one by one.
         mode_text = i18n.tr(base:sub(1, -2)) .. " " .. i18n.tr(suffixes[current.difficulty] or "")
     end

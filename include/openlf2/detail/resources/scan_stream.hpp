@@ -62,7 +62,9 @@ public:
         return true;
     }
 
-    // %d. A mismatch consumes only whitespace, so the text becomes the next token. Like the
+    // %d. A mismatch consumes only whitespace, so the text becomes the next token; a sign without
+    // digits is consumed too, as the original's C library has read it when the match fails (Naruto:
+    // The Setting Dawn 2.4's stage.dat has "x: - 250": x stays, "250" is the next token). Like the
     // original's C library, digits accumulate in 32 bits and wrap around, then the sign applies:
     // mods write values such as "y: 100000000000000000000" that the original reads that way.
     Scan integer(std::int32_t& target) {
@@ -71,7 +73,7 @@ public:
         const bool negative = text_[cursor] == '-';
         if (negative || text_[cursor] == '+') ++cursor;
         if (cursor == text_.size() || !is_digit(text_[cursor])) {
-            if (cursor != position_) unsupported("sign without digits");
+            if (cursor != position_) finish(cursor);
             return Scan::mismatch;
         }
         std::uint32_t value = 0;

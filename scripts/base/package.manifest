@@ -29,6 +29,7 @@ module=game/match|game/match.lua
 module=ui/match_screen|ui/match_screen.lua
 module=game/combat|game/combat.lua
 module=game/ai|game/ai.lua
+module=game/smart_ai|game/smart_ai.lua
 module=game/angelscript|game/angelscript.lua
 module=game/ai_scripts|game/ai_scripts.lua
 module=game/objects|game/objects.lua

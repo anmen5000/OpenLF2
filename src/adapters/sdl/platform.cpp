@@ -988,7 +988,7 @@ private:
         if (texture_bytes > max_texture_bytes) return failed("texture memory budget exceeded");
         // Bounded cache: drop every retained texture when a limit would be exceeded.
         // SDL flushes pending draws that use a texture before destroying it.
-        if (textures_.size() >= max_textures || texture_bytes > max_texture_bytes - texture_bytes_) {
+        if (textures_.size() >= max_textures || texture_bytes > max_cache_bytes - texture_bytes_) {
             textures_.clear();
             texture_bytes_ = 0;
         }
@@ -1293,7 +1293,9 @@ private:
     std::map<SDL_JoystickID, std::unique_ptr<SDL_Gamepad, CloseGamepad>> gamepads_;
     RenderFilter render_filter_ = RenderFilter::nearest;
     static constexpr std::size_t max_textures = 256;
+    // One picture may take up to 128 MiB (a mod's 8192 x 4096 sheet), all of them together twice that.
     static constexpr std::size_t max_texture_bytes = 128 * 1024 * 1024;
+    static constexpr std::size_t max_cache_bytes = 256 * 1024 * 1024;
     std::map<std::string, Texture, std::less<>> textures_;
     std::set<std::string, std::less<>> unusable_; // texture keys whose picture could not be loaded
     std::size_t texture_bytes_ = 0;
