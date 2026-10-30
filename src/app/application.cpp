@@ -526,7 +526,25 @@ public:
             for (auto& character : name) {
                 if (character >= 'a' && character <= 'z') character = static_cast<char>(character - ('a' - 'A'));
             }
-            return bitmap_resource(executable_, name);
+            auto resource = bitmap_resource(executable_, name);
+            if (resource) return resource;
+            // A mod whose own program keeps such a picture in a file instead of the executable (Sx2 ~ The
+            // power of emancipation: sprite/BARS.png, sprite/menu/<n>.png for the menu's MENU_BACK<n>): the
+            // file from the pack, PNG or BMP.
+            const auto lower = normalized->substr(3);
+            std::vector<std::string> candidates = {"sprite/" + lower + ".png", "sprite/sys/" + lower + ".png",
+                                                   "sprite/" + lower + ".bmp", "sprite/sys/" + lower + ".bmp"};
+            if (lower.starts_with("menu_back") && lower.size() > 9) {
+                candidates.insert(candidates.begin(), "sprite/menu/" + lower.substr(9) + ".png");
+            }
+            for (const auto& candidate : candidates) {
+                auto file = archive_.read(candidate);
+                if (!file) continue;
+                if (!candidate.ends_with(".bmp")) return file;
+                auto converted = bitmap::from_file(*file);
+                if (converted) return converted;
+            }
+            return resource;
         }
         auto bytes = archive_.read(*normalized);
         // Original bitmaps are RLE8; consumers receive uncompressed BMP data.

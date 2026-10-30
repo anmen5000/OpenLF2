@@ -969,7 +969,9 @@ private:
         if (!bytes) return failed(bytes.error().message);
         std::unique_ptr<SDL_IOStream, CloseStream> stream(SDL_IOFromConstMem(bytes->data(), bytes->size()));
         if (!stream) return failed(SDL_GetError());
-        const bool png = sprite.resource.ends_with(".png");
+        // PNG by its signature: a picture a mod keeps as a PNG file may stand in for a named one (pe/bars).
+        const bool png = bytes->size() >= 8 && static_cast<unsigned char>((*bytes)[0]) == 0x89
+            && (*bytes)[1] == 'P' && (*bytes)[2] == 'N' && (*bytes)[3] == 'G';
 #if SDL_VERSION_ATLEAST(3, 4, 0)
         std::unique_ptr<SDL_Surface, DestroySurface> loaded(
             png ? SDL_LoadPNG_IO(stream.get(), false) : SDL_LoadBMP_IO(stream.get(), false));

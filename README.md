@@ -26,6 +26,34 @@ with the original game.
 - A language option (English, Chinese, German) that draws the interface text with TrueType
   fonts, optionally antialiased; "default" keeps the original's bitmap font. Builds without
   SDL3_ttf offer only "default". See [Translations](#translations)
+- The **INSANE!** computer-player level above CRAZY! (this build, LF2 Online by Xôi): instead of
+  hand-written rules for the original fighters, it learns every fighter's moves from the game's or
+  mod's own data right before the match and fights by prediction. See
+  [INSANE! computer players](#insane-computer-players)
+
+## INSANE! computer players
+
+CRAZY! and the levels below play the original's computer player (`scripts/base/game/ai.lua`), a set
+of rules written for the original fighters; a mod's own AI scripts (`ai/*.as`) replace it where the
+mod ships them. INSANE!, chosen after CRAZY! in the character selection (also in Tournament and
+Battle), is `scripts/base/game/smart_ai.lua`:
+
+- Before the match it plays every key combination of each fighter — D+A, D+J, D+J+A in every
+  direction, the punches, air, run and dash attacks, and the keys pressed during a move (chains, guard
+  counters) — in a private copy of the game, and records where, when and how hard each move hits, what
+  it spawns, what it costs and when the fighter is free again.
+- In the match it predicts what is about to hit it (moves in progress, flying attacks), how long the
+  opponent stays stunned, down or blinking, and when each of its own moves would land; it scores the
+  moves (damage, guard, the opponent's counter, MP, recovery) and picks one, guards or steps out of
+  reach, jumps or dashes in when an air move would land, holds charging and field stances while they
+  serve, and uses its own get-up invulnerability.
+- Everything depends only on the match's state (no random numbers of its own), so replays and network
+  games stay in sync; the learned moves depend only on the fighter's data.
+- Fighters whose mod ships a substantial AI script keep that script at CRAZY!.
+
+`tools/ai-bench/` runs it against the original computer player in bulk, lists what it learned and how
+often it uses each move, and checks determinism; see its README. The web page `dist/pages/insane.html`
+introduces it to players.
 
 ## Getting started
 
