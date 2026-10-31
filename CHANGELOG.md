@@ -38,6 +38,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   own path; an opponent in a charge stance known to be free as soon as it can leave it; the frame a move's spawn
   appears counted as a threat; a blow landing as the own blink ends answered; trades struck first only when
   clearly heavier (v23)
+- INSANE!: a blow the opponent's quicker answer could beat on its way is weighed, not forbidden — what it brings
+  against the answer's damage times how often this opponent has struck such a blow first in the match so far,
+  counted in the match from a hopeful start; Rock Lee no longer stands off Neji in Naruto: The Setting Dawn (v24)
+- `tools/ai-bench`: each computer player of a `duel` keeps its own context (they shared one, which skewed matches
+  between versions that read the fighters' moves differently); versions before 20 are named so instead of `vnil`
 - `tools/ai-bench`: `duel` with `audit = true` counts, per computer player, blows started, landed and
   interrupted (by a foe that was free, or one already in a move), hits taken from a just-risen opponent or at a
   wall, trades, what the fighter was doing when hit, and the moves set aside because a threat or counter met

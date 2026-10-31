@@ -199,10 +199,18 @@
         <li><b>Weighing the counter along the way.</b> Before a move, the AI already asked whether the opponent's quickest
           answer would land first; it asked that from where the fighter stood. A rush or a jump-in carries the fighter into
           blows that did not reach its starting spot, and a punch the opponent starts as the rush sets off lands first
-          there. The question is now asked along the move's own path, frame by frame, and out of the air for a jump-in —
-          a blow that would be beaten to the punch on its way is not started. An opponent in a charge stance is known to be
-          free the moment it can leave the stance, with the MP the charge brings in meanwhile; a trade (both blows landing
-          together) is struck first only when the AI's blow is clearly the heavier.</li>
+          there. The question is now asked along the move's own path, frame by frame, and out of the air for a jump-in.
+          An opponent in a charge stance is known to be free the moment it can leave the stance, with the MP the charge
+          brings in meanwhile; a trade (both blows landing together) is struck first only when the AI's blow is clearly
+          the heavier.</li>
+        <li><b>Weighing the risk, and learning it in the match.</b> Version 23 did not start a blow that the opponent's
+          quicker answer could beat on its way — as if the opponent always fired at the worst moment. A fighter that has
+          to rush in (Rock Lee against Neji, whose quick beam covers the whole line) then rushed half as often and lost
+          its share of the fight while walking about: standing off is no answer to long arms either. Version 24 weighs
+          such a blow instead: what it brings if the answer does not come, against the answer's damage times how often
+          this opponent has answered so far — counted in the match itself, from the AI's own rushes that were struck
+          before they landed, starting hopeful. Against an opponent that punishes, the AI soon stops rushing; against one
+          that does not, it keeps going. Like everything else, the count is taken from the match state alone.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -228,10 +236,10 @@
           <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>Against a free opponent whose long blows cover the line between them, closes in offset in depth and steps onto the line only when its own blows reach.</td></tr>
           <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends.</td></tr>
           <tr><td>Weapons versus specials</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>With MP for its own specials, a weapon is worth only the few steps to one close by; drinks are taken whenever HP or MP are wanted.</td></tr>
-          <tr><td>Counters along a move's path</td><td><span class="status done">Done</span></td><td class="num">v23</td><td>The opponent's quickest answer is weighed where a rush or a jump-in takes the fighter, not where it starts; a blow that would be beaten to the punch on its way is not started. A charging opponent is known to be free as soon as it can leave the charge, with the MP it gained.</td></tr>
+          <tr><td>Counters along a move's path</td><td><span class="status done">Done</span></td><td class="num">v23, v24</td><td>The opponent's quickest answer is reckoned where a rush or a jump-in takes the fighter, not where it starts, and weighed against what the blow brings by how often this opponent has answered such a blow in the match so far. A charging opponent is known to be free as soon as it can leave the charge, with the MP it gained.</td></tr>
           <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
           <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
-          <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
+          <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits — and, since v24, how often the opponent punishes a risky rush — are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
         </tbody>
       </table></div>
       <p class="note">How smart is it now? Against the mods' own computer players at CRAZY! it wins most fights (table below); against the
@@ -250,21 +258,26 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">34</td><td class="num">5</td><td class="num">1</td><td class="num">415 / 32</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">37</td><td class="num">3</td><td class="num">0</td><td class="num">338 / 16</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">217 / 65</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">35</td><td class="num">5</td><td class="num">0</td><td class="num">269 / 19</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">426 / 28</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">317 / 18</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">231 / 32</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">37</td><td class="num">3</td><td class="num">0</td><td class="num">289 / 20</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 23 figures with <code>--seed 12345</code> (version 22 gave 36–3 with a draw, 39–1, 29–11 and 38–2,
-        version 21 36–3, 37–2, 30–10 and 37–3, version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT desktop
-        build and the Lua 5.2 web build give the same result frame for frame). Against CRAZY! versions 22 and 23 are about
-        equal — single pairs swing by a game or two either way between them, and another seed (777) gives 37–2 with a draw, 39–1, 33–7 and 39–1 for
-        version 23 (37–3, 35–5, 33–7 and 35–5 for version 22). The difference between the two is against a strong opponent: version 23 against version 22 head to head over the same ten pairs of
-        each mod, three seeds, 240 games: 134–88 with 18 draws for version 23 (Naruto 62–58, One Piece 72–30). The bench's audit
-        of those games says where the difference comes from: version 23 took half as many hits from a just-risen opponent
-        (107 against 217), had a third fewer blows interrupted on their way (600 against 897), started half as many blows
-        for a tenth fewer landed, and took 15% less damage in all.
+      <p class="note">Version 24 figures with <code>--seed 12345</code> (version 23 gave 34–5 with a draw, 37–3, 30–10 and 35–5,
+        version 22 36–3 with a draw, 39–1, 29–11 and 38–2, version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT
+        desktop build and the Lua 5.2 web build give the same result frame for frame). Another seed (777) gives 34–6, 40–0, 33–7
+        and 38–2 for version 24 (37–2 with a draw, 39–1, 33–7 and 39–1 for version 23): against CRAZY! versions 22 to 24 are
+        about equal, single pairs swinging by a game or two either way. The differences show against a strong opponent,
+        head to head over the same ten pairs of each mod, three seeds, 240 games: version 23 against version 22 137–88 with
+        15 draws (Naruto 62–56, One Piece 75–32), taking fewer than half the hits from a just-risen opponent (90 against 211)
+        and a fifth less damage; version 24 against version 23 120–107 with 13 draws (Naruto 59–61, One Piece 61–46),
+        landing a fifth more blows. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
+        games between versions 24 and 23 end 10,928–9,047 with 25 draws (54.7%, ±0.6%): version 24's Lee wins 38.9% against
+        version 23's Neji, where version 23's own Lee won 28.2%, and its Neji is as strong as version 23's.
+        (Until 1 November 2026 the two players of a head-to-head match on the bench shared one context — how they read the
+        fighters' moves — which skewed matches between versions that read moves differently; the figures above are
+        measured with separate ones.)
         "HP left" is the average over all 40 games, lost games counting as 0. In KT-LF2 the original computer player already
         knows the original fighters' moves, so the two are close; in mods with new fighters it barely knows how to use them.</p>
     </section>
@@ -304,7 +317,9 @@
           entering; the "enter mode" and "mode run" blocks of <code>smart.control</code> enter it and move in it.</li>
         <li><code>wake_zone</code>, <code>wake_escape</code>: where a fallen opponent's wake-up blows strike and the quicker
           way out; <code>counter_along</code>, <code>enemy_reach</code> with a path: the opponent's quickest answer where a move
-          takes the fighter; <code>stance_leave</code>: how soon an opponent can leave a charge or a field.</li>
+          takes the fighter; <code>stance_leave</code>: how soon an opponent can leave a charge or a field;
+          <code>answer_chance</code>, <code>worth_the_risk</code>: how often this opponent has struck a risky blow of ours
+          first, and whether a blow is worth that risk.</li>
         <li>Not done yet: a form reached from inside another form (Zoro's Asura) and forms that are a stance rather than an
           item; healing, buff and summon moves that deal no damage have no score yet (they are used only when they
           also charge MP or heal); 2-on-2 play is limited to choosing the enemy and the side to attack from — there is no

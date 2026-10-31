@@ -54,8 +54,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 23
+smart.version = 24
 smart.history = {
+    {24, "2026-11-01", "Weighs, rather than forbids, a move the opponent's quicker blow could beat on its way: it is started when what it brings outweighs the answer's damage by how often this opponent has struck such a move first in the match so far (learned as the match goes, from a hopeful start), so a rusher no longer stands off a fighter with long, quick blows (Rock Lee against Neji in Naruto: The Setting Dawn) while a punishing opponent is soon not rushed at"},
     {23, "2026-11-01", "Keeps out of a fallen or just-risen opponent's wake-up blows (its quick moves, however far they reach) until its blink ends, leaving by the quicker way (a few steps in depth, or back out of reach) and waiting off its line rather than beside it; no charging, drinking or weapon pick-up inside them, and a charge stance is left in time to get out; weighs the opponent's quickest counter along a move's own path (a rush carries the fighter into blows that do not reach where it starts) and out of the air on a jump-in; an opponent in a charge stance is known to be free as soon as it can leave it, with the MP the charge brings; the frame a move's spawn appears is counted as a threat; a blow landing as the own blink ends is answered; a trade is struck first only when clearly heavier"},
     {22, "2026-10-31", "Approaches a free opponent whose long blows (a beam, a sweep, a special struck out of the guard) cover the line between them beside that line, in depth, and only steps onto it as its own blows come into reach; an opponent held by a trap (a wood prison) is known to be held and hittable, walked up to and struck — or, with MP short of a strong move and the hold long, MP is charged first and the strong move lands before the hold ends; weapons are worth fewer steps when MP is full"},
     {21, "2026-10-31", "Forms of a mod's own making: a move that leaves an item in the fighter's hand (Luffy's Gear Second, Sanji's Diable Jambe, a Rasengan formed) is a form whose moves, speed, MP burn and worth are learned; it is entered when worth it and safe, fought in with its own moves and runs, and left to run out away from the enemy; a fallen enemy that gets up invulnerable is kept outside arm's reach until it can be hit again"},
@@ -2396,7 +2397,21 @@ end
 local function counter_along(context, target, self, lock, plan, frames_at)
     if abs(target.x_int - self.x_int) > 600 or abs(target.z_int - self.z_int) > 90 then return nil end
     if lock == 0 and not is_free(target) then lock = 1 end
-    return (enemy_reach(context, target, self, 16, lock, plan, frames_at))
+    local reach, damage = enemy_reach(context, target, self, 16, lock, plan, frames_at)
+    return reach, damage
+end
+-- How likely the target is to answer a move of ours that its quicker blow could beat on the way, by what the
+-- fighter has seen in this match: of its moves started at such a risk, how many were struck before they landed
+-- (counted around a hopeful start, so that the first rushes are tried at all). A target that waits for us and
+-- punishes is soon not rushed at; one that does not is.
+local function answer_chance(memory)
+    return ((memory.risk_hits or 0) + 1) / ((memory.risk_starts or 0) + 4)
+end
+-- What a move scored `score`, landing in `t` frames, is worth when the target's answer (`damage`) may beat it
+-- on the way: the move lands only if the answer does not come, and the answer's damage is the price if it does.
+local function worth_the_risk(memory, score, t, damage)
+    local chance = answer_chance(memory)
+    return score * (1 - chance) - chance * (damage or 0) * 14 / (t + 10)
 end
 
 local function choose_target(state, index, self, memory)
@@ -2632,6 +2647,16 @@ function smart.control(state, index)
     if not memory then
         memory = {target = nil, dodge_dz = 0}
         self.smart_memory = memory
+    end
+    -- A move started at a risk (see answer_chance): struck before it landed, or landed (or came to nothing).
+    local risky = memory.risky
+    if risky then
+        if self.hp < risky.hp - 2 and state.frame_number <= risky.ends then
+            memory.risk_hits = (memory.risk_hits or 0) + 1
+            memory.risky = nil
+        elseif state.frame_number > risky.ends then
+            memory.risky = nil
+        end
     end
     local context = state.smart_context
     if not context then
@@ -2928,19 +2953,25 @@ function smart.control(state, index)
     -- Attacking (a slow move too, when the target is held long enough for it).
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
     -- Not into a blow already on its way: a move whose path meets an enemy's attack in progress before it lands is
-    -- left alone (the next best is tried). Nor into the target's quickest answer along that path: a rush ends
+    -- left alone (the next best is tried). Against the target's quickest answer along that path (a rush ends
     -- inside the arms of a target whose blows do not reach where it started, and a blow it starts as we set off
-    -- lands first there. (Weighed against a free target, or one free again before we land.)
-    local excluded, checked
+    -- lands first there), the move is weighed: worth starting when what it brings, if the answer does not come,
+    -- outweighs the answer's damage by how often this target has answered so far (worth_the_risk). Standing off
+    -- is no answer to a target with long arms either. (Weighed against a free target, or one free again before
+    -- we land.)
+    local excluded, checked, at_risk
     for _ = 1, 4 do
-        checked = false
+        checked, at_risk = false, false
         if not (move and score > 2.5) then break end
         local plan, frames_at = move_path(self, move, target)
         local into = earliest_threat(state, index, self, t - 1, plan, level.reaction, context, frames_at)
         local reason = into and "into" or nil
         if not into and not (target_pressure and target_pressure < 0.2) and t >= 4 then
-            local along = counter_along(context, target, self, target_lock, plan, frames_at)
-            if along and (along < t or (along == t and target_lock > 0)) then into = true; reason = "along" end
+            local along, along_damage = counter_along(context, target, self, target_lock, plan, frames_at)
+            if along and (along < t or (along == t and target_lock > 0)) then
+                if worth_the_risk(memory, score, t, along_damage) > 2.5 then at_risk = true
+                else into = true; reason = "along" end
+            end
         end
         if not into then checked = true; break end
         if smart.on_exclude then smart.on_exclude(self, move, reason, t) end
@@ -2956,8 +2987,12 @@ function smart.control(state, index)
     if move and score > 2.5 then
         start(self, move, target)
         memory.last_use[move.index] = state.frame_number
-        memory.note = string.format("attack %s%s f%s t%d s%.1f", move.entry.field or move.entry.basic or ("chain " .. move.entry.key),
-            move.entry.chain and "+" or "", tostring(move.entry.frame or move.entry.press), t, score)
+        if at_risk then
+            memory.risk_starts = (memory.risk_starts or 0) + 1
+            memory.risky = {hp = self.hp, ends = state.frame_number + t}
+        end
+        memory.note = string.format("attack %s%s f%s t%d s%.1f%s", move.entry.field or move.entry.basic or ("chain " .. move.entry.key),
+            move.entry.chain and "+" or "", tostring(move.entry.frame or move.entry.press), t, score, at_risk and " risk" or "")
         return
     end
 
@@ -2976,14 +3011,20 @@ function smart.control(state, index)
                 local movement = self.record.movement or {}
                 local speed = fstate == states.running and (movement.dash_distance or 0) or (movement.jump_distance or 0)
                 local plan = function(k) return trunc(dir * speed * max(k - lead, 0)), 0, 0 end
-                -- (Nor when the target, free or free in time, could strike the fighter out of the air before its
-                -- own blow lands.)
-                local met = false
+                -- (The target, free or free in time, may strike the fighter out of the air before its own blow
+                -- lands: weighed as for the moves on the ground.)
+                local met, jump_risk = false, false
                 if not (target_pressure and target_pressure < 0.2) then
-                    local along = counter_along(context, target, self, target_lock, flight, flight_frames)
-                    met = along ~= nil and along <= jump_t
+                    local along, along_damage = counter_along(context, target, self, target_lock, flight, flight_frames)
+                    if along ~= nil and along <= jump_t then
+                        if worth_the_risk(memory, jump_score, jump_t, along_damage) > 2.5 then jump_risk = true else met = true end
+                    end
                 end
                 if not met and not earliest_threat(state, index, self, lead + 6, plan, level.reaction, context) then
+                    if jump_risk then
+                        memory.risk_starts = (memory.risk_starts or 0) + 1
+                        memory.risky = {hp = self.hp, ends = state.frame_number + jump_t}
+                    end
                     fresh(self, "jump")
                     if fstate ~= states.running then press(self, dir > 0 and "right" or "left") end
                     -- (The direction held as the feet leave the ground sets the jump's speed.)

@@ -17,9 +17,20 @@ local function install()
     end
     smart.control = function(state, index)
         local value = state.items[index]
-        local other = value and value.brain and others[(value.brain:match("^smart@(.+)$") or "")]
-        if other then return other.control(state, index) end
-        return control(state, index)
+        local name = value and value.brain and value.brain:match("^smart@(.+)$")
+        local other = name and others[name]
+        if not other then return control(state, index) end
+        -- Each player keeps its own context (state.smart_context: how it reads the fighters' moves, its model of
+        -- the opponent, its notes of the frame): two versions sharing one would play with each other's learning —
+        -- whichever moved first in a match set it up for both.
+        local contexts = state.bench_contexts or {}
+        state.bench_contexts = contexts
+        local own = state.smart_context
+        state.smart_context = contexts[name]
+        local result = other.control(state, index)
+        contexts[name] = state.smart_context
+        state.smart_context = own
+        return result
     end
     smart.prepare = function(state)
         prepare(state)
@@ -38,8 +49,9 @@ function brains.load(name)
 end
 -- The brain's name with the version it runs ("smart v22", "smart@ai_alt v21", "classic").
 function brains.label(name)
-    if name == "smart" then return "smart v" .. tostring(require("base/game/smart_ai").version) end
-    local module = brains.load(name)
-    return module and (name .. " v" .. tostring(module.version)) or name
+    local module = name == "smart" and require("base/game/smart_ai") or brains.load(name)
+    if not module then return name end
+    -- (The version number exists from version 20 on.)
+    return name .. (module.version and (" v" .. tostring(module.version)) or " (no version: before v20)")
 end
 return brains

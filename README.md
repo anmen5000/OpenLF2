@@ -89,8 +89,10 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   whatever quick move it has — in some mods one that reaches half the stage. Where those wake-up blows strike
   is left by then, by the quicker way (a few steps in depth off its line, or back out of reach), and nothing is
   charged, drunk or picked up inside it. Before a rush or a jump-in, the opponent's quickest counter is weighed
-  along the move's own path — where it ends, not where it starts; a blow that would be beaten to the punch on
-  its way is not started. An opponent charging MP is known to be free as soon as it can leave the charge.
+  along the move's own path — where it ends, not where it starts — and weighed against what the blow brings by
+  how often this opponent has struck such a blow first in the match so far (learned as the match goes): a
+  rusher keeps rushing an opponent that does not punish and soon stops against one that does. An opponent
+  charging MP is known to be free as soon as it can leave the charge.
 - `tools/ai-bench` pits two computer players against each other (`brains = {"smart", "smart@ai_alt"}`:
   another version of the AI, or a player of your own started from `ai_template.lua`); its `audit` counts, per
   player, blows started, landed and interrupted, hits taken from a just-risen opponent or at a wall, and trades.
