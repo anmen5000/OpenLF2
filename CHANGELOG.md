@@ -32,6 +32,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - INSANE!: approaches an opponent whose long blows cover the line between them beside that line, in depth; knows
   an opponent held by a trap (an object's hold) to be held and hittable, strikes it or charges MP for a strong move
   first while the hold lasts; weapons worth fewer steps when MP is full (v22)
+- INSANE!: keeps out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they
+  reach — until its blink ends, leaving in depth or back out of reach and waiting off its line; no charging,
+  drinking or weapon pick-up in that zone; the opponent's quickest counter weighed along a rush's or a jump-in's
+  own path; an opponent in a charge stance known to be free as soon as it can leave it; the frame a move's spawn
+  appears counted as a threat; a blow landing as the own blink ends answered; trades struck first only when
+  clearly heavier (v23)
+- `tools/ai-bench`: `duel` with `audit = true` counts, per computer player, blows started, landed and
+  interrupted (by a foe that was free, or one already in a move), hits taken from a just-risen opponent or at a
+  wall, trades, what the fighter was doing when hit, and the moves set aside because a threat or counter met
+  their path
 - `tools/ai-bench`: two computer players against each other (`brains = {"smart", "smart@ai_alt"}`), `ai_template.lua`
   as the shape of a player of one's own, the `still` job (a fighter that cannot answer, a trap placed by hand)
 - The relay keeps a journal of each Hero Fighter room (joins with build and address, fights started, pauses,

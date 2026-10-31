@@ -37,6 +37,40 @@ function duel.run(config)
             usage[id][move.index] = (usage[id][move.index] or 0) + 1
         end
     end
+    -- config.audit: how the blows were taken and given, per brain — attacks started and how many of them were
+    -- interrupted before they landed (by a foe that was free when we started: it struck later and landed first;
+    -- or by one already in a move: we walked into it), hits taken from a foe just up from the ground (within its
+    -- get-up blink), hits taken with the back to a wall, trades (both hit within two frames), and what we were
+    -- doing when hit (the decision's first words).
+    local audit
+    if config.audit then
+        audit = {}
+        for brain = 1, 2 do
+            audit[brain] = {starts = 0, interrupted_free = 0, interrupted_busy = 0, interrupted_damage = 0, landed = 0,
+                hits_taken = 0, damage_taken = 0, getup_hits = 0, getup_damage = 0, wall_hits = 0, wall_damage = 0,
+                trades = 0, doing = {}, by_foe_move = {}}
+        end
+    end
+    local excluded_counts = {}
+    if audit then
+        local function hook(module)
+            module.on_exclude = function(self, move, reason, t)
+                local key = (self.brain or "?") .. " " .. reason
+                excluded_counts[key] = (excluded_counts[key] or 0) + 1
+                if config.exclusions then
+                    local e = move.entry
+                    engine.log(string.format("%5d EXCLUDE %s %s %s t%d (me x%d z%d f%d)", state_last.frame_number, self.brain, reason, e.field or e.basic or ("chain " .. tostring(e.key)), t, self.x_int, self.z_int, self.frame))
+                end
+            end
+        end
+        hook(require("base/game/smart_ai"))
+        for _, name in ipairs(config.brains or {}) do
+            local module = name:match("^smart@(.+)$")
+            if module then pcall(function() hook(require("bench/" .. module)) end) end
+        end
+    end
+    local free_states = {[0] = true, [1] = true, [2] = true, [4] = true, [7] = true}
+    local function is_free_state(v) return free_states[v.record.frame(v.frame).state] == true end
     for _, pair in ipairs(config.pairs) do
         local pair_wins = {0, 0}
         for game = 1, config.games do
@@ -60,6 +94,9 @@ function duel.run(config)
             local ticks = 0
             local last_hp = {[10] = state.items[10].hp, [11] = state.items[11].hp}
             local notes = {[10] = {}, [11] = {}}
+            local track = {[10] = {hp = state.items[10].hp, note = "-", free = true, lying_at = -999, hit_at = -999},
+                [11] = {hp = state.items[11].hp, note = "-", free = true, lying_at = -999, hit_at = -999}}
+            local function brain_of(slot) return slot == 10 and first or second end
             while ticks < (config.limit or 5400) do
                 local before = {}
                 for _, slot in ipairs({10, 11}) do
@@ -122,6 +159,47 @@ function duel.run(config)
                 match.step(state, held)
                 if saved_random then engine.random = saved_random end
                 ticks = ticks + 1
+                if audit and state.items[10] and state.items[11] then
+                    local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or 794)
+                    for _, slot in ipairs({10, 11}) do
+                        local v, o = state.items[slot], state.items[slot == 10 and 11 or 10]
+                        local tr, a = track[slot], audit[brain_of(slot)]
+                        local m = v.smart_memory
+                        local note = m and m.note or "-"
+                        local vstate = v.record.frame(v.frame).state
+                        if vstate == 14 then tr.lying_at = ticks end
+                        local free_now = is_free_state(v)
+                        -- A blow started: a fresh attack decision (the note changes, or we were free a frame ago).
+                        if (note ~= tr.note or tr.free) and not free_now
+                           and (note:find("^attack ") or note:find("^jump in") or note:find("^strike first") or note:find("^follow up")) then
+                            local t = tonumber(note:match(" t(%d+)")) or 20
+                            tr.start = {tick = ticks, t = t, foe_free = is_free_state(o), note = note, foe_hp = o.hp, landed = false}
+                            a.starts = a.starts + 1
+                        end
+                        local st = tr.start
+                        if st and o.hp < st.foe_hp and not st.landed then st.landed = true; a.landed = a.landed + 1 end
+                        if v.hp < tr.hp - 2 then
+                            local loss = tr.hp - v.hp
+                            a.hits_taken = a.hits_taken + 1
+                            a.damage_taken = a.damage_taken + loss
+                            local otr = track[slot == 10 and 11 or 10]
+                            if st and ticks <= st.tick + st.t and not st.landed then
+                                if st.foe_free then a.interrupted_free = a.interrupted_free + 1 else a.interrupted_busy = a.interrupted_busy + 1 end
+                                a.interrupted_damage = a.interrupted_damage + loss
+                                local key = string.format("%s | foe f%d", st.note:match("^(%S+ %S+)") or st.note, o.frame)
+                                a.by_foe_move[key] = (a.by_foe_move[key] or 0) + 1
+                            end
+                            if o.blink > 0 or ticks - otr.lying_at <= 25 then a.getup_hits = a.getup_hits + 1; a.getup_damage = a.getup_damage + loss end
+                            if v.x_int < 60 or v.x_int > width - 60 then a.wall_hits = a.wall_hits + 1; a.wall_damage = a.wall_damage + loss end
+                            if ticks - otr.hit_at <= 2 then a.trades = a.trades + 1 end
+                            tr.hit_at = ticks
+                            local doing = (tr.note or "-"):match("^(%a+ ?%a*)") or "-"
+                            a.doing[doing] = (a.doing[doing] or 0) + loss
+                        end
+                        if st and (ticks > st.tick + st.t + 2 or (free_now and ticks > st.tick + 1)) then tr.start = nil end
+                        tr.hp, tr.note, tr.free = v.hp, note, free_now
+                    end
+                end
                 if config.stats then
                     for _, slot in ipairs({10, 11}) do
                         local v = state.items[slot]
@@ -264,6 +342,28 @@ function duel.run(config)
                 show(armed.moves)
             end
         end
+    end
+    if audit then
+        for brain = 1, 2 do
+            local a = audit[brain]
+            engine.log(string.format("AUDIT %s: starts %d landed %d interrupted %d (foe free %d, foe busy %d) dmg %d | hits taken %d dmg %d: get-up %d dmg %d, at wall %d dmg %d, trades %d",
+                config.brains[brain], a.starts, a.landed, a.interrupted_free + a.interrupted_busy, a.interrupted_free, a.interrupted_busy, a.interrupted_damage,
+                a.hits_taken, a.damage_taken, a.getup_hits, a.getup_damage, a.wall_hits, a.wall_damage, a.trades))
+            local function top(list, n, title)
+                local keys = {}
+                for key in pairs(list) do keys[#keys + 1] = key end
+                table.sort(keys, function(x, y) return list[x] > list[y] end)
+                local parts = {}
+                for i = 1, math.min(n, #keys) do parts[#parts + 1] = string.format("%s %d", keys[i], list[keys[i]]) end
+                engine.log(string.format("  %s: %s", title, table.concat(parts, "; ")))
+            end
+            top(a.doing, 8, "damage taken while")
+            top(a.by_foe_move, 6, "interrupted")
+        end
+        local parts = {}
+        for key, count in pairs(excluded_counts) do parts[#parts + 1] = string.format("%s %d", key, count) end
+        table.sort(parts)
+        engine.log("  moves set aside: " .. table.concat(parts, "; "))
     end
     engine.log(string.format("TOTAL %s %d - %d %s, draws %d of %d; avg hp left %.0f / %.0f; avg %.0f ticks",
         config.brains[1], wins[1], wins[2], config.brains[2], draws, games, hp_left[1] / games, hp_left[2] / games, total_ticks / games))
