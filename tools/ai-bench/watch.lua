@@ -12,7 +12,9 @@ function w.run(config)
             smart.full_sandbox = config.full
             local tick = 0
             smart.watch = function(state, me, entry)
-                if entry.frame ~= config.entry or entry.chain or entry.parent then return end
+                if entry.frame ~= config.entry or entry.parent then return end
+                if (config.chain or 0) ~= (entry.chain and #entry.chain or 0) then return end
+                if config.link and not (entry.chain and entry.chain[1] and entry.chain[1].key == config.link) then return end
                 tick = tick + 1
                 if tick >= config.from and tick <= config.to then
                     local parts = {string.format("%d me f%d x%d y%d", tick, me.frame, me.x_int, me.y_int)}

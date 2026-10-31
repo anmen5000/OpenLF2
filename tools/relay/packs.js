@@ -18,6 +18,7 @@
 //   GET  /admin/api/packs            the same list, with details (X-Admin-Key)
 //   PUT  /admin/api/packs/<id>?title=<title>   upload a ZIP file as the body (X-Admin-Key)
 //   DELETE /admin/api/packs/<id>     remove one (X-Admin-Key)
+//   GET  /admin/api/hf-journal       the Hero Fighter rooms' journal, as text (X-Admin-Key)
 'use strict';
 
 const crypto = require('node:crypto');
@@ -256,7 +257,7 @@ function sameKey(given, expected) {
   return crypto.timingSafeEqual(a, b);
 }
 
-function createPacks(config, { log, clientAddress, allowOrigin }) {
+function createPacks(config, { log, clientAddress, allowOrigin, hfJournal = null }) {
   const directory = config.packsDir;
   const downloads = new Map(); // client address -> { count, until }
   const failures = new Map(); // client address -> { count, until }
@@ -448,6 +449,15 @@ function createPacks(config, { log, clientAddress, allowOrigin }) {
       if (authorized(req, res)) list().then((packs) => json(res, 200, { packs, maxBytes: config.maxPackBytes }));
       return true;
     }
+    if (pathname === '/admin/api/hf-journal' && req.method === 'GET') {
+      // The Hero Fighter rooms' journal (hf-room.js): what happened in them lately, with the details of every
+      // fight that went out of step, for finding the cause.
+      if (authorized(req, res)) {
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+        res.end(hfJournal ? hfJournal() : 'no Hero Fighter rooms\n');
+      }
+      return true;
+    }
     const managed = pathname.match(/^\/admin\/api\/packs\/([^/]*)$/);
     if (managed) {
       const id = managed[1];
@@ -524,6 +534,13 @@ const ADMIN_PAGE = `<!doctype html>
     <h2 style="font-size:1.15rem;margin:0 0 .5rem">Các bản mod trên relay</h2>
     <p><button id="refresh" class="secondary">Xem danh sách</button></p>
     <table><tbody id="list"></tbody></table>
+  </div>
+  <div class="card">
+    <h2 style="font-size:1.15rem;margin:0 0 .5rem">Nhật ký phòng Hero Fighter</h2>
+    <p class="note">Ai vào/ra phòng, trận nào bắt đầu và kết thúc, ai tạm dừng, và khi hai máy lệch nhau (desync) thì mọi thứ hai game
+      đã báo quanh khung hình đó. Khi gặp lỗi desync, bấm xem rồi chép toàn bộ nội dung gửi cho người làm web.</p>
+    <p><button id="journal" class="secondary">Xem nhật ký</button> <button id="copyjournal" class="secondary" hidden>Chép nội dung</button></p>
+    <pre id="journaltext" style="white-space:pre-wrap;font-size:.8rem;max-height:60vh;overflow:auto;background:#0b1220;padding:.6rem;border-radius:8px" hidden></pre>
   </div>
 </main>
 <script>
@@ -613,6 +630,20 @@ const ADMIN_PAGE = `<!doctype html>
     }
   }
   $('refresh').addEventListener('click', refresh);
+  $('journal').addEventListener('click', async () => {
+    if (!$('key').value) return status('Nhập mã quản trị để xem nhật ký.', 'bad');
+    remember();
+    const response = await fetch(location.pathname.replace(/\\/?$/, '/') + 'api/hf-journal', { headers: { 'x-admin-key': $('key').value } });
+    const text = await response.text();
+    if (!response.ok) return status('Không xem được nhật ký (lỗi ' + response.status + ').', 'bad');
+    $('journaltext').textContent = text;
+    $('journaltext').hidden = false;
+    $('copyjournal').hidden = false;
+  });
+  $('copyjournal').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('journaltext').textContent); status('Đã chép nhật ký vào bộ nhớ tạm.', 'ok'); }
+    catch (error) { status('Không chép được: chọn nội dung bằng chuột rồi Ctrl+C.', 'bad'); }
+  });
 </script>
 </body></html>
 `;

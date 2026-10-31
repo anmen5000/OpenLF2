@@ -169,6 +169,18 @@
           with it (swing, throw, drink) and uses it like any other move — a knife is thrown at the opponent, a drink is kept
           for when HP or MP run low. Moves that teleport to the enemy are aimed from where the fighter lands, not from where
           it stands. Two against one, the second fighter goes round to the other side so the enemy cannot guard both.</li>
+        <li><b>Forms of a mod's own making.</b> Many mods build a stronger form on an invisible item: Luffy's Gear Second
+          in One Piece GrandWorld is a defend move that lays down an item nobody sees and picks it up at once, and with that
+          item in hand every key does something else — faster runs, harder blows, a drain on MP every frame. The AI finds
+          such moves because the item ends up in its fighter's hand, plays the form's keys in the copy too (its attacks,
+          jumps, runs and what they chain into), measures what it burns and how fast it runs, and weighs it against the
+          fighter's ordinary kit. A form worth it is entered when the opponent is held or far enough away, fought in with
+          its own moves and runs, and, when its MP is about to run out, let end away from the enemy's arms. Sanji's Diable
+          Jambe and a Rasengan formed in the hand work the same way; a form reached from inside another form (Zoro's Asura)
+          is not learned yet.</li>
+        <li><b>Respecting the get-up.</b> A fallen opponent cannot be hit until it is up again, and after it rises it is
+          invulnerable for a moment while it can already strike. Until the AI's quickest blow could land as that moment
+          ends, it waits outside the opponent's arms instead of beside it — farther away, and longer, when its own HP is low.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -189,6 +201,8 @@
           <tr><td>The opponent's habits</td><td><span class="status done">Done</span></td><td class="num">v19</td><td>Guard rate, how pressing it is, whether it flips up: guard breakers against turtles, walking up to passive players, meeting flippers where the roll ends.</td></tr>
           <tr><td>Weapons</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Picks up knives, sticks, stones and drinks when nothing presses; swings, throws or drinks by what it learned with the weapon in hand.</td></tr>
           <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land, 120 in front of the target.</td></tr>
+          <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach. Forms inside forms (Zoro's Asura) not yet.</td></tr>
+          <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>Stays outside a fallen or just-risen opponent's arms until its quickest blow can land again; farther and longer at low HP.</td></tr>
           <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
           <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
           <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
@@ -210,14 +224,15 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">35</td><td class="num">5</td><td class="num">0</td><td class="num">414 / 34</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">5</td><td class="num">0</td><td class="num">309 / 15</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">28</td><td class="num">12</td><td class="num">0</td><td class="num">168 / 66</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">162 / 62</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">36</td><td class="num">3</td><td class="num">1</td><td class="num">447 / 31</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">37</td><td class="num">2</td><td class="num">1</td><td class="num">300 / 8</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">215 / 34</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">37</td><td class="num">3</td><td class="num">0</td><td class="num">222 / 7</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 20 figures with <code>--seed 12345</code> (version 16 gave 34–4, 35–4, 24–16 and 27–13 on the same
-        games; the LuaJIT desktop build and the Lua 5.2 web build give the same result frame for frame). Another seed (777) gives 32–6 (2 draws), 38–2, 26–14 and 34–6.
+      <p class="note">Version 21 figures with <code>--seed 12345</code> (version 20 gave 35–5, 35–5, 28–12 and 30–10, version 16
+        34–4, 35–4, 24–16 and 27–13 on the same games; the LuaJIT desktop build and the Lua 5.2 web build give the same result
+        frame for frame). Luffy against Ace, lost 0–4 in version 20, is 2–2 with Gear Second.
         "HP left" is the average over all 40 games, lost games counting as 0. In KT-LF2 the original computer player already
         knows the original fighters' moves, so the two are close; in mods with new fighters it barely knows how to use them.</p>
     </section>
@@ -252,7 +267,11 @@
           counted once a frame; add a habit there and use it in <code>attack_score</code> or the positioning.</li>
         <li><code>weapon_to_take</code>, <code>over_weapon</code>, <code>armed_analysis</code>, <code>view_of</code>: which
           weapon is worth picking up, and the fighter's moves re-learned with each kind of weapon in hand.</li>
-        <li>Not done yet: healing, buff and summon moves that deal no damage have no score yet (they are used only when they
+        <li><code>mode_entries</code>, <code>mode_drain</code>, <code>enter_mode</code>, <code>mode.worth</code>: a form of
+          the fighter's own making (an item of its own in hand), what its keys do, what it burns, and whether it is worth
+          entering; the "enter mode" and "mode run" blocks of <code>smart.control</code> enter it and move in it.</li>
+        <li>Not done yet: a form reached from inside another form (Zoro's Asura) and forms that are a stance rather than an
+          item; healing, buff and summon moves that deal no damage have no score yet (they are used only when they
           also charge MP or heal); 2-on-2 play is limited to choosing the enemy and the side to attack from — there is no
           shared plan between partners; habits are learned within a match only.</li>
       </ul>

@@ -17,3 +17,5 @@ module=dump|dump.lua
 module=watch|watch.lua
 module=settle|settle.lua
 module=weapontest|weapontest.lua
+module=keyseq|keyseq.lua
+module=probe|probe.lua

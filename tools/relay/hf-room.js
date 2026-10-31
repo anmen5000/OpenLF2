@@ -193,6 +193,7 @@ function newSlot() { // R
     name: '', players: ['', '', ''], levels, cc: '', country: '', online: false, hasPlayer: false, paused: false,
     connection: null, page: 'WAITROOM', fighting: false, latency: 0, latencyShown: 0, latencyTarget: 0,
     started: false, lastPacket: -1, leftFrame: -1, frames: new Array(FRAMES_KEPT), lastMessage: 0, lastActive: 0,
+    steps: [], times: [], // what this game reported lately: [frame, random numbers used] every 20 frames, and its <t> values
     admin: false, flushes: 0,
   };
 }
@@ -219,6 +220,10 @@ class HfRoom {
     // h.a, h.b: the random table and its starting point, the same for every game in the room.
     this.table = Array.from({ length: 5000 }, () => this.nextInt(10000));
     this.seed = this.nextInt(5000);
+    // The journal: what happened in this room lately, for the admin page (hf.js /admin/api/hf-journal). Joins,
+    // leaves, fights, pauses, and when a fight goes out of step, everything the two games reported around that
+    // frame, so that the cause can be looked for afterwards.
+    this.journal = [];
     this.winReported = false; // h.c
     this.build = null; // the build of the games in the room (acceptsBuild)
     this.steps = new Map(); // frame -> the random numbers used by then, as the first game reported it
@@ -299,6 +304,9 @@ class HfRoom {
   // the server compares them and ends the fight instead, back to the menus, with everyone still in.
   checkStep(index, frame, used) {
     if (!this.fightingNow || this.outOfStep) return;
+    const slot = this.slots[index];
+    slot.steps.push([frame, used]);
+    if (slot.steps.length > 60) slot.steps.shift();
     const seen = this.steps.get(frame);
     if (!seen) {
       this.steps.set(frame, { used, from: index });
@@ -308,6 +316,7 @@ class HfRoom {
     if (seen.used === used) return;
     this.outOfStep = true;
     this.log(`hf room ${this.number}: games ${seen.from} and ${index} out of step at frame ${frame}: ending the fight`);
+    this.jotOutOfStep(seen.from, index, frame);
     for (const slot of this.online()) {
       slot.connection.notice('Hai may khong con khop nhau (desync): tran dau dung lai. Bam Next roi Start Fight! de danh lai.');
     }
@@ -315,6 +324,42 @@ class HfRoom {
     countdown.on = true;
     countdown.action = 'quitgame';
     countdown.count = 1;
+  }
+
+  // A line in the room's journal (kept: the last 400).
+  jot(text) {
+    const stamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    this.journal.push(`${stamp} ${text}`);
+    if (this.journal.length > 400) this.journal.splice(0, this.journal.length - 400);
+  }
+
+  // The fight as it was set up, for the journal.
+  describeFight() {
+    const men = this.men.filter((man) => man.exists).map((man, k) => {
+      const who = man.client >= 0 ? `${this.slots[man.client].name}/P${man.controller + 1}` : (man.commander >= 0 ? `soldier of ${man.commander}` : 'computer');
+      return `${man.char || '?'} lv${man.level} team${man.team} (${who})`;
+    });
+    return `${this.mode}${this.mode === 'BATTLEMODE' ? ' ' + this.battleType : ''} difficulty ${this.difficulty} normalize ${this.normalizeLevel}`
+      + ` dinosaurs ${this.dinosaurs} background ${this.background}; men: ${men.join(', ')}; latencies: ${this.people()}`;
+  }
+
+  // What both games reported around the frame they went out of step: their random counts (every 20 frames),
+  // their <t> timing reports (5940 = full speed), and the key frames they sent just before.
+  jotOutOfStep(a, b, frame) {
+    this.jot(`OUT OF STEP at frame ${frame}: ${this.slots[a].name} (game ${a}) and ${this.slots[b].name} (game ${b}); ${this.describeFight()}`);
+    for (const index of [a, b]) {
+      const slot = this.slots[index];
+      const steps = slot.steps.slice(-12).map(([f, used]) => `${f}:${used}`).join(' ');
+      this.jot(`  game ${index} ${slot.name}: latency ${slot.latency} last packet ${slot.lastPacket} paused ${slot.paused}; random counts ${steps}; t ${slot.times.slice(-8).join(' ')}`);
+      const lines = [];
+      for (let f = Math.max(0, frame - 44); f <= Math.min(slot.lastPacket, frame + 4); f += 1) {
+        const line = slot.frames[f % FRAMES_KEPT];
+        if (!line) continue;
+        const body = line.replace(/^<f><c>\d+<\/c><i>(\d+)<\/i>/, '$1 ').replace(/<\/f>$/, '');
+        if (!/^\d+ (<s1>[@^]<\/s1>)?$/.test(body) || /<m\d>/.test(body)) lines.push(body);
+      }
+      this.jot(`  game ${index} key frames ${frame - 44}..${frame + 4} (only those with changes): ${lines.join(' | ') || 'none'}`);
+    }
   }
 
   pickBackground() { this.background = BACKGROUNDS[this.nextInt(BACKGROUNDS.length)]; } // Main.a
@@ -559,6 +604,8 @@ class HfRoom {
     this.page = 'FIGHTING';
     this.fightingNow = true;
     this.previousPage = previous;
+    for (const slot of this.slots) { slot.steps = []; slot.times = []; }
+    this.jot(`fight starts: ${this.describeFight()}`);
     this.broadcastList(-1, -1);
     this.broadcastMen(1);
     this.resetFrames();
@@ -568,6 +615,7 @@ class HfRoom {
   }
 
   quitToMenu() {
+    this.jot(`fight ends (back to the menus)${this.outOfStep ? ' after going out of step' : ''}; last packets ${this.online().map((slot) => `${slot.name} ${slot.lastPacket}`).join(', ')}`);
     if (this.mode === 'VSMODE') this.enterPage('CHARMENU', 'FIGHTING');
     else if (this.mode === 'STORYMODE') this.enterPage('STORYMENU', 'FIGHTING');
     else if (this.mode === 'BATTLEMODE') this.enterPage('BATTLESETTINGMENU', 'FIGHTING');
@@ -610,6 +658,7 @@ class HfRoom {
       const afk = this.afkMinutes * 60000;
       if (slot.lastMessage < now - 35000 || (afk > 60000 && slot.lastActive < now - afk)) {
         this.log(`hf room ${this.number}: ${slot.name} ${slot.lastMessage < now - 35000 ? 'timed out' : 'was idle'}`);
+        this.jot(`${slot.name} ${slot.lastMessage < now - 35000 ? `timed out (silent for ${Math.round((now - slot.lastMessage) / 1000)} s)` : 'was idle too long'}${this.fightingNow ? ` during a fight, last packet ${slot.lastPacket}` : ''}`);
         const connection = slot.connection;
         connection.leave();
         connection.kicked = true;
@@ -798,6 +847,7 @@ class HfConnection {
     }
     room.broadcastStatus();
     room.log(`hf room ${room.number}: ${this.name} (latency ${latency - 1}) joins`);
+    room.jot(`${this.name} joins (latency ${latency - 1}, build ${this.build || 'unknown'}, from ${this.address || '?'})${room.fightingNow ? ' during a fight' : ''}`);
     room.broadcastList(this.index, -1);
     if (room.connected === 2 && room.fightingNow) {
       room.countdown.on = true;
@@ -862,7 +912,11 @@ class HfConnection {
       this.requestFlushes();
       return;
     }
-    if (kind === 't') { int(tagValue(doc, 'd')); return; }
+    if (kind === 't') {
+      slot.times.push(int(tagValue(doc, 'd')));
+      if (slot.times.length > 20) slot.times.shift();
+      return;
+    }
     if (kind === 'rpc') {
       room.checkStep(this.index, int(tagValue(doc, 'cl')), int(tagValue(doc, 'rp')));
       return;
@@ -875,6 +929,7 @@ class HfConnection {
     }
     if (kind === 'pausegame' || kind === 'resumegame') {
       slot.paused = kind === 'pausegame';
+      if (room.fightingNow) room.jot(`${slot.name} ${kind === 'pausegame' ? 'pauses' : 'resumes'} at frame ${slot.lastPacket}`);
       room.broadcastList(-1, -1);
       return;
     }
@@ -995,6 +1050,7 @@ class HfConnection {
       if (!room.winReported) {
         room.winReported = true;
         room.log(`hf room ${room.number}: ${room.mode} won by ${team}`);
+        room.jot(`${room.mode} won by team ${team} (reported by ${slot.name} at frame ${slot.lastPacket})`);
       }
     }
   }
@@ -1071,6 +1127,7 @@ class HfConnection {
       room.broadcastList(-1, index);
       this.index = -1;
       room.log(`hf room ${room.number}: ${this.name} leaves`);
+      room.jot(`${this.name} leaves${this.kicked ? ' (taken out)' : ''}${room.fightingNow ? ` during a fight, at frame ${slot.leftFrame}` : ''}`);
       room.recount();
     }
     this.index = -1;

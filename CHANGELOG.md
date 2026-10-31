@@ -25,6 +25,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   moves with it in hand and swings, throws or drinks accordingly), moves that teleport to the enemy aimed from
   where they land, the second fighter of a pair going round to the other side, passive opponents walked up to and
   struck; the level's version is shown in the match and on the site (v20)
+- INSANE!: forms of a mod's own making — a move that leaves an item in the fighter's hand (Gear Second, Diable
+  Jambe, a Rasengan formed) is learned as a form with its own moves, runs, MP burn and worth, entered when worth it
+  and safe, fought in and let run out away from the enemy; a fallen or just-risen, invulnerable opponent is kept
+  outside arm's reach until a blow can land again (v21)
+- The relay keeps a journal of each Hero Fighter room (joins with build and address, fights started, pauses,
+  leaves, timeouts, and every out-of-step check with the frames and keys around it), readable from the admin page
+  (`GET /admin/api/hf-journal`), to find the cause of a desync reported by players
 - `tools/ai-bench/`: a mod package that runs INSANE! against the original computer player in bulk (`duel`), lists
   what it learned (`moves`), checks determinism (`replaytest`) and weapon handling (`weapontest`), and more
 - The site (`dist/pages/`): the start page with the mod library and network rooms, the INSANE! page

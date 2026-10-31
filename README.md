@@ -75,6 +75,11 @@ Battle), is `scripts/base/game/smart_ai.lua`:
 - It picks up weapons lying nearby when nothing presses (knives, sticks, stones, drinks), having played its
   moves again with each weapon in hand, aims moves that teleport to the enemy from where they land, and in
   2-on-2 goes round to the other side of an enemy its partner is already on.
+- A move that leaves an item of the fighter's own making in its hand is a form (Luffy's Gear Second and
+  Sanji's Diable Jambe in One Piece GrandWorld, a Rasengan formed in Naruto: The Setting Dawn): the form's
+  keys, runs, MP burn and worth are learned the same way; it is entered when worth it and safe, fought in
+  with its own moves, and let run out away from the enemy. A fallen or just-risen opponent, invulnerable
+  while it can already strike, is kept outside arm's reach until a blow can land again.
 - Everything depends only on the match's state (no random numbers of its own), so replays and network
   games stay in sync; the learned moves depend only on the fighter's data.
 - Fighters whose mod ships a substantial AI script keep that script at CRAZY!.

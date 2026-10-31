@@ -432,6 +432,8 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
     rooms,
     accounts,
     describe: () => ({ rooms: rooms.length, players: rooms.reduce((sum, room) => sum + room.connected, 0) }),
+    // The rooms' journals (joins, fights, pauses, out-of-step dumps), newest room entries last, as text.
+    journal: () => rooms.map((room) => `== ${room.name} (${room.connected} playing)\n${room.journal.join('\n') || '(nothing yet)'}`).join('\n\n') + '\n',
     close() {
       clearInterval(pruneTimer);
       for (const room of rooms) room.close();

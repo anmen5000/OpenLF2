@@ -174,8 +174,8 @@ function duel.run(config)
                     for _, slot in ipairs({10, 11}) do
                         local v = state.items[slot]
                         local m = v.smart_memory
-                        parts[#parts + 1] = string.format("%s[x%d z%d y%d f%d s%d hp%d mp%d %s]", v.brain or "?", v.x_int, v.z_int, v.y_int, v.frame,
-                            v.record.frame(v.frame).state, v.hp, v.mp, m and m.note or "")
+                        parts[#parts + 1] = string.format("%s[x%d z%d y%d f%d s%d hp%d mp%d w%d %s]", v.brain or "?", v.x_int, v.z_int, v.y_int, v.frame,
+                            v.record.frame(v.frame).state, v.hp, v.mp, v.weapon, m and m.note or "")
                     end
                     engine.log(string.format("%5d %s", ticks, table.concat(parts, "  ")))
                 end
@@ -237,14 +237,24 @@ function duel.run(config)
                 if not move.entry.parent then total = total + 1; if counts[move.index] then used = used + 1 end end
             end
             engine.log(string.format("USAGE %d: %d of %d whole moves started", id, used, total))
-            for _, move in ipairs(analysis.moves) do
-                local e = move.entry
-                local how = e.sequence and (e.field .. "#" .. e.sequence) or (e.basic or ("chain " .. tostring(e.key) .. " from " .. tostring(e.from)))
-                local chain = ""
-                for _, link in ipairs(e.chain or {}) do chain = chain .. string.format(">%s%d", link.key, link.target) end
-                engine.log(string.format("  %5d  %-6s %-12s f%-3d%-14s first %-4s ready %-3d mp %-4d dmg %-4d%s%s%s", counts[move.index] or 0,
-                    e.context, how, e.frame, chain, tostring(move.first), move.ready, move.mp, move.damage,
-                    move.charge and " charge" or "", move.transform and " transform" or "", move.teleport and " teleport" or ""))
+            local function show(list)
+                for _, move in ipairs(list) do
+                    local e = move.entry
+                    local how = e.sequence and (e.field .. "#" .. e.sequence) or (e.basic or ("chain " .. tostring(e.key) .. " from " .. tostring(e.from)))
+                    local chain = ""
+                    for _, link in ipairs(e.chain or {}) do chain = chain .. string.format(">%s%s", link.key, tostring(link.target)) end
+                    engine.log(string.format("  %5d  %-6s %-12s f%-3s%-14s first %-4s ready %-3d mp %-4d dmg %-4d%s%s%s%s", counts[move.index] or 0,
+                        e.context, how, tostring(e.frame or e.press), chain, tostring(move.first), move.ready, move.mp, move.damage,
+                        move.charge and " charge" or "", move.transform and " transform" or "", move.teleport and " teleport" or "", move.mode and " MODE" or ""))
+                end
+            end
+            show(analysis.moves)
+            for _, mode in pairs(analysis.modes or {}) do
+                local armed = smart.internals.armed_analysis(record, mode.record, #analysis.moves + 1)
+                local mused = 0
+                for _, move in ipairs(armed.moves) do if counts[move.index] then mused = mused + 1 end end
+                engine.log(string.format("  -- mode item %d (%d moves, %d used):", mode.record.id, #armed.moves, mused))
+                show(armed.moves)
             end
         end
     end

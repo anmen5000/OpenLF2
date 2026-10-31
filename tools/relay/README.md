@@ -135,6 +135,12 @@ the game itself is not changed, except for two regular expressions Ruffle reads 
   its connection ("Synchronization error"), which ends the match for everyone; the relay compares
   them itself and, when two differ, ends that fight only (the games go back to the room's menu,
   with a notice) so that the players can start another.
+- Journal: each room keeps the last 400 lines of what happened in it — who joined (with the page's
+  build and the client address), the fights started (mode, difficulty, settings, fighters, latencies),
+  pauses, leaves, timeouts, and every out-of-step check with the latencies, the last packets, the
+  random-number reports and the keys of the frames around it. `/admin` shows it ("Nhật ký phòng Hero
+  Fighter"); `GET <relay path>/admin/api/hf-journal` with the `X-Admin-Key` header returns it as text.
+  It lives in memory only (a restart empties it), so copy it soon after a desync.
 
 | Path | What |
 | --- | --- |

@@ -9,6 +9,9 @@
 --   recording where and when they can hit (the fighter's own attacks and those of what it spawns), how it moves
 --   and when it is free again. The copy draws random numbers from a fixed state and the game's generator is put
 --   back afterwards, so nothing in the match changes and every computer in a network room learns the same.
+-- - A move that leaves an item of the fighter's own making in its hand (a mod's stronger form: Gear Second, Diable
+--   Jambe) is a form: what the keys do in it, how it runs, what it burns and what it is worth are learned the same
+--   way, in the copy, and the form is entered when worth it and safe.
 -- - Every frame it looks at what is about to hit its fighter (enemies' moves in progress, flying attacks) and
 --   strikes first, defends, steps out of the way in depth, jumps or backs off; otherwise it uses the move that
 --   will hit its target, preferring sure, strong and cheap ones, follows up while the target is hurt, and keeps
@@ -51,8 +54,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 20
+smart.version = 21
 smart.history = {
+    {21, "2026-10-31", "Forms of a mod's own making: a move that leaves an item in the fighter's hand (Luffy's Gear Second, Sanji's Diable Jambe, a Rasengan formed) is a form whose moves, speed, MP burn and worth are learned; it is entered when worth it and safe, fought in with its own moves and runs, and left to run out away from the enemy; a fallen enemy that gets up invulnerable is kept outside arm's reach until it can be hit again"},
     {20, "2026-10-31", "Weapons: walks onto a lying knife, stick, stone or drink when nothing presses, learns what the fighter does with it in hand and swings, throws or drinks accordingly; moves that teleport to the enemy are aimed from where they land; two on one, the second fighter goes round to the other side; a passive opponent is walked up to and struck"},
     {19, "2026-10-31", "Knows the opponent: how often it guards, how pressing it is and whether it flips up out of falls are counted in the match and change the choice of moves, the spacing and the timing; among several enemies the busy and the weak are preferred"},
     {16, "2026-10-31", "Uses the whole kit: jumps in and dashes with air moves, slow specials when the target is held, charges MP, strikes out of the guard, leaves stances in time, flips up or stays down by the blows on their way, never steps into a blow"},
@@ -98,6 +102,8 @@ end
 local free_states = {[states.standing] = true, [states.walking] = true, [states.running] = true}
 local no_body_frame = {bodies = {}, center_x = 0, center_y = 0} -- a frame nothing can hit
 local resting_states = {[states.resting_light_item] = true, [states.resting_heavy_item] = true} -- a weapon lying on the ground
+local weapon_kinds = {[record_kinds.light_item] = true, [record_kinds.heavy_item] = true,
+    [record_kinds.baseball] = true, [record_kinds.drink] = true}
 local function is_free(value)
     local frame = value.record.frame(value.frame)
     if free_states[frame.state] then return true end
@@ -208,7 +214,7 @@ local function add_box(list, t, value, frame, area, origin, own, me)
     else base_x, base_y, base_z = origin.x, origin.y, origin.z end
     list[#list + 1] = {t = t, x1 = x - base_x, x2 = x - base_x + area.width, y1 = y - base_y, y2 = y - base_y + area.height,
         z = value.z_int - base_z, zw = zw, injury = area.injury or 0, fall = area.fall or 0, bdefend = area.bdefend or 0,
-        dvx = area.dvx or 0, kind = area.kind, effect = area.effect or 0, own = own}
+        dvx = area.dvx or 0, kind = area.kind, effect = area.effect or 0, own = own, source = value.record.id}
 end
 
 -- One frame of the private copy: the match's frame (base/game/match) without what cannot happen there (weapons
@@ -216,6 +222,7 @@ end
 -- dummy (attacks of kind 8 and 14 ignore its blink) or when the dummy can be hit; items spawned during a phase
 -- take part in its later slots, as in the match.
 local homing_kinds = {[attack_kinds.heal] = true, [attack_kinds.obstacle] = true}
+local pickup_kinds = {[attack_kinds.pick_up] = true, [attack_kinds.rolling_pickup] = true}
 local function sandbox_step(state)
     state.frame_number = state.frame_number + 1
     state.shake = 1 - state.shake
@@ -244,6 +251,11 @@ local function sandbox_step(state)
     end
     local touching = state.dummy_hittable
     local holding = false
+    state.sandbox_items = false
+    for index = 2, last do
+        local value = items[index]
+        if value and resting_states[value.record.frame(value.frame).state] then state.sandbox_items = true; break end
+    end
     for index = 0, last do
         local value = items[index]
         if value then
@@ -257,6 +269,8 @@ local function sandbox_step(state)
             if not touching then
                 for _, area in ipairs(value.record.frame(value.frame).interactions) do
                     if homing_kinds[area.kind] then touching = true; break end
+                    -- A pick-up zone with the attack key down: an item lying in the copy may be taken (combat.detect).
+                    if pickup_kinds[area.kind] and value.keys.attack and state.sandbox_items then touching = true; break end
                 end
             end
         end
@@ -354,6 +368,83 @@ end
 -- full MP unless `mp` says otherwise.
 smart.plays = 0
 local arm -- defined with the weapons below
+-- Puts a mode's fighter (an item of its own making in hand, see explore) into the mode's resting frame and lets
+-- it settle; then, for a run or air entry, gets it running or into the air the way the mode runs and jumps.
+local function enter_mode(state, me, mode, context, step)
+    me.frame, me.wait_counter = mode.frame, 0
+    set_keys(me, nil)
+    step(); step()
+    if context == "ground" then return true end
+    if context == "air" then
+        set_keys(me, {jump = true}); me.previous_keys.jump = false; step()
+        set_keys(me, nil)
+        for _ = 1, 20 do
+            step()
+            if me.y_int < 0 then step(); step(); return me.y_int < 0 end
+        end
+        return false
+    end
+    -- Running (or whatever the mode does with the run keys): two fresh presses, then the key held.
+    local walk = (me.record.movement or {}).walking_speed or 4
+    set_keys(me, {right = true}); step()
+    set_keys(me, nil); step()
+    set_keys(me, {right = true}); step()
+    for _ = 1, 12 do
+        set_keys(me, {right = true}); me.previous_keys.right = true; step()
+        if me.record.frame(me.frame).state == states.running or abs(me.vx) > walk + 2 then return true end
+    end
+    return false
+end
+
+-- MP a mode costs per frame while the fighter only rests in it (Luffy's Gear Second burns MP), or gains (negative).
+local function mode_drain(record, mode)
+    local state, me = new_sandbox(record)
+    arm(state, me, mode.record)
+    local function step() sandbox_step(state) end
+    if not enter_mode(state, me, mode, "ground", step) then return 0, 0 end
+    local before = me.mp
+    for _ = 1, 30 do set_keys(me, nil); step() end
+    local drain = (before - me.mp) / 30
+    -- How fast the mode runs (the run keys from its resting frames, held for a while), and, when the mode has a
+    -- run of its own (Gear Second's, which is no running frame of the fighter's and goes on until a key ends
+    -- it), the frames of that run (`moving`, from the first direction key on), whether it runs on with no key
+    -- held and whether the defend key brings it back to rest.
+    local fastest = 0
+    local walk = (record.movement or {}).walking_speed or 4
+    local moving, own_run = {}, false
+    local function note_frame()
+        if mode.idle[me.frame] or me.frame == mode.frame then return end
+        moving[me.frame] = true
+        local fstate = me.record.frame(me.frame).state
+        if fstate ~= states.walking and fstate ~= states.running and fstate ~= states.standing then own_run = true end
+    end
+    me.frame, me.wait_counter = mode.frame, 0
+    set_keys(me, nil); step(); step()
+    set_keys(me, {right = true}); step(); note_frame()
+    set_keys(me, nil); step(); note_frame()
+    set_keys(me, {right = true}); step(); note_frame()
+    for _ = 1, 20 do
+        set_keys(me, {right = true}); me.previous_keys.right = true; step(); note_frame()
+        fastest = max(fastest, abs(me.vx))
+    end
+    for _ = 1, 6 do
+        set_keys(me, nil); step()
+        if abs(me.vx) > walk + 2 then note_frame() end
+    end
+    if own_run and fastest > walk + 2 then
+        mode.moving = moving
+        if abs(me.vx) > walk + 2 then
+            mode.runs_on = true
+            set_keys(me, {defend = true}); me.previous_keys.defend = false; step()
+            for _ = 1, 8 do
+                set_keys(me, nil); step()
+                if mode.idle[me.frame] then mode.stop_key = "defend"; break end
+            end
+        end
+    end
+    return drain, fastest
+end
+
 local function play(record, entry, mp, weapon_record)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
@@ -363,7 +454,11 @@ local function play(record, entry, mp, weapon_record)
         if smart.full_sandbox then require("base/game/match").step(state, held_nothing) else sandbox_step(state) end
         if smart.watch then smart.watch(state, me, entry) end
     end
-    if not enter_context(state, me, entry.context, step, weapon_record and weapon_record.kind == record_kinds.heavy_item) then return nil end
+    if entry.mode then
+        if not enter_mode(state, me, entry.mode, entry.context, step) then return nil end
+    else
+        if not enter_context(state, me, entry.context, step, weapon_record and weapon_record.kind == record_kinds.heavy_item) then return nil end
+    end
     if entry.walking then
         set_keys(me, {right = true}); step()
         if me.record.frame(me.frame).state ~= states.walking then return nil end
@@ -376,6 +471,10 @@ local function play(record, entry, mp, weapon_record)
     set_keys(me, nil)
     if entry.sequence then
         me.sequences[entry.sequence] = complete
+    elseif entry.press then
+        -- A key pressed as it is (what the game makes of it in this frame: a mode's own attack, jump or guard).
+        me.keys[entry.press] = true
+        me.previous_keys[entry.press] = false
     else
         me.frame = entry.frame
         me.wait_counter = 0
@@ -384,14 +483,26 @@ local function play(record, entry, mp, weapon_record)
     local started = false
     local quiet = 0
     local spawned = {}
+    local armed_item = weapon_record and state.items[me.held_item] or nil
     for t = 1, horizon_ticks do
         step()
         set_keys(me, nil)
         -- A chain is not over while a key of it is still to come (a stance between its keys may look free).
         local pending_link = entry.chain and chain_step <= #entry.chain
-        -- A chained move: its key, pressed as soon as the fighter is in a frame that takes it there.
+        -- A chained move: its key, pressed as soon as the fighter is in a frame that takes it there. A pick-up
+        -- link presses attack in the frame whose pick-up zone covers an item the move itself laid down (a mod's
+        -- way into a stronger form), until the item is in hand.
         local link = entry.chain and entry.chain[chain_step]
-        if link and me.record.frame(me.frame).hits[link.key] == link.target then
+        if link and link.key == "pick" then
+            local held = me.held_item and state.items[me.held_item]
+            if held and held ~= armed_item and spawned[held] then
+                chain_step = chain_step + 1
+                move.link_tick = t
+            elseif me.frame == link.from or (me.frame_at_pass == link.from) then
+                set_keys(me, {attack = true})
+                me.previous_keys.attack = false
+            end
+        elseif link and me.record.frame(me.frame).hits[link.key] == link.target then
             set_keys(me, {[link.button] = true})
             me.previous_keys[link.button] = false
             chain_step = chain_step + 1
@@ -399,7 +510,7 @@ local function play(record, entry, mp, weapon_record)
         end
         if t == 1 then
             local first = me.frame_at_pass or me.frame
-            if entry.sequence and first == start_frame and me.frame == start_frame then return nil end
+            if (entry.sequence or entry.press) and first == start_frame and me.frame == start_frame then return nil end
             started = true
         end
         move.traj_x[t], move.traj_y[t], move.traj_z[t] = me.x_int - origin.x, me.y_int - origin.y, me.z_int - origin.z
@@ -413,9 +524,11 @@ local function play(record, entry, mp, weapon_record)
         local objects_active = false
         for index = 2, constants.item_slots - 1 do
             local value = state.items[index]
-            if value and value.owner == me.owner then
+            if value and value.owner == me.owner and value ~= armed_item then
                 spawned[value] = spawned[value] or t
-                if value.frame_at_pass then
+                if weapon_kinds[value.record.kind] and not move.spawned_weapon then move.spawned_weapon = value.record end
+                -- (An object born this frame strikes from the next one on; its pass frame is not yet its own.)
+                if value.frame_at_pass and spawned[value] < t then
                     local object_frame = value.record.frame(value.frame_at_pass)
                     for _, area in ipairs(object_frame.interactions) do
                         if damaging(area) then
@@ -452,6 +565,32 @@ local function play(record, entry, mp, weapon_record)
     move.mp = start_mp - me.mp
     move.hp = start_hp - me.hp
     move.length = #move.traj_x
+    -- The move ended with an item of its own making in the fighter's hand: a mode (Luffy's Gear Second, Sanji's
+    -- Diable Jambe and Zoro's bandana in One Piece GrandWorld are built on an invisible item picked up), whose
+    -- moves are learned separately (explore). Its resting frames are those the fighter goes round in afterwards.
+    local held = me.held_item and state.items[me.held_item]
+    if held and held ~= armed_item and spawned[held] and me.weapon ~= weapon_none and me.y_int == 0 then
+        -- The resting frames: those the fighter goes round in once left alone a while longer (the copy is
+        -- stepped on past the move; what it does there is no part of the move).
+        local trail = {}
+        for _ = 1, 45 do
+            set_keys(me, nil)
+            step()
+            trail[#trail + 1] = me.frame
+        end
+        local idle = {}
+        for k = max(1, #trail - 17), #trail do idle[trail[k]] = true end
+        move.mode = {record = held.record, code = me.weapon, frame = me.frame, idle = idle, from = entry}
+        -- Free once the resting frames go round (a loop of state 15 frames never counts as free otherwise).
+        if move.ready == horizon_ticks then
+            local seen = {}
+            for t = (move.link_tick or 1) + 1, move.length do
+                local id = move.frames[t]
+                if id and seen[id] then move.ready = t; break end
+                if id then seen[id] = true end
+            end
+        end
+    end
     return summarize(move)
 end
 
@@ -532,73 +671,110 @@ local sequence_fields = {
 local context_frames = {ground = {0, 5}, air = {frames.jump + 2}, run = {frames.running}, dash = {frames.dash}}
 local context_order = {"ground", "air", "run", "dash"}
 
-local function analyze(record)
+-- The keys a mode's fighter is tried with: its D-combos as its resting frame names them, attack, jump and defend
+-- pressed as they are (the mode's own moves hang on them), the same from its run and in the air, and what the
+-- item in its hand does as a weapon.
+local function mode_entries(data, mode)
+    local entries = {}
+    local held = {[mode.code] = true}
+    local frame = data.frames[mode.frame]
+    for _, spec in ipairs(sequence_fields) do
+        local target = frame and frame.hits[spec.field] or 0
+        if target ~= 0 then
+            entries[#entries + 1] = {context = "ground", sequence = spec.sequence, field = spec.field, frame = target, mode = mode, held = held}
+        end
+    end
+    for _, press in ipairs({"attack", "jump", "defend"}) do
+        entries[#entries + 1] = {context = "ground", press = press, basic = "mode_" .. press, mode = mode, held = held}
+    end
+    entries[#entries + 1] = {context = "run", press = "attack", basic = "mode_run_attack", mode = mode, held = held}
+    entries[#entries + 1] = {context = "run", press = "jump", basic = "mode_run_jump", mode = mode, held = held}
+    entries[#entries + 1] = {context = "air", press = "attack", basic = "mode_jump_attack", mode = mode, held = held}
+    -- (Not the item's own weapon frames, a swing or a throw, set directly: what the keys do in the mode is what
+    -- the fighter can do, and a frame set directly may be one no key reaches, or one the keys reach at a cost.)
+    return entries
+end
+
+-- Learns a fighter's moves (mode == nil), or the moves of one of its modes (an item of its own making in hand:
+-- play), into `analysis`: every entry is played in the private copy, what the keys pressed during a move continue
+-- into is played too (chains, pick-ups), and the moves are indexed from `first_index`.
+local function explore(record, analysis, mode, first_index)
     local data = record.data
-    local found = analyses[data]
-    if found then return found end
-    local analysis = {moves = {}, frames = {}, lock = {}}
-    analyses[data] = analysis
-    if record.kind ~= record_kinds.character then return analysis end
     local saved_table, saved_index, saved_sequence = engine.random_state()
     local runtime = require("base/game/ai_scripts").runtime
     local saved_self_o, saved_self_n = runtime.self.o, runtime.self.n
     local saved_target_o, saved_target_n = runtime.target.o, runtime.target.n
     local entries, seen, deferred = {}, {}, {}
+    local cap = mode and 40 or max_moves
     local function want(entry)
-        local key = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.frame)
+        local key = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.press or entry.frame)
         if entry.parent then key = key .. ":from" .. entry.from end
         for _, link in ipairs(entry.chain or {}) do key = key .. ">" .. link.from .. link.button end
-        if seen[key] or #entries >= max_moves then return end
+        if seen[key] or #entries >= cap then return end
         seen[key] = true
         -- What follows the super punch (only thrown into a broken guard) is learned last, when there is room.
         if entry.basic == "super_punch" and entry.chain then deferred[#deferred + 1] = entry return end
         entries[#entries + 1] = entry
     end
-    for _, context in ipairs(context_order) do
-        for _, spec in ipairs(sequence_fields) do
-            for _, frame_id in ipairs(context_frames[context]) do
-                local frame = data.frames[frame_id]
-                local target = frame and frame.hits[spec.field] or 0
-                if target ~= 0 then
-                    -- A key only the walking frames carry (Blackbeard of One Piece GrandWorld) is pressed walking.
-                    want({context = context, sequence = spec.sequence, field = spec.field, frame = target,
-                        walking = context == "ground" and frame_id == frames.walking or nil})
-                    break
+    if mode then
+        for _, entry in ipairs(mode_entries(data, mode)) do want(entry) end
+    else
+        for _, context in ipairs(context_order) do
+            for _, spec in ipairs(sequence_fields) do
+                for _, frame_id in ipairs(context_frames[context]) do
+                    local frame = data.frames[frame_id]
+                    local target = frame and frame.hits[spec.field] or 0
+                    if target ~= 0 then
+                        -- A key only the walking frames carry (Blackbeard of One Piece GrandWorld) is pressed walking.
+                        want({context = context, sequence = spec.sequence, field = spec.field, frame = target,
+                            walking = context == "ground" and frame_id == frames.walking or nil})
+                        break
+                    end
                 end
             end
         end
+        if data.frames[frames.defend] then want({context = "ground", frame = frames.defend, basic = "defend"}) end
+        if data.frames[frames.punch] then want({context = "ground", frame = frames.punch, basic = "attack"}) end
+        if data.frames[frames.punch + 5] then want({context = "ground", frame = frames.punch + 5, basic = "attack2"}) end
+        if data.frames[frames.super_punch] then want({context = "ground", frame = frames.super_punch, basic = "super_punch"}) end
+        if data.frames[frames.jump_attack] then want({context = "air", frame = frames.jump_attack, basic = "jump_attack"}) end
+        if data.frames[frames.run_attack] then want({context = "run", frame = frames.run_attack, basic = "run_attack"}) end
+        if data.frames[frames.dash_attack] then want({context = "dash", frame = frames.dash_attack, basic = "dash_attack"}) end
     end
-    if data.frames[frames.defend] then want({context = "ground", frame = frames.defend, basic = "defend"}) end
-    if data.frames[frames.punch] then want({context = "ground", frame = frames.punch, basic = "attack"}) end
-    if data.frames[frames.punch + 5] then want({context = "ground", frame = frames.punch + 5, basic = "attack2"}) end
-    if data.frames[frames.super_punch] then want({context = "ground", frame = frames.super_punch, basic = "super_punch"}) end
-    if data.frames[frames.jump_attack] then want({context = "air", frame = frames.jump_attack, basic = "jump_attack"}) end
-    if data.frames[frames.run_attack] then want({context = "run", frame = frames.run_attack, basic = "run_attack"}) end
-    if data.frames[frames.dash_attack] then want({context = "dash", frame = frames.dash_attack, basic = "dash_attack"}) end
+    local weapon_record = mode and mode.record or nil
     local index = 1
     while index <= #entries do
         local entry = entries[index]
         engine.set_random_state(random_table(), 0, 0)
-        local ok, move = pcall(play, record, entry)
-        if ok and move and not move.first and move.mp == 0 and not move.transform and not move.teleport then
+        local ok, move = pcall(play, record, entry, nil, weapon_record)
+        if ok and move and not move.first and move.mp == 0 and not move.transform and not move.teleport and not move.mode then
             -- Nothing seen with MP full: a move that fills MP (a chakra charge in Naruto: The Setting Dawn) only
             -- shows when there is room for it.
             engine.set_random_state(random_table(), 0, 0)
-            local ok_again, again = pcall(play, record, entry, 150)
+            local ok_again, again = pcall(play, record, entry, 150, weapon_record)
             if ok_again and again and again.mp < 0 then move = again end
+        end
+        -- In a mode, a key that changes nothing (the fighter goes on round its resting frames) is no move.
+        if ok and move and mode and not move.first and not move.mode then
+            local moved = false
+            for t = 1, move.length do
+                local id = move.frames[t]
+                if id and not mode.idle[id] then moved = true; break end
+            end
+            if not moved then move = nil end
         end
         local signature
         -- The guard itself (the defend key leading to defending frames at once) is no move, but the keys its
         -- frames take are explored below: a mod's fighter may strike out of its guard (Sanji of One Piece
         -- GrandWorld). Otherwise the defend key is one of the fighter's moves (Blackbeard's dark field), kept as such.
         local guard_move
-        if ok and move and entry.basic == "defend" and not entry.chain then
+        if ok and move and (entry.basic == "defend" or entry.press == "defend") and not entry.chain then
             local guards = false
             for t = 1, min(3, move.length) do
                 local id = move.frames[t]
                 if id and record.frame(id).state == states.defending then guards = true end
             end
-            analysis.guard = guards
+            if not mode then analysis.guard = guards end
             if guards then guard_move, move = move, nil end
         end
         if ok and move then
@@ -620,13 +796,24 @@ local function analyze(record)
                     break
                 end
             end
-            move.index = #analysis.moves + 1
-            analysis.moves[move.index] = move
+            if mode then
+                move.weapon = mode.code
+                if move.hp < 0 then move.heal = -move.hp end
+                -- The mode's own burn is not the move's cost.
+                if (mode.drain or 0) > 0 then
+                    local resting = 0
+                    for t = 1, move.length do if mode.idle[move.frames[t]] then resting = resting + 1 end end
+                    move.mp = max(0, move.mp - floor(mode.drain * resting + 0.5))
+                end
+            end
+            move.index = first_index + #analysis.moves
+            analysis.moves[#analysis.moves + 1] = move
             if entry.chain then
                 local part = continuation(data, move)
                 if part then
-                    part.index = #analysis.moves + 1
-                    analysis.moves[part.index] = part
+                    if mode then part.weapon = mode.code end
+                    part.index = first_index + #analysis.moves
+                    analysis.moves[#analysis.moves + 1] = part
                 end
             end
             for t = 1, move.length do
@@ -637,7 +824,8 @@ local function analyze(record)
         local explored = move or guard_move
         if ok and explored then
             -- Pressing attack, jump or defend in one of its frames continues into another move: that move from
-            -- the frame (when the fighter is already there) and the whole sequence from this move's start.
+            -- the frame (when the fighter is already there) and the whole sequence from this move's start. A frame
+            -- with a pick-up zone, in a move that laid down an item, is tried with attack as well (pick-up).
             local depth = entry.chain and #entry.chain or 0
             if not entry.parent and depth < 2 and entry.basic ~= "attack2" then
                 local listed = {}
@@ -656,7 +844,22 @@ local function analyze(record)
                                 for position, link in ipairs(entry.chain or {}) do chain[position] = link end
                                 chain[#chain + 1] = {from = frame_id, button = button, key = key, target = target}
                                 want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
-                                    basic = entry.basic, chain = chain})
+                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
+                            end
+                        end
+                        if explored.spawned_weapon and not explored.mode and not listed["pick"] then
+                            local picks = false
+                            for _, area in ipairs(frame.interactions) do
+                                if area.kind == attack_kinds.pick_up then picks = true end
+                            end
+                            if picks then
+                                listed["pick"] = true
+                                local chain = {}
+                                for position, link in ipairs(entry.chain or {}) do chain[position] = link end
+                                chain[#chain + 1] = {from = frame_id, button = "attack", key = "pick",
+                                    target = explored.spawned_weapon.kind == record_kinds.heavy_item and frames.picking_heavy or frames.picking_light}
+                                want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
+                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
                             end
                         end
                     end
@@ -666,7 +869,7 @@ local function analyze(record)
         index = index + 1
         if index > #entries and #deferred > 0 then
             for _, entry in ipairs(deferred) do
-                if #entries < max_moves then entries[#entries + 1] = entry end
+                if #entries < cap then entries[#entries + 1] = entry end
             end
             deferred = {}
         end
@@ -674,7 +877,17 @@ local function analyze(record)
     engine.set_random_state(saved_table, saved_index, saved_sequence)
     runtime.self.o, runtime.self.n = saved_self_o, saved_self_n
     runtime.target.o, runtime.target.n = saved_target_o, saved_target_n
-    analysis.entries = #entries
+    analysis.entries = (analysis.entries or 0) + #entries
+end
+
+local function analyze(record)
+    local data = record.data
+    local found = analyses[data]
+    if found then return found end
+    local analysis = {moves = {}, frames = {}, lock = {}, modes = {}}
+    analyses[data] = analysis
+    if record.kind ~= record_kinds.character then return analysis end
+    explore(record, analysis, nil, 1)
     -- Moves by how they start; attack starts one of the two punches at random.
     analysis.by_sequence, analysis.chains = {}, {}
     for _, move in ipairs(analysis.moves) do
@@ -687,6 +900,12 @@ local function analyze(record)
             list[#list + 1] = move
         end
         if move.mp < 0 and move.first == nil then move.charge = -move.mp end
+        -- A move that puts the fighter into a mode: the mode is learned when the fighter is first seen in it
+        -- (armed_analysis), and remembered here by the item it holds then.
+        if move.mode and not analysis.modes[move.mode.record.data] then
+            move.mode.start = move
+            analysis.modes[move.mode.record.data] = move.mode
+        end
     end
     return analysis
 end
@@ -698,8 +917,6 @@ smart.analyze = analyze
 -- blows (its kind-5 interactions and the holder's strength entries), so the same play() sees them.
 ---------------------------------------------------------------------------------------------------------------
 
-local weapon_kinds = {[record_kinds.light_item] = true, [record_kinds.heavy_item] = true,
-    [record_kinds.baseball] = true, [record_kinds.drink] = true}
 -- The holder code a picked-up item gives (base/game/combat pick_up): knife and boomerang have their own.
 local function holder_code(weapon_record)
     if weapon_record.kind == record_kinds.light_item then
@@ -769,6 +986,54 @@ local function armed_analysis(record, weapon_record, first_index)
     if found then return found end
     local armed = {moves = {}, frames = {}, code = holder_code(weapon_record), weapon = weapon_record}
     by_fighter[weapon_record.data] = armed
+    -- An item the fighter makes for itself (a mode, see play): what it does holding it is learned from the mode's
+    -- resting frames, with all its keys.
+    local mode = analyze(record).modes[weapon_record.data]
+    if mode then
+        armed.mode = mode
+        local saved_table, saved_index, saved_sequence = engine.random_state()
+        engine.set_random_state(random_table(), 0, 0)
+        local ok, drain, run_speed = pcall(mode_drain, record, mode)
+        engine.set_random_state(saved_table, saved_index, saved_sequence)
+        mode.drain = ok and drain or 0
+        mode.run_speed = ok and run_speed or 0
+        explore(record, armed, mode, first_index)
+        armed.chains = {}
+        local best = 0
+        for _, move in ipairs(armed.moves) do
+            best = max(best, move.damage or 0)
+            if move.entry.parent then
+                armed.chains[move.entry.from] = armed.chains[move.entry.from] or {}
+                local list = armed.chains[move.entry.from]
+                list[#list + 1] = move
+            end
+        end
+        mode.best_damage = best
+        -- What the mode is worth: its best cheap, quick blow against the fighter's own (damage per frame to land).
+        local function quick_worth(moves)
+            local worth = 0
+            for _, move in ipairs(moves) do
+                if move.first and move.mp <= 30 and move.first <= 24 and not move.entry.parent then
+                    worth = max(worth, (move.damage or 0) / max(move.first, 6))
+                end
+            end
+            return worth
+        end
+        local function strong_worth(moves)
+            local worth = 0
+            for _, move in ipairs(moves) do
+                if move.first and move.first <= 30 and move.mp <= 200 then worth = max(worth, move.damage or 0) end
+            end
+            return worth
+        end
+        local base = analyze(record).moves
+        local function ratio(a, b) if b > 0 then return a / b end return a > 0 and 9 or 0 end
+        mode.worth = max(ratio(quick_worth(armed.moves), quick_worth(base)), ratio(strong_worth(armed.moves), strong_worth(base)) * 0.9)
+        -- Speed counts too (Gear Second runs three times as fast): the mode's run against the fighter's.
+        local run = (record.movement or {}).running_speed or 10
+        if mode.run_speed and run > 0 then mode.worth = max(mode.worth, mode.run_speed / run * 0.6) end
+        return armed
+    end
     local saved_table, saved_index, saved_sequence = engine.random_state()
     local runtime = require("base/game/ai_scripts").runtime
     local saved_self_o, saved_self_n = runtime.self.o, runtime.self.n
@@ -808,9 +1073,20 @@ local function view_of(context, value)
     analysis.extra = analysis.extra or {}
     view = {moves = {}, frames = {}, lock = analysis.lock, extra = analysis.extra, chains = analysis.chains,
         guard = analysis.guard, punch = analysis.punch, punch2 = analysis.punch2, by_sequence = analysis.by_sequence,
-        entries = analysis.entries, armed = armed}
+        entries = analysis.entries, armed = armed, modes = analysis.modes}
     for index, move in ipairs(analysis.moves) do view.moves[index] = move end
     for _, move in ipairs(armed.moves) do view.moves[#view.moves + 1] = move end
+    -- A mode's follow-ups (what its keys continue into) join the fighter's own.
+    if armed.chains then
+        view.chains = {}
+        for from, list in pairs(analysis.chains) do view.chains[from] = list end
+        for from, list in pairs(armed.chains) do
+            local merged = {}
+            for _, move in ipairs(view.chains[from] or {}) do merged[#merged + 1] = move end
+            for _, move in ipairs(list) do merged[#merged + 1] = move end
+            view.chains[from] = merged
+        end
+    end
     for frame_id, where in pairs(analysis.frames) do view.frames[frame_id] = where end
     for frame_id, where in pairs(armed.frames) do view.frames[frame_id] = where end
     analysis.views[held.record.data] = view
@@ -1192,6 +1468,24 @@ local exposed_states = {[states.broken_defend] = true, [states.injured] = true, 
 local function can_start(self, frame, fstate, move)
     local entry = move.entry
     if self.mp < move.mp or (move.hp > 0 and self.hp <= move.hp + 20) then return false end
+    if entry.mode then
+        -- A mode's move: the mode's item in hand, from the mode's resting frames (or standing, walking, running in
+        -- it, in the air for its air moves).
+        local memory = self.smart_memory
+        -- (The mode's item by its data: the match and the copies it was learned in each parse their own records.)
+        if not memory or not memory.held_record or memory.held_record.data ~= entry.mode.record.data then return false end
+        if entry.parent then return frame.hits[entry.key] == entry.frame end
+        if entry.sequence then return frame.hits[entry.field] == entry.frame end
+        local resting = entry.mode.idle[self.frame] or fstate == states.standing or fstate == states.walking
+        if entry.context == "air" then return self.y_int < 0 end
+        if entry.context == "run" then
+            return self.y_int == 0 and (fstate == states.running
+                or (not resting and fstate ~= states.attacking and abs(self.vx) > ((self.record.movement or {}).walking_speed or 4) + 2))
+        end
+        if entry.context == "dash" then return fstate == states.dashing end
+        if entry.press then return resting and self.y_int == 0 end
+        -- The item's own weapon moves (a throw, a swing) start as a weapon's.
+    end
     if entry.held then
         -- A weapon's move: the weapon in hand, and the stance the move starts from.
         if not entry.held[self.weapon] then return false end
@@ -1232,6 +1526,23 @@ local function start(self, move, target)
     local entry = move.entry
     if entry.parent then
         fresh(self, entry.button)
+        return
+    end
+    if entry.press and not entry.chain then
+        -- A mode's key, pressed as it is; attack turns toward the target as a punch does.
+        if entry.press == "attack" and target then
+            if target.x_int > self.x_int then press(self, "right") elseif target.x_int < self.x_int then press(self, "left") end
+        end
+        fresh(self, entry.press)
+        return
+    end
+    if entry.press and entry.chain then
+        local memory = self.smart_memory
+        memory.chain, memory.chain_step, memory.chain_age = entry.chain, 1, 0
+        if entry.press == "attack" and target then
+            if target.x_int > self.x_int then press(self, "right") elseif target.x_int < self.x_int then press(self, "left") end
+        end
+        fresh(self, entry.press)
         return
     end
     if entry.held then
@@ -1761,6 +2072,13 @@ local function starts_airborne(self, move, air_frame)
     local entry = move.entry
     if entry.parent or not move.first then return false end
     if self.mp < move.mp or (move.hp > 0 and self.hp <= move.hp + 20) then return false end
+    if entry.mode then
+        -- A mode's air move: the attack key in the air, with the mode's item in hand (a light one: the jump is
+        -- the fighter's own).
+        local memory = self.smart_memory
+        return entry.press == "attack" and not entry.chain and memory and memory.held_record ~= nil
+            and memory.held_record.data == entry.mode.record.data and self.weapon ~= record_kinds.heavy_item
+    end
     if entry.sequence then
         if self.weapon == record_kinds.heavy_item then return false end
         if entry.field == "ja" and self.transform ~= -1 then return false end
@@ -2123,6 +2441,12 @@ function smart.control(state, index)
     clear_keys(self)
     local frame = self.record.frame(self.frame)
     local fstate = frame.state
+    -- What is in the hand (a weapon, or the item of a mode of the fighter's own making).
+    local held_now = self.held_item and items[self.held_item]
+    memory.held_record = (held_now and self.weapon ~= weapon_none and self.weapon > 0 and items[held_now.holder] == self) and held_now.record or nil
+    local mode_now = memory.held_record and (context.analysis_of(self).armed or {}).mode or nil
+    local mode_resting = mode_now and (mode_now.idle[self.frame] or fstate == states.standing or fstate == states.walking) or false
+    local mode_moving = mode_now and mode_now.moving and mode_now.moving[self.frame] or false
 
     -- Falling: flipping back onto the feet (jump) is quick, but the roll it lands in can be hit; with an enemy
     -- still swinging there, or free right next to where the roll ends, the fall is let finish: lying cannot be
@@ -2168,7 +2492,7 @@ function smart.control(state, index)
     end
 
     local free = fstate == states.standing or fstate == states.walking or fstate == states.running
-        or fstate == states.jumping or fstate == states.dashing or fstate == states.defending
+        or fstate == states.jumping or fstate == states.dashing or fstate == states.defending or mode_resting or mode_moving
 
     -- A planned chain: its next key in a frame that takes it there (a guard's or the jump's frame may be
     -- that frame; the chain is over once the fighter stands, walks or runs again).
@@ -2176,8 +2500,28 @@ function smart.control(state, index)
         local link = memory.chain[memory.chain_step]
         local idle = fstate == states.standing or fstate == states.walking or fstate == states.running
         memory.chain_age = memory.chain_age + 1
-        if not link or memory.chain_age > 60 or (idle and memory.chain_age > 2) then
+        if not link or memory.chain_age > 60 or (idle and memory.chain_age > 2 and link.key ~= "pick") then
             memory.chain = nil
+        elseif link.key == "pick" then
+            -- The pick-up of an item the move laid down: attack while in the frame whose zone covers it.
+            if memory.held_record then
+                memory.chain_step = memory.chain_step + 1
+                if not memory.chain[memory.chain_step] then memory.chain = nil end
+                memory.note = "picked up"
+                return
+            elseif self.frame == link.from then
+                fresh(self, "attack")
+                memory.note = "pick up"
+                return
+            elseif not free then
+                memory.note = "to pick-up frame"
+                return
+            else
+                -- Standing again without the item: the first key did not take (a crouch, a lock); over, and
+                -- the mode may be tried again at once.
+                memory.chain = nil
+                if memory.chain_step == 1 then memory.mode_tried = nil end
+            end
         elseif frame.hits[link.key] == link.target then
             fresh(self, link.button)
             memory.chain_step = memory.chain_step + 1
@@ -2318,6 +2662,36 @@ function smart.control(state, index)
     -- changes its mind as soon as it does attack).
     if target_pressure and target_pressure < 0.2 then danger = nil end
 
+    -- Entering a mode of the fighter's own making (Gear Second, Diable Jambe: an item it lays down and picks up)
+    -- when the mode's blows or speed beat its own, MP allows for it and what it burns, and nothing can reach us
+    -- before it is on: while the target is held long enough, or well outside its reach. (Before a single blow at a
+    -- held target: the mode pays for the rest of the fight.)
+    -- (Not in the match's first frames: the fighters are set down crouching then, and the first key is lost.)
+    if self.y_int == 0 and fstate ~= states.running and not memory.held_record and self.weapon == weapon_none
+       and state.frame_number > 4 and (state.frame_number - (memory.mode_tried or -999)) > 90 then
+        for _, candidate in ipairs(context.analysis_of(self).moves) do
+            local mode = candidate.mode
+            if mode and mode.start == candidate and can_start(self, frame, fstate, candidate) then
+                if mode.worth == nil then armed_analysis(self.record, mode.record, #analyze(self.record).moves + 1) end
+                local draining = (mode.drain or 0) > 0
+                local wanted = self.mp >= candidate.mp + 50 + (draining and 120 or 0)
+                local dx, dz = abs(target.x_int - self.x_int), abs(target.z_int - self.z_int)
+                local opening = target_lock > candidate.ready + 2
+                local out_of_reach = dx > melee_reach(context.analysis_of(target)) + 70 or dz > 100
+                -- A mode that burns MP is worth entering while the target is held, or is near enough to be fought
+                -- soon (not while it wanders far off, or off our line); one that costs nothing whenever it is safe.
+                local timely = draining and (opening or (out_of_reach and dx < 360 and dz < 60)) or (not draining and (opening or out_of_reach))
+                if wanted and (mode.worth or 0) >= 1.2 and timely
+                   and not earliest_threat(state, index, self, candidate.ready + 6, nil, level.reaction, context) then
+                    start(self, candidate, target)
+                    memory.mode_tried = state.frame_number
+                    memory.note = "enter mode"
+                    return
+                end
+            end
+        end
+    end
+
     -- Attacking (a slow move too, when the target is held long enough for it).
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
     -- Not into a blow already on its way: a move whose path meets an enemy's attack in progress before it lands is
@@ -2338,8 +2712,8 @@ function smart.control(state, index)
     if move and score > 2.5 then
         start(self, move, target)
         memory.last_use[move.index] = state.frame_number
-        memory.note = string.format("attack %s%s f%d t%d s%.1f", move.entry.field or move.entry.basic or ("chain " .. move.entry.key),
-            move.entry.chain and "+" or "", move.entry.frame, t, score)
+        memory.note = string.format("attack %s%s f%s t%d s%.1f", move.entry.field or move.entry.basic or ("chain " .. move.entry.key),
+            move.entry.chain and "+" or "", tostring(move.entry.frame or move.entry.press), t, score)
         return
     end
 
@@ -2364,8 +2738,8 @@ function smart.control(state, index)
                     -- (The direction held as the feet leave the ground sets the jump's speed.)
                     memory.jump_dir, memory.jump_hold = dir, state.frame_number + lead + 2
                     memory.next_jump = state.frame_number + 50
-                    memory.note = string.format("jump in %s f%d t%d s%.1f", jump_move.entry.field or jump_move.entry.basic or "chain",
-                        jump_move.entry.frame, jump_t, jump_score)
+                    memory.note = string.format("jump in %s f%s t%d s%.1f", jump_move.entry.field or jump_move.entry.basic or "chain",
+                        tostring(jump_move.entry.frame or jump_move.entry.press), jump_t, jump_score)
                     return
                 end
             end
@@ -2383,6 +2757,7 @@ function smart.control(state, index)
             end
         end
     end
+
     -- Charging MP (a fighter that can): when the target is well outside its quick reach or down for a while,
     -- nothing is about to reach us, and MP is wanted.
     if grounded and fstate ~= states.running and self.mp < constants.points.full - 80
@@ -2498,13 +2873,40 @@ function smart.control(state, index)
         if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 and (target_pressure or 1) >= 0.2 then
             hold = max(range, their_reach + 15)
         end
-        if distance > max(hold - 20, 10) then want_dx = dx > 0 and 1 or -1
+        -- A target down, or up and still blinking: nothing of ours lands on it until the blinking ends, while it
+        -- can strike as soon as it is on its feet. Until our quickest blow could land as it becomes hittable
+        -- (counting the walk in), we stand outside its arms rather than beside it; with little HP left, farther
+        -- and later still.
+        local untouchable = untouchable_for(context, target, tframe.state, target_lock)
+        local down_now = tframe.state == states.lying or tframe.state == states.falling
+        if down_now then memory.target_down_at = state.frame_number end
+        local just_up = target.blink ~= 0 and memory.target_down_at and state.frame_number - memory.target_down_at < 90
+        if untouchable > 0 and (down_now or just_up) then
+            local quickest = 99
+            for _, candidate in ipairs(context.analysis_of(self).moves) do
+                if candidate.first and candidate.first < quickest and not candidate.entry.parent and candidate.mp <= self.mp
+                   and (candidate.entry.context == "ground" or candidate.entry.context == "run") then
+                    quickest = candidate.first
+                end
+            end
+            local movement = self.record.movement or {}
+            local low = self.hp < 120
+            local need = quickest + max(0, distance - range) / (movement.walking_speed or 4) + (low and 0 or 6)
+            if untouchable > need then
+                hold = max(hold, their_reach + (low and 45 or 15))
+                memory.respecting = state.frame_number
+            end
+        end
+        if memory.respecting == state.frame_number then
+            if distance > hold + 25 then want_dx = dx > 0 and 1 or -1
+            elseif distance < hold - 10 then want_dx = dx > 0 and -1 or 1 end
+        elseif distance > max(hold - 20, 10) then want_dx = dx > 0 and 1 or -1
         elseif distance < max(hold - 50, 8) and target_lock == 0 then want_dx = dx > 0 and -1 or 1 end
         if want_dx ~= 0 and (want_dx < 0) == (dx > 0) and ((want_dx < 0 and self.x_int < 80) or (want_dx > 0 and self.x_int > width - 80)) then
             want_dx = 0
         end
         if abs(dz) > range_z then want_dz = dz > 0 and 1 or -1 end
-        memory.note = string.format("move %d %d (hold %d)", want_dx, want_dz, hold)
+        memory.note = string.format("%s %d %d (hold %d)", memory.respecting == state.frame_number and "respect get-up" or "move", want_dx, want_dz, hold)
         -- Two on one: a teammate already fighting the target from this side → round to the other side, in
         -- depth first (not through the target's arms), then past it.
         if mate_on_side(state, index, self, target) and distance < 260 then
@@ -2561,6 +2963,61 @@ function smart.control(state, index)
         end
         return
     end
+    -- A mode that runs instead of walking (Gear Second: a direction starts a run that goes on until a key ends it,
+    -- and cannot turn): from rest, a tap toward a far target or away from a close one, with the depth key held
+    -- when the target is off our line; running, the stop key once near enough (or far enough, on a run away),
+    -- once past the target or at a wall; nothing else moves (a direction at rest would start the run).
+    if mode_now and not mode_moving and not mode_resting then memory.mode_run_goal = nil end
+    if mode_now and mode_now.runs_on and (mode_resting or mode_moving) then
+        local toward = dx > 0 and "right" or "left"
+        local away = dx > 0 and "left" or "right"
+        local hold = memory.respecting == state.frame_number and range + 60 or range
+        local off_line = abs(dz) > range_z + 6
+        local zkey = dz > 0 and "down" or "up"
+        local run_speed = mode_now.run_speed or 20
+        local function run_plan(dir) return function(k) return trunc(dir * run_speed * k), 0, 0 end end
+        if mode_moving then
+            local heading = self.vx > 0 and 1 or (self.vx < 0 and -1 or (self.facing == facing_right and 1 or -1))
+            local goal = memory.mode_run_goal or "toward"
+            local at_wall = (heading < 0 and self.x_int < 70) or (heading > 0 and self.x_int > width - 70)
+            local done
+            if goal == "away" then
+                done = distance > hold + 60 or heading == (dx > 0 and 1 or -1)
+            else
+                done = distance < hold + 30 or heading ~= (dx > 0 and 1 or -1)
+            end
+            -- Not on into a blow on its way across the run's path.
+            local into = not done and earliest_threat(state, index, self, 8, run_plan(heading), level.reaction, context)
+            if done or at_wall or into then
+                if mode_now.stop_key then fresh(self, mode_now.stop_key) else press(self, heading > 0 and "left" or "right") end
+                memory.note = "mode run: stop"
+            else
+                if off_line then press(self, zkey) end
+                memory.note = "mode run"
+            end
+        elseif threat_t then
+            memory.note = string.format("mode rest (hold %d)", hold)
+        elseif distance > hold + 90 and not earliest_threat(state, index, self, 10, run_plan(dx > 0 and 1 or -1), level.reaction, context) then
+            fresh(self, toward)
+            if off_line then press(self, zkey) end
+            memory.mode_run_goal = "toward"
+            memory.note = "mode run: go"
+        elseif target_lock == 0 and abs(dz) < 60
+               and (distance < melee_reach(context.analysis_of(target)) + 30
+                    or ((mode_now.drain or 0) > 0 and self.mp < 20 and distance < melee_reach(context.analysis_of(target)) + 110)) then
+            -- Inside a free target's arms (the mode may have no guard): out of them. A draining mode about to
+            -- end (the fighter is left tired for a while when its MP runs out): out of them by a wide margin.
+            fresh(self, away)
+            if off_line then press(self, zkey) end
+            memory.mode_run_goal = "away"
+            memory.note = "mode run: back"
+        else
+            -- (Off the target's line too: the run moves little in depth, and the target comes onto our line by
+            -- itself; a jump of the mode's own does not steer either.)
+            memory.note = string.format("mode rest (hold %d)", hold)
+        end
+        return
+    end
     if want_dx ~= 0 then
         local key = want_dx > 0 and "right" or "left"
         -- A long way to go: run, which takes two taps (a release between them) rather than a held key.
@@ -2573,15 +3030,21 @@ function smart.control(state, index)
 end
 -- Learns the moves of the match's fighters, and of those the stage will bring in, ahead (what is learned only
 -- depends on their data).
+-- A fighter's moves, and those of its modes (so that nothing is left to learn once the match runs).
+local function learn(record)
+    local analysis = analyze(record)
+    for _, mode in pairs(analysis.modes or {}) do armed_analysis(record, mode.record, #analysis.moves + 1) end
+end
+
 function smart.prepare(state)
     for index = 0, constants.item_slots - 1 do
         local value = state.items[index]
-        if value and value.record.kind == record_kinds.character then analyze(value.record) end
+        if value and value.record.kind == record_kinds.character then learn(value.record) end
     end
     if state.stage_run then
         for _, id in ipairs(require("base/game/stage").enemy_ids(state.stage_run)) do
             local record = objects.record(state, id)
-            if record and record.kind == record_kinds.character then analyze(record) end
+            if record and record.kind == record_kinds.character then learn(record) end
         end
     end
 end
@@ -2589,5 +3052,6 @@ end
 -- For the test bench.
 smart.internals = {earliest_threat = earliest_threat, where_of = where_of, analyze = analyze, move_hits = move_hits,
     danger_at = danger_at, danger_zones = danger_zones, melee_reach = melee_reach, best_attack = best_attack,
-    enemy_reach = enemy_reach, defend_ticks = defend_ticks, target_lock_of = target_lock_of}
+    enemy_reach = enemy_reach, defend_ticks = defend_ticks, target_lock_of = target_lock_of, armed_analysis = armed_analysis,
+    stance_exit = stance_exit, lock_of = lock_of}
 return smart

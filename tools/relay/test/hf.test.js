@@ -296,7 +296,7 @@ test('a game of another version is turned away, and rooms that do not exist too'
 const RULED_LEVELS = Array.from({ length: 30 }, (_, k) => (k < 19 && !LOCKED.has(k) ? 16 : 0));
 
 test('computer players may be any character but Yaga, players only theirs; one build a room; out of step ends the fight', { timeout: 60000 }, async () => {
-  const relay = await startRelay();
+  const relay = await startRelay({ adminKey: 'k' });
   const games = [];
   try {
     const a = new Game(relay, 'anmen', 1, { build: 'aaaa-ruffle0.7.1', levels: RULED_LEVELS });
@@ -367,6 +367,20 @@ test('computer players may be any character but Yaga, players only theirs; one b
       await game.waitFor((line) => line.includes('<page>CHARMENU</page><prepage>FIGHTING'), 'back to the character menu');
     }
     assert.ok(a.ws.readyState === 1 && b.ws.readyState === 1);
+
+    // The room's journal (admin only) tells who joined with which build, what was fought, and what both games
+    // reported around the frame they went out of step: the random counts and the keys of the frames before it.
+    assert.equal((await fetch(relay.http + '/admin/api/hf-journal')).status, 401);
+    const journal = await (await fetch(relay.http + '/admin/api/hf-journal', { headers: { 'x-admin-key': 'k' } })).text();
+    assert.match(journal, /== Phong 1/);
+    assert.match(journal, /anmen joins \(latency \d+, build aaaa-ruffle0\.7\.1, from 127\.0\.0\.1\)/);
+    assert.match(journal, /fight starts: VSMODE/);
+    assert.match(journal, /OUT OF STEP at frame 40: anmen \(game 0\) and banbe \(game 1\); VSMODE/);
+    assert.match(journal, /game 0 anmen: latency \d+ last packet 1 paused \w+; random counts 20:123 40:200/);
+    assert.match(journal, /game 1 banbe: latency \d+ last packet 1 paused \w+; random counts 20:123 40:201/);
+    assert.match(journal, /game 0 key frames -4\.\.44 \(only those with changes\): 0 <s1>r<\/s1>/);
+    assert.match(journal, /game 1 key frames -4\.\.44 \(only those with changes\): 1 <s1>l<\/s1>/);
+    assert.match(journal, /fight ends \(back to the menus\) after going out of step/);
 
     // Once the room is empty, a game of another build may have it.
     a.ws.close();
