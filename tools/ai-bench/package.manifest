@@ -19,3 +19,5 @@ module=settle|settle.lua
 module=weapontest|weapontest.lua
 module=keyseq|keyseq.lua
 module=probe|probe.lua
+module=ai_template|ai_template.lua
+module=still|still.lua

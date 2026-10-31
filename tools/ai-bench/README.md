@@ -13,9 +13,22 @@ openlf2 --installer LF2_v2.0a.exe --mod tools/ai-bench --seed 12345 --input-trac
 ```
 
 `--seed` fixes the random numbers, so a run can be repeated exactly; compare two versions of the AI by running the
-same job with `--scripts <dir>` pointing at each version's `scripts` directory. The web build is plain Lua 5.2 and
-a desktop build is LuaJIT; the AI only uses what both have, and its decisions depend only on the match's state
-(`replaytest` checks that), so results are the same on both.
+same job with `--scripts <dir>` pointing at each version's `scripts` directory, or let them fight each other (below).
+The web build is plain Lua 5.2 and a desktop build is LuaJIT; the AI only uses what both have, and its decisions
+depend only on the match's state (`replaytest` checks that), so results are the same on both.
+
+## Two computer players against each other
+
+A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"classic"` (the original computer player),
+or `"smart@<module>"`: another computer player in the shape of `smart_ai.lua`, loaded from this package as
+`<module>.lua` (listed in `package.manifest` as `module=<module>|<module>.lua`). To pit a version of INSANE!
+against an older one, copy the older `smart_ai.lua` in as `ai_alt.lua` and use `brains = {"smart", "smart@ai_alt"}`;
+the log's first line names both versions (`brains: smart v22 against smart@ai_alt v21`). `ai_template.lua` is a
+computer player of your own in that shape — `prepare(state)` once before the match, `control(state, index)`
+every frame, keys set on `state.items[index]` — ready to be copied and filled in: `brains = {"smart",
+"smart@ai_template"}` runs it against INSANE!. Whatever it does must follow from the match's state alone (no
+clock, no random numbers of its own, nothing kept outside the state between frames), or recordings and network
+games fall out of step (a `duel` with `hash = N` run twice must print the same lines).
 
 ## Jobs
 
@@ -36,6 +49,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `weapontest` | Drops a weapon (`weapon`, an object id of the mod: knife, stick, stone, drink...) beside INSANE! fighter `ids[1]` facing `ids[2]` and logs the fighter and the weapon every `every` frames for `ticks` frames: does it walk onto it, pick it up (`pickings` at the end), swing, throw or drink? `passive` makes the opponent stand still, `far` moves the opponent that far away, `offset` places the weapon, `probe` (`{[tick] = true}`) prints INSANE!'s view at those frames, `manual` stands on the weapon and presses attack without the AI (does the game itself pick it up?). | `ids`, `weapon`, `ticks`, `every`, `passive`, `far`, `offset`, `probe`, `manual`, `manual_dx`, `foe` |
 | `replaytest` | Runs the same INSANE! match twice from the same random state (moves unlearned, then learned) and compares the fighters every 30 frames: must print SAME. | `ids`, `limit` |
 | `stagetest` | An INSANE! Stage mode run with computer players. | `ids`, `level`, `difficulty`, `limit` |
+| `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
 

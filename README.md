@@ -80,6 +80,13 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   keys, runs, MP burn and worth are learned the same way; it is entered when worth it and safe, fought in
   with its own moves, and let run out away from the enemy. A fallen or just-risen opponent, invulnerable
   while it can already strike, is kept outside arm's reach until a blow can land again.
+- A free opponent whose long blows cover the line between the two (a beam, a sweep, a special struck
+  out of the guard) is approached beside that line, offset in depth, and the line is stepped onto only as
+  the fighter's own blows come into reach. An opponent held by a trap (an object's hold, as Yamato's wood
+  prison) is known to be held and hittable: struck, or, with MP short of a strong move and the hold long,
+  MP is charged first and the strong move lands before the hold ends.
+- `tools/ai-bench` pits two computer players against each other (`brains = {"smart", "smart@ai_alt"}`:
+  another version of the AI, or a player of your own started from `ai_template.lua`).
 - Everything depends only on the match's state (no random numbers of its own), so replays and network
   games stay in sync; the learned moves depend only on the fighter's data.
 - Fighters whose mod ships a substantial AI script keep that script at CRAZY!.

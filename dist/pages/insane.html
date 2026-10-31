@@ -181,6 +181,14 @@
         <li><b>Respecting the get-up.</b> A fallen opponent cannot be hit until it is up again, and after it rises it is
           invulnerable for a moment while it can already strike. Until the AI's quickest blow could land as that moment
           ends, it waits outside the opponent's arms instead of beside it — farther away, and longer, when its own HP is low.</li>
+        <li><b>Approaching beside the line of fire.</b> A free opponent with a long blow — a beam, a sweep, a special
+          struck out of the guard — covers the whole line between the two fighters, and a melee fighter walking straight
+          along it steps into that blow at every pace. The AI now approaches such an opponent beside the line, offset in
+          depth by the blow's width, and steps onto the line only as its own blows come into reach.</li>
+        <li><b>Trapped opponents.</b> Some mods hold an opponent with an object (Yamato's wood prison in Naruto: The
+          Setting Dawn). The AI knows a held opponent is harmless and, when the trap lets blows through, hittable: it
+          walks up and strikes — or, when its MP is short of a strong move and the hold has time to spare, charges MP
+          first, while the trap keeps the opponent harmless, and lands the strong move before the hold ends.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -203,6 +211,9 @@
           <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land, 120 in front of the target.</td></tr>
           <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach. Forms inside forms (Zoro's Asura) not yet.</td></tr>
           <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>Stays outside a fallen or just-risen opponent's arms until its quickest blow can land again; farther and longer at low HP.</td></tr>
+          <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>Against a free opponent whose long blows cover the line between them, closes in offset in depth and steps onto the line only when its own blows reach.</td></tr>
+          <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends.</td></tr>
+          <tr><td>Weapons versus specials</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>With MP for its own specials, a weapon is worth only the few steps to one close by; drinks are taken whenever HP or MP are wanted.</td></tr>
           <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
           <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
           <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
@@ -224,15 +235,19 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">36</td><td class="num">3</td><td class="num">1</td><td class="num">447 / 31</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">37</td><td class="num">2</td><td class="num">1</td><td class="num">300 / 8</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">215 / 34</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">37</td><td class="num">3</td><td class="num">0</td><td class="num">222 / 7</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">36</td><td class="num">3</td><td class="num">1</td><td class="num">426 / 26</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">39</td><td class="num">1</td><td class="num">0</td><td class="num">325 / 11</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">29</td><td class="num">11</td><td class="num">0</td><td class="num">206 / 58</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">38</td><td class="num">2</td><td class="num">0</td><td class="num">239 / 5</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 21 figures with <code>--seed 12345</code> (version 20 gave 35–5, 35–5, 28–12 and 30–10, version 16
-        34–4, 35–4, 24–16 and 27–13 on the same games; the LuaJIT desktop build and the Lua 5.2 web build give the same result
-        frame for frame). Luffy against Ace, lost 0–4 in version 20, is 2–2 with Gear Second.
+      <p class="note">Version 22 figures with <code>--seed 12345</code> (version 21 gave 36–3, 37–2, 30–10 and 37–3, version 20
+        35–5, 35–5, 28–12 and 30–10, version 16 34–4, 35–4, 24–16 and 27–13 on the same games; the LuaJIT desktop build and the
+        Lua 5.2 web build give the same result frame for frame). Single pairs swing by a game between versions (Luffy against
+        Ace is 1–2 with a draw here, 2–2 in version 21, 0–4 in version 20); another seed (777) gives One Piece 37–3 for
+        version 22 and 39–1 for version 21. Version 22 against version 21 head to head, each fighter against itself, is 2–1 with 9
+        draws in One Piece and 5–5 with 2 draws in Naruto: the two are even, and the changes show in the situations they
+        were made for (beams, traps) rather than in these numbers.
         "HP left" is the average over all 40 games, lost games counting as 0. In KT-LF2 the original computer player already
         knows the original fighters' moves, so the two are close; in mods with new fighters it barely knows how to use them.</p>
     </section>
@@ -276,7 +291,12 @@
           shared plan between partners; habits are learned within a match only.</li>
       </ul>
       <pre><code># Run the bench on your machine (see tools/ai-bench/README.md): 40 games of INSANE! against CRAZY! in the One Piece mod
-openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""</code></pre>
+openlf2 --pack onepiece.zip --mod tools/ai-bench --seed 12345 --input-trace ""
+# Two computer players against each other: brains = {"smart", "smart@ai_alt"} in config.lua, ai_alt.lua being
+# another version of smart_ai.lua — or your own player, started from tools/ai-bench/ai_template.lua</code></pre>
+      <p class="note">Anyone can write a computer player of their own in the template's shape (a Lua module with
+        <code>prepare</code> and <code>control</code>) and run it against INSANE! or any other player with the bench; an
+        open arena where such players are submitted and ranked is the natural next step, and this is its ground floor.</p>
       <p class="note">Every decision depends only on the state of the match — the AI draws no random numbers of its own — so
         recordings and network games always replay exactly. After changing the AI, run <code>replaytest</code> in the bench
         to make sure that still holds.</p>

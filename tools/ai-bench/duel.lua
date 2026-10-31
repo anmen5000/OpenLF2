@@ -1,6 +1,9 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026 OpenLF2 contributors
 -- AI against AI: config.pairs of fighter ids, config.brains = {"smart", "classic"}, config.games per pair.
+-- A brain "smart@<module>" is another version of the INSANE! player: that version's smart_ai.lua copied into this
+-- package as <module>.lua and listed in package.manifest (`module=<module>|<module>.lua`), so that two versions of
+-- the AI fight each other (brains = {"smart", "smart@ai_alt"}).
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -10,10 +13,47 @@ local function find(fighters, id)
     for index, fighter in ipairs(fighters) do if fighter.id == id then return index end end
     error("no fighter " .. tostring(id))
 end
+-- Loads another INSANE! file as its own module (its own learned moves and hooks) and routes the fighters whose
+-- brain names it to it; the match still calls base/game/smart_ai, which hands those fighters over.
+local others = {}
+local function other_brain(name)
+    local file = name:match("^smart@(.+)$")
+    if not file then return nil end
+    if others[file] then return others[file] end
+    local module = require("bench/" .. file)
+    others[file] = module
+    local smart = require("base/game/smart_ai")
+    if not smart.routed then
+        smart.routed = true
+        local control, prepare, enabled = smart.control, smart.prepare, smart.enabled
+        smart.enabled = function(state, value, index)
+            if value.brain and value.brain:match("^smart@") then return true end
+            return enabled(state, value, index)
+        end
+        smart.control = function(state, index)
+            local value = state.items[index]
+            local other = value and value.brain and others[(value.brain:match("^smart@(.+)$") or "")]
+            if other then return other.control(state, index) end
+            return control(state, index)
+        end
+        smart.prepare = function(state)
+            prepare(state)
+            for _, other in pairs(others) do other.prepare(state) end
+        end
+    end
+    return module
+end
+-- The brain's name with the INSANE! version it runs ("smart v21", "smart@ai_alt v20").
+local function label(name)
+    local module = name == "smart" and require("base/game/smart_ai") or other_brain(name)
+    return module and (name .. " v" .. tostring(module.version)) or name
+end
 function duel.run(config)
     if config.no_ego then require("base/game/ai_scripts").ego = function() return nil end end
     if config.ego_hybrid then require("base/game/smart_ai").ego_hybrid = true end
     if config.no_prepare then require("base/game/smart_ai").prepare = function() end end
+    for _, name in ipairs(config.brains or {}) do other_brain(name) end
+    engine.log(string.format("brains: %s against %s", label(config.brains[1]), label(config.brains[2])))
     local fighters = catalog.load()
     local backgrounds = catalog.backgrounds()
     local wins, games, draws = {0, 0}, 0, 0

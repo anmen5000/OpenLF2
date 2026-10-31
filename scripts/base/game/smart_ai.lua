@@ -54,8 +54,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 21
+smart.version = 22
 smart.history = {
+    {22, "2026-10-31", "Approaches a free opponent whose long blows (a beam, a sweep, a special struck out of the guard) cover the line between them beside that line, in depth, and only steps onto it as its own blows come into reach; an opponent held by a trap (a wood prison) is known to be held and hittable, walked up to and struck — or, with MP short of a strong move and the hold long, MP is charged first and the strong move lands before the hold ends; weapons are worth fewer steps when MP is full"},
     {21, "2026-10-31", "Forms of a mod's own making: a move that leaves an item in the fighter's hand (Luffy's Gear Second, Sanji's Diable Jambe, a Rasengan formed) is a form whose moves, speed, MP burn and worth are learned; it is entered when worth it and safe, fought in with its own moves and runs, and left to run out away from the enemy; a fallen enemy that gets up invulnerable is kept outside arm's reach until it can be hit again"},
     {20, "2026-10-31", "Weapons: walks onto a lying knife, stick, stone or drink when nothing presses, learns what the fighter does with it in hand and swings, throws or drinks accordingly; moves that teleport to the enemy are aimed from where they land; two on one, the second fighter goes round to the other side; a passive opponent is walked up to and struck"},
     {19, "2026-10-31", "Knows the opponent: how often it guards, how pressing it is and whether it flips up out of falls are counted in the match and change the choice of moves, the spacing and the timing; among several enemies the busy and the weak are preferred"},
@@ -1671,6 +1672,18 @@ local function enemy_reach(context, other, self, horizon, lock)
     return best, damage, from_standing
 end
 
+-- The MP a fighter's strong moves want (the dearest of those worth 70 damage, within 350): what to charge
+-- towards while a held target waits.
+local function special_mp(analysis)
+    if analysis.special_mp then return analysis.special_mp end
+    local wanted = 0
+    for _, move in ipairs(analysis.moves) do
+        if move.first and move.damage >= 70 and not move.entry.parent and move.mp > wanted then wanted = min(move.mp, 350) end
+    end
+    analysis.special_mp = wanted
+    return wanted
+end
+
 -- How far a fighter's quick blows reach in front of it (its own attacks, not what it throws).
 local function melee_reach(analysis)
     if analysis.melee then return analysis.melee end
@@ -1690,13 +1703,20 @@ end
 
 -- Where a fighter's quick, strong moves strike in front of it (its own blows and what it throws, in its facing
 -- frame): {x1, x2, z, t, damage, unguardable, mp}.
-local function danger_zones(analysis)
-    if analysis.zones then return analysis.zones end
+-- With `guard_chains`, the specials struck out of the guard too (a mod's D>J>A: slower to start, so no reason to
+-- keep out of their reach at every step, but a line of fire to approach beside).
+local function danger_zones(analysis, guard_chains)
+    if guard_chains then
+        if analysis.zones_all then return analysis.zones_all end
+    elseif analysis.zones then
+        return analysis.zones
+    end
     local zones = {}
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
         if move.first and move.first <= 16 and not entry.parent and entry.context == "ground" and not move.teleport
-           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack") then
+           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack"
+                or (guard_chains and entry.basic == "defend" and entry.chain)) then
             local damage = max(move.damage, move.hit_damage or 0)
             if damage >= 25 then
                 local x1, x2, z, unguardable, bdefend = 100000, -100000, 0, false, 0
@@ -1714,7 +1734,7 @@ local function danger_zones(analysis)
             end
         end
     end
-    analysis.zones = zones
+    if guard_chains then analysis.zones_all = zones else analysis.zones = zones end
     return zones
 end
 
@@ -1738,6 +1758,17 @@ local function danger_at(target, analysis, x, z)
     return worst
 end
 
+-- The catcher holding a caught fighter (a grab, or a mod's trap: Yamato's wood prison in Naruto: The Setting
+-- Dawn holds its victim from an object), or nil.
+local function catcher_of(state, target)
+    if not target.caught_by or target.caught_by < 0 then return nil end
+    local catcher = objects.lookup(state, target.caught_by)
+    if not catcher or objects.lookup(state, catcher.catching) ~= target then return nil end
+    local point = catcher.record.frame(catcher.frame).cpoint
+    if point.kind ~= constants.cpoint_kinds.holder then return nil end
+    return catcher, point
+end
+
 -- Frames from now for which `target` cannot be hit: while it blinks, and, down, until it has got up and its
 -- blinking after that (base/game/animation: not stage soldiers) is over; `lock` is how long it stays down.
 -- A target expected to flip up (context.target_path) is hittable along its roll instead.
@@ -1745,6 +1776,12 @@ local function untouchable_for(context, target, tstate, lock)
     local frames_left = abs(target.blink)
     local path = context.target_path
     if path and path.value == target then return frames_left end
+    if tstate == states.caught then
+        -- Held: nothing lands on it unless its catcher's hold lets blows through (cpoint hurtable).
+        local catcher, point = catcher_of(context.state, target)
+        if catcher and point.hurtable == 0 then frames_left = max(frames_left, lock) end
+        return frames_left
+    end
     if tstate == states.lying or tstate == states.falling then
         local state = context.state
         local blink = constants.blink.get_up_frames
@@ -2187,6 +2224,17 @@ local function target_lock_of(context, target, tframe)
     if exposed_states[tstate] or tstate == states.lying then
         return max(lock_of(target.record, analysis, target.frame) - target.wait_counter, 0)
     end
+    if tstate == states.caught then
+        -- Held: until the hold's timer runs out (base/game/grab: `decrease` a frame from 300), or, when the hold
+        -- does not time out by itself, a while.
+        local catcher, point = catcher_of(context.state, target)
+        if catcher then
+            local left = point.decrease > 0 and min(max(floor(catcher.catch_timer / point.decrease), 1), 90) or 20
+            -- A trap (an object holding it) takes hold again as its timer runs out: a long while in all.
+            if catcher.record.kind ~= record_kinds.character then left = max(left, 60) end
+            return left
+        end
+    end
     if not is_free(target) then
         local where = where_of(target.record, analysis, target)
         if where then return max(where.move.ready - (where.t + target.wait_counter), 0) end
@@ -2214,7 +2262,7 @@ local function choose_target(state, index, self, memory)
             local distance = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int) * 2
             if other == memory.target then distance = distance - 80 end
             local tstate = value.record.frame(value.frame).state
-            if exposed_states[tstate] then distance = distance - 60 end
+            if exposed_states[tstate] or tstate == states.caught then distance = distance - 60 end
             if tstate == states.lying then distance = distance + 120 end
             -- Among several enemies (a team, a stage): one busy with a move cannot answer, one low on HP is
             -- soonest out of the fight, one holding a teammate or standing over a fallen one must be dealt with.
@@ -2377,6 +2425,8 @@ local function weapon_to_take(state, self, target)
                     worth = holder_code(value.record) == constants.weapon_holder_codes.knife_or_boomerang and 80 or 70
                 elseif kind == record_kinds.baseball then worth = 40
                 else worth = far and 50 or 0 end
+                -- With MP for the fighter's own specials, a weapon is only worth the few steps to one close by.
+                if kind ~= record_kinds.drink then worth = worth * (1 - min(self.mp, 400) / 500) end
                 worth = worth - distance * 0.25
                 if worth > 0 and (not best_value or worth > best_value) then best, best_value = value, worth end
             end
@@ -2692,6 +2742,25 @@ function smart.control(state, index)
         end
     end
 
+    -- A target held harmless and hittable (a trap's victim) long enough to be walked up to and struck, while MP
+    -- is short of the fighter's strong moves and the hold has time to spare: MP is charged first, as long as the
+    -- hold keeps the target harmless, and the strong move lands before it ends — a blow now would only set the
+    -- target free for a punch's worth.
+    local walk_to = max(0, abs(target.x_int - self.x_int) - melee_reach(context.analysis_of(self)) - 20) / ((self.record.movement or {}).walking_speed or 4)
+    local held_open = tframe.state == states.caught and target_lock > 25 and target_lock > walk_to + 10
+        and untouchable_for(context, target, tframe.state, target_lock) <= walk_to
+    if held_open and self.y_int == 0 and fstate ~= states.running and self.mp < special_mp(context.analysis_of(self))
+       and target_lock >= walk_to + 30 and not threat_t then
+        for _, candidate in ipairs(context.analysis_of(self).moves) do
+            if candidate.charge and can_start(self, frame, fstate, candidate)
+               and not earliest_threat(state, index, self, 24, nil, level.reaction, context) then
+                start(self, candidate, target)
+                memory.note = "charge (target held)"
+                return
+            end
+        end
+    end
+
     -- Attacking (a slow move too, when the target is held long enough for it).
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
     -- Not into a blow already on its way: a move whose path meets an enemy's attack in progress before it lands is
@@ -2759,9 +2828,11 @@ function smart.control(state, index)
     end
 
     -- Charging MP (a fighter that can): when the target is well outside its quick reach or down for a while,
-    -- nothing is about to reach us, and MP is wanted.
+    -- nothing is about to reach us, and MP is wanted. (A target held hittable long enough to be walked up to and
+    -- struck — a trap's victim; a fallen one gets up untouchable — is struck instead, see above.)
     if grounded and fstate ~= states.running and self.mp < constants.points.full - 80
-       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 85 or target_lock > 25) then
+       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 85 or target_lock > 25)
+       and not held_open then
         for _, candidate in ipairs(context.analysis_of(self).moves) do
             if candidate.charge and can_start(self, frame, fstate, candidate)
                and not earliest_threat(state, index, self, 24, nil, level.reaction, context) then
@@ -2834,7 +2905,7 @@ function smart.control(state, index)
     local want_dx, want_dz = 0, 0
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
     local near_z, far_z = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
-    local coming = target.y_int < 0 and abs(dz) < 32 and abs(dx) < 420
+    local coming = target.y_int < 0 and tframe.state ~= states.caught and abs(dz) < 32 and abs(dx) < 420
         and (target.vx == 0 or (target.vx > 0) == (dx < 0))
     if coming and target_lock == 0 then
         -- An enemy in the air keeps its depth until it lands: leave its line before it strikes.
@@ -2905,8 +2976,35 @@ function smart.control(state, index)
         if want_dx ~= 0 and (want_dx < 0) == (dx > 0) and ((want_dx < 0 and self.x_int < 80) or (want_dx > 0 and self.x_int > width - 80)) then
             want_dx = 0
         end
-        if abs(dz) > range_z then want_dz = dz > 0 and 1 or -1 end
-        memory.note = string.format("%s %d %d (hold %d)", memory.respecting == state.frame_number and "respect get-up" or "move", want_dx, want_dz, hold)
+        -- A free target whose long blows (a beam, a sweep: Neji's in Naruto: The Setting Dawn) cover the line
+        -- between us is approached beside that line, in depth, and the line is only stepped onto once our own
+        -- blows are about to reach: straight along it, every step is into its arms.
+        local line_z
+        if target_lock == 0 and distance > range + 40 and not (target_pressure and target_pressure < 0.2) then
+            for _, zone in ipairs(danger_zones(target_analysis, true)) do
+                if target.mp >= zone.mp and zone.damage >= 40 and zone.x2 - zone.x1 >= 150 and zone.x2 >= distance - 40
+                   and zone.x1 <= distance + 40 then
+                    line_z = max(line_z or 0, zone.z + 10)
+                end
+            end
+        end
+        if line_z then
+            local room_near, room_far = self.z_int - near_z, far_z - self.z_int
+            if abs(dz) < line_z then
+                -- Off the line, to the side with room (the side already on, when both have it).
+                local away = dz > 0 and -1 or 1
+                if (away < 0 and room_near < line_z + 6 and room_far > room_near) or (away > 0 and room_far < line_z + 6 and room_near > room_far) then
+                    away = -away
+                end
+                want_dz = away
+            elseif abs(dz) > line_z + 40 then
+                want_dz = dz > 0 and 1 or -1
+            end
+            memory.note = string.format("approach off line %d %d (z %d)", want_dx, want_dz, line_z)
+        else
+            if abs(dz) > range_z then want_dz = dz > 0 and 1 or -1 end
+            memory.note = string.format("%s %d %d (hold %d)", memory.respecting == state.frame_number and "respect get-up" or "move", want_dx, want_dz, hold)
+        end
         -- Two on one: a teammate already fighting the target from this side → round to the other side, in
         -- depth first (not through the target's arms), then past it.
         if mate_on_side(state, index, self, target) and distance < 260 then

@@ -29,6 +29,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   Jambe, a Rasengan formed) is learned as a form with its own moves, runs, MP burn and worth, entered when worth it
   and safe, fought in and let run out away from the enemy; a fallen or just-risen, invulnerable opponent is kept
   outside arm's reach until a blow can land again (v21)
+- INSANE!: approaches an opponent whose long blows cover the line between them beside that line, in depth; knows
+  an opponent held by a trap (an object's hold) to be held and hittable, strikes it or charges MP for a strong move
+  first while the hold lasts; weapons worth fewer steps when MP is full (v22)
+- `tools/ai-bench`: two computer players against each other (`brains = {"smart", "smart@ai_alt"}`), `ai_template.lua`
+  as the shape of a player of one's own, the `still` job (a fighter that cannot answer, a trap placed by hand)
 - The relay keeps a journal of each Hero Fighter room (joins with build and address, fights started, pauses,
   leaves, timeouts, and every out-of-step check with the frames and keys around it), readable from the admin page
   (`GET /admin/api/hf-journal`), to find the cause of a desync reported by players
