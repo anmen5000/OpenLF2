@@ -17,6 +17,25 @@ same job with `--scripts <dir>` pointing at each version's `scripts` directory, 
 The web build is plain Lua 5.2 and a desktop build is LuaJIT; the AI only uses what both have, and its decisions
 depend only on the match's state (`replaytest` checks that), so results are the same on both.
 
+## Watching a match
+
+`command = "show"` plays the match in the window instead of headlessly: `brains` against each other on the two
+fighter ids in `ids`, `games` games with the sides swapped every other game, the score on the status line, and the
+game's own keys at work (F1 pauses, F5 runs fast, F4 leaves). Run the game with the package as the mod and a game
+to play:
+
+```sh
+# the original game
+openlf2 --installer LF2_v2.0a.exe --mod tools/ai-bench
+# a mod packed as a ZIP file (the same file the relay takes)
+openlf2 --pack onepiece.zip --mod tools/ai-bench
+```
+
+with `config.lua` such as `{command = "show", brains = {"smart", "classic"}, ids = {4, 7}, games = 5}` (INSANE!
+against the original computer player) or `{command = "show", brains = {"smart", "smart@ai_alt"}, ids = {1, 1},
+games = 3}` (this INSANE! against the version copied in as `ai_alt.lua`, see below). On Windows, put the folder
+beside `OpenLF2-Windows-x64.exe` and start it from a shortcut or a `.bat` file with those arguments.
+
 ## Two computer players against each other
 
 A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"classic"` (the original computer player),
@@ -36,6 +55,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 
 | command | what it does | fields |
 | --- | --- | --- |
+| `show` | A match to watch in the window (not headless): `brains` on the two fighter ids in `ids`, `games` games with the sides swapped every other game, the score on the status line; see "Watching a match". | `brains`, `ids`, `games`, `difficulty`, `background` |
 | `duel` | AI against AI, `games` games per pair of fighter ids in `pairs`; the first fighter of a pair is played by `brains[1]` (`"smart"` is INSANE!, `"classic"` the original computer player at the match's `difficulty`, `-1` = CRAZY!/INSANE!). Prints each pair's score and a `TOTAL` line; with `usage`, the moves of each form too. | `pairs`, `brains`, `games`, `difficulty`, `limit` (frames per game, default 5400), `verbose` (one line per game), `usage` (every move INSANE! learned, with how often it started it), `stats` (N: damage dealt and taken by decision), `events` + `history` (every hit with both fighters' last decisions), `trace` (N: both fighters every N frames), `models` (after each game, what each fighter's opponent model counted: guards, hits, attacks and chances, falls and flips, jumps), `probe` (frames at which to print INSANE!'s view), `hash` (N: a per-frame line for the first N frames of the first game, for determinism checks), `no_ego`, `no_prepare`, `nobrain` |
 | `moves` | What INSANE! learned about the fighters in `only` (`{[id] = true}`): every move with its start, first and last hit, recovery, MP, damage and reach; then each form of the fighter (an item of its own making in hand: its item, resting and running frames, MP burn, run speed and worth) with the moves learned in it. `boxes` lists the hit boxes of form-entering moves. | `only`, `boxes` |
 | `timing` | How many moves, entries and sandbox plays the learning of each fighter in `only` takes, and of its forms (an item of its own making in hand). | `only`, `cap` |

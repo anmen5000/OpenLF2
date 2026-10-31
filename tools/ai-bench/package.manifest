@@ -21,3 +21,5 @@ module=keyseq|keyseq.lua
 module=probe|probe.lua
 module=ai_template|ai_template.lua
 module=still|still.lua
+module=brains|brains.lua
+module=show|show.lua
