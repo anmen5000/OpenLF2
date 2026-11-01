@@ -4,9 +4,13 @@ name: Upload to latest release
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to take the last successful CI runs from'
+        description: 'Branch to take the last CI runs from'
         default: main
         required: true
+      tag:
+        description: 'Make a new release with this tag first (for example v28), on the branch as it is now; empty: upload to the latest release'
+        default: ''
+        required: false
 
 permissions:
   actions: read
@@ -18,24 +22,48 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
+      BRANCH: ${{ inputs.branch }}
+      TAG: ${{ inputs.tag }}
     steps:
-      - name: Download artifacts of last successful runs
+      - name: Download artifacts of the last runs
         run: |
           mkdir -p artifacts
           for wf in android ios linux-appimage linux-deb macos portmaster switch vita web windows; do
-            run_id=$(gh run list --workflow "$wf.yml" --branch "${{ inputs.branch }}" \
-              --status success --limit 1 --json databaseId -q '.[0].databaseId')
+            # The newest finished run that left files: a run where one build of several failed (one Windows
+            # architecture, say) still has the others.
+            run_id=""
+            for id in $(gh run list --workflow "$wf.yml" --branch "$BRANCH" --status completed --limit 20 \
+                --json databaseId -q '.[].databaseId'); do
+              count=$(gh api "repos/$GH_REPO/actions/runs/$id/artifacts" -q '[.artifacts[] | select(.expired | not)] | length')
+              if [ "${count:-0}" -gt 0 ]; then run_id=$id; break; fi
+            done
             if [ -z "$run_id" ]; then
-              echo "::warning::No successful run found for $wf.yml"
+              echo "::warning::No finished run of $wf.yml with files"
               continue
             fi
             echo "$wf.yml -> run $run_id"
-            gh run download "$run_id" --dir "artifacts/$wf"
+            gh run download "$run_id" --dir "artifacts/$wf" || echo "::warning::Could not download the files of $wf.yml run $run_id"
           done
 
-      - name: Upload to latest release
+      - name: Make the release
+        if: ${{ inputs.tag != '' }}
         run: |
-          tag=$(gh release view --json tagName -q .tagName)
+          site="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
+          printf '%s\n' \
+            "OpenLF2 built from \`$BRANCH\`." \
+            "" \
+            "- **OpenLF2-Windows-x64.exe**: the installer for Windows 10 and 11 (64-bit; \`x86\` for 32-bit Windows, \`arm64\` for ARM PCs)." \
+            "- **xoi-kit.zip**: play any LF2 mod with the INSANE! and XOI computer players, and train XOI for a mod: $site/xoi.html" \
+            "- **OpenLF2-Web.zip**: the web version, as published at $site/" > notes.md
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG is there already: uploading to it"
+          else
+            gh release create "$TAG" --target "$BRANCH" --title "$TAG" --notes-file notes.md
+          fi
+
+      - name: Upload to the release
+        run: |
+          tag=${TAG:-$(gh release view --json tagName -q .tagName)}
           echo "Uploading to release $tag"
           # artifacts are extracted to artifacts/<workflow>/<artifact name>/<file>
-          find artifacts -type f ! -name '*.sha256' ! -name '*.tar' -print0 | xargs -0 -n1 gh release upload "$tag" --clobber
+          find artifacts -type f ! -name '*.sha256' ! -name '*.tar' -print0 | xargs -0 -r -n1 gh release upload "$tag" --clobber

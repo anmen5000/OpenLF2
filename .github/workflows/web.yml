@@ -130,7 +130,16 @@ jobs:
           cp dist/pages/index.html site/index.html
           cp dist/pages/windows.html site/windows.html
           cp dist/pages/insane.html site/insane.html
+          cp dist/pages/xoi.html site/xoi.html
+          # The XOI kit for Windows (xoi.html): play mods with INSANE! and XOI, train and measure XOI.
+          bash dist/make-xoi-kit.sh site/xoi-kit.zip
           if [ -f out/windows/build.json ]; then cp -r out/windows site/windows; else echo "No Windows emulator in this site"; fi
+      # The kit as a file of this run too, for "Upload to latest release" to put beside the Windows installers.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LF2-XOI-kit
+          path: site/xoi-kit.zip
+          if-no-files-found: error
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

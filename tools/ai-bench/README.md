@@ -115,6 +115,18 @@ each fighter (with its name) its win rate when the first brain plays it, when th
 a weak fighter is low in both, so the difference is what tells how the brains play it — and every pair's score in
 `cap.txt`; with `IDS` left empty, every job runs `config.lua` with its own seed and the scores are added up.
 
+`windows/choi.bat` plays a mod with INSANE! and XOI on the installed game, for players: double-clicked, it takes the
+first `*-xoi.zip` beside it, else the first `.zip`; dragged onto it, a mod's ZIP, its folder or its `.exe` (a folder
+is zipped once beside the file by PowerShell's ZIP classes, entries named with `/`), with a notes `.txt` if any — or
+`<mod>-notes.txt` / `xoi-<mod>\notes.txt` beside it — which it packs into a copy, `<mod>-xoi.zip`. Its `scripts` lay
+over the installed game's only when their `smart.version` is higher. All three files find the installed game by
+themselves (for the user, for all users, or an `OpenLF2` folder beside them) and the mod's ZIP beside them
+(`xoi-hoc.bat` passes over the `*-xoi.zip` it makes; a ZIP dragged onto either is the one, handed to the background
+processes in `PACK_DA_CHON`); `xoi-hoc.bat` keeps the trained ZIP's path in `xoi-<mod>\ban-mod.txt`, so dragging
+that folder onto it merges and packs again. `dist/make-xoi-kit.sh` packs the three with `scripts` and this folder as
+`xoi-kit.zip` (one folder, `LF2-XOI-kit`), which the site publishes with its guide (`dist/pages/xoi.html`, English and
+Vietnamese) and "Upload to latest release" attaches beside the Windows installers.
+
 ## Jobs
 
 Edit `config.lua` (a Lua table) and set `command` to one of these:

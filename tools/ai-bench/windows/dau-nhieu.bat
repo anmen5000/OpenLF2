@@ -3,10 +3,11 @@ setlocal EnableDelayedExpansion
 rem Do may dau may hang loat: moi nhan CPU mot tien trinh openlf2.exe chay ngam, xong thi cong ket qua.
 rem Mac dinh: moi nhan vat cua ban mod danh voi moi nhan vat khac (ca hai ben), khong can sua config.lua.
 rem ============ CHINH O DAY ============
-rem Game da cai (Install for me only). Chon "all users" thi doi thanh "C:\Program Files (x86)\OpenLF2\openlf2.exe"
-set "GAME=%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe"
-rem File zip ban mod, nam canh file .bat nay. Do XOI thi dung file <ten>-xoi.zip ma xoi-hoc.bat tao ra.
-set "PACK=%~dp0naruto.zip"
+rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
+set "GAME="
+rem File zip ban mod. Do XOI thi dung file <ten>-xoi.zip ma xoi-hoc.bat tao ra. De trong thi lay file *-xoi.zip
+rem dau tien canh file nay, khong co thi file .zip dau tien; hoac keo tha file zip vao file nay.
+set "PACK="
 rem Hai may dau voi nhau: xoi = XOI, smart = INSANE!, classic = may goc, smart@ai_alt = ban AI chep vao ai_alt.lua
 set "NAO1=xoi"
 set "NAO2=smart"
@@ -26,6 +27,25 @@ set "BENCH="
 set "SCRIPTS="
 rem =====================================
 
+rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <hat giong> <so thu tu>", ban mod o PACK_DA_CHON.)
+if /i "%~1"=="chay1" set "PACK=%PACK_DA_CHON%"
+if /i "%~x1"==".zip" if not exist "%~1\" set "PACK=%~f1"
+if not defined PACK (
+  pushd "%~dp0"
+  for %%z in (*-xoi.zip) do if not defined PACK set "PACK=%%~fz"
+  for %%z in (*.zip) do (
+    set "TEN=%%~nz"
+    if not defined PACK if /i not "!TEN:~-10!"=="-xoi-truoc" if /i not "!TEN:~0,17!"=="lf2-online-upload" if /i not "!TEN:~0,7!"=="xoi-kit" set "PACK=%%~fz"
+  )
+  popd
+)
+if not defined GAME (
+  for %%g in ("%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe" "%ProgramFiles(x86)%\OpenLF2\openlf2.exe" "%ProgramFiles%\OpenLF2\openlf2.exe" "%~dp0OpenLF2\openlf2.exe") do (
+    if not defined GAME if exist "%%~g" set "GAME=%%~g"
+  )
+)
+if not defined GAME set "GAME=%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe"
+
 rem Moi dot (moi HAT_GIONG_DAU) mot thu muc ket qua rieng.
 set "KQ=%~dp0ket-qua-%HAT_GIONG_DAU%"
 if not defined BENCH (
@@ -38,15 +58,15 @@ if not defined SCRIPTS (
   if exist "%~dp0..\..\scripts\base\game\smart_ai.lua" set "SCRIPTS=%~dp0..\..\scripts"
   if exist "%~dp0..\..\..\scripts\base\game\smart_ai.lua" set "SCRIPTS=%~dp0..\..\..\scripts"
 )
-rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <hat giong> <so thu tu>".)
 if /i "%~1"=="chay1" goto chay1
 rem Keo tha mot thu muc ket qua vao file nay: chi tinh lai tong hop, khong chay tran nao.
-if not "%~1"=="" (
+if not "%~1"=="" if /i not "%~x1"==".zip" (
   set "KQ=%~1"
   goto tonghop
 )
 
-if not exist "%GAME%" (echo Khong thay game "%GAME%" - sua dong GAME o dau file.& pause& exit /b 1)
+if not exist "%GAME%" (echo Khong thay game "%GAME%": cai OpenLF2 ^(bo cai OpenLF2-Windows-x64.exe o muc Releases cua trang GitHub cua du an, chon Install for me only^), hoac sua dong GAME o dau file.& pause& exit /b 1)
+if not defined PACK (echo Khong thay file zip ban mod: dat no canh file nay, keo tha no vao file nay, hoac sua dong PACK o dau file.& pause& exit /b 1)
 if not exist "%PACK%" (echo Khong thay ban mod "%PACK%" - sua dong PACK o dau file.& pause& exit /b 1)
 if not defined BENCH (echo Khong thay thu muc tools\ai-bench canh file nay.& pause& exit /b 1)
 if not defined IDS if not exist "%BENCH%\config.lua" (echo Khong thay "%BENCH%\config.lua"& pause& exit /b 1)
@@ -83,7 +103,9 @@ if defined IDS (
   echo Moi tien trinh chay "%BENCH%\config.lua" voi hat giong rieng.
 )
 
+echo Ban mod: "%PACK%"
 echo Mo %N% tien trinh, hat giong tu %HAT_GIONG_DAU% + 1 ...
+set "PACK_DA_CHON=%PACK%"
 for /L %%i in (1,1,%N%) do (
   set /a SEED=HAT_GIONG_DAU+%%i
   start "AI !SEED!" /MIN "%~f0" chay1 !SEED! %%i

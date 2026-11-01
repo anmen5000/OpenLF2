@@ -76,6 +76,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (`XOI P` lines); used within narrow bounds (measured as strong as the moves' weights alone, 158–153 over 320 games);
   notes made before have neither and play as before; the bench's `xoi:m`, `xoi:c` and `xoi:p` brains play with the
   moves' weights alone, with the situations, with the spots (v27)
+- INSANE! and XOI on a PC (a mod's own `.exe` is the original LF2 and stops at CRAZY!): `tools/ai-bench/windows/choi.bat`
+  plays a mod on the installed Windows game — the mod's ZIP, its folder (zipped once) or its `.exe` dragged onto it,
+  with a notes file packed into `<mod>-xoi.zip` — laying the kit's newer scripts over the installed game's; the
+  XOI kit (`xoi-kit.zip`: the three `.bat` files, `scripts`, `tools/ai-bench`, built by `dist/make-xoi-kit.sh`) and
+  its step-by-step guide in English and Vietnamese (`dist/pages/xoi.html`: files, setup, playing, training,
+  measuring, sharing, troubleshooting) are published with the site; "Upload to latest release" can make the release
+  first (`tag`) and attaches the kit beside the Windows installers
+- `xoi-hoc.bat` and `dau-nhieu.bat` find the installed game and the mod's ZIP beside them by themselves and take a
+  ZIP dragged onto them; dragging `xoi-<mod>` onto `xoi-hoc.bat` merges and packs that mod again (the trained ZIP's
+  path is kept in `xoi-<mod>\ban-mod.txt`)
 - `tools/ai-bench/windows/dau-nhieu.bat`: each fighter's win rate when played by the first brain and when played
   by the second, and the difference (the first alone mixed the fighter's strength into the AI's)
 - `tools/ai-bench`: each computer player of a `duel` keeps its own context (they shared one, which skewed matches
@@ -98,6 +108,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - The relay server for network rooms and the mod library (`tools/relay/`), with a one-command installer for a
   Linux server
 - Sx2's interface pictures; game packs up to 256 MiB
+
+### Fixed
+- Builds: `dist/collect-licenses.py` tries a dropped or stalled download of a license source again (after 15, 30,
+  60 and 120 seconds) instead of failing the build — GitHub's Windows arm64 runner lost ffmpeg.org's archive in the
+  last three Windows runs, which marked them failed although x86 and x64 had built
 
 ## [1.1.2] - 2026-10-26
 

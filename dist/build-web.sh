@@ -176,7 +176,7 @@ cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
 cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-ver.txt" "$build_dir/native/"
 # The site's other pages travel in the bundle too, so that a Pages job that only swaps index.html in (an older
 # .github/workflows/web.yml, which a file upload to GitHub does not replace) still publishes them.
-cp "$repo_root/dist/pages/insane.html" "$repo_root/dist/pages/windows.html" "$build_dir/native/"
+cp "$repo_root/dist/pages/insane.html" "$repo_root/dist/pages/windows.html" "$repo_root/dist/pages/xoi.html" "$build_dir/native/"
 # The INSANE! computer player's version and history (scripts/base/game/smart_ai.lua), for the pages to show.
 python3 - "$repo_root/scripts/base/game/smart_ai.lua" "$build_dir/native/insane-version.json" <<'PY'
 import json, re, sys
@@ -189,7 +189,7 @@ with open(sys.argv[2], 'w', encoding='utf-8') as out:
     json.dump({"version": version, "date": date, "history": history}, out, indent=1, ensure_ascii=False)
 PY
 rm -rf "$build_dir/native/ruffle" "$build_dir/native/ruffle-stock"
-bundle_extra=(hero-fighter.js hf-ver.txt insane.html windows.html insane-version.json)
+bundle_extra=(hero-fighter.js hf-ver.txt insane.html windows.html xoi.html insane-version.json)
 if [[ -f "$ruffle_dir/ruffle.js" ]]; then
     cp -r "$ruffle_dir" "$build_dir/native/ruffle"
     bundle_extra+=(ruffle)

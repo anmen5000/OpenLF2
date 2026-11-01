@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INSANE! &amp; XOI on your PC — play LF2 mods, train XOI · LF2 Online by Xôi</title>
+<meta name="description" content="Play any Little Fighter 2 mod on Windows with the INSANE! and XOI computer players of OpenLF2, and train XOI for your own mod: the files you need, setup, training, measuring and sharing, step by step. English and Vietnamese.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="alternate icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  // The language before anything is drawn: ?lang=vi or ?lang=en, else the last one picked here, else the browser's.
+  (function () {
+    var lang = new URLSearchParams(location.search).get('lang');
+    if (lang !== 'vi' && lang !== 'en') {
+      try { lang = localStorage.getItem('xoi-guide-lang'); } catch (error) { lang = null; }
+    }
+    if (lang !== 'vi' && lang !== 'en') lang = /^vi\b/i.test(navigator.language || '') ? 'vi' : 'en';
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.lang = lang;
+  })();
+</script>
+<style>
+  :root {
+    --bg: #0d1226;
+    --bg-alt: #161d3c;
+    --card: #1b2246;
+    --card-border: #2c356b;
+    --text: #f1f3f7;
+    --text-dim: #b7c0e6;
+    --accent: #50c8ef;
+    --accent-2: #ffd23c;
+    --hot: #ff6b6b;
+    --good: #7fe3a5;
+    --link: #a9c7ff;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html[data-lang="vi"] .en { display: none !important; }
+  html:not([data-lang="vi"]) .vi { display: none !important; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--link); }
+  code, kbd { font-size: .92em; background: rgba(255,255,255,.08); padding: .1em .35em; border-radius: 6px; overflow-wrap: anywhere; }
+  kbd { border: 1px solid var(--card-border); font-family: inherit; font-weight: 600; }
+  pre { background: #000; border-radius: 10px; padding: .9rem 1rem; overflow: auto; font-size: .82rem; color: #9fe6ff; border: 1px solid var(--card-border); }
+  pre code { background: none; padding: 0; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .lang-bar { display: flex; justify-content: flex-end; gap: .4rem; padding: .9rem 0 0; }
+  .lang-bar button { font: inherit; font-size: .85rem; color: var(--text-dim); background: transparent; border: 1px solid var(--card-border);
+    border-radius: 999px; padding: .25rem .8rem; cursor: pointer; }
+  html:not([data-lang="vi"]) .lang-bar [data-set-lang="en"], html[data-lang="vi"] .lang-bar [data-set-lang="vi"] {
+    background: var(--card); color: var(--text); border-color: var(--accent); }
+
+  header.hero {
+    padding: 1.5rem 0 3rem;
+    text-align: center;
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(80, 200, 239, 0.18), transparent 70%),
+      radial-gradient(40% 40% at 85% 15%, rgba(255, 107, 107, 0.14), transparent 70%);
+  }
+  .hero img { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+  .hero .kicker { color: var(--text-dim); margin: 1rem 0 0; font-size: .95rem; letter-spacing: .08em; text-transform: uppercase; }
+  .hero h1 { font-size: 2.6rem; margin: .3rem 0 .4rem; letter-spacing: -.02em; }
+  .hero h1 em { font-style: normal; color: var(--hot); text-shadow: 0 0 30px rgba(255,107,107,.35); }
+  .hero p.tagline { font-size: 1.12rem; color: var(--text-dim); max-width: 46rem; margin: 0 auto 1.6rem; }
+  .cta-row { display: flex; gap: .9rem; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: .7rem 1.4rem; border-radius: 999px; font-weight: 600;
+    text-decoration: none; border: 1px solid transparent; transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: var(--accent-2); color: #3a2900; }
+  .btn.primary:hover { background: #ffe07a; }
+  .btn.secondary { background: transparent; color: var(--text); border-color: var(--card-border); }
+  .btn.secondary:hover { background: var(--card); }
+  .btn small { display: block; font-weight: 400; font-size: .78rem; opacity: .8; }
+  .badge { display: inline-block; margin-top: .9rem; padding: .35rem .9rem; border-radius: 999px; background: rgba(80,200,239,.15); border: 1px solid rgba(80,200,239,.45);
+    color: var(--accent); font-weight: 600; font-size: .9rem; letter-spacing: .02em; }
+  .badge[hidden] { display: none; }
+
+  nav.toc { margin: 0 auto; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; padding: 0 0 .5rem; }
+  nav.toc a { font-size: .88rem; text-decoration: none; color: var(--text-dim); border: 1px solid var(--card-border); border-radius: 999px; padding: .2rem .75rem; }
+  nav.toc a:hover { color: var(--text); background: var(--card); }
+
+  section { padding: 2.4rem 0 1rem; }
+  section h2 { font-size: 1.55rem; margin-bottom: .3rem; }
+  section h3 { font-size: 1.1rem; margin: 1.6rem 0 .4rem; }
+  section p.lede { color: var(--text-dim); margin-top: 0; max-width: 50rem; }
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.2rem; }
+  .quick div { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 1.1rem 1.2rem; color: var(--text-dim); }
+  .quick b { color: var(--text); }
+  .quick b.t { display: block; font-size: 1.05rem; margin-bottom: .3rem; }
+  .quick .n { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: #002433; font-weight: 700; margin-bottom: .5rem; }
+  @media (max-width: 760px) { .quick { grid-template-columns: 1fr; } }
+  .steps { counter-reset: step; list-style: none; padding: 0; margin: 1.2rem 0 0; display: grid; gap: .8rem; }
+  .steps li { position: relative; padding: .9rem 1rem .9rem 3.4rem; background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; color: var(--text-dim); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 1rem; top: .85rem; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+    background: var(--accent); color: #002433; font-weight: 700; display: grid; place-items: center; font-size: .9rem; }
+  .steps li b { color: var(--text); }
+  .table-wrap { overflow-x: auto; margin-top: 1.2rem; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .94rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--card-border); vertical-align: top; }
+  th { color: var(--text-dim); font-weight: 600; }
+  td { color: var(--text-dim); }
+  td:first-child { color: var(--text); }
+  td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .note { font-size: .88rem; color: var(--text-dim); }
+  .callout { border-left: 4px solid var(--accent-2); background: rgba(255,210,60,.08); padding: .8rem 1rem; border-radius: 0 12px 12px 0; margin: 1.2rem 0; color: var(--text); }
+  .callout.warn { border-left-color: var(--hot); background: rgba(255,107,107,.08); }
+  .callout.ok { border-left-color: var(--good); background: rgba(93,214,140,.08); }
+  ul.plain { color: var(--text-dim); font-size: .95rem; padding-left: 1.2rem; }
+  ul.plain li { margin: .35rem 0; }
+  ul.plain li b { color: var(--text); }
+  .tree { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .86rem; background: #000; border: 1px solid var(--card-border);
+    border-radius: 10px; padding: .9rem 1rem; color: #cfe9ff; overflow-x: auto; white-space: pre; line-height: 1.5; }
+  .tree i { color: var(--text-dim); font-style: normal; }
+  footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; margin-top: 2rem; }
+  footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 2.1rem; }
+    /* Tables of words read as stacked cards on a phone, each cell under its column's name. */
+    table.stack { min-width: 0; }
+    table.stack tr:first-child { display: none; }
+    table.stack tr { display: block; padding: .55rem 0; border-bottom: 1px solid var(--card-border); }
+    table.stack td { display: block; border: 0; padding: .15rem .2rem; }
+    table.stack td:first-child code { white-space: normal; }
+    table.stack td[data-label]::before { content: attr(data-label) ": "; color: var(--accent); font-size: .82rem; font-weight: 600; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="lang-bar">
+        <button type="button" data-set-lang="en">English</button>
+        <button type="button" data-set-lang="vi">Tiếng Việt</button>
+      </div>
+      <img src="icon.svg" alt="">
+      <p class="kicker"><span class="en">LF2 Online by Xôi · Windows guide</span><span class="vi">LF2 Online của Xôi · hướng dẫn cho Windows</span></p>
+      <h1><em>INSANE!</em> &amp; <em>XOI</em> <span class="en">on your PC</span><span class="vi">trên máy tính</span></h1>
+      <p class="badge" id="ai-version" hidden></p>
+      <p class="tagline en">A mod's own <code>.exe</code> is the original Little Fighter 2 from 2008: its computer players stop at
+        <b>CRAZY!</b>. INSANE! and XOI live in <b>OpenLF2</b>, which plays the same mod files. Install it once and every mod you
+        have plays with them — and you can <b>train XOI</b> for your own mod.</p>
+      <p class="tagline vi">File <code>.exe</code> đi kèm bản mod là Little Fighter 2 gốc từ năm 2008: máy chỉ tới <b>CRAZY!</b>.
+        INSANE! và XOI nằm trong <b>OpenLF2</b>, chơi được chính các file của bản mod. Cài một lần là mọi bản mod của bạn đều có
+        hai mức máy này — và bạn còn tự <b>huấn luyện XOI</b> được cho bản mod của mình.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://github.com/anmen5000/OpenLF2/releases/latest/download/OpenLF2-Windows-x64.exe"><span class="en">Download OpenLF2 for Windows</span><span class="vi">Tải OpenLF2 cho Windows</span>
+          <small>OpenLF2-Windows-x64.exe</small></a>
+        <a class="btn primary" href="xoi-kit.zip"><span class="en">Download the XOI kit</span><span class="vi">Tải bộ XOI</span>
+          <small>xoi-kit.zip</small></a>
+        <a class="btn secondary" href="insane.html"><span class="en">How INSANE! and XOI work</span><span class="vi">INSANE! và XOI hoạt động thế nào</span></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="toc">
+      <a href="#quick"><span class="en">Quick start</span><span class="vi">Bắt đầu nhanh</span></a>
+      <a href="#need"><span class="en">What you need</span><span class="vi">Cần những gì</span></a>
+      <a href="#install"><span class="en">Install</span><span class="vi">Cài đặt</span></a>
+      <a href="#play"><span class="en">Play</span><span class="vi">Chơi</span></a>
+      <a href="#train"><span class="en">Train XOI</span><span class="vi">Huấn luyện XOI</span></a>
+      <a href="#measure"><span class="en">Measure</span><span class="vi">Đo</span></a>
+      <a href="#share"><span class="en">Share</span><span class="vi">Chia sẻ</span></a>
+      <a href="#kit"><span class="en">Inside the kit</span><span class="vi">Trong bộ XOI</span></a>
+      <a href="#help"><span class="en">Troubleshooting</span><span class="vi">Gặp lỗi</span></a>
+    </nav>
+
+    <section id="quick">
+      <h2><span class="en">Quick start</span><span class="vi">Bắt đầu nhanh</span></h2>
+      <div class="quick">
+        <div><span class="n">1</span>
+          <b class="t en">Install OpenLF2</b><b class="t vi">Cài OpenLF2</b>
+          <span class="en">Run <code>OpenLF2-Windows-x64.exe</code>, choose <i>Install for me only</i>.</span>
+          <span class="vi">Chạy <code>OpenLF2-Windows-x64.exe</code>, chọn <i>Install for me only</i>.</span></div>
+        <div><span class="n">2</span>
+          <b class="t en">Unzip the XOI kit</b><b class="t vi">Giải nén bộ XOI</b>
+          <span class="en">Extract <code>xoi-kit.zip</code> into <code>Documents</code>, say: the files are in its <code>LF2-XOI-kit</code> folder.</span>
+          <span class="vi">Giải nén <code>xoi-kit.zip</code>, ví dụ vào <code>Documents</code>: các file nằm trong thư mục <code>LF2-XOI-kit</code> của nó.</span></div>
+        <div><span class="n">3</span>
+          <b class="t en">Drag your mod onto choi.bat</b><b class="t vi">Kéo bản mod vào choi.bat</b>
+          <span class="en">Its <code>.zip</code>, its folder or its <code>.exe</code>. In the game, go past CRAZY! to <b>INSANE!</b> or <b>XOI</b>.</span>
+          <span class="vi">File <code>.zip</code>, thư mục hay file <code>.exe</code> của bản mod. Trong game, bấm qua CRAZY! là tới <b>INSANE!</b>, rồi <b>XOI</b>.</span></div>
+      </div>
+    </section>
+
+    <section id="why">
+      <h2><span class="en">Why the mod's .exe stops at CRAZY!</span><span class="vi">Vì sao file .exe của bản mod chỉ tới CRAZY!</span></h2>
+      <p class="lede en">An LF2 mod is the original game's program (<code>lf2.exe</code>, often renamed) with new data: fighters,
+        moves, backgrounds. That program has four computer levels, Easy to CRAZY!, written in 2008 for the original fighters.
+        <b>INSANE!</b> — a fifth level that learns every fighter's moves from the mod's data before the match — and <b>XOI</b> —
+        INSANE! with notes from training on every matchup — are part of OpenLF2, an open-source re-implementation of LF2 that
+        reads the same data. So the AI is not put into the mod's <code>.exe</code>: the mod is opened with OpenLF2, and the mod's
+        files stay as they are.</p>
+      <p class="lede vi">Một bản mod LF2 là chương trình của game gốc (<code>lf2.exe</code>, thường được đổi tên) cộng dữ liệu mới:
+        nhân vật, chiêu, bối cảnh. Chương trình ấy có bốn mức máy, Easy tới CRAZY!, viết năm 2008 cho các nhân vật gốc.
+        <b>INSANE!</b> — mức thứ năm, học chiêu của từng nhân vật từ chính dữ liệu bản mod trước trận — và <b>XOI</b> — INSANE!
+        cộng bộ nhớ huấn luyện từng cặp nhân vật — là một phần của OpenLF2, bản viết lại mã nguồn mở của LF2 đọc cùng dữ liệu ấy.
+        Vì vậy AI không được gắn vào file <code>.exe</code> của bản mod: bản mod được mở bằng OpenLF2, còn các file của bản mod
+        giữ nguyên.</p>
+    </section>
+
+    <section id="need">
+      <h2><span class="en">What you need</span><span class="vi">Cần những gì</span></h2>
+      <div class="table-wrap en">
+        <table class="stack">
+          <tr><th>File</th><th>What it is</th><th>Where to get it</th></tr>
+          <tr><td><code>OpenLF2-Windows-x64.exe</code></td><td data-label="What it is">The OpenLF2 installer for Windows 10 and 11, 64-bit (about 8 MB).
+            <code>OpenLF2-Windows-x86.exe</code> for 32-bit Windows, <code>OpenLF2-Windows-arm64.exe</code> for ARM PCs.</td>
+            <td data-label="Where to get it"><a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> of this project on GitHub</td></tr>
+          <tr><td><code>xoi-kit.zip</code></td><td data-label="What it is"><code>choi.bat</code> (play), <code>xoi-hoc.bat</code> (train),
+            <code>dau-nhieu.bat</code> (measure), the newest game scripts with INSANE! and XOI, and the training bench (about 3 MB).</td>
+            <td data-label="Where to get it"><a href="xoi-kit.zip">This site</a>, or the release</td></tr>
+          <tr><td>Your mod</td><td data-label="What it is">The mod as a <code>.zip</code> of its game folder — the folder that has <code>data\data.txt</code>
+            in it, where the mod's <code>.exe</code> is — or that folder itself. A <code>.rar</code> or <code>.7z</code>: extract it
+            first (with 7-Zip).</td><td data-label="Where to get it">Its author, or wherever you got it</td></tr>
+          <tr><td>XOI notes <i>(optional)</i></td><td data-label="What it is">What training learned about the mod: inside the mod's zip
+            (<code>&lt;mod&gt;-xoi.zip</code>, file <code>xoi\notes.txt</code>) or as a text file (<code>&lt;mod&gt;-notes.txt</code>).
+            Without notes, XOI plays exactly as INSANE!.</td><td data-label="Where to get it">Whoever trained the mod — or yourself, <a href="#train">below</a></td></tr>
+        </table>
+      </div>
+      <div class="table-wrap vi">
+        <table class="stack">
+          <tr><th>File</th><th>Là gì</th><th>Lấy ở đâu</th></tr>
+          <tr><td><code>OpenLF2-Windows-x64.exe</code></td><td data-label="Là gì">Bộ cài OpenLF2 cho Windows 10 và 11, 64-bit (khoảng 8 MB).
+            <code>OpenLF2-Windows-x86.exe</code> cho Windows 32-bit, <code>OpenLF2-Windows-arm64.exe</code> cho máy chip ARM.</td>
+            <td data-label="Lấy ở đâu">Mục <a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> của dự án trên GitHub</td></tr>
+          <tr><td><code>xoi-kit.zip</code></td><td data-label="Là gì"><code>choi.bat</code> (chơi), <code>xoi-hoc.bat</code> (huấn luyện),
+            <code>dau-nhieu.bat</code> (đo), scripts mới nhất của game có INSANE! và XOI, và bộ công cụ huấn luyện (khoảng 3 MB).</td>
+            <td data-label="Lấy ở đâu"><a href="xoi-kit.zip">Trang này</a>, hoặc trong bản release</td></tr>
+          <tr><td>Bản mod của bạn</td><td data-label="Là gì">Bản mod dạng file <code>.zip</code> của thư mục game — thư mục có <code>data\data.txt</code>
+            bên trong, nơi có file <code>.exe</code> của bản mod — hoặc chính thư mục ấy. File <code>.rar</code> hay <code>.7z</code>:
+            giải nén trước (bằng 7-Zip).</td><td data-label="Lấy ở đâu">Tác giả bản mod, hoặc nơi bạn tải về</td></tr>
+          <tr><td>Bộ nhớ XOI <i>(không bắt buộc)</i></td><td data-label="Là gì">Những gì huấn luyện học được về bản mod: nằm trong file zip bản mod
+            (<code>&lt;tên&gt;-xoi.zip</code>, file <code>xoi\notes.txt</code>) hoặc là một file chữ riêng (<code>&lt;tên&gt;-notes.txt</code>).
+            Không có bộ nhớ thì XOI chơi y như INSANE!.</td><td data-label="Lấy ở đâu">Người đã huấn luyện bản mod — hoặc chính bạn, <a href="#train">bên dưới</a></td></tr>
+        </table>
+      </div>
+      <p class="note en">The three <code>.bat</code> files are for Windows. OpenLF2 itself also runs on Linux, macOS and Android,
+        and in the browser: <a href="./">the web version on this site</a> has INSANE! and XOI too.</p>
+      <p class="note vi">Ba file <code>.bat</code> dành cho Windows. Bản thân OpenLF2 còn chạy trên Linux, macOS, Android và trong
+        trình duyệt: <a href="./">bản web trên trang này</a> cũng có INSANE! và XOI.</p>
+    </section>
+
+    <section id="install">
+      <h2><span class="en">Install (once)</span><span class="vi">Cài đặt (một lần)</span></h2>
+      <ol class="steps en">
+        <li><b>Download <code>OpenLF2-Windows-x64.exe</code> and run it.</b> If Windows shows <i>Windows protected your PC</i>
+          (the installer is not code-signed), click <i>More info</i>, then <i>Run anyway</i>.</li>
+        <li><b>Choose <i>Install for me only</i>.</b> It needs no administrator and installs into
+          <code>%LOCALAPPDATA%\Programs\OpenLF2</code>. <i>Install for all users</i> works too: the <code>.bat</code> files find both.</li>
+        <li><b>The original game's download is optional.</b> The installer offers to fetch the original Little Fighter 2
+          (about 30 MB): it is needed only to play the original game — a mod brings its own data. Untick it if you only play mods.</li>
+        <li><b>Unzip <code>xoi-kit.zip</code></b> (right-click it, <i>Extract All…</i>) into a folder you can write to, such as
+          <code>Documents</code> — not into <code>Program Files</code>. The kit is its <code>LF2-XOI-kit</code> folder: the
+          <code>.bat</code> files, the mods you put there and everything they make live together in it.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Tải <code>OpenLF2-Windows-x64.exe</code> rồi chạy.</b> Windows báo <i>Windows protected your PC</i> (bộ cài chưa có
+          chữ ký số) thì bấm <i>More info</i>, rồi <i>Run anyway</i>.</li>
+        <li><b>Chọn <i>Install for me only</i>.</b> Không cần quyền quản trị, game được cài vào
+          <code>%LOCALAPPDATA%\Programs\OpenLF2</code>. Chọn <i>Install for all users</i> cũng được: các file <code>.bat</code> tìm được cả hai chỗ.</li>
+        <li><b>Không bắt buộc tải game gốc.</b> Bộ cài hỏi có tải Little Fighter 2 gốc không (khoảng 30 MB): chỉ cần khi chơi game
+          gốc — bản mod có dữ liệu riêng. Chỉ chơi bản mod thì bỏ dấu tích.</li>
+        <li><b>Giải nén <code>xoi-kit.zip</code></b> (chuột phải, <i>Extract All…</i>) vào một thư mục ghi được, ví dụ
+          <code>Documents</code> — đừng để trong <code>Program Files</code>. Bộ XOI là thư mục <code>LF2-XOI-kit</code> bên trong:
+          các file <code>.bat</code>, các bản mod bạn đặt vào và mọi thứ chúng tạo ra đều nằm chung ở đó.</li>
+      </ol>
+      <p class="note en">Later versions: install a newer OpenLF2 over the old one; unzip a newer kit over the old folder — your
+        mods, notes and results stay (settings you changed inside the <code>.bat</code> files are replaced).</p>
+      <p class="note vi">Bản mới về sau: cài OpenLF2 mới đè lên bản cũ; giải nén bộ XOI mới đè lên thư mục cũ — bản mod, bộ nhớ và
+        kết quả của bạn vẫn còn (những dòng bạn đã sửa trong các file <code>.bat</code> thì bị thay).</p>
+    </section>
+
+    <section id="play">
+      <h2><span class="en">Play a mod with INSANE! and XOI</span><span class="vi">Chơi bản mod với INSANE! và XOI</span></h2>
+      <ol class="steps en">
+        <li><b>Put the mod's <code>.zip</code> in the kit folder, next to <code>choi.bat</code>, and double-click <code>choi.bat</code>.</b>
+          Or drag onto <code>choi.bat</code> the mod's <code>.zip</code>, its folder, or its <code>.exe</code> (which stands for its
+          folder). A folder is zipped into the kit folder as <code>&lt;folder name&gt;.zip</code>, which double-clicking plays from then on.</li>
+        <li><b>XOI with notes.</b> A <code>&lt;mod&gt;-xoi.zip</code> has them inside, and a double-click picks a
+          <code>*-xoi.zip</code> first. A notes file: select it together with the mod and drag both onto <code>choi.bat</code> —
+          or name it <code>&lt;mod&gt;-notes.txt</code> and leave it next to <code>choi.bat</code>. <code>choi.bat</code> then makes
+          <code>&lt;mod&gt;-xoi.zip</code> in the kit folder; your mod's own file is not changed.</li>
+        <li><b>In the game:</b> <i>Game Start</i>, choose the fighters and add computer players (<i>Com</i>); on the difficulty
+          line, go round <i>Easy → Normal → Difficult → CRAZY! → <b>INSANE!</b> → <b>XOI</b></i>. In the match, the level shows its
+          version — <code>INSANE! v27</code>, or <code>XOI v27, 2926 matchups</code> with how many pairs of fighters its notes
+          know (<code>no notes</code> without any).</li>
+        <li><b>A blue or black window?</b> Right-click <code>choi.bat</code>, <i>Edit</i>, set <code>VE=opengl</code> (or
+          <code>software</code>), save, and run it again.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt file <code>.zip</code> bản mod vào thư mục bộ XOI, cạnh <code>choi.bat</code>, rồi nháy đúp <code>choi.bat</code>.</b>
+          Hoặc kéo thả vào <code>choi.bat</code> file <code>.zip</code> bản mod, thư mục bản mod, hay file <code>.exe</code> của bản mod
+          (thay cho thư mục của nó). Thư mục được nén thành <code>&lt;tên thư mục&gt;.zip</code> trong thư mục bộ XOI; từ đó về sau
+          nháy đúp là chơi file này.</li>
+        <li><b>XOI có bộ nhớ.</b> File <code>&lt;tên&gt;-xoi.zip</code> có sẵn bộ nhớ bên trong, và khi nháy đúp
+          <code>choi.bat</code> ưu tiên file <code>*-xoi.zip</code>. Có file bộ nhớ riêng: chọn nó cùng bản mod rồi kéo cả hai vào
+          <code>choi.bat</code> — hoặc đặt tên nó là <code>&lt;tên&gt;-notes.txt</code> và để cạnh <code>choi.bat</code>.
+          <code>choi.bat</code> sẽ tạo <code>&lt;tên&gt;-xoi.zip</code> trong thư mục bộ XOI; file bản mod của bạn giữ nguyên.</li>
+        <li><b>Trong game:</b> <i>Game Start</i>, chọn nhân vật và thêm máy (<i>Com</i>); ở dòng mức khó, bấm vòng
+          <i>Easy → Normal → Difficult → CRAZY! → <b>INSANE!</b> → <b>XOI</b></i>. Trong trận, tên mức hiện kèm phiên bản —
+          <code>INSANE! v27</code>, hoặc <code>XOI v27, 2926 matchups</code> cùng số cặp nhân vật mà bộ nhớ biết
+          (<code>no notes</code> khi không có).</li>
+        <li><b>Cửa sổ game chỉ xanh hay đen?</b> Chuột phải <code>choi.bat</code>, <i>Edit</i>, sửa thành <code>VE=opengl</code>
+          (hoặc <code>software</code>), lưu, chạy lại.</li>
+      </ol>
+      <h3><span class="en">Settings at the top of choi.bat</span><span class="vi">Các dòng chỉnh ở đầu choi.bat</span></h3>
+      <div class="table-wrap en">
+        <table class="stack">
+          <tr><th>Line</th><th>Empty (default) means</th><th>Set it to</th></tr>
+          <tr><td><code>GAME</code></td><td data-label="Empty (default) means">The installed game, found by itself (for you, for all users, or an <code>OpenLF2</code> folder next to the file)</td><td data-label="Set it to">The full path of <code>openlf2.exe</code> installed elsewhere</td></tr>
+          <tr><td><code>PACK</code></td><td data-label="Empty (default) means">The first <code>*-xoi.zip</code> next to <code>choi.bat</code>, else the first <code>.zip</code> (or what you drag onto it)</td><td data-label="Set it to">One mod to always play: a <code>.zip</code> or a folder</td></tr>
+          <tr><td><code>NOTES</code></td><td data-label="Empty (default) means"><code>&lt;mod&gt;-notes.txt</code> or <code>xoi-&lt;mod&gt;\notes.txt</code> next to <code>choi.bat</code>, if there</td><td data-label="Set it to">A notes file to add to the mod</td></tr>
+          <tr><td><code>VE</code></td><td data-label="Empty (default) means">The game's usual renderer</td><td data-label="Set it to"><code>opengl</code> or <code>software</code> where the window stays blue or black</td></tr>
+        </table>
+      </div>
+      <div class="table-wrap vi">
+        <table class="stack">
+          <tr><th>Dòng</th><th>Để trống (mặc định) là</th><th>Sửa thành</th></tr>
+          <tr><td><code>GAME</code></td><td data-label="Để trống (mặc định) là">Game đã cài, tự tìm (cài cho bạn, cho mọi người, hoặc thư mục <code>OpenLF2</code> cạnh file)</td><td data-label="Sửa thành">Đường dẫn đầy đủ tới <code>openlf2.exe</code> cài ở chỗ khác</td></tr>
+          <tr><td><code>PACK</code></td><td data-label="Để trống (mặc định) là">File <code>*-xoi.zip</code> đầu tiên cạnh <code>choi.bat</code>, không có thì file <code>.zip</code> đầu tiên (hoặc thứ bạn kéo thả vào)</td><td data-label="Sửa thành">Một bản mod luôn chơi: file <code>.zip</code> hoặc thư mục</td></tr>
+          <tr><td><code>NOTES</code></td><td data-label="Để trống (mặc định) là"><code>&lt;tên&gt;-notes.txt</code> hoặc <code>xoi-&lt;tên&gt;\notes.txt</code> cạnh <code>choi.bat</code>, nếu có</td><td data-label="Sửa thành">Một file bộ nhớ để thêm vào bản mod</td></tr>
+          <tr><td><code>VE</code></td><td data-label="Để trống (mặc định) là">Cách vẽ mặc định của game</td><td data-label="Sửa thành"><code>opengl</code> hoặc <code>software</code> khi cửa sổ chỉ xanh hay đen</td></tr>
+        </table>
+      </div>
+      <p class="note en">The kit's <code>scripts</code> folder holds the game scripts with the newest INSANE! and XOI. When they are
+        newer than the installed game's, <code>choi.bat</code> lays them over a copy of the installed scripts
+        (<code>scripts-choi</code>) and plays with that: a new AI without reinstalling the game. When the installed game is as new or
+        newer, it plays as installed.</p>
+      <p class="note vi">Thư mục <code>scripts</code> của bộ XOI chứa scripts của game với INSANE! và XOI mới nhất. Khi chúng mới hơn
+        scripts của game đã cài, <code>choi.bat</code> ghép chúng lên một bản sao scripts đã cài (<code>scripts-choi</code>) rồi chơi
+        bằng bản ấy: có AI mới mà không phải cài lại game. Game đã cài mới bằng hoặc mới hơn thì chơi đúng như đã cài.</p>
+    </section>
+
+    <section id="train">
+      <h2><span class="en">Train XOI for your mod</span><span class="vi">Huấn luyện XOI cho bản mod của bạn</span></h2>
+      <p class="lede en">Training plays INSANE! against INSANE! in many games of every pair of the mod's fighters, on every
+        processor thread of the PC, with no window drawn, and writes down what each move brought against each opponent and in
+        which situation. The notes go into a copy of the mod's zip; XOI plays with them. <a href="insane.html#xoi">What the notes
+        hold and how XOI uses them</a>.</p>
+      <p class="lede vi">Huấn luyện là cho INSANE! đấu INSANE! thật nhiều trận với mọi cặp nhân vật của bản mod, trên mọi luồng
+        CPU của máy, không vẽ hình, và ghi lại mỗi chiêu đem lại gì trước từng đối thủ, trong hoàn cảnh nào. Bộ nhớ được đóng vào
+        một bản sao của file zip bản mod; XOI chơi với bộ nhớ ấy. <a href="insane.html#xoi">Bộ nhớ chứa gì và XOI dùng nó ra sao</a>
+        (tiếng Anh).</p>
+      <ol class="steps en">
+        <li><b>Put the mod's <code>.zip</code> next to <code>xoi-hoc.bat</code></b> — the only mod zip there, or drag it onto
+          <code>xoi-hoc.bat</code>. A mod folder: drag it onto <code>choi.bat</code> once to get its zip.</li>
+        <li><b>Look at the settings</b> at the top of <code>xoi-hoc.bat</code> (right-click, <i>Edit</i>; the table below). The
+          defaults train every pair of fighters 100 games on every thread.</li>
+        <li><b>Double-click <code>xoi-hoc.bat</code>.</b> It opens one minimized window per thread — they draw nothing; leave them
+          — and waits for them. The PC is busy meanwhile: don't play on it.</li>
+        <li><b>When the last window closes</b>, it merges and packs: <code>&lt;mod&gt;-xoi.zip</code> beside the mod's zip — the mod
+          with <code>xoi\notes.txt</code> inside — and <code>xoi-&lt;mod&gt;\notes.txt</code>, the notes alone.</li>
+        <li><b>Play <code>&lt;mod&gt;-xoi.zip</code></b> with <code>choi.bat</code> (pick XOI), and <a href="#measure">measure</a> it
+          with <code>dau-nhieu.bat</code>.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt file <code>.zip</code> bản mod cạnh <code>xoi-hoc.bat</code></b> — chỉ một file zip bản mod ở đó, hoặc kéo thả nó
+          vào <code>xoi-hoc.bat</code>. Bản mod dạng thư mục: kéo thư mục vào <code>choi.bat</code> một lần để có file zip.</li>
+        <li><b>Xem các dòng chỉnh</b> ở đầu <code>xoi-hoc.bat</code> (chuột phải, <i>Edit</i>; bảng bên dưới). Mặc định: mọi cặp
+          nhân vật, mỗi cặp 100 trận, trên mọi luồng CPU.</li>
+        <li><b>Nháy đúp <code>xoi-hoc.bat</code>.</b> Mỗi luồng CPU một cửa sổ thu nhỏ — chúng không vẽ gì, cứ để đó — và file
+          chờ chúng chạy xong. Trong lúc này máy rất bận: đừng chơi game trên máy.</li>
+        <li><b>Khi cửa sổ cuối cùng đóng</b>, file gộp và đóng gói: <code>&lt;tên&gt;-xoi.zip</code> cạnh file zip bản mod — bản mod có
+          <code>xoi\notes.txt</code> bên trong — và <code>xoi-&lt;tên&gt;\notes.txt</code>, riêng bộ nhớ.</li>
+        <li><b>Chơi <code>&lt;tên&gt;-xoi.zip</code></b> bằng <code>choi.bat</code> (chọn XOI), và <a href="#measure">đo</a> nó bằng
+          <code>dau-nhieu.bat</code>.</li>
+      </ol>
+      <h3><span class="en">Settings at the top of xoi-hoc.bat</span><span class="vi">Các dòng chỉnh ở đầu xoi-hoc.bat</span></h3>
+      <div class="table-wrap en">
+        <table class="stack">
+          <tr><th>Line</th><th>Default</th><th>What it does</th></tr>
+          <tr><td><code>IDS</code></td><td data-label="Default"><code>all</code></td><td data-label="What it does">Fighters to train: every fighter of the mod, or a list of ids such as <code>"1 2 3 7"</code> (only the pairs among them)</td></tr>
+          <tr><td><code>VAN</code></td><td data-label="Default" class="num">100</td><td data-label="What it does">Games of each pair (both fighters are learned). 100–200 is plenty; 20 for a quick first try</td></tr>
+          <tr><td><code>SONG_SONG</code></td><td data-label="Default"><code>%NUMBER_OF_PROCESSORS%</code></td><td data-label="What it does">Games played at once, one per thread. Lower it (half, say) to keep the PC usable</td></tr>
+          <tr><td><code>HAT_GIONG_DAU</code></td><td data-label="Default" class="num">5000</td><td data-label="What it does">The first random seed. Change it for every further round (6000, 7000…): rounds add up</td></tr>
+          <tr><td><code>NAO</code></td><td data-label="Default"><code>smart</code></td><td data-label="What it does">Who plays in training: <code>smart</code> = INSANE! against INSANE! (first round); <code>xoi</code> = XOI against XOI on the notes so far</td></tr>
+          <tr><td><code>GAME</code>, <code>PACK</code></td><td data-label="Default"><i>empty</i></td><td data-label="What it does">Found by themselves; set them when the game or the mod is elsewhere</td></tr>
+          <tr><td><code>BENCH</code>, <code>SCRIPTS</code></td><td data-label="Default"><i>empty</i></td><td data-label="What it does">The kit's <code>tools\ai-bench</code> and <code>scripts</code>, found by themselves</td></tr>
+        </table>
+      </div>
+      <div class="table-wrap vi">
+        <table class="stack">
+          <tr><th>Dòng</th><th>Mặc định</th><th>Ý nghĩa</th></tr>
+          <tr><td><code>IDS</code></td><td data-label="Mặc định"><code>all</code></td><td data-label="Ý nghĩa">Nhân vật được học: mọi nhân vật của bản mod, hoặc danh sách id như <code>"1 2 3 7"</code> (chỉ các cặp trong số đó)</td></tr>
+          <tr><td><code>VAN</code></td><td data-label="Mặc định" class="num">100</td><td data-label="Ý nghĩa">Số trận mỗi cặp (học cả hai nhân vật). 100–200 là đủ; 20 để thử nhanh lần đầu</td></tr>
+          <tr><td><code>SONG_SONG</code></td><td data-label="Mặc định"><code>%NUMBER_OF_PROCESSORS%</code></td><td data-label="Ý nghĩa">Số trận chạy cùng lúc, mỗi luồng CPU một trận. Giảm (ví dụ một nửa) để máy còn dùng được</td></tr>
+          <tr><td><code>HAT_GIONG_DAU</code></td><td data-label="Mặc định" class="num">5000</td><td data-label="Ý nghĩa">Hạt giống ngẫu nhiên đầu tiên. Mỗi đợt học thêm đổi số này (6000, 7000…): các đợt cộng dồn</td></tr>
+          <tr><td><code>NAO</code></td><td data-label="Mặc định"><code>smart</code></td><td data-label="Ý nghĩa">Ai đánh khi học: <code>smart</code> = INSANE! đấu INSANE! (đợt đầu); <code>xoi</code> = XOI đấu XOI bằng bộ nhớ đã có</td></tr>
+          <tr><td><code>GAME</code>, <code>PACK</code></td><td data-label="Mặc định"><i>trống</i></td><td data-label="Ý nghĩa">Tự tìm; chỉ sửa khi game hay bản mod nằm chỗ khác</td></tr>
+          <tr><td><code>BENCH</code>, <code>SCRIPTS</code></td><td data-label="Mặc định"><i>trống</i></td><td data-label="Ý nghĩa"><code>tools\ai-bench</code> và <code>scripts</code> của bộ XOI, tự tìm</td></tr>
+        </table>
+      </div>
+      <h3><span class="en">How long it takes</span><span class="vi">Mất bao lâu</span></h3>
+      <p class="lede en">Games = pairs × <code>VAN</code>, with <i>n</i>(<i>n</i>−1)/2 pairs for <i>n</i> fighters; a game takes about
+        1.5 seconds of one thread (more with big fighters and long matches). At <code>VAN=100</code>:</p>
+      <p class="lede vi">Số trận = số cặp × <code>VAN</code>, với <i>n</i>(<i>n</i>−1)/2 cặp cho <i>n</i> nhân vật; mỗi trận mất chừng
+        1,5 giây của một luồng (lâu hơn với nhân vật nặng, trận dài). Với <code>VAN=100</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th><span class="en">Fighters</span><span class="vi">Nhân vật</span></th><th><span class="en">Pairs</span><span class="vi">Cặp</span></th>
+            <th><span class="en">Games</span><span class="vi">Trận</span></th><th><span class="en">8 threads</span><span class="vi">8 luồng</span></th>
+            <th><span class="en">16 threads</span><span class="vi">16 luồng</span></th><th><span class="en">104 threads</span><span class="vi">104 luồng</span></th></tr>
+          <tr><td class="num">20</td><td class="num">190</td><td class="num">19,000</td><td class="num">~1 h</td><td class="num">~30 min</td><td class="num">~5 min</td></tr>
+          <tr><td class="num">40</td><td class="num">780</td><td class="num">78,000</td><td class="num">~4 h</td><td class="num">~2 h</td><td class="num">~20 min</td></tr>
+          <tr><td class="num">77 <span class="note">(Naruto 2.4)</span></td><td class="num">2,926</td><td class="num">292,600</td><td class="num">~15 h</td><td class="num">~7.5 h</td><td class="num">~1.2 h</td></tr>
+        </table>
+      </div>
+      <p class="note en">A big roster on an ordinary PC: start with <code>VAN=20</code>, or with <code>IDS</code> set to the fighters
+        people play most; train more later. Closing the windows stops training; the pairs already finished are kept — run
+        <code>xoi-hoc.bat gop</code> (or drag the <code>xoi-&lt;mod&gt;</code> folder onto it) to merge and pack them.</p>
+      <p class="note vi">Bản mod nhiều nhân vật trên máy thường: bắt đầu với <code>VAN=20</code>, hoặc đặt <code>IDS</code> là các nhân
+        vật hay được chơi nhất; học thêm sau. Đóng các cửa sổ là dừng huấn luyện; những cặp đã xong vẫn được giữ — chạy
+        <code>xoi-hoc.bat gop</code> (hoặc kéo thư mục <code>xoi-&lt;tên&gt;</code> vào nó) để gộp và đóng gói chúng.</p>
+      <h3><span class="en">More rounds</span><span class="vi">Học thêm nhiều đợt</span></h3>
+      <ul class="plain en">
+        <li><b>Rounds add up:</b> change <code>HAT_GIONG_DAU</code> and run again; the notes of every round of the mod are merged into
+          one. <code>NAO=xoi</code> makes the next round XOI against XOI on the notes so far.</li>
+        <li><b>Keep what is stronger:</b> each packing keeps the previous one as <code>&lt;mod&gt;-xoi-truoc.zip</code>. Measure both
+          (<a href="#measure">below</a>) on the same seed and keep the better. On Naruto 2.4 a second round did not make XOI measurably
+          stronger: the first round of 100–200 games a pair does most of the work.</li>
+        <li><b>Merge only:</b> <code>xoi-hoc.bat gop</code>, or drag the <code>xoi-&lt;mod&gt;</code> folder onto <code>xoi-hoc.bat</code>.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b>Các đợt cộng dồn:</b> đổi <code>HAT_GIONG_DAU</code> rồi chạy lại; bộ nhớ mọi đợt của bản mod được gộp làm một.
+          <code>NAO=xoi</code> cho đợt sau là XOI đấu XOI bằng bộ nhớ đã có.</li>
+        <li><b>Giữ bản mạnh hơn:</b> mỗi lần đóng gói, bản trước được giữ lại thành <code>&lt;tên&gt;-xoi-truoc.zip</code>. Đo cả hai
+          (<a href="#measure">bên dưới</a>) cùng hạt giống rồi giữ bản tốt hơn. Ở Naruto 2.4, đợt thứ hai không làm XOI mạnh hơn đo
+          được: đợt đầu 100–200 trận mỗi cặp đã làm gần hết.</li>
+        <li><b>Chỉ gộp:</b> <code>xoi-hoc.bat gop</code>, hoặc kéo thư mục <code>xoi-&lt;tên&gt;</code> vào <code>xoi-hoc.bat</code>.</li>
+      </ul>
+    </section>
+
+    <section id="measure">
+      <h2><span class="en">Measure: is XOI stronger?</span><span class="vi">Đo: XOI có mạnh hơn không?</span></h2>
+      <p class="lede en"><code>dau-nhieu.bat</code> plays two computer players against each other on every pair of fighters, each in
+        both seats, on every thread, and adds it all up.</p>
+      <p class="lede vi"><code>dau-nhieu.bat</code> cho hai loại máy đấu nhau trên mọi cặp nhân vật, đổi bên đủ hai chiều, trên mọi
+        luồng CPU, rồi cộng kết quả.</p>
+      <ol class="steps en">
+        <li><b>Put <code>&lt;mod&gt;-xoi.zip</code> next to <code>dau-nhieu.bat</code></b> (it picks a <code>*-xoi.zip</code> first),
+          or drag it onto <code>dau-nhieu.bat</code>.</li>
+        <li><b>Defaults:</b> <code>NAO1=xoi</code> against <code>NAO2=smart</code> (INSANE!), <code>IDS=all</code>, <code>VAN=10</code>
+          games per pair and seat, <code>HAT_GIONG_DAU=1000</code> — seeds training did not use.</li>
+        <li><b>Double-click.</b> At the end it prints every fighter's results and the total, such as
+          <code>Ti le thang cua brains[1]: 55.3% tren 5852 tran co ket qua, sai so khoang +-1.2%</code>: brains[1] (XOI) wins 55.3%,
+          give or take 1.2. More than 50% by more than that margin: XOI is stronger on this mod.</li>
+        <li><b>Results stay</b> in <code>ket-qua-&lt;seed&gt;\</code> (<code>cap.txt</code>: every pair; <code>run-*.txt</code>: every game).
+          Drag that folder onto <code>dau-nhieu.bat</code> to print the summary again.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt <code>&lt;tên&gt;-xoi.zip</code> cạnh <code>dau-nhieu.bat</code></b> (ưu tiên file <code>*-xoi.zip</code>), hoặc kéo
+          thả nó vào <code>dau-nhieu.bat</code>.</li>
+        <li><b>Mặc định:</b> <code>NAO1=xoi</code> đấu <code>NAO2=smart</code> (INSANE!), <code>IDS=all</code>, <code>VAN=10</code> trận
+          mỗi cặp mỗi bên, <code>HAT_GIONG_DAU=1000</code> — hạt giống huấn luyện không dùng.</li>
+        <li><b>Nháy đúp.</b> Cuối cùng file in kết quả từng nhân vật và tổng, ví dụ
+          <code>Ti le thang cua brains[1]: 55.3% tren 5852 tran co ket qua, sai so khoang +-1.2%</code>: brains[1] (XOI) thắng 55,3%,
+          sai số chừng 1,2. Trên 50% nhiều hơn sai số: XOI mạnh hơn trên bản mod này.</li>
+        <li><b>Kết quả được giữ</b> trong <code>ket-qua-&lt;hạt giống&gt;\</code> (<code>cap.txt</code>: từng cặp; <code>run-*.txt</code>:
+          từng trận). Kéo thư mục ấy vào <code>dau-nhieu.bat</code> để in lại bảng tổng.</li>
+      </ol>
+      <ul class="plain en">
+        <li><b><code>NAO1</code>, <code>NAO2</code>:</b> <code>xoi</code> (XOI), <code>smart</code> (INSANE!), <code>classic</code> (the
+          original game's AI — with <code>MUC=-1</code> it plays at CRAZY!), <code>smart@ai_alt</code> (another
+          <code>smart_ai.lua</code>, copied to <code>tools\ai-bench\ai_alt.lua</code>).</li>
+        <li><b>Two sets of notes</b> (<code>&lt;mod&gt;-xoi.zip</code> and <code>&lt;mod&gt;-xoi-truoc.zip</code>): measure each against
+          INSANE! with the same <code>HAT_GIONG_DAU</code>, set <code>PACK</code> to each in turn, and compare the two rates.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b><code>NAO1</code>, <code>NAO2</code>:</b> <code>xoi</code> (XOI), <code>smart</code> (INSANE!), <code>classic</code> (máy
+          của game gốc — với <code>MUC=-1</code> nó đánh mức CRAZY!), <code>smart@ai_alt</code> (một bản <code>smart_ai.lua</code>
+          khác, chép vào <code>tools\ai-bench\ai_alt.lua</code>).</li>
+        <li><b>Hai bộ nhớ</b> (<code>&lt;tên&gt;-xoi.zip</code> và <code>&lt;tên&gt;-xoi-truoc.zip</code>): đo từng bộ đấu INSANE! cùng
+          <code>HAT_GIONG_DAU</code>, lần lượt đặt <code>PACK</code> là từng file, rồi so hai tỉ lệ.</li>
+      </ul>
+    </section>
+
+    <section id="share">
+      <h2><span class="en">Share what you trained</span><span class="vi">Chia sẻ những gì đã huấn luyện</span></h2>
+      <ul class="plain en">
+        <li><b>The notes are your work:</b> share <code>xoi-&lt;mod&gt;\notes.txt</code>, renamed <code>&lt;mod&gt;-notes.txt</code>, with a
+          link to this page. Players drag their own copy of the mod and your notes onto <code>choi.bat</code>.</li>
+        <li><b>The mod is its author's:</b> share <code>&lt;mod&gt;-xoi.zip</code> (the whole mod with the notes inside) only where the
+          mod's author allows it to be passed on.</li>
+        <li><b>On this website:</b> a mod here gets XOI notes in the browser when the site's owner uploads its
+          <code>&lt;mod&gt;-xoi.zip</code> to the relay (admin page, same id as the mod) — rooms and replays stay in sync. Trained one of
+          the site's mods? Send the notes to the owner.</li>
+        <li><b>One version of a mod:</b> notes are made of fighter ids and moves. When a mod's fighters change, train it again.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b>Bộ nhớ là công sức của bạn:</b> chia sẻ <code>xoi-&lt;tên&gt;\notes.txt</code>, đổi tên thành <code>&lt;tên&gt;-notes.txt</code>,
+          kèm đường dẫn tới trang này. Người chơi kéo bản mod của họ và file bộ nhớ của bạn vào <code>choi.bat</code>.</li>
+        <li><b>Bản mod là của tác giả bản mod:</b> chỉ chia sẻ <code>&lt;tên&gt;-xoi.zip</code> (cả bản mod, có bộ nhớ bên trong) khi tác
+          giả cho phép phát tán lại.</li>
+        <li><b>Trên trang web này:</b> bản mod ở đây có bộ nhớ XOI trong trình duyệt khi chủ trang tải <code>&lt;tên&gt;-xoi.zip</code> lên
+          relay (trang admin, cùng id với bản mod) — phòng chơi mạng và bản ghi trận vẫn khớp. Bạn đã huấn luyện một bản mod của trang?
+          Gửi bộ nhớ cho chủ trang.</li>
+        <li><b>Một phiên bản bản mod:</b> bộ nhớ gắn với id nhân vật và chiêu. Bản mod đổi nhân vật thì huấn luyện lại.</li>
+      </ul>
+    </section>
+
+    <section id="kit">
+      <h2><span class="en">Inside the kit</span><span class="vi">Bên trong bộ XOI</span></h2>
+<div class="tree en">LF2-XOI-kit\
+  choi.bat              <i>play a mod with INSANE! and XOI</i>
+  xoi-hoc.bat           <i>train XOI for a mod</i>
+  dau-nhieu.bat         <i>measure: two computer players on every pair</i>
+  README.txt            <i>the short version of this page</i>
+  version.txt           <i>which INSANE! and OpenLF2 this kit is</i>
+  scripts\              <i>the game's scripts with INSANE! and XOI (base\game\smart_ai.lua)</i>
+  tools\ai-bench\       <i>the jobs: learn.lua (training), duel.lua (measuring), brains.lua…</i>
+<i>made as you go:</i>
+  &lt;mod&gt;.zip             <i>a mod folder zipped by choi.bat</i>
+  &lt;mod&gt;-xoi.zip         <i>the mod with xoi\notes.txt inside (xoi-hoc.bat, or choi.bat with notes)</i>
+  &lt;mod&gt;-xoi-truoc.zip   <i>the previous packing, to compare</i>
+  scripts-choi\         <i>installed scripts with the kit's laid over (choi.bat)</i>
+  xoi-&lt;mod&gt;\
+    notes.txt           <i>the notes of every round, merged: what you share</i>
+    ban-mod.txt         <i>which mod zip was trained</i>
+    dot-&lt;seed&gt;\         <i>one round: p1…pN\out.txt (the game's output) and config.lua</i>
+    goi\xoi\notes.txt   <i>a copy, to put into a zip by hand</i>
+  ket-qua-&lt;seed&gt;\       <i>a measurement: cap.txt, run-*.txt</i></div>
+<div class="tree vi">LF2-XOI-kit\
+  choi.bat              <i>chơi bản mod với INSANE! và XOI</i>
+  xoi-hoc.bat           <i>huấn luyện XOI cho bản mod</i>
+  dau-nhieu.bat         <i>đo: hai loại máy đấu mọi cặp</i>
+  README.txt            <i>bản ngắn của trang này</i>
+  version.txt           <i>bộ này là INSANE! và OpenLF2 phiên bản nào</i>
+  scripts\              <i>scripts của game có INSANE! và XOI (base\game\smart_ai.lua)</i>
+  tools\ai-bench\       <i>các việc: learn.lua (huấn luyện), duel.lua (đo), brains.lua…</i>
+<i>sinh ra trong lúc dùng:</i>
+  &lt;tên&gt;.zip             <i>thư mục bản mod do choi.bat nén lại</i>
+  &lt;tên&gt;-xoi.zip         <i>bản mod có xoi\notes.txt bên trong (xoi-hoc.bat, hoặc choi.bat kèm bộ nhớ)</i>
+  &lt;tên&gt;-xoi-truoc.zip   <i>bản đóng gói lần trước, để so</i>
+  scripts-choi\         <i>scripts đã cài ghép scripts của bộ XOI (choi.bat)</i>
+  xoi-&lt;tên&gt;\
+    notes.txt           <i>bộ nhớ mọi đợt, đã gộp: thứ để chia sẻ</i>
+    ban-mod.txt         <i>file zip bản mod đã được học</i>
+    dot-&lt;hạt giống&gt;\    <i>một đợt: p1…pN\out.txt (kết quả game in ra) và config.lua</i>
+    goi\xoi\notes.txt   <i>bản sao, để tự đặt vào file zip bằng tay</i>
+  ket-qua-&lt;hạt giống&gt;\  <i>một lần đo: cap.txt, run-*.txt</i></div>
+      <p class="note en"><b>The notes file</b> is plain text, one fact per line, each starting with <code>XOI</code>: <code>G</code> the
+        games of a pair, <code>R</code> the opponent's answers to risky moves, <code>M</code> a move's record against an opponent,
+        <code>C</code> its record by situation, <code>P</code> the spots the fighter stood on. A big mod's notes run to megabytes; in a match
+        the game reads only the lines of the pairs in it. Elsewhere than Windows, the same jobs run from a shell:
+        <code>openlf2 --pack mod.zip --mod tools/ai-bench</code> with a <code>config.lua</code> such as
+        <code>return {command = "learn", games = 100, ids = "all"}</code> — see
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/tools/ai-bench/README.md">tools/ai-bench/README.md</a>.</p>
+      <p class="note vi"><b>File bộ nhớ</b> là chữ thường, mỗi dòng một điều, bắt đầu bằng <code>XOI</code>: <code>G</code> số trận của
+        một cặp, <code>R</code> cách đối thủ đáp lại chiêu liều, <code>M</code> thành tích một chiêu trước một đối thủ, <code>C</code> thành
+        tích ấy theo hoàn cảnh, <code>P</code> các chỗ nhân vật đã đứng. Bộ nhớ của bản mod lớn có thể tới vài MB; trong trận, game chỉ đọc
+        các dòng của những cặp có mặt. Ngoài Windows, cùng các việc này chạy bằng dòng lệnh:
+        <code>openlf2 --pack mod.zip --mod tools/ai-bench</code> với <code>config.lua</code> như
+        <code>return {command = "learn", games = 100, ids = "all"}</code> — xem
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/tools/ai-bench/README.md">tools/ai-bench/README.md</a>.</p>
+    </section>
+
+    <section id="help">
+      <h2><span class="en">Troubleshooting</span><span class="vi">Gặp lỗi</span></h2>
+      <p class="lede en">The <code>.bat</code> files speak Vietnamese without accents; here is what their messages mean.</p>
+      <p class="lede vi">Các file <code>.bat</code> in thông báo tiếng Việt không dấu; dưới đây là cách xử lý.</p>
+      <div class="table-wrap en">
+        <table class="stack">
+          <tr><th>Message or problem</th><th>What to do</th></tr>
+          <tr><td><code>Chua cai OpenLF2</code>, <code>Khong thay game</code></td><td data-label="What to do">Install OpenLF2 (<a href="#install">above</a>); installed elsewhere: set <code>GAME</code> to the full path of <code>openlf2.exe</code>.</td></tr>
+          <tr><td><code>Khong thay ban mod</code>, <code>Khong thay file zip ban mod</code></td><td data-label="What to do">Put the mod's <code>.zip</code> next to the <code>.bat</code> file, or drag it onto it.</td></tr>
+          <tr><td><code>... khong phai file zip</code></td><td data-label="What to do">A <code>.rar</code> or <code>.7z</code>: extract it (7-Zip) and drag the folder onto <code>choi.bat</code>.</td></tr>
+          <tr><td><code>khong co data/data.txt</code></td><td data-label="What to do">Not an LF2 game folder: pick the folder that has <code>data\data.txt</code> (where the mod's <code>.exe</code> is).</td></tr>
+          <tr><td>The difficulty never goes past Difficult</td><td data-label="What to do">The hidden content is locked: on the start screen open <i>Options</i> and tick <i>Unlock hidden characters</i>, or type <kbd>lf2.net</kbd>.</td></tr>
+          <tr><td>The game window stays blue or black</td><td data-label="What to do"><code>VE=opengl</code> (or <code>software</code>) at the top of <code>choi.bat</code>.</td></tr>
+          <tr><td><i>Windows protected your PC</i></td><td data-label="What to do"><i>More info</i>, then <i>Run anyway</i>.</td></tr>
+          <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="What to do">PowerShell is blocked on this PC. By hand: open the mod's zip (7-Zip), go into the folder that has <code>data</code>, and drag in the folder <code>xoi-&lt;mod&gt;\goi\xoi</code>.</td></tr>
+          <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="What to do">A training window was closed or failed: the pairs it finished are kept; the lines with <code>ERROR</code> say why.</td></tr>
+          <tr><td><code>Dot hoc voi hat giong ... da co</code></td><td data-label="What to do">That round exists: change <code>HAT_GIONG_DAU</code>, or run <code>xoi-hoc.bat gop</code> to merge only.</td></tr>
+          <tr><td>The PC crawls while training</td><td data-label="What to do">Lower <code>SONG_SONG</code> (half the threads, say).</td></tr>
+          <tr><td>An antivirus warns about a <code>.bat</code></td><td data-label="What to do">The three files are plain text: open them in Notepad to read every line.</td></tr>
+        </table>
+      </div>
+      <div class="table-wrap vi">
+        <table class="stack">
+          <tr><th>Thông báo hay hiện tượng</th><th>Cách xử lý</th></tr>
+          <tr><td><code>Chua cai OpenLF2</code>, <code>Khong thay game</code></td><td data-label="Cách xử lý">Cài OpenLF2 (<a href="#install">ở trên</a>); cài ở chỗ khác thì đặt <code>GAME</code> là đường dẫn đầy đủ tới <code>openlf2.exe</code>.</td></tr>
+          <tr><td><code>Khong thay ban mod</code>, <code>Khong thay file zip ban mod</code></td><td data-label="Cách xử lý">Đặt file <code>.zip</code> bản mod cạnh file <code>.bat</code>, hoặc kéo thả nó vào.</td></tr>
+          <tr><td><code>... khong phai file zip</code></td><td data-label="Cách xử lý">File <code>.rar</code> hay <code>.7z</code>: giải nén (7-Zip) rồi kéo thư mục vào <code>choi.bat</code>.</td></tr>
+          <tr><td><code>khong co data/data.txt</code></td><td data-label="Cách xử lý">Không phải thư mục game LF2: chọn thư mục có <code>data\data.txt</code> (nơi có file <code>.exe</code> của bản mod).</td></tr>
+          <tr><td>Mức khó không qua được Difficult</td><td data-label="Cách xử lý">Nội dung ẩn đang khóa: ở màn hình khởi động mở <i>Options</i>, tích <i>Unlock hidden characters</i>, hoặc gõ <kbd>lf2.net</kbd>.</td></tr>
+          <tr><td>Cửa sổ game chỉ xanh hay đen</td><td data-label="Cách xử lý"><code>VE=opengl</code> (hoặc <code>software</code>) ở đầu <code>choi.bat</code>.</td></tr>
+          <tr><td><i>Windows protected your PC</i></td><td data-label="Cách xử lý"><i>More info</i>, rồi <i>Run anyway</i>.</td></tr>
+          <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="Cách xử lý">Máy chặn PowerShell. Làm tay: mở file zip bản mod (7-Zip), vào thư mục có <code>data</code>, kéo thư mục <code>xoi-&lt;tên&gt;\goi\xoi</code> vào đó.</td></tr>
+          <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="Cách xử lý">Một cửa sổ huấn luyện bị đóng hoặc lỗi: những cặp nó đã xong vẫn được giữ; các dòng có <code>ERROR</code> cho biết lý do.</td></tr>
+          <tr><td><code>Dot hoc voi hat giong ... da co</code></td><td data-label="Cách xử lý">Đợt đó đã có: đổi <code>HAT_GIONG_DAU</code>, hoặc chạy <code>xoi-hoc.bat gop</code> để chỉ gộp.</td></tr>
+          <tr><td>Máy rất chậm khi huấn luyện</td><td data-label="Cách xử lý">Giảm <code>SONG_SONG</code> (ví dụ một nửa số luồng).</td></tr>
+          <tr><td>Phần mềm diệt virus cảnh báo file <code>.bat</code></td><td data-label="Cách xử lý">Ba file này là chữ thường: mở bằng Notepad để đọc từng dòng.</td></tr>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <div class="en">LF2 Online — Xôi's build of OpenLF2. OpenLF2 is not affiliated with or endorsed by the creators of
+        <a href="https://www.lf2.net/">Little Fighter 2</a>; mods belong to their authors.</div>
+      <div class="vi">LF2 Online — bản OpenLF2 của Xôi. OpenLF2 không liên quan và không được bảo trợ bởi tác giả của
+        <a href="https://www.lf2.net/">Little Fighter 2</a>; các bản mod thuộc về tác giả của chúng.</div>
+      <div class="links">
+        <a href="./"><span class="en">Play in the browser</span><span class="vi">Chơi trên trình duyệt</span></a>
+        <a href="insane.html">INSANE! AI</a>
+        <a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a>
+        <a href="https://github.com/anmen5000/OpenLF2/tree/main/tools/ai-bench/windows"><span class="en">The .bat files on GitHub</span><span class="vi">Các file .bat trên GitHub</span></a>
+        <a href="https://github.com/anmen5000/OpenLF2">Xôi's GitHub</a>
+        <a href="https://github.com/anmen5000/OpenLF2/blob/main/LICENSE">MIT License</a>
+      </div>
+    </div>
+  </footer>
+<script>
+  (function () {
+    var titles = {
+      en: 'INSANE! & XOI on your PC — play LF2 mods, train XOI · LF2 Online by Xôi',
+      vi: 'INSANE! & XOI trên máy tính — chơi bản mod LF2, huấn luyện XOI · LF2 Online của Xôi'
+    };
+    function setLang(lang, remember) {
+      document.documentElement.setAttribute('data-lang', lang);
+      document.documentElement.lang = lang;
+      document.title = titles[lang];
+      if (remember) {
+        try { localStorage.setItem('xoi-guide-lang', lang); } catch (error) { /* a private window: not remembered */ }
+      }
+    }
+    setLang(document.documentElement.getAttribute('data-lang') === 'vi' ? 'vi' : 'en', false);
+    document.querySelectorAll('[data-set-lang]').forEach(function (button) {
+      button.addEventListener('click', function () { setLang(button.getAttribute('data-set-lang'), true); });
+    });
+    // The kit is built with this site, so the version the game shows is the kit's (dist/build-web.sh writes it).
+    fetch('insane-version.json', {cache: 'no-store'}).then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (info) {
+        if (!info) return;
+        var badge = document.getElementById('ai-version');
+        badge.innerHTML = '<span class="en">Kit with INSANE! v' + Number(info.version) + '</span><span class="vi">Bộ XOI có INSANE! v'
+          + Number(info.version) + '</span>' + (info.date ? ' · ' + String(info.date).replace(/[^0-9-]/g, '') : '');
+        badge.hidden = false;
+      }).catch(function () { /* opened from a file: no badge */ });
+  })();
+</script>
+</body>
+</html>

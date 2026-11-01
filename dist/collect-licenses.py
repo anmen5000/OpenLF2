@@ -6,16 +6,35 @@
 
 import argparse
 import hashlib
+import http.client
 import io
 import os
 from pathlib import Path
+import sys
 import tarfile
 import tempfile
+import time
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "dist/notice-sources.txt"
+# A dropped or stalled connection is tried again after these pauses (seconds): GitHub's Windows arm64 runners
+# lost the one download of ffmpeg.org's archive now and then, failing the whole build.
+RETRY_PAUSES = (15, 30, 60, 120)
+
+
+def download(url):
+    for pause in RETRY_PAUSES + (None,):
+        try:
+            with urlopen(url, timeout=90) as response:
+                return response.read()
+        except (OSError, http.client.HTTPException) as error:
+            if pause is None or (isinstance(error, HTTPError) and error.code < 500):
+                raise
+            print(f"{url}: {error}; trying again in {pause} s", file=sys.stderr, flush=True)
+            time.sleep(pause)
 
 
 def manifest():
@@ -34,8 +53,7 @@ def checked_archive(key, entry, cache):
                    if url.endswith(ending)), ".txt")
     cached = cache / (digest + suffix)
     if not cached.exists() or hashlib.sha256(cached.read_bytes()).hexdigest() != digest:
-        with urlopen(url, timeout=90) as response:
-            data = response.read()
+        data = download(url)
         if hashlib.sha256(data).hexdigest() != digest:
             raise ValueError(f"{key}: upstream SHA-256 differs from notice-sources.txt")
         with tempfile.NamedTemporaryFile(dir=cache, delete=False) as temporary:
