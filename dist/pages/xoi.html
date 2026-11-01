@@ -518,9 +518,11 @@
           numbers nudged one way for one and the other way for the other (each number up or down at random), each playing each
           fighter of a random pair on the same stage; every number then moves toward whichever did better. After the round
           the processes' numbers are averaged, and the next round starts from there.</li>
-        <li><b>12 rounds</b> by default, then the tuned numbers play the AI's own (<code>KIEM_TRA</code> game pairs per process). On
-          a 104-thread PC that is about an hour or two, all on the CPU (about 0.3 GB of memory per process). Stopped half way (a
-          restart, a closed window)? Double-click again: it goes on from the round it was in.</li>
+        <li><b>12 rounds</b> by default, then the tuned numbers play the AI's own (<code>KIEM_TRA</code> game pairs per process). A
+          pair takes a process about 1 to 3 seconds (One Piece more than Naruto), so the defaults take about half an hour, on
+          the CPU only (up to about half a GB of memory per process). After each round <code>spsa.bat</code> says how long it
+          took and about how long the rest will take. Stopped half way (a restart, a closed window)? Double-click again: it
+          goes on from the round it was in.</li>
         <li><b>Send <code>spsa\ket-qua.txt</code></b> to whoever maintains the AI: the tuned numbers, how far each moved, and how the
           tuned numbers did against the AI's own. They go into INSANE! only after they also win the usual measures.</li>
       </ol>
@@ -531,9 +533,10 @@
           cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy cầm mỗi nhân vật của một cặp ngẫu
           nhiên trên cùng một sân; mọi con số rồi dịch về phía máy đánh tốt hơn. Hết vòng, lấy trung bình các tiến trình, vòng sau
           bắt đầu từ đó.</li>
-        <li><b>Mặc định 12 vòng</b>, rồi bản đã chỉnh đấu bản gốc (<code>KIEM_TRA</code> cặp trận mỗi tiến trình). Máy 104 luồng mất
-          khoảng một, hai giờ, chỉ dùng CPU (mỗi tiến trình chừng 0,3 GB bộ nhớ). Dừng giữa chừng (khởi động lại máy, lỡ đóng cửa sổ)?
-          Nháy đúp lại: làm tiếp từ vòng đang dở.</li>
+        <li><b>Mặc định 12 vòng</b>, rồi bản đã chỉnh đấu bản gốc (<code>KIEM_TRA</code> cặp trận mỗi tiến trình). Một cặp mất mỗi
+          tiến trình khoảng 1 đến 3 giây (One Piece lâu hơn Naruto), nên mặc định mất chừng nửa giờ, chỉ dùng CPU (mỗi tiến trình
+          tới khoảng nửa GB bộ nhớ). Hết mỗi vòng <code>spsa.bat</code> in vòng ấy mất bao lâu và còn khoảng bao lâu. Dừng giữa
+          chừng (khởi động lại máy, lỡ đóng cửa sổ)? Nháy đúp lại: làm tiếp từ vòng đang dở.</li>
         <li><b>Gửi <code>spsa\ket-qua.txt</code></b> cho người làm AI: các số đã chỉnh, mỗi số dịch bao nhiêu, và bản đã chỉnh đấu bản gốc
           ra sao. Số chỉ được đưa vào INSANE! khi cũng thắng ở các phép đo thường dùng.</li>
       </ol>
@@ -545,6 +548,20 @@
           <code>spsa</code> folder (or rename it).</li>
         <li><b>Start from earlier numbers:</b> put a <code>return {...}</code> line of a previous <code>ket-qua.txt</code> into
           <code>spsa\bat-dau.lua</code> before the first round.</li>
+        <li><b>A night, about 10 hours, on a 24-thread PC:</b> <code>VONG=50</code>, <code>CAP=250</code>, <code>KIEM_TRA=100</code>
+          (rounds of about ten minutes; the check, 4,800 games, gives the win rate within about 1.4 points). Every process
+          moves the numbers <code>VONG</code> × <code>CAP</code> times, in steps that shrink over that total: more of them, the
+          further and the more surely the numbers can go. Turn sleep off first (<i>Settings → System → Power</i>). After the
+          first round, the time left it gives tells whether it fits; if not, close it and the minimized SPSA windows, lower
+          <code>VONG</code> and double-click again (rounds done stay).</li>
+        <li><b>Several mods:</b> the processes are dealt out among them in turn (24 processes, 3 mods: 8 each), so each mod
+          weighs the same in the average and the numbers suit them all; a round lasts as long as its slowest process (a One
+          Piece pair takes longer than a Naruto one, so the others wait). The check gives each mod's result under the
+          total.</li>
+        <li><b>Memory:</b> up to about half a GB per process, once it has met every fighter of its mod. With
+          <code>SONG_SONG</code> left as it is, <code>spsa.bat</code> runs fewer processes on a PC short of memory (a 16 GB
+          PC: 18), keeping about 4 GB for Windows. Still, look at Task Manager (<i>Performance → Memory</i>) after a quarter
+          of an hour; above about 85% in use, lower <code>SONG_SONG</code>.</li>
       </ul>
       <ul class="plain vi">
         <li><code>VONG</code> số vòng (12), <code>CAP</code> số cặp trận mỗi tiến trình mỗi vòng (40), <code>SONG_SONG</code> số tiến trình
@@ -553,6 +570,19 @@
           mục <code>spsa</code>.</li>
         <li><b>Bắt đầu từ các số của lần trước:</b> chép dòng <code>return {...}</code> của một <code>ket-qua.txt</code> cũ vào
           <code>spsa\bat-dau.lua</code> trước vòng đầu.</li>
+        <li><b>Chạy một đêm, khoảng 10 tiếng, trên máy 24 luồng:</b> <code>VONG=50</code>, <code>CAP=250</code>,
+          <code>KIEM_TRA=100</code> (mỗi vòng chừng mười phút; phần kiểm tra 4.800 trận cho tỉ lệ thắng sai lệch khoảng 1,4
+          điểm). Mỗi tiến trình dịch các số <code>VONG</code> × <code>CAP</code> lần, bước nhỏ dần theo tổng ấy: càng nhiều lần,
+          các số càng đi được xa và càng chắc. Tắt chế độ ngủ trước (<i>Settings → System → Power</i>). Hết vòng đầu, xem thời
+          gian còn lại nó in ra: dài hơn thời gian bạn có thì đóng nó và các cửa sổ SPSA thu nhỏ, giảm <code>VONG</code> rồi nháy
+          đúp lại (các vòng đã xong vẫn giữ).</li>
+        <li><b>Nhiều bản mod:</b> các tiến trình chia lần lượt cho từng bản mod (24 tiến trình, 3 bản mod: mỗi bản 8), nên mỗi bản
+          mod nặng như nhau khi lấy trung bình và các số hợp với tất cả; một vòng dài bằng tiến trình chậm nhất (một cặp One
+          Piece lâu hơn một cặp Naruto, các tiến trình khác phải chờ). Phần kiểm tra cho kết quả từng bản mod dưới dòng tổng.</li>
+        <li><b>Bộ nhớ:</b> mỗi tiến trình tới khoảng nửa GB, khi đã gặp đủ các nhân vật của bản mod. Để nguyên dòng
+          <code>SONG_SONG</code> thì máy ít bộ nhớ sẽ được <code>spsa.bat</code> tự bớt số tiến trình (máy 16 GB: 18), chừa
+          khoảng 4 GB cho Windows. Dù vậy, sau mười lăm phút nên mở Task Manager (<i>Performance → Memory</i>); dùng quá
+          khoảng 85% thì giảm <code>SONG_SONG</code>.</li>
       </ul>
     </section>
 

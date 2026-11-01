@@ -15,7 +15,12 @@ set "GAME="
 rem File zip ban mod. De trong thi dung MOI file .zip ban mod canh file nay (tru *-xoi.zip, goi lf2-online-upload,
 rem xoi-kit), cac tien trinh chia deu cho cac ban mod; keo tha mot file zip vao file nay thi chi dung ban mod ay.
 set "PACK="
-rem So vong; so cap tran (moi cap: hai tran, doi ben) moi tien trinh moi vong; so tien trinh chay cung luc
+rem So vong (VONG), so cap tran moi tien trinh moi vong (CAP), so tien trinh chay cung luc (SONG_SONG).
+rem Mot cap tran: hai tran cung hai nhan vat, cung san, doi ben - ban "cong" (31 so nhich len hay xuong ngau nhien)
+rem danh ban "tru" (nhich nguoc lai); xong cap, cac so dich ve phia ban danh tot hon. Mot vong: moi tien trinh danh
+rem CAP cap tren ban mod cua no; het vong lay trung binh so cua moi tien trinh, vong sau bat dau tu do. Moi tien trinh
+rem dich so VONG x CAP lan, buoc dich nho dan theo tong ay. Mot cap mat chung 1-3 giay (One Piece lau hon Naruto), nen
+rem mot vong mat chung CAP x 2 giay; het moi vong file nay in vong ay mat bao lau va ca qua trinh con khoang bao lau.
 set "VONG=12"
 set "CAP=40"
 set "SONG_SONG=%NUMBER_OF_PROCESSORS%"
@@ -87,6 +92,19 @@ if not defined SCRIPTS (echo Khong thay thu muc scripts canh file nay - can bo X
 findstr /c:"smart.tune_ranges" "%SCRIPTS%\base\game\smart_ai.lua" >nul 2>nul || (echo "%SCRIPTS%\base\game\smart_ai.lua" chua co cac con so de chinh ^(smart.tune_ranges^) - can bo XOI hoac goi ban 32 tro len.& pause& exit /b 1)
 set /a N=SONG_SONG
 if %N% LSS 1 set /a N=1
+rem Bo nho: mot tien trinh dung toi khoang 0,6 GB (Naruto ~0,5). SONG_SONG de mac dinh (moi luong CPU) ma may it RAM
+rem thi bot so tien trinh, chua lai khoang 4 GB cho Windows (may 16 GB: 18 tien trinh). Dat SONG_SONG khac so luong
+rem CPU thi giu dung so ay.
+set /a RAM_GB=0
+if "%SONG_SONG%"=="%NUMBER_OF_PROCESSORS%" for /f %%m in ('powershell -NoProfile -Command "[int][math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)" 2^>nul') do set /a RAM_GB=%%m 2>nul
+if !RAM_GB! GEQ 2 (
+  set /a "TOI_DA=(RAM_GB-4)*10/6"
+  if !TOI_DA! LSS 1 set /a TOI_DA=1
+  if !TOI_DA! LSS %N% (
+    echo May co !RAM_GB! GB RAM: chay !TOI_DA! tien trinh thay vi %N% ^(moi tien trinh toi khoang 0,6 GB^).
+    set /a N=TOI_DA
+  )
+)
 set /a TONG=VONG*CAP
 
 if not exist "%LV%" mkdir "%LV%"
@@ -102,9 +120,10 @@ rem Diem bat dau: cac so cua AI (bat-dau.lua rong), hoac dat san mot bat-dau.lua
 if not exist "%LV%\bat-dau.lua" (>"%LV%\bat-dau.lua" echo return {})
 
 echo Ban mod ^(%NP%^):
-for /L %%p in (1,1,%NP%) do call echo   %%PACK_%%p%%
+for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
 echo %VONG% vong x %N% tien trinh x %CAP% cap tran = !TONG! cap moi tien trinh; ket qua vao "%LV%"
 echo Dung mo game choi trong luc nay. Tat may giua chung thi chay lai file nay de lam tiep.
+echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
@@ -127,6 +146,7 @@ goto vong_tiep
 :mot_vong
 echo.
 echo === Vong %E%/%VONG%: %N% tien trinh, moi tien trinh %CAP% cap tran ^(%TIME%^) ===
+call :giay BAT_DAU
 if exist "%D%" rmdir /s /q "%D%"
 mkdir "%D%"
 set /a FIRST=(E-1)*CAP
@@ -163,13 +183,22 @@ call :cho_dong "%M%\out.txt" "--SPSA_START"
 findstr /c:"--SPSA_START" "%M%\out.txt" >"%D%\start-sau.tmp"
 for %%f in ("%D%\start-sau.tmp") do if %%~zf LSS 20 (echo [LOI] Khong gop duoc vong %E% - xem "%M%\out.txt".& exit /b 1)
 move /y "%D%\start-sau.tmp" "%D%\start-sau.lua" >nul
+rem Vong nay mat bao lau (theo dong ho; qua nua dem van dung), ca qua trinh con khoang bao lau.
+call :giay XONG_LUC
+set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=VONG-E, CON=CON_V*PHUT_V, CON_G=CON/60, CON_P=CON %% 60"
+>>"%LV%\thoi-gian.txt" echo Vong %E%/%VONG%: %N% tien trinh x %CAP% cap tran, xong luc %TIME%, mat !PHUT_V! phut
 (
   echo Ket qua sau vong %E%/%VONG% ^(!CO!/%N% tien trinh xong^):
   type "%D%\start-sau.lua"
   echo.
   findstr /c:"SPSA_LIST" "%M%\out.txt"
+  echo.
+  echo Cai dat: VONG=%VONG% CAP=%CAP% SONG_SONG=%N% KIEM_TRA=%KIEM_TRA% HAT_GIONG=%HAT_GIONG%; ban mod:
+  for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
+  type "%LV%\thoi-gian.txt"
 ) >"%LV%\ket-qua.txt"
-echo Vong %E% xong: !CO!/%N% tien trinh. Cac so hien tai: "%LV%\ket-qua.txt"
+echo Vong %E% xong luc %TIME%: !CO!/%N% tien trinh, vong nay mat !PHUT_V! phut; con !CON_V! vong, khoang !CON_G! gio !CON_P! phut ^(chua ke kiem tra^).
+echo Cac so hien tai: "%LV%\ket-qua.txt"
 exit /b 0
 
 :kiem
@@ -190,10 +219,15 @@ for /L %%k in (1,1,%N%) do (
   start "SPSA kiem tra - %%k" /MIN cmd /c call "%SELF%" chay1 kiem-tra %%k !SEED! !PI!
 )
 call :cho "%K%" "SPSA_CHECK"
-set /a TW=0, TL=0, TD=0, CO=0
+rem Cong ket qua: ca thay, va tung ban mod (tien trinh k dung ban mod thu ((k-1) chia du cho so ban mod) + 1).
+set /a TW=0, TL=0, TD=0, CO=0, PK=0
+for /L %%p in (1,1,%NP%) do set /a "W_%%p=0, L_%%p=0, D_%%p=0"
 for /L %%k in (1,1,%N%) do (
+  set /a PK+=1
+  if !PK! GTR %NP% set /a PK=1
   if exist "%K%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK" "%K%\p%%k\out.txt"') do (
     set /a TW+=%%a, TL+=%%b, TD+=%%c, CO+=1
+    set /a "W_!PK!+=%%a, L_!PK!+=%%b, D_!PK!+=%%c"
   )
 )
 set /a TT=TW+TL
@@ -201,6 +235,7 @@ set /a PT=0
 if !TT! GTR 0 set /a PT=TW*1000/TT
 set /a P1=PT/10, P2=PT%%10
 >"%K%\tong.txt" echo Ban da chinh thang !TW!, ban goc thang !TL!, hoa !TD! ^(!CO!/%N% tien trinh; ban da chinh thang !P1!.!P2!%% so tran co nguoi thang^)
+if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :in_mod %%p
 type "%K%\tong.txt" >>"%LV%\ket-qua.txt"
 
 :xong
@@ -216,6 +251,22 @@ exit /b 0
 echo [LOI] Dung o vong %E%. Sua loi roi chay lai file nay de lam tiep.
 if "%KHONG_DUNG%"=="" pause
 exit /b 1
+
+rem --- Ket qua kiem tra cua ban mod thu %1 ---
+:in_mod
+set "TEN=!PACK_%1!"
+for %%n in ("!TEN!") do set "TEN=%%~nxn"
+set /a "MT=W_%1+L_%1, MP=0"
+if !MT! GTR 0 set /a "MP=W_%1*1000/MT"
+set /a "M1=MP/10, M2=MP %% 10"
+>>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)
+exit /b 0
+
+rem --- So giay tu nua dem theo dong ho vao bien %1 (%TIME% la gio:phut:giay; gio duoi 10 co dau cach o dau) ---
+:giay
+set "T_=%TIME: =0%"
+set /a "%1=(1%T_:~0,2%-100)*3600+(1%T_:~3,2%-100)*60+(1%T_:~6,2%-100)" 2>nul
+exit /b 0
 
 rem --- Moi tien trinh mot thu muc p<k>: bo chay thu, ban sao smart_ai.lua (ban "tru"), so bat dau ---
 :chuan_bi

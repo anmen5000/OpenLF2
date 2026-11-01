@@ -22,6 +22,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    whichever did better, round after round (12 rounds by default, one process per CPU thread), then the
    tuned numbers play the AI's own. Result: spsa\ket-qua.txt - send it to whoever maintains the AI. It can
    be stopped and started again: it goes on from the round it was in.
+   A pair (CAP) is two games, same fighters and stage, sides swapped; a round (VONG) is CAP pairs in every
+   process, then the processes' numbers are averaged. After each round it says how long the round took and
+   about how long the rest will take. Several mods at once: put their .zip files next to it; the processes
+   are dealt out among them in turn, and the check (KIEM_TRA) gives each mod's result too.
 6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
@@ -52,6 +56,10 @@ chơi được chính các file của bản mod.
    đánh tốt hơn, vòng này qua vòng khác (mặc định 12 vòng, mỗi luồng CPU một tiến trình), cuối cùng bản đã
    chỉnh đấu với bản gốc. Kết quả: spsa\ket-qua.txt - gửi file này cho người làm AI. Tắt giữa chừng được:
    chạy lại là làm tiếp từ vòng đang dở.
+   Một cặp (CAP) là hai trận, cùng nhân vật và sân, đổi bên; một vòng (VONG) là CAP cặp ở mọi tiến trình,
+   rồi lấy trung bình các số của các tiến trình. Hết mỗi vòng, file in vòng ấy mất bao lâu và còn khoảng
+   bao lâu. Nhiều bản mod cùng lúc: đặt các file .zip cạnh nó; các tiến trình chia lần lượt cho từng bản
+   mod, và phần kiểm tra (KIEM_TRA) cho cả kết quả của từng bản mod.
 6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 

@@ -52,6 +52,7 @@ echo Dang kiem tra, khoang 2 phut. Cua so game co the hien len roi tu tat - dung
   ver
   echo CPU: %NUMBER_OF_PROCESSORS% luong, %PROCESSOR_ARCHITECTURE% %PROCESSOR_ARCHITEW6432%
 ) >"%BAO%"
+powershell -NoProfile -Command "'RAM: ' + [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1) + ' GB'" >>"%BAO%" 2>&1
 rem Ban game da cai: x86 (32-bit), x64 hay arm64 - doc o dau file .exe.
 powershell -NoProfile -Command "$f = [IO.File]::OpenRead($env:GAME); try { $b = New-Object byte[] 4096; [void]$f.Read($b, 0, 4096) } finally { $f.Close() }; $o = [BitConverter]::ToInt32($b, 60); $m = [BitConverter]::ToUInt16($b, $o + 4); $k = switch ($m) { 0x14c { 'x86 (32-bit)' } 0x8664 { 'x64 (64-bit)' } 0xaa64 { 'arm64' } default { 'khong ro' } }; 'Ban game: ' + $k" >>"%BAO%" 2>&1
 echo.>>"%BAO%"

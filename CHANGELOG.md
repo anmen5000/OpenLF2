@@ -82,7 +82,10 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   values are unchanged and play is the same frame for frame), and tuning them by play: the bench's `spsa` job (SPSA,
   as chess engines tune their numbers: two versions with every number nudged opposite ways fight, and the numbers
   move toward the better one; chains averaged between rounds; tuned numbers against the AI's own) and the kit's
-  `spsa.bat`, which runs it on every thread of a PC over the mods beside it, round after round, resumable
+  `spsa.bat`, which runs it on every thread of a PC over the mods beside it, round after round, resumable; it says
+  how long each round took and about how long the rest will take (also kept in `spsa\thoi-gian.txt`), gives the
+  check's result for each mod as well as in all, and runs fewer processes than CPU threads on a PC short of memory
+  (about 0.6 GB a process at most, 4 GB kept for Windows)
 - INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
   is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
   flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the

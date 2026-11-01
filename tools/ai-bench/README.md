@@ -159,6 +159,10 @@ The gains are shares of each number's range: `a` (0.02) for the steps, `c` (0.08
 averaged after every round, the next round starting from the average. `windows/spsa.bat` does all of it on a PC: one
 chain per CPU thread, the mods beside it shared among the chains, 12 rounds of 40 game pairs, then the tuned
 numbers against the AI's own; it writes `spsa\ket-qua.txt` and goes on from the round it was in when started again.
+After each round it gives the round's minutes and about how long the rest will take (`spsa\thoi-gian.txt`), and the
+check's result comes for each mod as well as in all. A pair takes a process about 1 to 2 seconds with LuaJIT (Naruto
+2.4 1.0, OPLoS 2.1X 1.1, One Piece GrandWorld 1.7, KT-LF2 2.1; PUC Lua 2.5 to 5 times as long), and a process holds up
+to about half a GB once it has met its mod's fighters (fewer chains on a PC short of memory: 0.6 GB each, 4 GB kept).
 Tuned numbers are taken into the AI only after they beat its own over the usual measures (`duel` against the
 previous version on the standard pairs of several mods).
 
