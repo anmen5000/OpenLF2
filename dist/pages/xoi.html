@@ -221,7 +221,8 @@
             <code>OpenLF2-Windows-x86.exe</code> for 32-bit Windows, <code>OpenLF2-Windows-arm64.exe</code> for ARM PCs.</td>
             <td data-label="Where to get it"><a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> of this project on GitHub</td></tr>
           <tr><td><code>xoi-kit.zip</code></td><td data-label="What it is"><code>choi.bat</code> (play), <code>xoi-hoc.bat</code> (train),
-            <code>dau-nhieu.bat</code> (measure), the newest game scripts with INSANE! and XOI, and the training bench (about 3 MB).</td>
+            <code>dau-nhieu.bat</code> (measure), <code>spsa.bat</code> (tune), <code>kiem-tra.bat</code> (check), the newest game
+            scripts with INSANE! and XOI, and the training bench (about 3 MB).</td>
             <td data-label="Where to get it"><a href="xoi-kit.zip">This site</a>, or the release</td></tr>
           <tr><td>Your mod</td><td data-label="What it is">The mod as a <code>.zip</code> of its game folder — the folder that has <code>data\data.txt</code>
             in it, where the mod's <code>.exe</code> is — or that folder itself. A <code>.rar</code> or <code>.7z</code>: extract it
@@ -238,7 +239,8 @@
             <code>OpenLF2-Windows-x86.exe</code> cho Windows 32-bit, <code>OpenLF2-Windows-arm64.exe</code> cho máy chip ARM.</td>
             <td data-label="Lấy ở đâu">Mục <a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> của dự án trên GitHub</td></tr>
           <tr><td><code>xoi-kit.zip</code></td><td data-label="Là gì"><code>choi.bat</code> (chơi), <code>xoi-hoc.bat</code> (huấn luyện),
-            <code>dau-nhieu.bat</code> (đo), scripts mới nhất của game có INSANE! và XOI, và bộ công cụ huấn luyện (khoảng 3 MB).</td>
+            <code>dau-nhieu.bat</code> (đo), <code>spsa.bat</code> (chỉnh số), <code>kiem-tra.bat</code> (kiểm tra), scripts mới
+            nhất của game có INSANE! và XOI, và bộ công cụ huấn luyện (khoảng 3 MB).</td>
             <td data-label="Lấy ở đâu"><a href="xoi-kit.zip">Trang này</a>, hoặc trong bản release</td></tr>
           <tr><td>Bản mod của bạn</td><td data-label="Là gì">Bản mod dạng file <code>.zip</code> của thư mục game — thư mục có <code>data\data.txt</code>
             bên trong, nơi có file <code>.exe</code> của bản mod — hoặc chính thư mục ấy. File <code>.rar</code> hay <code>.7z</code>:
@@ -301,6 +303,11 @@
         <li><b>A window that stays blue or black, with no pictures?</b> <code>choi.bat</code> draws with OpenGL, since the game's
           usual renderer ("gpu") shows some PCs nothing but the menu's blue. Should it still happen: right-click
           <code>choi.bat</code>, <i>Edit</i>, set <code>VE=software</code>, save, and run it again.</li>
+        <li><b>The game does not open, or closes at once?</b> Install <code>OpenLF2-Windows-x64.exe</code> — the x86 one is
+          only for 32-bit Windows (x86 builds made before November 2, 2026 close at once wherever they draw with OpenGL,
+          as <code>choi.bat</code> has them do). Should it still happen: put a mod's <code>.zip</code> next to <code>kiem-tra.bat</code>, double-click it,
+          wait about two minutes (game windows may open and close by themselves) and send the <code>kiem-tra.txt</code> it
+          writes.</li>
       </ol>
       <ol class="steps vi">
         <li><b>Đặt file <code>.zip</code> bản mod vào thư mục bộ XOI, cạnh <code>choi.bat</code>, rồi nháy đúp <code>choi.bat</code>.</b>
@@ -318,6 +325,10 @@
         <li><b>Cửa sổ game chỉ xanh hay đen, không có hình?</b> <code>choi.bat</code> vẽ bằng OpenGL, vì cách vẽ thường dùng
           của game ("gpu") ở vài máy chỉ hiện nền xanh của menu. Nếu vẫn bị: chuột phải <code>choi.bat</code>, <i>Edit</i>,
           sửa thành <code>VE=software</code>, lưu, chạy lại.</li>
+        <li><b>Game không mở được, hay mở rồi tắt ngay?</b> Cài <code>OpenLF2-Windows-x64.exe</code> — bản x86 chỉ dành cho
+          Windows 32-bit (bản x86 làm trước ngày 2/11/2026 tắt ngay khi vẽ bằng OpenGL, cách vẽ mà <code>choi.bat</code> dùng). Nếu vẫn bị: đặt file
+          <code>.zip</code> bản mod cạnh <code>kiem-tra.bat</code>, nháy đúp, đợi khoảng hai phút (cửa sổ game có thể tự hiện rồi
+          tự tắt) rồi gửi file <code>kiem-tra.txt</code> nó tạo ra.</li>
       </ol>
       <h3><span class="en">Settings at the top of choi.bat</span><span class="vi">Các dòng chỉnh ở đầu choi.bat</span></h3>
       <div class="table-wrap en">
@@ -576,6 +587,7 @@
   xoi-hoc.bat           <i>train XOI for a mod</i>
   dau-nhieu.bat         <i>measure: two computer players on every pair</i>
   spsa.bat              <i>tune INSANE!'s numbers by play</i>
+  kiem-tra.bat          <i>the game does not open: find out why (kiem-tra.txt)</i>
   README.txt            <i>the short version of this page</i>
   version.txt           <i>which INSANE! and OpenLF2 this kit is</i>
   scripts\              <i>the game's scripts with INSANE! and XOI (base\game\smart_ai.lua)</i>
@@ -597,6 +609,7 @@
   xoi-hoc.bat           <i>huấn luyện XOI cho bản mod</i>
   dau-nhieu.bat         <i>đo: hai loại máy đấu mọi cặp</i>
   spsa.bat              <i>chỉnh các con số của INSANE! bằng cách cho máy đánh</i>
+  kiem-tra.bat          <i>game không mở được: tìm lý do (kiem-tra.txt)</i>
   README.txt            <i>bản ngắn của trang này</i>
   version.txt           <i>bộ này là INSANE! và OpenLF2 phiên bản nào</i>
   scripts\              <i>scripts của game có INSANE! và XOI (base\game\smart_ai.lua)</i>

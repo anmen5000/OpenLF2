@@ -139,6 +139,20 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   last the software renderer), or leaves out an xBRZ upscaler that shows nothing; a read SDL cannot make counts as
   shown. `choi.bat` draws with OpenGL unless its `VE` line names a renderer, and starts the game again with its
   usual renderer when OpenGL does not open
+- Windows x86 (32-bit) build: the game closed at once, before its window showed (Windows logged 0xc0000409, its
+  stack check), wherever it drew with OpenGL — `choi.bat`'s renderer, and the next one tried after a GPU renderer
+  that shows nothing: the xBRZ upscaler called OpenGL through plain function pointers, while OpenGL's functions on
+  32-bit Windows use the stdcall convention, so each call left the stack off by its arguments. The pointers now
+  carry the convention (`OPENLF2_GL_CALL` in `src/adapters/sdl/gl_upscaler.cpp`); x64, arm64 and the other
+  platforms have only one
+- XOI kit: `spsa.bat` started its processes as `start "…" "spsa.bat" chay1 "<folder>" …`, a line Windows hands to
+  `cmd /k`, which drops its first and last quote when it holds more than one pair — so no process ran (in the
+  project owner's `D:\…\AI arena` as anywhere) and the tuning stopped at its first round. `spsa.bat`, and to be
+  safe in folders with brackets `xoi-hoc.bat` and `dau-nhieu.bat`, now start them as
+  `cmd /c call "<the .bat>" <words without quotes>`. `choi.bat` takes any exit code but 0 for a failure — a crash's
+  is negative, which `if errorlevel 1` missed, so its window closed without a word — and the kit gains
+  `kiem-tra.bat`, which writes why the game does not open on a PC into `kiem-tra.txt` (the game file's build, the
+  graphics card, a run without a window, a window with each renderer, Windows' own record of the game's crashes)
 - Builds: `dist/collect-licenses.py` tries a dropped or stalled download of a license source again (after 15, 30,
   60 and 120 seconds) instead of failing the build — GitHub's Windows arm64 runner lost ffmpeg.org's archive in the
   last three Windows runs, which marked them failed although x86 and x64 had built

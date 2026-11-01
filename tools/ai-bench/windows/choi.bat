@@ -128,14 +128,19 @@ if defined VE set "XR=--renderer %VE%"
 echo Game: %GAME%
 echo Ban mod: %PACK%
 echo Chon nhan vat, them may (Com), o dong muc kho bam qua CRAZY la toi INSANE, roi XOI.
+rem Ma thoat khac 0 la loi. Game bi Windows tat ngang thi ma am (vi du -1073740791 = 0xC0000409), ma "if errorlevel 1"
+rem khong bat duoc: so sanh voi 0.
 "%GAME%" %XR% %XS% --pack "%PACK%"
-if errorlevel 1 if not defined VE (
+set "MA=!errorlevel!"
+if not "!MA!"=="0" if not defined VE (
   echo.
-  echo Cach ve opengl khong mo duoc tren may nay - thu lai voi cach ve mac dinh cua game ...
+  echo Cach ve opengl khong mo duoc tren may nay ^(ma thoat !MA!^) - thu lai voi cach ve mac dinh cua game ...
   "%GAME%" %XS% --pack "%PACK%"
+  set "MA=!errorlevel!"
 )
-if errorlevel 1 (
+if not "!MA!"=="0" (
   echo.
-  echo Game dung voi loi ^(xem cac dong o tren^). Cua so game chi xanh hay den: sua dong VE o dau file ^(opengl, software^).
+  echo Game dung voi loi ^(ma thoat !MA!, xem cac dong o tren^). Cua so game chi xanh hay den: sua dong VE o dau file
+  echo ^(opengl, software^). Game khong mo duoc: chay kiem-tra.bat ^(canh file nay^) roi gui file kiem-tra.txt.
   pause
 )

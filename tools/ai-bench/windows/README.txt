@@ -7,6 +7,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
 
 1. Install OpenLF2 for Windows once: OpenLF2-Windows-x64.exe from
    https://github.com/anmen5000/OpenLF2/releases/latest
+   (x64 is for 64-bit Windows 10 and 11, nearly every PC; x86 is only for old 32-bit Windows.)
    Choose "Install for me only". If Windows says "Windows protected your PC": More info, then Run anyway.
 2. Play: put a mod's .zip next to choi.bat and double-click choi.bat, or drag the mod's .zip, its folder
    or its .exe onto choi.bat. In the game, cycle the difficulty past CRAZY! to INSANE!, then XOI.
@@ -21,10 +22,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    whichever did better, round after round (12 rounds by default, one process per CPU thread), then the
    tuned numbers play the AI's own. Result: spsa\ket-qua.txt - send it to whoever maintains the AI. It can
    be stopped and started again: it goes on from the round it was in.
+6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
+   about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), scripts\ (the game's scripts with the
-computer players, laid over the installed game's), tools\ai-bench\ (the training and measuring jobs),
-version.txt (which version this kit is).
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), kiem-tra.bat (check),
+scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
+training and measuring jobs), version.txt (which version this kit is).
 
 ----- Tiếng Việt -----
 File .exe của bản mod là Little Fighter 2 gốc: máy chỉ tới CRAZY!. INSANE! và XOI nằm trong OpenLF2,
@@ -32,6 +35,7 @@ chơi được chính các file của bản mod.
 
 1. Cài OpenLF2 cho Windows một lần: OpenLF2-Windows-x64.exe ở
    https://github.com/anmen5000/OpenLF2/releases/latest
+   (x64 cho Windows 10 và 11 bản 64-bit, gần như mọi máy; x86 chỉ cho Windows 32-bit cũ.)
    Chọn "Install for me only". Windows báo "Windows protected your PC": bấm More info, rồi Run anyway.
 2. Chơi: đặt file .zip bản mod cạnh choi.bat rồi nháy đúp choi.bat, hoặc kéo thả file .zip bản mod,
    thư mục bản mod hay file .exe của bản mod vào choi.bat. Trong game, ở dòng mức khó bấm qua CRAZY!
@@ -48,7 +52,9 @@ chơi được chính các file của bản mod.
    đánh tốt hơn, vòng này qua vòng khác (mặc định 12 vòng, mỗi luồng CPU một tiến trình), cuối cùng bản đã
    chỉnh đấu với bản gốc. Kết quả: spsa\ket-qua.txt - gửi file này cho người làm AI. Tắt giữa chừng được:
    chạy lại là làm tiếp từ vòng đang dở.
+6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
+   2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), scripts\ (scripts của game có
-máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc huấn luyện và đo),
-version.txt (bộ này là phiên bản nào).
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), kiem-tra.bat (kiểm
+tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
+huấn luyện và đo), version.txt (bộ này là phiên bản nào).

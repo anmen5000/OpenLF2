@@ -28,7 +28,10 @@ set "BENCH="
 set "SCRIPTS="
 rem =====================================
 
-rem (File nay tu goi lai chinh no cho tung tien trinh: "chay1 <thu muc> <hat giong> <so thu tu ban mod>".)
+rem (File nay tu goi lai chinh no cho tung tien trinh, trong cua so rieng: cmd /c call "<file nay>" chay1 <vong-N
+rem hoac kiem-tra> <so tien trinh> <hat giong> <so thu tu ban mod>. Ngoai ten file, khong dau ngoac kep nao: khi
+rem lenh co nhieu cap ngoac kep, Windows bo dau ngoac kep dau va cuoi, va duong dan co dau cach - vi du
+rem D:\...\AI arena - lam tien trinh khong chay. Thu muc cua tien trinh: spsa\<vong-N hoac kiem-tra>\p<so>.)
 if /i "%~1"=="chay1" goto chay1
 
 set "SELF=%~f0"
@@ -134,7 +137,7 @@ for /L %%k in (1,1,%N%) do (
   if !PI! GTR %NP% set /a PI=1
   set /a SEED=HAT_GIONG+E*1000+%%k
   >"%D%\p%%k\config.lua" echo return {command = "spsa", step = "chain", start = "spsa_start", iterations = %CAP%, first = %FIRST%, total = %TONG%, seed = !SEED!, limit = 9000}
-  start "SPSA vong %E% - %%k" /MIN "%SELF%" chay1 "%D%\p%%k" !SEED! !PI!
+  start "SPSA vong %E% - %%k" /MIN cmd /c call "%SELF%" chay1 vong-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
 rem Gop: trung binh so cua cac tien trinh da xong.
@@ -184,7 +187,7 @@ for /L %%k in (1,1,%N%) do (
   if !PI! GTR %NP% set /a PI=1
   set /a SEED=HAT_GIONG+500000+%%k
   >"%K%\p%%k\config.lua" echo return {command = "spsa", step = "check", start = "spsa_start", games = %KIEM_TRA%, seed = !SEED!, limit = 9000}
-  start "SPSA kiem tra - %%k" /MIN "%SELF%" chay1 "%K%\p%%k" !SEED! !PI!
+  start "SPSA kiem tra - %%k" /MIN cmd /c call "%SELF%" chay1 kiem-tra %%k !SEED! !PI!
 )
 call :cho "%K%" "SPSA_CHECK"
 set /a TW=0, TL=0, TD=0, CO=0
@@ -269,9 +272,11 @@ if !CD! GEQ 30 exit /b 1
 ping -n 3 127.0.0.1 >nul 2>&1
 goto cho_dong_tiep
 
-rem --- Mot tien trinh: game chay ngam, %2 thu muc, %3 hat giong, %4 so thu tu ban mod; xong thi dong cua so ---
+rem --- Mot tien trinh: game chay ngam; %2 vong-N hoac kiem-tra, %3 so tien trinh, %4 hat giong, %5 so thu tu ban
+rem mod (LV, GAME_DA_CHON, XS_DA_CHON, PACK_n: tu cua so chinh); xong thi dong cua so ---
 :chay1
-set "P=!PACK_%~4!"
-"%GAME_DA_CHON%" --pack "!P!" %XS_DA_CHON% --mod "%~2" --seed %~3 --input-trace "" >"%~2\out.txt" 2>&1
->"%~2\xong.txt" echo xong
+set "DIR=%LV%\%~2\p%~3"
+set "P=!PACK_%~5!"
+"%GAME_DA_CHON%" --pack "!P!" %XS_DA_CHON% --mod "!DIR!" --seed %~4 --input-trace "" >"!DIR!\out.txt" 2>&1
+>"!DIR!\xong.txt" echo xong
 exit

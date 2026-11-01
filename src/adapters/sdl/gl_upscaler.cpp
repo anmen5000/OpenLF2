@@ -47,43 +47,51 @@ constexpr GLenum gl_false = 0, gl_triangle_strip = 5, gl_texture_2d = 0x0DE1, gl
     gl_texture_wrap_t = 0x2803, gl_nearest = 0x2600, gl_clamp_to_edge = 0x812F,
     gl_no_error = 0;
 
+// OpenGL's functions use the stdcall convention on 32-bit Windows (APIENTRY there). Called through plain pointers,
+// each call left the stack off by its arguments, and the x86 build stopped at once with 0xc0000409 (its stack
+// check) as soon as the OpenGL renderer made the xBRZ upscaler. Elsewhere there is only one convention.
+#if defined(_WIN32) && !defined(_WIN64)
+#define OPENLF2_GL_CALL __stdcall
+#else
+#define OPENLF2_GL_CALL
+#endif
 struct Functions {
-    void (*viewport)(GLint, GLint, GLsizei, GLsizei) = nullptr;
-    void (*get_integerv)(GLenum, GLint*) = nullptr;
-    GLenum (*get_error)() = nullptr;
-    GLboolean (*is_enabled)(GLenum) = nullptr;
-    void (*enable)(GLenum) = nullptr;
-    void (*disable)(GLenum) = nullptr;
-    GLuint (*create_shader)(GLenum) = nullptr;
-    void (*shader_source)(GLuint, GLsizei, const GLchar* const*, const GLint*) = nullptr;
-    void (*compile_shader)(GLuint) = nullptr;
-    void (*get_shaderiv)(GLuint, GLenum, GLint*) = nullptr;
-    void (*get_shader_info_log)(GLuint, GLsizei, GLsizei*, GLchar*) = nullptr;
-    void (*delete_shader)(GLuint) = nullptr;
-    GLuint (*create_program)() = nullptr;
-    void (*attach_shader)(GLuint, GLuint) = nullptr;
-    void (*bind_attrib_location)(GLuint, GLuint, const GLchar*) = nullptr;
-    void (*link_program)(GLuint) = nullptr;
-    void (*get_programiv)(GLuint, GLenum, GLint*) = nullptr;
-    void (*get_program_info_log)(GLuint, GLsizei, GLsizei*, GLchar*) = nullptr;
-    void (*delete_program)(GLuint) = nullptr;
-    void (*use_program)(GLuint) = nullptr;
-    GLint (*get_uniform_location)(GLuint, const GLchar*) = nullptr;
-    void (*uniform1i)(GLint, GLint) = nullptr;
-    void (*uniform4f)(GLint, GLfloat, GLfloat, GLfloat, GLfloat) = nullptr;
-    void (*gen_buffers)(GLsizei, GLuint*) = nullptr;
-    void (*delete_buffers)(GLsizei, const GLuint*) = nullptr;
-    void (*bind_buffer)(GLenum, GLuint) = nullptr;
-    void (*buffer_data)(GLenum, GLsizeiptr, const void*, GLenum) = nullptr;
-    void (*enable_vertex_attrib_array)(GLuint) = nullptr;
-    void (*disable_vertex_attrib_array)(GLuint) = nullptr;
-    void (*vertex_attrib_pointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const void*) = nullptr;
-    void (*get_vertex_attribiv)(GLuint, GLenum, GLint*) = nullptr;
-    void (*draw_arrays)(GLenum, GLint, GLsizei) = nullptr;
-    void (*active_texture)(GLenum) = nullptr;
-    void (*bind_texture)(GLenum, GLuint) = nullptr;
-    void (*bind_framebuffer)(GLenum, GLuint) = nullptr;
-    void (*tex_parameteri)(GLenum, GLenum, GLint) = nullptr;
+    void (OPENLF2_GL_CALL *viewport)(GLint, GLint, GLsizei, GLsizei) = nullptr;
+    void (OPENLF2_GL_CALL *get_integerv)(GLenum, GLint*) = nullptr;
+    GLenum (OPENLF2_GL_CALL *get_error)() = nullptr;
+    GLboolean (OPENLF2_GL_CALL *is_enabled)(GLenum) = nullptr;
+    void (OPENLF2_GL_CALL *enable)(GLenum) = nullptr;
+    void (OPENLF2_GL_CALL *disable)(GLenum) = nullptr;
+    GLuint (OPENLF2_GL_CALL *create_shader)(GLenum) = nullptr;
+    void (OPENLF2_GL_CALL *shader_source)(GLuint, GLsizei, const GLchar* const*, const GLint*) = nullptr;
+    void (OPENLF2_GL_CALL *compile_shader)(GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *get_shaderiv)(GLuint, GLenum, GLint*) = nullptr;
+    void (OPENLF2_GL_CALL *get_shader_info_log)(GLuint, GLsizei, GLsizei*, GLchar*) = nullptr;
+    void (OPENLF2_GL_CALL *delete_shader)(GLuint) = nullptr;
+    GLuint (OPENLF2_GL_CALL *create_program)() = nullptr;
+    void (OPENLF2_GL_CALL *attach_shader)(GLuint, GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *bind_attrib_location)(GLuint, GLuint, const GLchar*) = nullptr;
+    void (OPENLF2_GL_CALL *link_program)(GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *get_programiv)(GLuint, GLenum, GLint*) = nullptr;
+    void (OPENLF2_GL_CALL *get_program_info_log)(GLuint, GLsizei, GLsizei*, GLchar*) = nullptr;
+    void (OPENLF2_GL_CALL *delete_program)(GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *use_program)(GLuint) = nullptr;
+    GLint (OPENLF2_GL_CALL *get_uniform_location)(GLuint, const GLchar*) = nullptr;
+    void (OPENLF2_GL_CALL *uniform1i)(GLint, GLint) = nullptr;
+    void (OPENLF2_GL_CALL *uniform4f)(GLint, GLfloat, GLfloat, GLfloat, GLfloat) = nullptr;
+    void (OPENLF2_GL_CALL *gen_buffers)(GLsizei, GLuint*) = nullptr;
+    void (OPENLF2_GL_CALL *delete_buffers)(GLsizei, const GLuint*) = nullptr;
+    void (OPENLF2_GL_CALL *bind_buffer)(GLenum, GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *buffer_data)(GLenum, GLsizeiptr, const void*, GLenum) = nullptr;
+    void (OPENLF2_GL_CALL *enable_vertex_attrib_array)(GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *disable_vertex_attrib_array)(GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *vertex_attrib_pointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const void*) = nullptr;
+    void (OPENLF2_GL_CALL *get_vertex_attribiv)(GLuint, GLenum, GLint*) = nullptr;
+    void (OPENLF2_GL_CALL *draw_arrays)(GLenum, GLint, GLsizei) = nullptr;
+    void (OPENLF2_GL_CALL *active_texture)(GLenum) = nullptr;
+    void (OPENLF2_GL_CALL *bind_texture)(GLenum, GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *bind_framebuffer)(GLenum, GLuint) = nullptr;
+    void (OPENLF2_GL_CALL *tex_parameteri)(GLenum, GLenum, GLint) = nullptr;
 };
 
 template <typename Pointer> bool load(Pointer& target, const char* name) {

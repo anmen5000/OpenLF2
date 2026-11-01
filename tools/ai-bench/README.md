@@ -123,9 +123,15 @@ over the installed game's only when their `smart.version` is higher. All three f
 themselves (for the user, for all users, or an `OpenLF2` folder beside them) and the mod's ZIP beside them
 (`xoi-hoc.bat` passes over the `*-xoi.zip` it makes; a ZIP dragged onto either is the one, handed to the background
 processes in `PACK_DA_CHON`); `xoi-hoc.bat` keeps the trained ZIP's path in `xoi-<mod>\ban-mod.txt`, so dragging
-that folder onto it merges and packs again. `dist/make-xoi-kit.sh` packs the three with `scripts` and this folder as
-`xoi-kit.zip` (one folder, `LF2-XOI-kit`), which the site publishes with its guide (`dist/pages/xoi.html`, English and
-Vietnamese) and "Upload to latest release" attaches beside the Windows installers.
+that folder onto it merges and packs again. The files that run background processes start each as
+`start "<title>" /MIN cmd /c call "<the .bat>" chay1 <words>`, with no other quotes: given a `.bat` and more than one
+quoted pair, `start` hands the line to `cmd /k`, which drops its first and last quote, and the process never runs
+where the folder has spaces. `windows/kiem-tra.bat` is for a PC where the game does not open: it writes into
+`kiem-tra.txt` the installed game's build (x86, x64 or arm64, from its PE header), the graphics card, a `loadall` run
+without a window, 15 seconds of a window with each renderer, and Windows' record of the game's crashes.
+`dist/make-xoi-kit.sh` packs the `.bat` files with `scripts` and this folder as `xoi-kit.zip` (one folder,
+`LF2-XOI-kit`), which the site publishes with its guide (`dist/pages/xoi.html`, English and Vietnamese) and "Upload
+to latest release" attaches beside the Windows installers.
 
 ## Tuning INSANE!'s numbers (SPSA)
 

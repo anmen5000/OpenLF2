@@ -27,7 +27,8 @@ set "BENCH="
 set "SCRIPTS="
 rem =====================================
 
-rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <hat giong> <so thu tu>", ban mod o PACK_DA_CHON.)
+rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <hat giong> <so thu tu>", ban mod o PACK_DA_CHON;
+rem qua cmd /c call, de duong dan co dau cach hay dau ngoac ^(^) van chay - xem spsa.bat.)
 if /i "%~1"=="chay1" set "PACK=%PACK_DA_CHON%"
 if /i "%~x1"==".zip" if not exist "%~1\" set "PACK=%~f1"
 if not defined PACK (
@@ -108,7 +109,7 @@ echo Mo %N% tien trinh, hat giong tu %HAT_GIONG_DAU% + 1 ...
 set "PACK_DA_CHON=%PACK%"
 for /L %%i in (1,1,%N%) do (
   set /a SEED=HAT_GIONG_DAU+%%i
-  start "AI !SEED!" /MIN "%~f0" chay1 !SEED! %%i
+  start "AI !SEED!" /MIN cmd /c call "%~f0" chay1 !SEED! %%i
 )
 echo Dang chay (moi tien trinh la mot cua so thu nho, khong ve hinh). Ket qua ghi vao "%KQ%"
 echo Cho cac tien trinh openlf2.exe ket thuc (dung mo game choi trong luc nay)...

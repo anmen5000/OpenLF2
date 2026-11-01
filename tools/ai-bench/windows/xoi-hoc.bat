@@ -27,7 +27,8 @@ set "BENCH="
 set "SCRIPTS="
 rem =====================================
 
-rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <so thu tu>", voi ban mod da chon o PACK_DA_CHON.)
+rem (File nay tu goi lai chinh no de chay tung tien trinh: "chay1 <so thu tu>", voi ban mod da chon o PACK_DA_CHON;
+rem qua cmd /c call, de duong dan co dau cach hay dau ngoac ^(^) van chay - xem spsa.bat.)
 if /i "%~1"=="chay1" set "PACK=%PACK_DA_CHON%"
 rem Keo tha vao file nay: file zip = hoc ban mod ay. Chu gop, hay mot thu muc (thu muc xoi-<ten> = ban mod <ten>):
 rem chi gop lai cac dot da hoc va dong goi, khong hoc them.
@@ -138,7 +139,7 @@ for /L %%k in (1,1,%N%) do (
 echo Ban mod: "%PACK%"
 echo Mo %N% tien trinh hoc ^(%NAO% danh %NAO%^), moi cap %VAN% tran, hat giong tu %HAT_GIONG_DAU% + 1 ...
 set "PACK_DA_CHON=%PACK%"
-for /L %%k in (1,1,%N%) do start "XOI %%k" /MIN "%~f0" chay1 %%k
+for /L %%k in (1,1,%N%) do start "XOI %%k" /MIN cmd /c call "%~f0" chay1 %%k
 echo Dang hoc (moi tien trinh la mot cua so thu nho, khong ve hinh). Ket qua ghi vao "%KQ%"
 echo Cho cac tien trinh openlf2.exe ket thuc (dung mo game choi trong luc nay)...
 if defined KHONG_CHO exit /b 0

@@ -3,9 +3,9 @@
 # Copyright (c) 2026 OpenLF2 contributors
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
-# choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure) and
-# spsa.bat (tune INSANE!'s numbers by play), beside this checkout's game scripts and AI bench, which they lay over
-# the installed game's scripts.
+# choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
+# spsa.bat (tune INSANE!'s numbers by play) and kiem-tra.bat (find out why the game does not open on a PC), beside
+# this checkout's game scripts and AI bench, which they lay over the installed game's scripts.
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 out=$(realpath -m "$1")
@@ -30,7 +30,7 @@ def crlf(data):
 
 
 windows = root / "tools/ai-bench/windows"
-for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat"):
+for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "kiem-tra.bat"):
     data = (windows / name).read_bytes()
     # cmd reads labels wrongly in a batch file without CRLF line ends (.gitattributes keeps them).
     if data.count(b"\n") != data.count(b"\r\n"):
