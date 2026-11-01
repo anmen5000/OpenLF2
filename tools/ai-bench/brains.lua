@@ -1,7 +1,8 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026 OpenLF2 contributors
--- The computer players a bench job may name: "smart" (INSANE! as in scripts/), "classic" (the original computer
--- player), or "smart@<module>" — another computer player in the shape of smart_ai.lua, loaded from this package as
+-- The computer players a bench job may name: "smart" (INSANE! as in scripts/), "xoi" (XOI: INSANE! with the notes of
+-- training, the mod's xoi/notes.txt or those a job hands over), "classic" (the original computer player), or
+-- "smart@<module>" — another computer player in the shape of smart_ai.lua, loaded from this package as
 -- <module>.lua (listed in package.manifest), so that two versions of the AI, or a player of your own, fight.
 -- The match still calls base/game/smart_ai for every "smart…" fighter; it hands the others' fighters over.
 local brains = {}
@@ -49,6 +50,10 @@ function brains.load(name)
 end
 -- The brain's name with the version it runs ("smart v22", "smart@ai_alt v21", "classic").
 function brains.label(name)
+    if name == "xoi" then
+        local smart = require("base/game/smart_ai")
+        return string.format("xoi v%d (notes of %d pairs)", smart.version, smart.notes_pairs())
+    end
     local module = name == "smart" and require("base/game/smart_ai") or brains.load(name)
     if not module then return name end
     -- (The version number exists from version 20 on.)

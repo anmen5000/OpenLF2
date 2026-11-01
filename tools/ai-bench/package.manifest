@@ -23,3 +23,4 @@ module=ai_template|ai_template.lua
 module=still|still.lua
 module=brains|brains.lua
 module=show|show.lua
+module=learn|learn.lua

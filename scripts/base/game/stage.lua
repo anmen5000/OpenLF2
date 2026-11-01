@@ -179,7 +179,8 @@ local function next_stage(state, run)
         if value and value.record.kind == record_kinds.character then
             value.x_int = random(30) + 50
             value.x = value.x_int
-            value.dark_hp = value.dark_hp + (state.difficulty + 2) * 50
+            -- (XOI plays INSANE!'s rules.)
+            value.dark_hp = value.dark_hp + (math.max(state.difficulty, constants.difficulties.insane) + 2) * 50
             if value.dark_hp > value.max_hp then value.dark_hp = value.max_hp end
             value.hp = value.dark_hp
             value.mp = constants.points.full

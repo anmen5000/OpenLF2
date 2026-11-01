@@ -473,7 +473,7 @@ local option_highlights = {
 }
 local difficulties = {[constants.difficulties.easy] = "Easy", [constants.difficulties.normal] = "Normal",
     [constants.difficulties.difficult] = "Difficult", [constants.difficulties.crazy] = "CRAZY!",
-    [constants.difficulties.insane] = "INSANE!"}
+    [constants.difficulties.insane] = "INSANE!", [constants.difficulties.xoi] = "XOI"}
 local music_names = {[0] = "Random", "Main Theme", "Stage 1", "Stage 2", "Stage 3", "Stage 4",
     "Stage 5", "Boss", "Final Boss"}
 local function background_name(state, row)
@@ -564,9 +564,9 @@ local function options_menu(state, previous_menu, context)
     elseif options.row == option_rows.difficulty then
         options.difficulty = options.difficulty - 1
         local unlocked = require("base/game/unlock").flags.characters
-        -- CRAZY! and OpenLF2's INSANE! after it come with the unlock, as CRAZY! does in the original.
+        -- CRAZY! and OpenLF2's INSANE! and XOI after it come with the unlock, as CRAZY! does in the original.
         if (options.difficulty < constants.difficulties.difficult and unlocked == 0)
-           or options.difficulty < constants.difficulties.insane then
+           or options.difficulty < constants.difficulties.xoi then
             options.difficulty = constants.difficulties.easy
         end
     elseif options.row == option_rows.exit then

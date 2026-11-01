@@ -395,6 +395,8 @@ return {
     difficulties = {
         -- OpenLF2's own level above CRAZY!: computer players that learn every fighter's moves (base/game/smart_ai).
         -- The game's rules otherwise play as in CRAZY!.
+        -- XOI, after it: INSANE!'s players with what they learned of each matchup in training (a mod's xoi/notes.txt).
+        xoi = -3,
         insane = -2,
         crazy = -1,
         difficult = 0,

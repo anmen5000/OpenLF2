@@ -1,5 +1,7 @@
 # Text files keep LF everywhere (scripts run in Docker and on the VPS; Windows checkouts stay byte-identical).
 * text=auto eol=lf
+# Windows batch files keep their CRLF line ends (cmd reads labels wrongly in LF-only files).
+*.bat -text
 *.png binary
 *.ico binary
 *.jpg binary

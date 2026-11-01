@@ -128,8 +128,9 @@
         from <b>playing each of that fighter's moves itself, in a private copy of the match</b>, before the match begins.
         That is why it can use the moves of mods nobody has ever written an AI for.</p>
       <div class="callout">How to select it: on the character selection screen, cycle the difficulty Easy → Normal → Difficult
-        → CRAZY! → <b>INSANE!</b>. In a network room the host picks the level; every machine in the room computes exactly the
-        same thing, so the match and its recording (replay) always stay in sync.</div>
+        → CRAZY! → <b>INSANE!</b> (→ <b>XOI</b>, the experimental level after it, <a href="#xoi">below</a>). In a network room
+        the host picks the level; every machine in the room computes exactly the same thing, so the match and its recording
+        (replay) always stay in sync.</div>
     </section>
 
     <section id="how">
@@ -211,6 +212,14 @@
           this opponent has answered so far — counted in the match itself, from the AI's own rushes that were struck
           before they landed, starting hopeful. Against an opponent that punishes, the AI soon stops rushing; against one
           that does not, it keeps going. Like everything else, the count is taken from the match state alone.</li>
+        <li><b>Out of the way with a move of its own.</b> When something is coming that no step in depth, jump or step
+          back gets the fighter out of, version 25 looks through the fighter's own moves for one whose path no blow on
+          its way meets: a teleport, a rush, a leap. Kuma in One Piece GrandWorld vanishes as he jumps (defend pressed in
+          the jump — keys a mod's jump takes are now learned as moves too) and comes down behind the enemy, untouchable on
+          the way. Such a move is taken against a blow the guard cannot hold, against a heavy one when MP is left for a
+          strong move afterwards, or when it strikes back on the way; otherwise the AI guards in time rather than start a
+          move that cannot come out before the blow lands. A teleport is reckoned to land where the game puts it: in front
+          of the enemy, or behind it when the move turns the fighter round first.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -230,7 +239,8 @@
           <tr><td>Timing: stuns, knockdowns, invulnerability</td><td><span class="status done">Done</span></td><td class="num">v15–16</td><td>Attacks land as the opponent becomes hittable; flips up or stays down by the blows on their way; strikes first while blinking.</td></tr>
           <tr><td>The opponent's habits</td><td><span class="status done">Done</span></td><td class="num">v19</td><td>Guard rate, how pressing it is, whether it flips up: guard breakers against turtles, walking up to passive players, meeting flippers where the roll ends.</td></tr>
           <tr><td>Weapons</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Picks up knives, sticks, stones and drinks when nothing presses; swings, throws or drinks by what it learned with the weapon in hand.</td></tr>
-          <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land, 120 in front of the target.</td></tr>
+          <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20, v25</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land: 120 in front of the target, or behind it when the move turns the fighter round first.</td></tr>
+          <tr><td>Escaping with a move</td><td><span class="status done">Done</span></td><td class="num">v25</td><td>When no step avoids what is coming, a teleport, rush or leap whose path no blow meets: against an unguardable or heavy blow, or to strike back; otherwise the guard.</td></tr>
           <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach. Forms inside forms (Zoro's Asura) not yet.</td></tr>
           <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21, v23</td><td>Out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they reach — until its blink ends: a few steps in depth off its line, or back out of reach; no charging, drinking or weapon pick-up in that zone; farther at low HP.</td></tr>
           <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>Against a free opponent whose long blows cover the line between them, closes in offset in depth and steps onto the line only when its own blows reach.</td></tr>
@@ -239,7 +249,7 @@
           <tr><td>Counters along a move's path</td><td><span class="status done">Done</span></td><td class="num">v23, v24</td><td>The opponent's quickest answer is reckoned where a rush or a jump-in takes the fighter, not where it starts, and weighed against what the blow brings by how often this opponent has answered such a blow in the match so far. A charging opponent is known to be free as soon as it can leave the charge, with the MP it gained.</td></tr>
           <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
           <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
-          <tr><td>Memory across matches</td><td><span class="status planned">Not planned</span></td><td class="num">—</td><td>Habits — and, since v24, how often the opponent punishes a risky rush — are learned within a match only: a memory kept across matches would break the lock-step of network games when someone joins late.</td></tr>
+          <tr><td>Memory across matches</td><td><span class="status partial">Experimental</span></td><td class="num">v25</td><td>INSANE! learns habits within a match only (a memory kept on one machine would break the lock-step of network games). XOI plays with notes of training shipped inside the mod's file, the same on every machine: see <a href="#xoi">XOI</a>.</td></tr>
         </tbody>
       </table></div>
       <p class="note">How smart is it now? Against the mods' own computer players at CRAZY! it wins most fights (table below); against the
@@ -250,6 +260,36 @@
         <a href="https://github.com/anmen5000/OpenLF2/blob/main/scripts/base/game/smart_ai.lua"><code>smart_ai.lua</code></a> as well.</span></li></ul>
     </section>
 
+    <section id="xoi">
+      <h2>XOI — INSANE! with a memory of training (experimental)</h2>
+      <p class="lede">INSANE! starts every match knowing what each move <em>can</em> do, from playing it in a copy of the
+        game — but not how it fares against one particular opponent: a combo that lands on a still dummy may be cut short
+        by Neji's quick palm nearly every time, while a modest-looking special lands four times in five. <b>XOI</b>, the
+        level after INSANE!, plays exactly as INSANE! does, with notes of training besides.</p>
+      <ol class="steps">
+        <li><b>Training.</b> A bench job plays many games — 100 to 200 — of every pair of the mod's fighters, both played by
+          INSANE!, and writes down, for each fighter against each opponent and each move it chose: how often it landed, how
+          often the fighter was hit before it did, the damage dealt and taken while it ran (its follow-ups included) and what
+          the AI expected of it; and how often the opponent struck first a move started at a risk. On Windows,
+          <code>xoi-hoc.bat</code> spreads the pairs over every processor of the machine and packs the notes into a copy of
+          the mod's file (<code>xoi/notes.txt</code>, beside its <code>data</code> folder), ready for the relay.</li>
+        <li><b>Playing.</b> At XOI a move's score is weighed by how much of what was expected of it, against this opponent,
+          it brought — against how much the fighter's moves brought on the whole. A move seldom tried stays near the
+          average (its record counts over a few starts' worth of the average), and the weight stays between 0.5 and 1.6:
+          the notes tilt choices rather than make them. The opponent's answers to a risky rush are expected from what
+          training saw, and the match goes on counting them.</li>
+        <li><b>In step.</b> The notes are part of the mod's file, which every machine in a network room has, so what XOI
+          decides still depends only on the match and that file: rooms and replays stay in sync. A mod without notes plays
+          XOI exactly as INSANE!; the match line shows <code>(XOI v25, N matchups)</code>, or <code>no notes</code>.</li>
+      </ol>
+      <p class="note" id="xoi-results">First measurement, Naruto: The Setting Dawn: 8 pairs of fighters, 100 training games
+        each (800 games), then XOI against INSANE! on the same pairs with random seeds training never used, each fighter of
+        each pair played by XOI in 10 games a seed: with version 25, 82–77 and 94–62 (176–139 with 5 draws, 55.9%); with
+        the play of version 24 before it, 171–146 with 3 draws. Together 347–285 over 640 games (54.9%, ±3.9% at 95%), XOI's
+        blows struck first less often (1,497 against 1,823). The notes were made against INSANE!'s own play, and a human
+        plays differently: that is why XOI is a level of its own and INSANE! is not changed by them.</p>
+    </section>
+
     <section id="results">
       <h2>Benchmark results</h2>
       <p class="lede">INSANE! against CRAZY! (the mod's own computer player), 40 one-on-one games per mod over 10 different
@@ -258,21 +298,25 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">426 / 28</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">35</td><td class="num">4</td><td class="num">1</td><td class="num">317 / 18</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">30</td><td class="num">10</td><td class="num">0</td><td class="num">231 / 32</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">37</td><td class="num">3</td><td class="num">0</td><td class="num">289 / 20</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">40</td><td class="num">0</td><td class="num">0</td><td class="num">484 / 0</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">39</td><td class="num">1</td><td class="num">0</td><td class="num">364 / 0</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">31</td><td class="num">9</td><td class="num">0</td><td class="num">244 / 57</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">38</td><td class="num">2</td><td class="num">0</td><td class="num">294 / 3</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 24 figures with <code>--seed 12345</code> (version 23 gave 34–5 with a draw, 37–3, 30–10 and 35–5,
-        version 22 36–3 with a draw, 39–1, 29–11 and 38–2, version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT
-        desktop build and the Lua 5.2 web build give the same result frame for frame). Another seed (777) gives 34–6, 40–0, 33–7
-        and 38–2 for version 24 (37–2 with a draw, 39–1, 33–7 and 39–1 for version 23): against CRAZY! versions 22 to 24 are
+      <p class="note">Version 25 figures with <code>--seed 12345</code> (version 24 gave 35–4 with a draw, 35–4 with a draw,
+        30–10 and 37–3, version 23 34–5 with a draw, 37–3, 30–10 and 35–5, version 22 36–3 with a draw, 39–1, 29–11 and 38–2,
+        version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT desktop build and the Lua 5.2 web build give the
+        same result frame for frame). Another seed (777) gives 38–2, 36–4, 30–10 and 38–2 for version 25 (34–6, 40–0, 33–7 and
+        38–2 for version 24; 37–2 with a draw, 39–1, 33–7 and 39–1 for version 23): against CRAZY! versions 22 to 25 are
         about equal, single pairs swinging by a game or two either way. The differences show against a strong opponent,
         head to head over the same ten pairs of each mod, three seeds, 240 games: version 23 against version 22 137–88 with
         15 draws (Naruto 62–56, One Piece 75–32), taking fewer than half the hits from a just-risen opponent (90 against 211)
         and a fifth less damage; version 24 against version 23 120–107 with 13 draws (Naruto 59–61, One Piece 61–46),
-        landing a fifth more blows. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
+        landing a fifth more blows; version 25 against version 24 115–112 with 13 draws (Naruto 56–63, One Piece 59–49). With
+        each fighter of each pair played by each version (8 pairs, 10 games each way), version 25 beats version 24 87–70 and
+        86–73 in Naruto, where Sasuke's teleport now lands where the game puts it, and plays One Piece about even (67–72, 21
+        draws), cut short less often in both. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
         games between versions 24 and 23 end 10,928–9,047 with 25 draws (54.7%, ±0.6%): version 24's Lee wins 38.9% against
         version 23's Neji, where version 23's own Lee won 28.2%, and its Neji is as strong as version 23's.
         (Until 1 November 2026 the two players of a head-to-head match on the bench shared one context — how they read the

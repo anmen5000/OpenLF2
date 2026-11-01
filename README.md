@@ -93,6 +93,17 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   how often this opponent has struck such a blow first in the match so far (learned as the match goes): a
   rusher keeps rushing an opponent that does not punish and soon stops against one that does. An opponent
   charging MP is known to be free as soon as it can leave the charge.
+- When no step gets it out of the way of what is coming, a move of its own may: a teleport, a rush or a leap
+  whose path no blow on its way meets (Kuma of One Piece GrandWorld vanishes and comes down behind the enemy;
+  the keys a mod's jump takes are learned as moves too) — taken against a blow the guard cannot hold, a heavy
+  one when MP is left for a strong move afterwards, or when the move strikes back; otherwise it guards in time
+  rather than start a move that cannot come out first. A teleport is reckoned to land where the game puts it.
+- **XOI**, the level after INSANE! (experimental), is INSANE! with notes of training: `tools/ai-bench`'s `learn`
+  job (on Windows `xoi-hoc.bat`, one job per processor) plays many games of every pair of a mod's fighters and
+  writes what each fighter's moves brought against each opponent; shipped in the mod's ZIP file as
+  `xoi/notes.txt`, they weigh each move at XOI by what it brought against this opponent, against the fighter's
+  moves on the whole, and set where the opponent's answers to a risky move are expected to start. Everyone in a
+  room has the mod's file, so network games stay in sync; without notes XOI plays as INSANE!.
 - `tools/ai-bench` pits two computer players against each other (`brains = {"smart", "smart@ai_alt"}`:
   another version of the AI, or a player of your own started from `ai_template.lua`); its `audit` counts, per
   player, blows started, landed and interrupted, hits taken from a just-risen opponent or at a wall, and trades.

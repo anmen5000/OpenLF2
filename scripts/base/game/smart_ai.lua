@@ -47,15 +47,17 @@ local mode_stage = constants.modes.stage
 local weapon_none = constants.weapon_holder_codes.none
 
 -- Levels: the reaction delay (frames an enemy's move must have run before it is answered) and how often a
--- chance to attack is taken.
+-- chance to attack is taken. XOI plays as INSANE! does, with the notes of training besides (see XOI below).
 smart.levels = {
     [constants.difficulties.insane] = {reaction = 1, eagerness = 100},
+    [constants.difficulties.xoi] = {reaction = 1, eagerness = 100, notes = true},
 }
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 24
+smart.version = 25
 smart.history = {
+    {25, "2026-11-01", "Gets out of the way with a move of its own when no step does: a teleport, a rush or a leap whose path no blow on its way meets (Kuma of One Piece GrandWorld vanishes and comes down behind the enemy — the keys a mod's jump takes are now learned as moves), taken when the guard cannot hold the blow, or it is a heavy one and MP is left for a strong move after it, or the move strikes back; otherwise the guard, in time; a teleport lands where the game puts it (behind the enemy when the move turns the fighter round). XOI, the level after INSANE!, plays as INSANE! with notes of training shipped with the mod (xoi/notes.txt): each move weighed by what it brought against this opponent in many games, and the opponent's answers to a risky move expected from what training saw"},
     {24, "2026-11-01", "Weighs, rather than forbids, a move the opponent's quicker blow could beat on its way: it is started when what it brings outweighs the answer's damage by how often this opponent has struck such a move first in the match so far (learned as the match goes, from a hopeful start), so a rusher no longer stands off a fighter with long, quick blows (Rock Lee against Neji in Naruto: The Setting Dawn) while a punishing opponent is soon not rushed at"},
     {23, "2026-11-01", "Keeps out of a fallen or just-risen opponent's wake-up blows (its quick moves, however far they reach) until its blink ends, leaving by the quicker way (a few steps in depth, or back out of reach) and waiting off its line rather than beside it; no charging, drinking or weapon pick-up inside them, and a charge stance is left in time to get out; weighs the opponent's quickest counter along a move's own path (a rush carries the fighter into blows that do not reach where it starts) and out of the air on a jump-in; an opponent in a charge stance is known to be free as soon as it can leave it, with the MP the charge brings; the frame a move's spawn appears is counted as a threat; a blow landing as the own blink ends is answered; a trade is struck first only when clearly heavier"},
     {22, "2026-10-31", "Approaches a free opponent whose long blows (a beam, a sweep, a special struck out of the guard) cover the line between them beside that line, in depth, and only steps onto it as its own blows come into reach; an opponent held by a trap (a wood prison) is known to be held and hittable, walked up to and struck — or, with MP short of a strong move and the hold long, MP is charged first and the strong move lands before the hold ends; weapons are worth fewer steps when MP is full"},
@@ -66,10 +68,11 @@ smart.history = {
     {15, "2026-10-30", "Stances, defend keys that are moves, moves that start from walking, get-up invulnerability, running, obstacles, no guarding into a break; chosen in Tournament and Battle mode too"},
     {14, "2026-10-30", "INSANE! is born: every fighter's moves learned in a private copy of the match, then prediction of what hits, when the opponent can act, and what each move is worth"},
 }
--- Whether the computer player at `index` plays this way: at INSANE!, unless its mod gave the fighter an AI
--- script of its own (made for that fighter, which then plays as at CRAZY!).
+-- Whether the computer player at `index` plays this way: at INSANE! and XOI, unless its mod gave the fighter an
+-- AI script of its own (made for that fighter, which then plays as at CRAZY!). (The bench names the player of each
+-- fighter: "smart" plays as at INSANE!, "xoi" as at XOI.)
 function smart.enabled(state, value, index)
-    if value.brain then return value.brain == "smart" end
+    if value.brain then return value.brain == "smart" or value.brain == "xoi" end
     if state.random_game or state.replay_demo then return false end
     if smart.levels[state.difficulty] == nil then return false end
     return not require("base/game/ai_scripts").has(state, index)
@@ -568,6 +571,14 @@ local function play(record, entry, mp, weapon_record)
     move.mp = start_mp - me.mp
     move.hp = start_hp - me.hp
     move.length = #move.traj_x
+    -- A teleport to the enemy (state 400) lands beside it: in front, or behind when the move turns the fighter
+    -- round first (Kuma). Where, against the enemy (the copy's dummy), in the direction the fighter set off in.
+    if move.teleport then
+        local after = min(move.teleport + 1, move.length)
+        local dummy = state.items[1]
+        move.teleport_dx = (move.traj_x[after] or 0) + origin.x - dummy.x_int
+        move.teleport_dz = (move.traj_z[after] or 0) + origin.z - dummy.z_int
+    end
     -- The move ended with an item of its own making in the fighter's hand: a mode (Luffy's Gear Second, Sanji's
     -- Diable Jambe and Zoro's bandana in One Piece GrandWorld are built on an invisible item picked up), whose
     -- moves are learned separately (explore). Its resting frames are those the fighter goes round in afterwards.
@@ -743,6 +754,15 @@ local function explore(record, analysis, mode, first_index)
         if data.frames[frames.jump_attack] then want({context = "air", frame = frames.jump_attack, basic = "jump_attack"}) end
         if data.frames[frames.run_attack] then want({context = "run", frame = frames.run_attack, basic = "run_attack"}) end
         if data.frames[frames.dash_attack] then want({context = "dash", frame = frames.dash_attack, basic = "dash_attack"}) end
+        -- A mod's move out of the jump's own frames (Kuma of One Piece GrandWorld vanishes and comes down behind
+        -- the enemy with defend pressed as he jumps): the jump is explored as a move for the keys they take.
+        for frame_id = frames.jump, frames.jump + 4 do
+            local frame = data.frames[frame_id]
+            if frame and (frame.hits.a > 0 or frame.hits.j > 0 or frame.hits.d > 0) then
+                want({context = "ground", press = "jump", basic = "jump"})
+                break
+            end
+        end
     end
     local weapon_record = mode and mode.record or nil
     local index = 1
@@ -780,6 +800,8 @@ local function explore(record, analysis, mode, first_index)
             if not mode then analysis.guard = guards end
             if guards then guard_move, move = move, nil end
         end
+        -- (The jump itself is no move either, only the way to the keys its frames take.)
+        if ok and move and entry.basic == "jump" and not entry.chain then guard_move, move = move, nil end
         if ok and move then
             local parts = {entry.context, entry.sequence or entry.basic or "", move.mp}
             for t = 1, min(move.length, 40) do parts[#parts + 1] = move.frames[t] end
@@ -819,7 +841,10 @@ local function explore(record, analysis, mode, first_index)
                     analysis.moves[#analysis.moves + 1] = part
                 end
             end
-            for t = 1, move.length do
+            -- (A move out of the jump is known by its frames after the key: a fighter in its jump frames is only
+            -- jumping, as far as anyone can tell.)
+            local from_t = entry.basic == "jump" and (move.link_tick or 0) + 1 or 1
+            for t = from_t, move.length do
                 local frame_id = move.frames[t]
                 if frame_id and not analysis.frames[frame_id] then analysis.frames[frame_id] = {move = move, t = t} end
             end
@@ -1337,15 +1362,16 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
     local dvx = attacker.vx * face - (move.vel_x[from_t] or 0)
     local dvy = attacker.vy - (move.vel_y[from_t] or 0)
     local airborne = attacker.y_int < 0
-    -- A move that teleports to the enemy (state 400) goes on from 120 in front of the victim, at its depth, on
-    -- the ground, still (base/game/frame_rules): the boxes after that moment are placed from there.
+    -- A move that teleports to the enemy (state 400) goes on from beside the victim, at its depth, on the ground,
+    -- still (base/game/frame_rules; 120 in front of it, or behind when the move turned the fighter round first:
+    -- as learned): the boxes after that moment are placed from there.
     local tp = move.teleport
     local tp_dx, tp_dy, tp_dz
     if tp and tp > from_t then
         local px, _, pz = victim_at(tp - from_t)
-        tp_dx = (px - 120 * face - ax) * face - ((traj_x[tp] or 0) - nx)
+        tp_dx = (px + (move.teleport_dx or -120) * face - ax) * face - ((traj_x[tp] or 0) - nx)
         tp_dy = -ay - ((traj_y[tp] or 0) - ny)
-        tp_dz = (pz + 1 - az) - ((traj_z[tp] or 0) - nz)
+        tp_dz = (pz + (move.teleport_dz or 1) - az) - ((traj_z[tp] or 0) - nz)
     end
     if from_t == 0 and not tp and not moving then
         -- Quick reject on the whole move's reach.
@@ -1559,6 +1585,7 @@ local function can_start(self, frame, fstate, move)
     if basic == "jump_attack" then return fstate == states.jumping and self.y_int < 0 end
     if basic == "run_attack" then return fstate == states.running end
     if basic == "dash_attack" then return fstate == states.dashing end
+    if basic == "jump" then return (fstate == states.standing or fstate == states.walking) and self.y_int == 0 end
     return false
 end
 
@@ -1569,8 +1596,10 @@ local function turns(move)
         or entry.basic == "weapon_attack" or entry.direction == true
 end
 
-local function start(self, move, target)
-    if smart.on_start then smart.on_start(self, move) end
+-- (`t`, `score`: when the move should land and what it is expected to bring, for a move chosen as an attack; `t`
+-- alone for a follow-up. The bench's hook sees them.)
+local function start(self, move, target, t, score)
+    if smart.on_start then smart.on_start(self, move, t, score) end
     local entry = move.entry
     if entry.parent then
         fresh(self, entry.button)
@@ -2124,6 +2153,137 @@ local function flips_up(model)
     return model.falls >= 2 and model.flips * 2 >= model.falls
 end
 
+---------------------------------------------------------------------------------------------------------------
+-- XOI: the notes of training. The bench's learn job (tools/ai-bench; xoi-hoc.bat on Windows) plays many games of
+-- every pair of a mod's fighters and writes, for each fighter against each opponent, what each of its moves
+-- brought when chosen: how often it landed or was struck first, the damage dealt and taken while it ran (its
+-- follow-ups included) and what it was expected to bring; and how often the opponent struck first a move started
+-- at a risk. A mod ships them as xoi/notes.txt beside its data; at XOI a move is weighed by how much of what was
+-- expected of it, against this opponent, it brought — against how much the fighter's moves brought on the whole —
+-- and the opponent's answers start from what training saw. Every computer in a network room has the mod's
+-- notes, so the same: what is decided stays the same on all of them.
+---------------------------------------------------------------------------------------------------------------
+
+-- A move's name in the notes, the same in every match: how it starts, from where, and what it continues.
+local function note_key(move)
+    local key = move.note_key
+    if key then return key end
+    local entry = move.entry
+    key = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.press or entry.frame)
+    if entry.parent then key = key .. ":from" .. tostring(entry.from) end
+    for _, link in ipairs(entry.chain or {}) do key = key .. ">" .. tostring(link.from) .. tostring(link.button) end
+    if move.weapon then key = "w" .. tostring(move.weapon) .. ":" .. tostring(entry.basic or key) end
+    if entry.mode and entry.mode.record then key = "m" .. tostring(entry.mode.record.id) .. ":" .. key end
+    key = key:gsub("%s", "_")
+    move.note_key = key
+    return key
+end
+smart.note_key = note_key
+
+-- The notes' lines (the same line twice counts twice: training runs simply add up):
+--   XOI G <fighter id> <opponent id> <games> <wins> <draws>
+--   XOI R <fighter id> <opponent id> <moves started at a risk> <struck first>
+--   XOI M <fighter id> <opponent id> <move> <starts> <landed> <struck first> <damage dealt> <damage taken> <expected>
+-- A mod's notes may hold every pair of a large roster (megabytes): only the lines of the pairs in the match are
+-- read, found as plain text.
+local notes_given -- notes handed over (the bench), instead of the mod's file
+local notes_text, notes_cache, notes_count, notes_checked
+-- The notes as they stand (with a line break first): the mod's xoi/notes.txt, looked at again in every match (what
+-- was read of it is kept while it stays the same), or none.
+local function current_notes()
+    if notes_checked and notes_text then return notes_text end
+    local text = notes_given
+    if not text then
+        local ok, found = pcall(engine.read_resource, "xoi/notes.txt")
+        text = ok and type(found) == "string" and found or ""
+    end
+    text = "\n" .. text
+    if text ~= notes_text then notes_text, notes_cache, notes_count = text, {}, nil end
+    notes_checked = true
+    return notes_text
+end
+-- (The bench: notes to play with, instead of the mod's.)
+function smart.use_notes(text) notes_given, notes_text, notes_cache, notes_count, notes_checked = text, nil, nil, nil, nil end
+-- Every line of the notes that starts with `prefix`: what follows the prefix.
+local function note_lines(text, prefix, each)
+    local needle = "\n" .. prefix
+    local init = 1
+    while true do
+        local at = text:find(needle, init, true)
+        if not at then return end
+        local stop = text:find("\n", at + #needle, true) or (#text + 1)
+        local rest = text:sub(at + #needle, stop - 1)
+        if rest:sub(-1) == "\r" then rest = rest:sub(1, -2) end
+        each(rest)
+        init = stop
+    end
+end
+-- How many pairs of fighters (one against the other) the notes know.
+function smart.notes_pairs()
+    local text = current_notes()
+    if notes_count then return notes_count end
+    local seen, count = {}, 0
+    note_lines(text, "XOI G ", function(rest)
+        local pair = rest:match("^(%d+%s+%d+)%s")
+        if pair and not seen[pair] then seen[pair], count = true, count + 1 end
+    end)
+    notes_count = count
+    return count
+end
+
+-- A move's record is weighed against the fighter's average over this many starts of it, so that a move seldom
+-- tried keeps close to the average; a factor stays within these bounds.
+local note_prior, note_low, note_high = 8, 0.5, 1.6
+-- What the notes say of `a` (a fighter id) against `b`: factor (by move name: how much more, or less, than the
+-- fighter's moves on the whole, a move brought of what was expected of it) and risk (the opponent's share of
+-- answers to a move started at a risk, around the hopeful start the match itself uses), or nil.
+local function pair_notes(a, b)
+    local text = current_notes()
+    local mine = notes_cache[a]
+    if not mine then mine = {}; notes_cache[a] = mine end
+    local found = mine[b]
+    if found ~= nil then return found or nil end
+    local head = string.format("%d %d ", a, b)
+    local games = 0
+    note_lines(text, "XOI G " .. head, function(rest)
+        local count = rest:match("^(%d+)")
+        if count then games = games + tonumber(count) end
+    end)
+    if games == 0 then mine[b] = false; return nil end
+    local risk_starts, risk_hits, moves = 0, 0, {}
+    note_lines(text, "XOI R " .. head, function(rest)
+        local starts, hits = rest:match("^(%d+)%s+(%d+)")
+        if starts then risk_starts, risk_hits = risk_starts + tonumber(starts), risk_hits + tonumber(hits) end
+    end)
+    note_lines(text, "XOI M " .. head, function(rest)
+        local key, s, l, c, d, t, p = rest:match("^(%S+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+        if key and tonumber(s) > 0 then
+            local m = moves[key]
+            if not m then m = {s = 0, l = 0, c = 0, d = 0, t = 0, p = 0}; moves[key] = m end
+            m.s, m.l, m.c = m.s + tonumber(s), m.l + tonumber(l), m.c + tonumber(c)
+            m.d, m.t, m.p = m.d + tonumber(d), m.t + tonumber(t), m.p + tonumber(p)
+        end
+    end)
+    -- (Sums of whole numbers only, in any order: the same everywhere.)
+    local brought, expected = 0, 0
+    for _, m in pairs(moves) do brought, expected = brought + m.d - m.t, expected + m.p end
+    local factor = {}
+    if expected > 0 then
+        local ratio = max(brought, expected * 0.25) / expected
+        for key, m in pairs(moves) do
+            if m.p > 0 then
+                local each = m.p / m.s
+                local own = (m.d - m.t + note_prior * ratio * each) / (m.p + note_prior * each)
+                factor[key] = min(note_high, max(note_low, own / ratio))
+            end
+        end
+    end
+    local pair = {factor = factor, risk = (risk_hits + 1) / (risk_starts + 4), games = games, moves = moves}
+    mine[b] = pair
+    return pair
+end
+smart.pair_notes = pair_notes
+
 -- What `move` (started `lead` frames from now) landing its box `box` on `target` after `t` frames is worth:
 -- damage weighed by how sure the hit is, what a guard would cost, MP, and what being busy afterwards would cost.
 local function attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, lead)
@@ -2160,6 +2320,9 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
         if not last then score = score * 1.1
         elseif context.now - last < 90 then score = score * 0.85 end
     end
+    -- XOI: what the move brought against this opponent in training, against the fighter's moves on the whole.
+    local notes = context.notes
+    if notes and score > 0 then score = score * (notes.factor[note_key(move)] or 1) end
     return score
 end
 
@@ -2207,10 +2370,19 @@ local function move_path(self, move, target)
     local record = self.record
     local now = record.frame(self.frame)
     local length = move.length
+    local traj_x, traj_y, traj_z = move.traj_x, move.traj_y, move.traj_z
+    -- (A teleport goes on from beside the enemy it goes to: the target here.)
+    local tp = move.teleport and move.teleport_dx and min(move.teleport + 1, length) or nil
+    local tp_x, tp_z
+    if tp then
+        tp_x = target.x_int + move.teleport_dx * face - self.x_int - (traj_x[tp] or 0) * face
+        tp_z = target.z_int + (move.teleport_dz or 1) - self.z_int - (traj_z[tp] or 0)
+    end
     local plan = function(k)
         if k <= 0 then return 0, 0, 0 end
         k = min(k, length)
-        return (move.traj_x[k] or 0) * face, move.traj_y[k] or 0, move.traj_z[k] or 0
+        if tp and k >= tp then return tp_x + (traj_x[k] or 0) * face, traj_y[k] or 0, tp_z + (traj_z[k] or 0) end
+        return (traj_x[k] or 0) * face, traj_y[k] or 0, traj_z[k] or 0
     end
     local frames_at = function(k)
         if k <= 0 then return now end
@@ -2404,8 +2576,9 @@ end
 -- fighter has seen in this match: of its moves started at such a risk, how many were struck before they landed
 -- (counted around a hopeful start, so that the first rushes are tried at all). A target that waits for us and
 -- punishes is soon not rushed at; one that does not is.
+-- (At XOI the start is what training saw this opponent do: memory.risk_prior.)
 local function answer_chance(memory)
-    return ((memory.risk_hits or 0) + 1) / ((memory.risk_starts or 0) + 4)
+    return ((memory.risk_hits or 0) + 4 * (memory.risk_prior or 0.25)) / ((memory.risk_starts or 0) + 4)
 end
 -- What a move scored `score`, landing in `t` frames, is worth when the target's answer (`damage`) may beat it
 -- on the way: the move lands only if the answer does not come, and the answer's damage is the price if it does.
@@ -2463,6 +2636,50 @@ local function face_against(self, source)
     if wanted ~= self.facing then press(self, wanted == facing_right and "right" or "left") end
 end
 
+-- The enemy a teleport goes to: the nearest (base/game/frame_rules).
+local function nearest_enemy(state, self)
+    local best, distance
+    for other = 0, constants.item_slots - 1 do
+        local value = state.items[other]
+        if value and value ~= self and value.record.kind == record_kinds.character and value.hp > 0 and value.team ~= self.team then
+            local next = abs(value.z_int - self.z_int) + abs(value.x_int - self.x_int)
+            if not distance or next < distance then best, distance = value, next end
+        end
+    end
+    return best
+end
+
+-- A move of the fighter's own that takes it out of the way of what is coming when no step does: a vanishing
+-- teleport, a rush, a leap (Kuma of One Piece GrandWorld comes down behind the enemy, untouchable on the way) —
+-- one whose path no blow on its way meets for a while after the threat, the one that strikes back best, else
+-- the cheapest and soonest over; and whether it strikes back.
+local function escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
+    local analysis = context.analysis_of(self)
+    local enemy = source.record.kind == record_kinds.character and source or nearest_enemy(state, self)
+    if not enemy then return nil end
+    local best, best_value, best_strikes
+    for _, move in ipairs(analysis.moves) do
+        local entry = move.entry
+        if not entry.parent and not move.charge and not move.transform and not move.mode and not move.heal
+           and move.length > 1 and not ((entry.basic == "jump" or entry.basic == "defend") and not entry.chain)
+           and can_start(self, frame, fstate, move) then
+            local plan, frames_at = move_path(self, move, enemy)
+            if not earliest_threat(state, index, self, threat_t + 8, plan, level.reaction, context, frames_at) then
+                local value = -move.mp * 0.05 - move.ready * 0.5
+                local strikes = false
+                if move.first and source.record.kind == record_kinds.character then
+                    local face = turns(move) and (source.x_int >= self.x_int and 1 or -1) or (self.facing == facing_right and 1 or -1)
+                    local sframe = source.record.frame(source.frame)
+                    local t = move_hits(self, face, move, 0, source, sframe, function(k) return predict(source, k, sframe.state) end, 40)
+                    if t then strikes = true; value = value + 60 - t end
+                end
+                if not best_value or value > best_value then best, best_value, best_strikes = move, value, strikes end
+            end
+        end
+    end
+    return best, best_strikes
+end
+
 -- Answers a threat in `threat_t` frames: true when it did something.
 local function answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, source)
     local analysis = context.analysis_of(self)
@@ -2475,13 +2692,13 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- blow is clearly the heavier).
     -- (A move started now strikes t - 1 frames from now; the threat, threat_t frames from now.)
     if source.record.kind == record_kinds.character and threat_t >= 1 then
-        local move, t = best_attack(context, self, frame, fstate, source, threat_t, nil)
+        local move, t, score = best_attack(context, self, frame, fstate, source, threat_t, nil)
         if not move then
-            move, t = best_attack(context, self, frame, fstate, source, threat_t + 1, nil)
+            move, t, score = best_attack(context, self, frame, fstate, source, threat_t + 1, nil)
             if move and not (t == threat_t + 1 and move.damage > threat_box.injury * 1.3) then move = nil end
         end
         if move then
-            start(self, move, source)
+            start(self, move, source, t, score)
             memory.note = "strike first"
             return true
         end
@@ -2549,6 +2766,17 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         press(self, away > 0 and "right" or "left")
         memory.note = "back off"
         return true
+    end
+    -- No step gets out of its way: a move may (escape_move), when the guard cannot hold the blow, or it is a
+    -- heavy one and the move keeps MP for a strong move of the fighter's own after it, or the move strikes back.
+    -- Otherwise the guard, in time (not a move that cannot come out before the blow lands).
+    if fstate ~= states.running then
+        local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
+        if escape and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))) then
+            start(self, escape, source)
+            memory.note = strikes and "escape and strike" or "escape"
+            return true
+        end
     end
     -- A guard that would break (the points of the last blows still count) leaves the fighter helpless for the
     -- super punch that follows, unguarded: the blow itself, taken, costs less in the end.
@@ -2664,6 +2892,7 @@ function smart.control(state, index)
         function context.analysis_of(value) return view_of(context, value) end
         state.smart_context = context
     end
+    context.notes = nil
     clear_keys(self)
     local frame = self.record.frame(self.frame)
     local fstate = frame.state
@@ -2759,6 +2988,11 @@ function smart.control(state, index)
 
     local target_index = choose_target(state, index, self, memory)
     local target = target_index and items[target_index]
+    -- XOI: the notes of this fighter against this opponent, if training saw the two.
+    if target and (self.brain == "xoi" or (self.brain == nil and level.notes)) then
+        context.notes = pair_notes(self.record.id, target.record.id)
+    end
+    memory.risk_prior = context.notes and context.notes.risk or nil
     -- What this opponent does: watched every frame it is the target, busy or not (a blow of ours lands while
     -- we are still in the move).
     local model
@@ -2789,7 +3023,7 @@ function smart.control(state, index)
                         local t = move_hits(self, own_face, move, 0, target, target_frame, target_at, 20)
                         if t and t <= untouchable_for(context, target, tframe.state, lock) then t = nil end
                         if t and (not counter or t < counter) then
-                            start(self, move, target)
+                            start(self, move, target, t)
                             memory.last_use = memory.last_use or {}
                             memory.last_use[move.index] = state.frame_number
                             memory.note = "follow up"
@@ -2985,7 +3219,7 @@ function smart.control(state, index)
             move and (move.entry.field or move.entry.basic or "chain") or "-", tostring(t), score or 0))
     end
     if move and score > 2.5 then
-        start(self, move, target)
+        start(self, move, target, t, score)
         memory.last_use[move.index] = state.frame_number
         if at_risk then
             memory.risk_starts = (memory.risk_starts or 0) + 1
@@ -3386,6 +3620,7 @@ local function learn(record)
 end
 
 function smart.prepare(state)
+    notes_checked = nil
     for index = 0, constants.item_slots - 1 do
         local value = state.items[index]
         if value and value.record.kind == record_kinds.character then learn(value.record) end

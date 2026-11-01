@@ -1,7 +1,8 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026 OpenLF2 contributors
 -- Runs the same INSANE! match twice from the same random state (first with the moves unlearned, then learned)
--- and compares the fighters every 30 frames: replaytest.lua with config.pair, config.limit.
+-- and compares the fighters every 30 frames: replaytest.lua with config.ids, config.limit (config.difficulty -3:
+-- XOI, with the mod's notes).
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -12,7 +13,7 @@ function t.run(config)
     local function play()
         local slots = {}
         for k, id in ipairs(config.ids) do slots[k - 1] = {kind = "computer", fighter = find(id), team = (k - 1) % 2 + 1} end
-        local state = match.create({mode = constants.modes.versus, difficulty = -2, background = 0,
+        local state = match.create({mode = constants.modes.versus, difficulty = config.difficulty or -2, background = 0,
             fighters = fighters, backgrounds = catalog.backgrounds(), slots = slots})
         local held = {functions = "", function_presses = "", keys = {}}
         local trace = {}

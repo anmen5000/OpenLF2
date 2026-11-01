@@ -42,8 +42,9 @@ console — so `show` is the one to watch.
 
 ## Two computer players against each other
 
-A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"classic"` (the original computer player),
-or `"smart@<module>"`: another computer player in the shape of `smart_ai.lua`, loaded from this package as
+A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"xoi"` (XOI: INSANE! with the notes of
+training, below), `"classic"` (the original computer player), or `"smart@<module>"`: another computer player in the
+shape of `smart_ai.lua`, loaded from this package as
 `<module>.lua` (listed in `package.manifest` as `module=<module>|<module>.lua`). To pit a version of INSANE!
 against an older one, copy the older `smart_ai.lua` in as `ai_alt.lua` and use `brains = {"smart", "smart@ai_alt"}`;
 the log's first line names both versions (`brains: smart v22 against smart@ai_alt v21`; a version before 20 has
@@ -56,6 +57,45 @@ every frame, keys set on `state.items[index]` — ready to be copied and filled 
 clock, no random numbers of its own, nothing kept outside the state between frames), or recordings and network
 games fall out of step (a `duel` with `hash = N` run twice must print the same lines).
 
+## Training XOI
+
+XOI, the level after INSANE!, is INSANE! playing with notes of training: for each fighter against each opponent,
+what each of its moves brought when it chose them, and how often the opponent struck first a move started at a risk
+(`scripts/base/game/smart_ai.lua`, "XOI"). The `learn` job writes them: both fighters of every pair play many games
+as INSANE! (the sides swap every game) and, as each pair's games end, the job prints lines starting `XOI `:
+
+```
+XOI G <a> <b> <games> <wins> <draws>
+XOI R <a> <b> <moves started at a risk> <struck first>
+XOI M <a> <b> <move> <starts> <landed> <struck first> <damage dealt> <damage taken> <expected>
+```
+
+(a's record against b; a move is named as the AI learned it, such as `ground:s1:295` — the D>A that leads to frame
+295 — or `ground:60>63jump`, the punch continued with jump in frame 63). Gathered into one file, they go into the
+mod's ZIP file as `xoi/notes.txt` beside its `data` folder; lines of several runs simply add up. At XOI a move's
+score is weighed by how much of what was expected of it, against this opponent, it brought, against the fighter's
+moves on the whole (counted over a few starts' worth of the average, so that a move seldom tried stays near it; the
+weight stays between 0.5 and 1.6), and the opponent's answers to a risky move start from what training saw. The
+match line shows `(XOI v25, N matchups)`, or `no notes` when the mod has none — XOI then plays as INSANE!.
+
+```sh
+# every pair of these fighters, 100 games each; or ids = "all" (every fighter of the mod)
+#   config.lua: return {command = "learn", games = 100, ids = {1, 2, 7, 18}}
+openlf2 --pack naruto.zip --mod tools/ai-bench --seed 5001 --input-trace "" | grep "^XOI " > notes.txt
+```
+
+`part`/`parts` give a job its share of the pairs, for many jobs side by side. On Windows, `windows/xoi-hoc.bat`
+(copied beside the mod's ZIP file and this package's `tools` and `scripts` folders) does all of it: one job per
+processor, the notes gathered into `xoi-<mod>\notes.txt`, and a copy of the mod's ZIP file with them inside
+(`<mod>-xoi.zip`, for the relay). It plays with the installed game's scripts updated by the package's (the package
+holds only the files that changed), so the installed game need not be the latest. A `duel` with `brains = {"xoi",
+"smart"}` and `difficulty = -2` on that ZIP file shows what the notes are worth (`notes = "<module>"` hands a
+`duel` or `learn` job notes of its own instead: a module of this package returning `{text = "..."}`).
+`windows/dau-nhieu.bat` runs a `duel` the same way: by default every fighter against every other (`ids = "all"`,
+`brains = {"xoi", "smart"}`, each fighter played by each brain), the matchups split over the processors, then each
+fighter's win rate (with its name) and every pair's score in `cap.txt`; with `IDS` left empty, every job runs
+`config.lua` with its own seed and the scores are added up.
+
 ## Jobs
 
 Edit `config.lua` (a Lua table) and set `command` to one of these:
@@ -63,7 +103,8 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | command | what it does | fields |
 | --- | --- | --- |
 | `show` | A match to watch in the window (not headless): `brains` on the two fighter ids in `ids`, `games` games with the sides swapped every other game, the score on the status line; see "Watching a match". | `brains`, `ids`, `games`, `difficulty`, `background` |
-| `duel` | AI against AI, `games` games per pair of fighter ids in `pairs`; the first fighter of a pair is played by `brains[1]` (`"smart"` is INSANE!, `"classic"` the original computer player at the match's `difficulty`, `-1` = CRAZY!/INSANE!). Prints each pair's score and a `TOTAL` line; with `usage`, the moves of each form too. | `pairs`, `brains`, `games`, `difficulty`, `limit` (frames per game, default 5400), `verbose` (one line per game), `usage` (every move INSANE! learned, with how often it started it), `stats` (N: damage dealt and taken by decision), `events` + `history` (every hit with both fighters' last decisions), `trace` (N: both fighters every N frames), `models` (after each game, what each fighter's opponent model counted: guards, hits, attacks and chances, falls and flips, jumps), `probe` (frames at which to print INSANE!'s view), `hash` (N: a per-frame line for the first N frames of the first game, for determinism checks), `audit` (an `AUDIT` line per brain at the end: blows started and landed, blows interrupted before landing — by a foe that was free when we started, or one already in a move —, hits taken from a foe just up from the ground, with the back to a wall, trades, what we were doing when hit, and the moves INSANE! set aside because a threat or counter met their path; `exclusions = true` logs each of those), `no_ego`, `no_prepare`, `nobrain` |
+| `learn` | Training for XOI (see "Training XOI"): `games` games of every pair in `pairs`, or of every two of `ids` (`"all"`: every fighter), both played by INSANE! (`brains`, default `{"smart", "smart"}`); prints `XOI` lines per pair as its games end. A game that fails is left out. | `pairs`, `ids`, `games`, `part`, `parts`, `brains`, `notes`, `difficulty`, `limit`, `verbose` |
+| `duel` | AI against AI, `games` games per pair of fighter ids in `pairs` (or `ids`: every one against every other, each way round; `"all"` = every fighter, `part`/`parts` a share of those matchups; a game that fails is left out); the first fighter of a pair is played by `brains[1]` (`"smart"` is INSANE!, `"classic"` the original computer player at the match's `difficulty`, `-1` = CRAZY!/INSANE!). Prints each pair's score and a `TOTAL` line; with `usage`, the moves of each form too. | `pairs`, `brains`, `games`, `difficulty`, `limit` (frames per game, default 5400), `verbose` (one line per game), `usage` (every move INSANE! learned, with how often it started it), `stats` (N: damage dealt and taken by decision), `events` + `history` (every hit with both fighters' last decisions), `trace` (N: both fighters every N frames), `models` (after each game, what each fighter's opponent model counted: guards, hits, attacks and chances, falls and flips, jumps), `probe` (frames at which to print INSANE!'s view), `hash` (N: a per-frame line for the first N frames of the first game, for determinism checks), `audit` (an `AUDIT` line per brain at the end: blows started and landed, blows interrupted before landing — by a foe that was free when we started, or one already in a move —, hits taken from a foe just up from the ground, with the back to a wall, trades, what we were doing when hit, and the moves INSANE! set aside because a threat or counter met their path; `exclusions = true` logs each of those), `no_ego`, `no_prepare`, `nobrain` |
 | `moves` | What INSANE! learned about the fighters in `only` (`{[id] = true}`): every move with its start, first and last hit, recovery, MP, damage and reach; then each form of the fighter (an item of its own making in hand: its item, resting and running frames, MP burn, run speed and worth) with the moves learned in it. `boxes` lists the hit boxes of form-entering moves. | `only`, `boxes` |
 | `timing` | How many moves, entries and sandbox plays the learning of each fighter in `only` takes, and of its forms (an item of its own making in hand). | `only`, `cap` |
 | `keyseq` | Plays a scripted key timeline (`seq`: `{{frame, "key", true|false}, ...}`, keys `up down left right attack jump defend`) on fighter `id` against a still `other`, and logs the fighter's frame, position, MP, weapon code and the objects it owns every frame a frame changes (and every `every` frames): how a form is entered, what it costs, how it runs and stops. | `id`, `other`, `far`, `mp`, `ticks`, `every`, `seq` |
@@ -89,5 +130,6 @@ situations that arise, never within reach, a stance whose exit key it does not p
 `scripts/base/game/smart_ai.lua` is one file, in this order: learning (`analyze`, `play`, `measure_hit`, the
 sandbox), geometry (`predict`, `move_hits`), threats (`earliest_threat`), choosing (`can_start`, `worth`,
 `attack_score`, `best_attack`, `approach_attack`, `answer`), and the per-frame `smart.control`. `smart.levels`
-holds the levels' reaction times. The debugging hooks `smart.trace`, `smart.on_start`, `smart.watch` and
-`smart.internals` are what the jobs above use.
+holds the levels' reaction times. The debugging hooks `smart.trace`, `smart.on_start` (the move started, and for an
+attack when it should land and its score), `smart.watch` and `smart.internals` are what the jobs above use;
+`smart.note_key`, `smart.pair_notes` and `smart.use_notes` are XOI's notes.

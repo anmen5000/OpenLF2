@@ -41,6 +41,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - INSANE!: a blow the opponent's quicker answer could beat on its way is weighed, not forbidden — what it brings
   against the answer's damage times how often this opponent has struck such a blow first in the match so far,
   counted in the match from a hopeful start; Rock Lee no longer stands off Neji in Naruto: The Setting Dawn (v24)
+- INSANE!: out of the way with a move of its own when no step gets there — a teleport, a rush or a leap whose path
+  no blow on its way meets (Kuma of One Piece GrandWorld vanishes behind the enemy; keys a mod's jump takes are
+  learned as moves) — against a blow the guard cannot hold, a heavy one with MP to spare, or when it strikes back;
+  teleports reckoned to land where the game puts them, behind the enemy when the move turns the fighter round (v25)
+- XOI, a sixth computer-player level after INSANE! (experimental): INSANE! with notes of training shipped in the
+  mod's ZIP file (`xoi/notes.txt`) — each move weighed by what it brought against this opponent in many games —
+  written by `tools/ai-bench`'s new `learn` job; `tools/ai-bench/windows/xoi-hoc.bat` trains on every processor of
+  a Windows machine and packs the notes into a copy of the mod's ZIP file; `dau-nhieu.bat` runs duels the same way,
+  by default every fighter against every other with each brain on each side, and prints each fighter's win rate
+  (both use the installed game with the package's scripts, so it need not be reinstalled); `duel` takes `ids`
+  (`"all"`), `part`/`parts`, and leaves out a game that fails; the bench's `xoi` brain, `smart.on_start` with the
+  attack's expected landing and score (v25)
 - `tools/ai-bench`: each computer player of a `duel` keeps its own context (they shared one, which skewed matches
   between versions that read the fighters' moves differently); versions before 20 are named so instead of `vnil`
 - `tools/ai-bench`: `duel` with `audit = true` counts, per computer player, blows started, landed and

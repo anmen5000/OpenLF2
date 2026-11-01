@@ -448,7 +448,7 @@ end
 local function prepare(state, index)
     items = state.items
     local g = R.globals
-    -- Scripts know the original's levels; INSANE! plays them as CRAZY!.
+    -- Scripts know the original's levels; INSANE! and XOI play them as CRAZY!.
     g.difficulty = math.max(state.difficulty or 0, constants.difficulties.crazy)
     g.mode, g.elapsed_time = state.mode or 0, state.elapsed or 0
     local stage = state.stage or {}
