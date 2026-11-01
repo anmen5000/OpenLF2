@@ -124,6 +124,10 @@ for /f "delims=" %%n in ('dir /b /on "%KQ%\run-*.txt"') do (
   for /f "tokens=2,4,6,8" %%a in ('findstr /C:"pair " "!F!"') do (
     if not defined FW_%%a echo %%a>>"!KQ!\quan.tmp"
     set /a FW_%%a+=%%c, FL_%%a+=%%d
+    rem Ben phai: nhan vat thu hai do brains[2] dieu khien.
+    set "B=%%b"
+    set "B=!B::=!"
+    set /a GW_!B!+=%%d, GL_!B!+=%%c
     if not defined TU_DONG (
       set "K=%%a_%%b"
       set "K=!K::=!"
@@ -135,7 +139,11 @@ for /f "delims=" %%n in ('dir /b /on "%KQ%\run-*.txt"') do (
 )
 echo.
 if defined TU_DONG (
-  echo ===== Tung nhan vat ^(do brains[1] dieu khien, danh voi moi quan khac; thang - thua^) =====
+  echo ===== Tung nhan vat, danh voi moi quan khac =====
+  echo   cot 1: nhan vat do brains[1] ^(%NAO1%^) dieu khien, doi thu do brains[2] ^(%NAO2%^): thang - thua, ti le
+  echo   cot 2: nguoc lai, nhan vat do brains[2] dieu khien: ti le thang
+  echo   chenh: cot 1 tru cot 2. Ca hai cot cung thap = nhan vat yeu ^(khong phai do AI^);
+  echo   chenh duong = brains[1] choi nhan vat nay tot hon brains[2], chenh am = kem hon.
   for /f "usebackq delims=" %%i in ("%KQ%\quan.tmp") do call :in_quan %%i
   echo Ket qua tung cap: "%KQ%\cap.txt"
 ) else (
@@ -174,8 +182,13 @@ exit /b 0
 :in_quan
 set "TEN="
 for /f "tokens=3" %%t in ('findstr /C:"fighter %1 " "%DA_IN%" 2^>nul') do if not defined TEN set "TEN=%%t"
-set /a "QW=FW_%1, QL=FL_%1, QT=QW+QL"
+set /a "QW=FW_%1, QL=FL_%1, QT=QW+QL, RW=GW_%1, RL=GL_%1, RT=RW+RL"
 if %QT% EQU 0 (echo   %1 %TEN%: chua co tran nao co ket qua& exit /b 0)
 set /a "QP=QW*1000/QT, Q1=QP/10, Q2=QP%%10"
-echo   %1 %TEN%: %QW% - %QL% ^(%Q1%.%Q2%%%^)
+if %RT% EQU 0 (echo   %1 %TEN%: %QW% - %QL% ^(%Q1%.%Q2%%%^)& exit /b 0)
+set /a "RP=RW*1000/RT, R1=RP/10, R2=RP%%10, DP=QP-RP"
+set "SG=+"
+if %DP% LSS 0 (set "SG=-"& set /a DP=-DP)
+set /a "D1=DP/10, D2=DP%%10"
+echo   %1 %TEN%: %QW% - %QL% ^(%Q1%.%Q2%%%^) ^| cot 2: %R1%.%R2%%% ^| chenh %SG%%D1%.%D2%
 exit /b 0

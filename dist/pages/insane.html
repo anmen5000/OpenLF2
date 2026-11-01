@@ -220,6 +220,23 @@
           strong move afterwards, or when it strikes back on the way; otherwise the AI guards in time rather than start a
           move that cannot come out before the blow lands. A teleport is reckoned to land where the game puts it: in front
           of the enemy, or behind it when the move turns the fighter round first.</li>
+        <li><b>Steady on its feet.</b> In LF2 a direction key turns the fighter <em>and</em> walks it, so every turn round
+          is a step. Version 25 forgot that at the edges it keeps: it stepped back from an enemy much too close, turned
+          round to face it — a step back in — and stepped back again, frame after frame; the same at the edge of an enemy's
+          quick blows and of a fallen enemy's wake-up blows, and between two ways out of them. The faster the fighter walks
+          the worse it was (a Naruto of Naruto 2.4 walks 17 pixels a frame), and the less MP, the more of a match goes on
+          walking — players saw it most at low MP and took it for the AI torn between a weapon on the ground and its
+          opponent. Version 26 steps back until turning round again leaves room, waits at those edges instead of stepping in
+          and out, keeps a way out once chosen, and turns round at most once every few frames while walking. In 70 games of
+          Naruto 2.4, turns within three frames of the previous one fell from 116 to under 3 in every thousand frames.</li>
+        <li><b>Beside the line of a wave.</b> Neji's air palm in Naruto 2.4 is a wind sent along the ground at 55 pixels a
+          frame, across the stage, and it cannot be guarded. The approach beside the line of a long blow (version 22) looked
+          only at a move's first frames, so from afar the line seemed safe; it also stopped while Neji charged chakra or
+          was short of MP, which he charges back in moments; and a run was steered back onto the line right after a palm
+          was dodged. Version 26 reckons such a wave all the way out, keeps beside its line whenever the opponent will be
+          free and able to pay for it by the time the fighter gets there, and steps or steers onto the line only once no
+          wave flies along it. Gaara, who lost to Neji 16 games in 20, now wins 17 in 20; the single palm hits him a tenth
+          as often.</li>
       </ol>
       <p class="note">Fighters whose mod ships a substantial AI script of its own (Dragon Ball Super, for one) keep that
         script at CRAZY! strength, because the mod's author knows their fighter better.</p>
@@ -243,7 +260,8 @@
           <tr><td>Escaping with a move</td><td><span class="status done">Done</span></td><td class="num">v25</td><td>When no step avoids what is coming, a teleport, rush or leap whose path no blow meets: against an unguardable or heavy blow, or to strike back; otherwise the guard.</td></tr>
           <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach. Forms inside forms (Zoro's Asura) not yet.</td></tr>
           <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21, v23</td><td>Out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they reach — until its blink ends: a few steps in depth off its line, or back out of reach; no charging, drinking or weapon pick-up in that zone; farther at low HP.</td></tr>
-          <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>Against a free opponent whose long blows cover the line between them, closes in offset in depth and steps onto the line only when its own blows reach.</td></tr>
+          <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22, v26</td><td>Against an opponent whose long blows cover the line between them (a beam, a wave across the stage — reckoned all the way out), closes in offset in depth and steps onto the line only when its own blows reach; also while the opponent charges MP or is busy for a moment, and never while a wave flies along the line.</td></tr>
+          <tr><td>Steady footwork</td><td><span class="status done">Done</span></td><td class="num">v26</td><td>A turn round is a step too: no stepping in and out at the edge of a distance, of an enemy's reach or of its wake-up blows; a way out once chosen is kept; while walking it turns round at most once every few frames.</td></tr>
           <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends.</td></tr>
           <tr><td>Weapons versus specials</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>With MP for its own specials, a weapon is worth only the few steps to one close by; drinks are taken whenever HP or MP are wanted.</td></tr>
           <tr><td>Counters along a move's path</td><td><span class="status done">Done</span></td><td class="num">v23, v24</td><td>The opponent's quickest answer is reckoned where a rush or a jump-in takes the fighter, not where it starts, and weighed against what the blow brings by how often this opponent has answered such a blow in the match so far. A charging opponent is known to be free as soon as it can leave the charge, with the MP it gained.</td></tr>
@@ -280,14 +298,17 @@
           training saw, and the match goes on counting them.</li>
         <li><b>In step.</b> The notes are part of the mod's file, which every machine in a network room has, so what XOI
           decides still depends only on the match and that file: rooms and replays stay in sync. A mod without notes plays
-          XOI exactly as INSANE!; the match line shows <code>(XOI v25, N matchups)</code>, or <code>no notes</code>.</li>
+          XOI exactly as INSANE!; the match line shows <code>(XOI v26, N matchups)</code>, or <code>no notes</code>.</li>
       </ol>
       <p class="note" id="xoi-results">First measurement, Naruto: The Setting Dawn: 8 pairs of fighters, 100 training games
         each (800 games), then XOI against INSANE! on the same pairs with random seeds training never used, each fighter of
         each pair played by XOI in 10 games a seed: with version 25, 82–77 and 94–62 (176–139 with 5 draws, 55.9%); with
         the play of version 24 before it, 171–146 with 3 draws. Together 347–285 over 640 games (54.9%, ±3.9% at 95%), XOI's
-        blows struck first less often (1,497 against 1,823). The notes were made against INSANE!'s own play, and a human
-        plays differently: that is why XOI is a level of its own and INSANE! is not changed by them.</p>
+        blows struck first less often (1,497 against 1,823). A second round on the same pairs — XOI against XOI on the notes,
+        100 games a pair more, or simply 100 more games of INSANE! — did not add to the first measurably: 172–148 and
+        169–146 on the same games, against 176–139: the notes only weigh which move is chosen, and that is soon learned.
+        The notes were made against INSANE!'s own play, and a human plays differently: that is why XOI is a level of its own
+        and INSANE! is not changed by them.</p>
     </section>
 
     <section id="results">
@@ -298,25 +319,29 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">40</td><td class="num">0</td><td class="num">0</td><td class="num">484 / 0</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">39</td><td class="num">1</td><td class="num">0</td><td class="num">364 / 0</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">31</td><td class="num">9</td><td class="num">0</td><td class="num">244 / 57</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">38</td><td class="num">2</td><td class="num">0</td><td class="num">294 / 3</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">38</td><td class="num">1</td><td class="num">1</td><td class="num">474 / 15</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">40</td><td class="num">0</td><td class="num">0</td><td class="num">391 / 0</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">29</td><td class="num">11</td><td class="num">0</td><td class="num">230 / 65</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">36</td><td class="num">4</td><td class="num">0</td><td class="num">311 / 15</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 25 figures with <code>--seed 12345</code> (version 24 gave 35–4 with a draw, 35–4 with a draw,
+      <p class="note">Version 26 figures with <code>--seed 12345</code> (version 25 gave 40–0, 39–1, 31–9 and 38–2, version 24
+        35–4 with a draw, 35–4 with a draw,
         30–10 and 37–3, version 23 34–5 with a draw, 37–3, 30–10 and 35–5, version 22 36–3 with a draw, 39–1, 29–11 and 38–2,
         version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT desktop build and the Lua 5.2 web build give the
-        same result frame for frame). Another seed (777) gives 38–2, 36–4, 30–10 and 38–2 for version 25 (34–6, 40–0, 33–7 and
-        38–2 for version 24; 37–2 with a draw, 39–1, 33–7 and 39–1 for version 23): against CRAZY! versions 22 to 25 are
-        about equal, single pairs swinging by a game or two either way. The differences show against a strong opponent,
+        same result frame for frame). Another seed (777) gives 38–2, 40–0, 32–8 and 37–3 for version 26 (38–2, 36–4, 30–10 and
+        38–2 for version 25; 34–6, 40–0, 33–7 and 38–2 for version 24; 37–2 with a draw, 39–1, 33–7 and 39–1 for version 23):
+        against CRAZY! versions 22 to 26 are about equal, single pairs swinging by a game or two either way. The differences show against a strong opponent,
         head to head over the same ten pairs of each mod, three seeds, 240 games: version 23 against version 22 137–88 with
         15 draws (Naruto 62–56, One Piece 75–32), taking fewer than half the hits from a just-risen opponent (90 against 211)
         and a fifth less damage; version 24 against version 23 120–107 with 13 draws (Naruto 59–61, One Piece 61–46),
         landing a fifth more blows; version 25 against version 24 115–112 with 13 draws (Naruto 56–63, One Piece 59–49). With
         each fighter of each pair played by each version (8 pairs, 10 games each way), version 25 beats version 24 87–70 and
         86–73 in Naruto, where Sasuke's teleport now lands where the game puts it, and plays One Piece about even (67–72, 21
-        draws), cut short less often in both. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
+        draws), cut short less often in both. Version 26 against version 25 the same way: 94–66 and 86–71 in Naruto, 83–62
+        (15 draws) and 75–71 (14 draws) in One Piece — 338–270 over the four, hit less often in each (86–71 and 83–62 were
+        measured just before a last small change to the walk to a weapon; on Naruto's first seed it moved 93–66 to 94–66); Gaara
+        against Neji, both played by one version, wins 17 games in 20 with version 26 and 4 with version 25. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
         games between versions 24 and 23 end 10,928–9,047 with 25 draws (54.7%, ±0.6%): version 24's Lee wins 38.9% against
         version 23's Neji, where version 23's own Lee won 28.2%, and its Neji is as strong as version 23's.
         (Until 1 November 2026 the two players of a head-to-head match on the bench shared one context — how they read the

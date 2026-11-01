@@ -53,6 +53,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (both use the installed game with the package's scripts, so it need not be reinstalled); `duel` takes `ids`
   (`"all"`), `part`/`parts`, and leaves out a game that fails; the bench's `xoi` brain, `smart.on_start` with the
   attack's expected landing and score (v25)
+- INSANE!/XOI: steady footwork — a turn round is a step too, so no more turning left and right on the spot at
+  the edge of a distance, of an enemy's quick blows or of a fallen enemy's wake-up blows (worst for fast walkers,
+  most seen at low MP); a way out once chosen is kept and walking turns the fighter round at most once every few
+  frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way
+  out: its line is walked beside even while the opponent charges MP or is busy for a moment, and a run is not
+  steered back onto it while a wave flies along it (v26)
+- `tools/ai-bench/windows/dau-nhieu.bat`: each fighter's win rate when played by the first brain and when played
+  by the second, and the difference (the first alone mixed the fighter's strength into the AI's)
 - `tools/ai-bench`: each computer player of a `duel` keeps its own context (they shared one, which skewed matches
   between versions that read the fighters' moves differently); versions before 20 are named so instead of `vnil`
 - `tools/ai-bench`: `duel` with `audit = true` counts, per computer player, blows started, landed and

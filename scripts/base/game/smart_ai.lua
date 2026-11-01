@@ -55,8 +55,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 25
+smart.version = 26
 smart.history = {
+    {26, "2026-11-01", "No more turning left and right on the spot: a turn round is a step too (a direction key turns the fighter and walks it), so a step back from an enemy much too close goes on until turning round again leaves room, the edges of an enemy's reach and of a fallen enemy's wake-up blows are waited at rather than stepped in and out of, the way out of them once chosen is kept, and walking turns the fighter round at most once every few frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way out, not only in its first frames: its line is walked beside even while the enemy charges MP or is busy for a moment, and a run is not steered back onto the line while a wave flies along it"},
     {25, "2026-11-01", "Gets out of the way with a move of its own when no step does: a teleport, a rush or a leap whose path no blow on its way meets (Kuma of One Piece GrandWorld vanishes and comes down behind the enemy — the keys a mod's jump takes are now learned as moves), taken when the guard cannot hold the blow, or it is a heavy one and MP is left for a strong move after it, or the move strikes back; otherwise the guard, in time; a teleport lands where the game puts it (behind the enemy when the move turns the fighter round). XOI, the level after INSANE!, plays as INSANE! with notes of training shipped with the mod (xoi/notes.txt): each move weighed by what it brought against this opponent in many games, and the opponent's answers to a risky move expected from what training saw"},
     {24, "2026-11-01", "Weighs, rather than forbids, a move the opponent's quicker blow could beat on its way: it is started when what it brings outweighs the answer's damage by how often this opponent has struck such a move first in the match so far (learned as the match goes, from a hopeful start), so a rusher no longer stands off a fighter with long, quick blows (Rock Lee against Neji in Naruto: The Setting Dawn) while a punishing opponent is soon not rushed at"},
     {23, "2026-11-01", "Keeps out of a fallen or just-risen opponent's wake-up blows (its quick moves, however far they reach) until its blink ends, leaving by the quicker way (a few steps in depth, or back out of reach) and waiting off its line rather than beside it; no charging, drinking or weapon pick-up inside them, and a charge stance is left in time to get out; weighs the opponent's quickest counter along a move's own path (a rush carries the fighter into blows that do not reach where it starts) and out of the air on a jump-in; an opponent in a charge stance is known to be free as soon as it can leave it, with the MP the charge brings; the frame a move's spawn appears is counted as a threat; a blow landing as the own blink ends is answered; a trade is struck first only when clearly heavier"},
@@ -1520,6 +1521,32 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
     return best_t, best_box, best_source
 end
 
+-- Helpers of the positioning below, gathered in one table (smart.control is near Lua's limit of upvalues).
+local positioning = {}
+
+-- Something flying at `self` along a line close to its own (a wave sent along the ground): the depth of that
+-- line, or nil. A step toward it waits until it has gone by — earliest_threat's frame-by-frame forecast of a
+-- sideways step can come out a few pixels short, and a fast wave clips a fighter at the very edge of its depth.
+function positioning.flying_line(state, index, self)
+    local best_z, best_gap
+    for other = 0, constants.item_slots - 1 do
+        local value = state.items[other]
+        if value and other ~= index and value.record.kind == record_kinds.ball and value.hp > 0 and hostile(state, self, value) then
+            local gap = self.x_int - value.x_int
+            if abs(gap) < 700 and value.vx ~= 0 and (value.vx > 0) == (gap > 0) then
+                local zw = 0
+                for _, area in ipairs(value.record.frame(value.frame).interactions) do
+                    if damaging(area) then zw = max(zw, area.zwidth ~= 0 and area.zwidth or default_zwidth) end
+                end
+                if zw > 0 and abs(value.z_int - self.z_int) < zw + 20 and (not best_gap or abs(gap) < best_gap) then
+                    best_z, best_gap = value.z_int, abs(gap)
+                end
+            end
+        end
+    end
+    return best_z
+end
+
 ---------------------------------------------------------------------------------------------------------------
 -- Choosing.
 ---------------------------------------------------------------------------------------------------------------
@@ -1854,6 +1881,37 @@ local function danger_zones(analysis, guard_chains)
         end
     end
     if guard_chains then analysis.zones_all = zones else analysis.zones = zones end
+    return zones
+end
+
+-- The far-reaching blows of an enemy's quick moves — a beam, a wave sent along the ground (Neji's air palm in
+-- NTSD 2.4 crosses the stage in a few frames), a long sweep: how far along its line they strike, all the way out
+-- (not only in their first frames, as danger_zones), their depth and their damage. A line to walk beside, not on.
+function positioning.long_zones(analysis)
+    if analysis.long_zones then return analysis.long_zones end
+    local zones = {}
+    for _, move in ipairs(analysis.moves) do
+        local entry = move.entry
+        if move.first and move.first <= 16 and not entry.parent and entry.context == "ground" and not move.teleport
+           and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack"
+                or (entry.basic == "defend" and entry.chain)) then
+            local damage = max(move.damage, move.hit_damage or 0)
+            if damage >= 40 then
+                local x1, x2, z = 100000, -100000, 0
+                for _, box in ipairs(move.boxes) do
+                    if box.t > move.first + 20 then break end
+                    local ox = box.own and (move.traj_x[box.t] or 0) or 0
+                    local oz = box.own and (move.traj_z[box.t] or 0) or 0
+                    x1, x2 = min(x1, box.x1 + ox), max(x2, box.x2 + ox)
+                    z = max(z, abs(box.z + oz) + box.zw)
+                end
+                if x2 - x1 >= 150 then
+                    zones[#zones + 1] = {x1 = x1, x2 = x2, z = z, t = move.first, damage = damage, mp = move.mp}
+                end
+            end
+        end
+    end
+    analysis.long_zones = zones
     return zones
 end
 
@@ -2487,6 +2545,21 @@ local function approach_attack(context, self, fstate, target, danger)
     return best, best_t, best_score, lead, plan, frames_at
 end
 
+-- Toward a target `distance` away (1), away from it (-1) or neither (0), to keep it between `near` and `far`
+-- (`back` false: never away). A direction key turns the fighter and walks it, so turning round is a step too:
+-- turned away from the target (stepping back), the step back goes on until turning round again leaves it clear of
+-- `near` — at that edge a fighter otherwise turned back and forth every frame, a step out and a step in by turning
+-- round (a fast walker's step is wider than the band between the two).
+function positioning.keep_distance(self, dx, distance, near, far, back)
+    if back then
+        local away_facing = dx ~= 0 and (dx > 0) == (self.facing == facing_left)
+        local step = (self.record.movement or {}).walking_speed or 4
+        if distance < near or (away_facing and distance < near + 2 * step + 8) then return -1 end
+    end
+    if distance > far then return 1 end
+    return 0
+end
+
 -- The distance to keep: near the far end of where the fighter's best quick, cheap move strikes first.
 local function preferred_range(context, self)
     local analysis = context.analysis_of(self)
@@ -2623,6 +2696,8 @@ local function choose_target(state, index, self, memory)
 end
 
 local function face(self, target_x)
+    -- (Not toward a target right above or below us: a pixel either side of us would turn us round every frame.)
+    if abs(target_x - self.x_int) < 6 then return end
     if target_x > self.x_int and self.facing == facing_left then press(self, "right")
     elseif target_x < self.x_int and self.facing == facing_right then press(self, "left") end
 end
@@ -2894,6 +2969,10 @@ function smart.control(state, index)
     end
     context.notes = nil
     clear_keys(self)
+    -- (When the fighter last turned round: positioning does not turn it round again at once, see there; and when
+    -- a walk to a weapon last ended, see the weapons below.)
+    if memory.facing ~= self.facing then memory.facing, memory.turned_at = self.facing, state.frame_number end
+    if memory.to_weapon == state.frame_number - 2 then memory.weapon_left = state.frame_number - 1 end
     local frame = self.record.frame(self.frame)
     local fstate = frame.state
     -- What is in the hand (a weapon, or the item of a mode of the fighter's own making).
@@ -3319,11 +3398,17 @@ function smart.control(state, index)
     end
     -- A weapon lying within a few steps, when nothing presses and the hands are empty: walk onto it and take
     -- it (the attack key over a lying weapon picks it up, base/game/combat pick_up).
+    -- (Once on the way, on until the enemy is nearly within reach, and not off again at once after turning back:
+    -- at the edge, the walk to the weapon and the step back from the enemy could take turns frame by frame —
+    -- likeliest at low MP, when a drink is worth fetching.)
+    local fetching = memory.to_weapon == state.frame_number - 1
     if grounded and self.weapon == weapon_none and not threat_t and not in_wake
        and (fstate == states.standing or fstate == states.walking or fstate == states.running)
-       and (target_lock >= 15 or abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 90) then
+       and (target_lock >= 15 or ((fetching or state.frame_number - (memory.weapon_left or -999) > 30)
+            and abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + (fetching and 40 or 90))) then
         local pick = weapon_to_take(state, self, target)
         if pick then
+            memory.to_weapon = state.frame_number
             local wdx, wdz = pick.x_int - self.x_int, pick.z_int - self.z_int
             if fstate == states.running then
                 -- Running: on past a weapon still far ahead; stopped (the key against the run) near it or behind it.
@@ -3364,6 +3449,10 @@ function smart.control(state, index)
     local dz = target.z_int - self.z_int
     local distance = abs(dx)
     local want_dx, want_dz = 0, 0
+    -- Standing, not turned toward the target either (turning round is a step toward it: into its reach, here).
+    local keep_facing = false
+    -- How much a free enemy's quick blows must threaten a spot for it to be left (more as a standoff drags on).
+    local keep_out = 30 + 60 * context.aggression
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
     local near_z, far_z = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     local coming = target.y_int < 0 and tframe.state ~= states.caught and abs(dz) < 32 and abs(dx) < 420
@@ -3373,27 +3462,40 @@ function smart.control(state, index)
         if dz >= 0 then want_dz = -1 else want_dz = 1 end
         if want_dz < 0 and self.z_int - near_z < 12 then want_dz = 1 end
         if want_dz > 0 and far_z - self.z_int < 12 then want_dz = -1 end
+        keep_facing = true
         memory.note = "leave air line"
     elseif target_lock == 0 and not (target_pressure and target_pressure < 0.2)
-           and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= 30 + 60 * context.aggression - (memory.leaving == state.frame_number - 1 and 20 or 0) then
+           and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= keep_out - (memory.leaving == state.frame_number - 1 and 20 or 0) then
         -- Where the free enemy's quick, strong moves land: step to the nearest spot they do not reach (and on
         -- out of them for a while once started, rather than stepping in and out at their edge). An opponent
         -- that hardly attacks is not kept out of reach of.
+        -- (Each way is judged by the best spot it passes within six steps, not by the one spot six steps off: a
+        -- narrow safe band between two zones was otherwise stepped past from either side, the fighter turning
+        -- back and forth at its edge every frame; the way taken last frame keeps a little of its favour.)
         memory.leaving = state.frame_number
         local analysis = context.analysis_of(target)
         local movement = self.record.movement or {}
-        local step_x, step_z = (movement.walking_speed or 4) * 6, (movement.walking_speedz or 2) * 6
+        local speed_x, speed_z = movement.walking_speed or 4, movement.walking_speedz or 2
+        local way = memory.leave_way
         local best_dx, best_dz, best_value
         for ox = -1, 1 do
             for oz = -1, 1 do
-                local x, z = self.x_int + ox * step_x, self.z_int + oz * step_z
-                if x > 20 and x < width - 20 and z >= near_z and z <= far_z then
-                    local value = danger_at(target, analysis, x, z) + abs(abs(target.x_int - x) - range) * 0.05
-                    if not best_value or value < best_value then best_dx, best_dz, best_value = ox, oz, value end
+                local value
+                for k = 1, 6 do
+                    local x, z = self.x_int + ox * speed_x * k, self.z_int + oz * speed_z * k
+                    if x > 20 and x < width - 20 and z >= near_z and z <= far_z then
+                        local spot = danger_at(target, analysis, x, z) + abs(abs(target.x_int - x) - range) * 0.05 + k * 0.3
+                        if not value or spot < value then value = spot end
+                    end
+                    if ox == 0 and oz == 0 then break end
                 end
+                if value and way and way[1] == ox and way[2] == oz then value = value - 2 end
+                if value and (not best_value or value < best_value) then best_dx, best_dz, best_value = ox, oz, value end
             end
         end
         want_dx, want_dz = best_dx or 0, best_dz or 0
+        memory.leave_way = {want_dx, want_dz}
+        keep_facing = want_dx == 0
         memory.note = "leave reach"
     else
         -- Toward the target until a move reaches it (nothing did this frame), unless much too close; against
@@ -3411,7 +3513,7 @@ function smart.control(state, index)
         -- the time it is up, by the quicker way: in depth (a few steps off its line) or back out of their reach;
         -- off its line, we may close in x and wait there. (Not against one that hardly ever attacks.)
         local untouchable = untouchable_for(context, target, tframe.state, target_lock)
-        local waking = false
+        local waking, edge_note = false, nil
         if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) then
             local zone_z, zone_x = wake_zone(target, target_analysis, distance)
             if zone_z > 0 then
@@ -3436,25 +3538,53 @@ function smart.control(state, index)
                         room = side < 0 and (self.z_int - near_z) or (far_z - self.z_int)
                     end
                     memory.wake_side = side
-                    if (tz <= tx or walled) and room >= zone_z + 4 then want_dz = side
-                    elseif not walled then want_dx = away
-                    else want_dz = side end
+                    -- (And the way out once chosen — in depth or back along x — is kept: each step changes which
+                    -- is quicker, and the fighter otherwise went one way and the other in turn.)
+                    local way = memory.wake_way
+                    if not way then
+                        way = ((tz <= tx or walled) and room >= zone_z + 4 or walled) and "z" or "x"
+                        memory.wake_way = way
+                    end
+                    if way == "x" and not walled then want_dx = away else want_dz = side end
+                    keep_facing = true
                     memory.note = string.format("leave wake-up zone %d %d (z %d x %d)", want_dx, want_dz, zone_z, zone_x)
                 else
+                    memory.wake_way = nil
                     -- Off its line: keep this depth; in x, about our own range away (not beside it: a step in
                     -- depth would put it back on us).
                     local away = dx > 0 and -1 or 1
                     local walled = (away < 0 and self.x_int < 80) or (away > 0 and self.x_int > width - 80)
-                    if distance > range + 10 then want_dx = dx > 0 and 1 or -1
-                    elseif distance < range - 15 and not walled then want_dx = away end
+                    want_dx = positioning.keep_distance(self, dx, distance, range - 15, range + 10, not walled) * (dx > 0 and 1 or -1)
                     memory.note = string.format("wait off line %d (z %d)", want_dx, zone_z)
                 end
             end
         end
         if not waking then
-            memory.wake_side = nil
-            if distance > max(hold - 20, 10) then want_dx = dx > 0 and 1 or -1
-            elseif distance < max(hold - 50, 8) and target_lock == 0 then want_dx = dx > 0 and -1 or 1 end
+            memory.wake_side, memory.wake_way = nil, nil
+            -- (No stepping back with a wall a couple of steps behind: stopped by it, the fighter would turn round
+            -- — a step forward — and step back again.)
+            local step = (self.record.movement or {}).walking_speed or 4
+            local walled = (dx > 0 and self.x_int < 80 + 2 * step) or (dx < 0 and self.x_int > width - 80 - 2 * step)
+            want_dx = positioning.keep_distance(self, dx, distance, max(hold - 50, 8), max(hold - 20, 10), target_lock == 0 and not walled) * (dx > 0 and 1 or -1)
+            -- Nor a step back into where the blows of a target getting up strike (just stepped out of: they reach
+            -- further as we near it): we wait at their edge, turned toward it (turning round, a step toward it,
+            -- only once a step further out leaves room for it).
+            if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) then
+                local toward = dx > 0 and 1 or -1
+                local facing_away = (dx > 0) == (self.facing == facing_left)
+                if want_dx == toward or (want_dx == 0 and facing_away and distance >= 6) then
+                    local d = max(distance - ((self.record.movement or {}).walking_speed or 4), 0)
+                    local zone_z = wake_zone(target, target_analysis, d)
+                    if zone_z > 0 then
+                        if self.hp < 120 then zone_z = zone_z + 6 end
+                        if not target_down then zone_z = zone_z + 6 end
+                    end
+                    if zone_z > 0 and abs(dz) < zone_z then
+                        want_dx = facing_away and -toward or 0
+                        edge_note = "wait at wake-up zone"
+                    end
+                end
+            end
         end
         if want_dx ~= 0 and (want_dx < 0) == (dx > 0) and ((want_dx < 0 and self.x_int < 80) or (want_dx > 0 and self.x_int > width - 80)) then
             want_dx = 0
@@ -3462,11 +3592,12 @@ function smart.control(state, index)
         -- A free target whose long blows (a beam, a sweep: Neji's in Naruto: The Setting Dawn) cover the line
         -- between us is approached beside that line, in depth, and the line is only stepped onto once our own
         -- blows are about to reach: straight along it, every step is into its arms.
+        -- (Also when it is busy for now but free again before we could be there, and with its MP counted as it will
+        -- be by then: a wave it cannot afford yet comes once it can — charging, Neji in NTSD 2.4 soon can.)
         local line_z
-        if target_lock == 0 and distance > range + 40 and not (target_pressure and target_pressure < 0.2) then
-            for _, zone in ipairs(danger_zones(target_analysis, true)) do
-                if target.mp >= zone.mp and zone.damage >= 40 and zone.x2 - zone.x1 >= 150 and zone.x2 >= distance - 40
-                   and zone.x1 <= distance + 40 then
+        if target_lock * 10 < distance - range and distance > range + 40 and not (target_pressure and target_pressure < 0.2) then
+            for _, zone in ipairs(positioning.long_zones(target_analysis)) do
+                if target.mp + 150 >= zone.mp and zone.x2 >= distance - 40 and zone.x1 <= distance + 40 then
                     line_z = max(line_z or 0, zone.z + 10)
                 end
             end
@@ -3485,10 +3616,10 @@ function smart.control(state, index)
             elseif abs(dz) > line_z + 40 then
                 want_dz = dz > 0 and 1 or -1
             end
-            memory.note = string.format("approach off line %d %d (z %d)", want_dx, want_dz, line_z)
+            memory.note = edge_note or string.format("approach off line %d %d (z %d)", want_dx, want_dz, line_z)
         else
             if abs(dz) > range_z then want_dz = dz > 0 and 1 or -1 end
-            memory.note = string.format("move %d %d (hold %d)", want_dx, want_dz, hold)
+            memory.note = edge_note or string.format("move %d %d (hold %d)", want_dx, want_dz, hold)
         end
         -- Two on one: a teammate already fighting the target from this side → round to the other side, in
         -- depth first (not through the target's arms), then past it.
@@ -3502,12 +3633,42 @@ function smart.control(state, index)
             end
             memory.note = "flank"
         end
+        -- Not back into the quick blows of a free enemy just stepped out of: a step toward it, in x or onto its
+        -- depth, waits at their edge (or comes once the standoff has made the fighter bolder), rather than in and
+        -- out of them every few frames, turning round each time.
+        local closer_x = want_dx ~= 0 and (want_dx > 0) == (dx > 0)
+        local closer_z = want_dz ~= 0 and (want_dz > 0) == (dz > 0)
+        if (closer_x or closer_z) and target_lock == 0 and not waking and not (target_pressure and target_pressure < 0.2)
+           and state.frame_number - (memory.leaving or -999) < 45 then
+            local movement = self.record.movement or {}
+            local x = self.x_int + want_dx * (movement.walking_speed or 4) * 3
+            local z = self.z_int + want_dz * (movement.walking_speedz or 2) * 3
+            if danger_at(target, target_analysis, x, z) >= keep_out then
+                if closer_x then want_dx, keep_facing = 0, true end
+                if closer_z then want_dz = 0 end
+                memory.note = "hold off reach"
+            end
+        end
     end
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end
     if want_dz > 0 and far - self.z_int < 6 then want_dz = 0 end
+    -- Nor toward the depth of something flying at us along it.
+    local flying_z = want_dz ~= 0 and positioning.flying_line(state, index, self)
+    if flying_z and (want_dz > 0) == (flying_z > self.z_int) then
+        want_dz = 0
+        memory.note = tostring(memory.note) .. " (not onto its line)"
+    end
     -- Not a step into a blow that misses where we stand (turning toward the target is a step too).
-    local turn = want_dx == 0 and ((dx > 0 and self.facing == facing_left) or (dx < 0 and self.facing == facing_right))
+    local turn = want_dx == 0 and not keep_facing and abs(dx) >= 6
+        and ((dx > 0 and self.facing == facing_left) or (dx < 0 and self.facing == facing_right))
+    -- And not round again within a few frames of turning round (no thumb goes left, right, left that fast): with
+    -- nothing on its way, a turn asked for so soon waits, the fighter standing (or stepping in depth) meanwhile.
+    if (turn or (want_dx ~= 0 and (want_dx > 0) ~= (self.facing == facing_right))) and not threat_t
+       and memory.turned_at and state.frame_number - memory.turned_at < 3 then
+        want_dx, turn = 0, false
+        memory.note = tostring(memory.note) .. " (wait to turn)"
+    end
     if (want_dx ~= 0 or want_dz ~= 0 or turn) and fstate ~= states.running and not threat_t then
         local movement = self.record.movement or {}
         local speed, speedz = movement.walking_speed or 4, movement.walking_speedz or 2
@@ -3542,7 +3703,17 @@ function smart.control(state, index)
         if distance < range + 140 or (dx > 0) ~= (self.facing == facing_right) then
             press(self, self.facing == facing_right and "left" or "right")
         elseif want_dz ~= 0 then
-            press(self, want_dz > 0 and "down" or "up")
+            -- (Not steered into a blow on its way: a run steered back onto the target's line, out of which a
+            -- wave along it was just dodged, met the next one. The run's sideways step is counted a little wide:
+            -- the forecast runs short of it.)
+            local speedz = ((self.record.movement or {}).running_speedz or 2) + 1.5
+            local vx = self.vx
+            local plan = function(k) return trunc(vx * k), 0, trunc(want_dz * speedz * k) end
+            if (want_dz > 0) ~= (dz > 0) or not earliest_threat(state, index, self, 12, plan, level.reaction, context) then
+                press(self, want_dz > 0 and "down" or "up")
+            else
+                memory.note = tostring(memory.note) .. " (not onto its line)"
+            end
         end
         return
     end

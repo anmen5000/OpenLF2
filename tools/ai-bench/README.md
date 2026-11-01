@@ -87,14 +87,19 @@ openlf2 --pack naruto.zip --mod tools/ai-bench --seed 5001 --input-trace "" | gr
 `part`/`parts` give a job its share of the pairs, for many jobs side by side. On Windows, `windows/xoi-hoc.bat`
 (copied beside the mod's ZIP file and this package's `tools` and `scripts` folders) does all of it: one job per
 processor, the notes gathered into `xoi-<mod>\notes.txt`, and a copy of the mod's ZIP file with them inside
-(`<mod>-xoi.zip`, for the relay). It plays with the installed game's scripts updated by the package's (the package
+(`<mod>-xoi.zip`, for the relay; the one before is kept as `<mod>-xoi-truoc.zip`). `NAO=xoi` trains a further round
+with both fighters played by XOI on the notes gathered so far (`brains = {"xoi", "xoi"}` with the notes handed to
+the job): XOI's expected scores are counted before its notes weighed them, so the rounds add up — but measure every
+round against the one before: the notes only weigh which move is chosen, and a round of XOI against itself may learn
+its own habits rather than an opponent's. It plays with the installed game's scripts updated by the package's (the package
 holds only the files that changed), so the installed game need not be the latest. A `duel` with `brains = {"xoi",
 "smart"}` and `difficulty = -2` on that ZIP file shows what the notes are worth (`notes = "<module>"` hands a
 `duel` or `learn` job notes of its own instead: a module of this package returning `{text = "..."}`).
 `windows/dau-nhieu.bat` runs a `duel` the same way: by default every fighter against every other (`ids = "all"`,
-`brains = {"xoi", "smart"}`, each fighter played by each brain), the matchups split over the processors, then each
-fighter's win rate (with its name) and every pair's score in `cap.txt`; with `IDS` left empty, every job runs
-`config.lua` with its own seed and the scores are added up.
+`brains = {"xoi", "smart"}`, each fighter played by each brain), the matchups split over the processors, then for
+each fighter (with its name) its win rate when the first brain plays it, when the second does, and the difference —
+a weak fighter is low in both, so the difference is what tells how the brains play it — and every pair's score in
+`cap.txt`; with `IDS` left empty, every job runs `config.lua` with its own seed and the scores are added up.
 
 ## Jobs
 
