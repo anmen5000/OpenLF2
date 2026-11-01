@@ -43,7 +43,8 @@ console — so `show` is the one to watch.
 ## Two computer players against each other
 
 A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"xoi"` (XOI: INSANE! with the notes of
-training, below), `"classic"` (the original computer player), or `"smart@<module>"`: another computer player in the
+training, below; `"xoi:m"` weighs moves by the notes alone, as XOI did up to version 26, `"xoi:c"` adds the
+situations, `"xoi:p"` the spots), `"classic"` (the original computer player), or `"smart@<module>"`: another computer player in the
 shape of `smart_ai.lua`, loaded from this package as
 `<module>.lua` (listed in `package.manifest` as `module=<module>|<module>.lua`). To pit a version of INSANE!
 against an older one, copy the older `smart_ai.lua` in as `ai_alt.lua` and use `brains = {"smart", "smart@ai_alt"}`;
@@ -68,15 +69,28 @@ as INSANE! (the sides swap every game) and, as each pair's games end, the job pr
 XOI G <a> <b> <games> <wins> <draws>
 XOI R <a> <b> <moves started at a risk> <struck first>
 XOI M <a> <b> <move> <starts> <landed> <struck first> <damage dealt> <damage taken> <expected>
+XOI C <a> <b> <move> <situation>:<starts>,<dealt - taken>,<expected> ...
+XOI P <a> <b> <spot>:<frames>,<visits>,<dealt>,<taken>,<squares> ...
 ```
+
+(`C`, from version 27: the same move by the situation it was started in — `sf`/`sr` the opponent free on its feet
+facing a or turned away, `sb` busy in a move, `sa` in the air, `sg` guarding, `sh` hurt, down or held; `dn`/`dm`/`df`
+within 80, 220 or farther; `hl`/`hh` a's HP a third of the bar or less, or more. `P`: the frames a stood free with b
+free on its feet too, by spot — `f` in front of b or `b` behind it, then which of the distances 30 60 100 150 220 320
+480 and of the depths 8 18 32 it is past — in how many visits, with the damage dealt and taken in the 45 frames after
+each and the sum of the squares of their difference.)
 
 (a's record against b; a move is named as the AI learned it, such as `ground:s1:295` — the D>A that leads to frame
 295 — or `ground:60>63jump`, the punch continued with jump in frame 63). Gathered into one file, they go into the
 mod's ZIP file as `xoi/notes.txt` beside its `data` folder; lines of several runs simply add up. At XOI a move's
 score is weighed by how much of what was expected of it, against this opponent, it brought, against the fighter's
 moves on the whole (counted over a few starts' worth of the average, so that a move seldom tried stays near it; the
-weight stays between 0.5 and 1.6), and the opponent's answers to a risky move start from what training saw. The
-match line shows `(XOI v25, N matchups)`, or `no notes` when the mod has none — XOI then plays as INSANE!.
+weight stays between 0.5 and 1.6), and the opponent's answers to a risky move start from what training saw. Each
+side of the situation the move would start in changes that weight by a small part (0.75 to 1.33, the three together
+0.7 to 1.4, as far as the starts seen there bear it out), and positioning neither steps onto a spot clearly worse
+than where it stands nor passes up one clearly better within a few steps (clearly: by more than either may be off).
+The match line shows `(XOI v27, N matchups)`, or `no notes` when the mod has none — XOI then plays as INSANE!;
+notes made before version 27 have no situations or spots, and XOI weighs moves by them as before.
 
 ```sh
 # every pair of these fighters, 100 games each; or ids = "all" (every fighter of the mod)
@@ -110,6 +124,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `show` | A match to watch in the window (not headless): `brains` on the two fighter ids in `ids`, `games` games with the sides swapped every other game, the score on the status line; see "Watching a match". | `brains`, `ids`, `games`, `difficulty`, `background` |
 | `learn` | Training for XOI (see "Training XOI"): `games` games of every pair in `pairs`, or of every two of `ids` (`"all"`: every fighter), both played by INSANE! (`brains`, default `{"smart", "smart"}`); prints `XOI` lines per pair as its games end. A game that fails is left out. | `pairs`, `ids`, `games`, `part`, `parts`, `brains`, `notes`, `difficulty`, `limit`, `verbose` |
 | `duel` | AI against AI, `games` games per pair of fighter ids in `pairs` (or `ids`: every one against every other, each way round; `"all"` = every fighter, `part`/`parts` a share of those matchups; a game that fails is left out); the first fighter of a pair is played by `brains[1]` (`"smart"` is INSANE!, `"classic"` the original computer player at the match's `difficulty`, `-1` = CRAZY!/INSANE!). Prints each pair's score and a `TOTAL` line; with `usage`, the moves of each form too. | `pairs`, `brains`, `games`, `difficulty`, `limit` (frames per game, default 5400), `verbose` (one line per game), `usage` (every move INSANE! learned, with how often it started it), `stats` (N: damage dealt and taken by decision), `events` + `history` (every hit with both fighters' last decisions), `trace` (N: both fighters every N frames), `models` (after each game, what each fighter's opponent model counted: guards, hits, attacks and chances, falls and flips, jumps), `probe` (frames at which to print INSANE!'s view), `hash` (N: a per-frame line for the first N frames of the first game, for determinism checks), `audit` (an `AUDIT` line per brain at the end: blows started and landed, blows interrupted before landing — by a foe that was free when we started, or one already in a move —, hits taken from a foe just up from the ground, with the back to a wall, trades, what we were doing when hit, and the moves INSANE! set aside because a threat or counter met their path; `exclusions = true` logs each of those), `no_ego`, `no_prepare`, `nobrain` |
+| `stall` | Stretches of a match in which neither fighter loses HP for `quiet` frames (default 300) — two computer players stuck in a loop, such as a trap cast again and again on an opponent already held (Yamato in Naruto 2.4 before version 27): where each began, how many frames went so, and what each computer player was doing meanwhile. | `pairs`, `games`, `brains`, `notes`, `quiet`, `show`, `difficulty`, `limit` |
 | `moves` | What INSANE! learned about the fighters in `only` (`{[id] = true}`): every move with its start, first and last hit, recovery, MP, damage and reach; then each form of the fighter (an item of its own making in hand: its item, resting and running frames, MP burn, run speed and worth) with the moves learned in it. `boxes` lists the hit boxes of form-entering moves. | `only`, `boxes` |
 | `timing` | How many moves, entries and sandbox plays the learning of each fighter in `only` takes, and of its forms (an item of its own making in hand). | `only`, `cap` |
 | `keyseq` | Plays a scripted key timeline (`seq`: `{{frame, "key", true|false}, ...}`, keys `up down left right attack jump defend`) on fighter `id` against a still `other`, and logs the fighter's frame, position, MP, weapon code and the objects it owns every frame a frame changes (and every `every` frames): how a form is entered, what it costs, how it runs and stops. | `id`, `other`, `far`, `mp`, `ticks`, `every`, `seq` |

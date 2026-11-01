@@ -24,3 +24,4 @@ module=still|still.lua
 module=brains|brains.lua
 module=show|show.lua
 module=learn|learn.lua
+module=stall|stall.lua

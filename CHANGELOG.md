@@ -59,6 +59,23 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way
   out: its line is walked beside even while the opponent charges MP or is busy for a moment, and a run is not
   steered back onto it while a wave flies along it (v26)
+- INSANE!/XOI: untouchable forms — a body kept only on a far layer (1000 and more off the visible one, a mod's own
+  interactions) is out of reach of every blow but those aimed at that layer, reckoned for each opponent: a form whose
+  frames are all out there (Drake's T-rex, Magellan's Venom Demon in One Piece GrandWorld) is worth entering for that
+  alone and is fought in up close, its own run or creeping walk steered onto the opponent's line and stopped with its
+  own key; a form entered from the guard no longer loses its key at the guard's first frame (Magellan never got in);
+  a move that restores HP (Marco's phoenix, state 1700) is measured with HP missing and used when much lost HP can
+  come back and nothing reaches the fighter meanwhile; the roll out of a run is learned with what follows it (Marco's
+  phoenix flight) and a flight that steers in depth is flown onto the target's line. A grab is worth what follows it
+  (measured) and is no blow to guard; a trap is never set again on an opponent already held — Yamato's wood prison,
+  cast on and on from afar in Naruto 2.4, kept both fighters standing for the rest of a match — and the held opponent
+  is walked up to and struck; short of MP with a charge of its own, the fighter backs off far enough to charge rather
+  than waiting at the edge of the opponent's reach (v27)
+- XOI: notes by situation — what the opponent was doing, how far it was, whether the fighter's own HP had run low
+  (`XOI C` lines) — and by spot, where the fighter stood with both fighters free and what the 45 frames after brought
+  (`XOI P` lines); used within narrow bounds (measured as strong as the moves' weights alone, 158–153 over 320 games);
+  notes made before have neither and play as before; the bench's `xoi:m`, `xoi:c` and `xoi:p` brains play with the
+  moves' weights alone, with the situations, with the spots (v27)
 - `tools/ai-bench/windows/dau-nhieu.bat`: each fighter's win rate when played by the first brain and when played
   by the second, and the difference (the first alone mixed the fighter's strength into the AI's)
 - `tools/ai-bench`: each computer player of a `duel` keeps its own context (they shared one, which skewed matches

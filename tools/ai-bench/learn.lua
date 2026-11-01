@@ -10,6 +10,14 @@
 --                                              how often a was hit before it did, the damage dealt and taken
 --                                              while it ran (follow-ups included) and what it was expected to
 --                                              bring (the attack's score with the wait for the blow taken out)
+--   XOI C <a> <b> <move> <situation>:<starts>,<dealt - taken>,<expected> ...
+--                                              the same by the situation the move was started in
+--                                              (smart.note_situation: what b was doing, how far off, a's HP)
+--   XOI P <a> <b> <spot>:<frames>,<visits>,<dealt>,<taken>,<squares> ...
+--                                              the frames a stood free, b free on its feet too, by distance,
+--                                              depth and side (smart.spot_cell: in front of b or behind it), in
+--                                              how many visits, the damage dealt and taken in the 45 frames after
+--                                              each, and the sum of the squares of (dealt - taken)
 -- config.pairs of fighter ids, or config.ids (every pair of them, each once; "all": every fighter of the mod),
 -- config.games per pair (the sides swap every game); config.part and config.parts: this job plays only its share
 -- of the pairs (the part-th of every `parts`), so that many jobs side by side share the work (xoi-hoc.bat).
@@ -72,17 +80,29 @@ function learn.run(config)
         local mine = records[a]
         if not mine then mine = {}; records[a] = mine end
         local entry = mine[b]
-        if not entry then entry = {games = 0, wins = 0, draws = 0, risk_starts = 0, risk_hits = 0, moves = {}}; mine[b] = entry end
+        if not entry then
+            entry = {games = 0, wins = 0, draws = 0, risk_starts = 0, risk_hits = 0, moves = {}, situations = {}, spots = {}}
+            mine[b] = entry
+        end
         return entry
     end
     local function close(window)
-        local m = moves_of(window.a, window.b).moves
+        local entry = moves_of(window.a, window.b)
+        local m = entry.moves
         local row = m[window.key]
         if not row then row = {0, 0, 0, 0, 0, 0}; m[window.key] = row end
         row[1] = row[1] + 1
         if window.landed then row[2] = row[2] + 1 end
         if window.cut then row[3] = row[3] + 1 end
         row[4], row[5], row[6] = row[4] + window.dealt, row[5] + window.taken, row[6] + window.expected
+        -- (And by the situation it was started in.)
+        local by = entry.situations[window.key]
+        if not by then by = {}; entry.situations[window.key] = by end
+        for _, name in ipairs(window.situation) do
+            local c = by[name]
+            if not c then c = {0, 0, 0}; by[name] = c end
+            c[1], c[2], c[3] = c[1] + 1, c[2] + window.dealt - window.taken, c[3] + window.expected
+        end
     end
     local foe_of = {}
     smart.on_start = function(self, move, t, score)
@@ -92,14 +112,20 @@ function learn.run(config)
             if window then close(window) end
             local key, foe = smart.note_key(move), foe_of[self]
             -- (What the move was expected to bring before XOI weighed it by the notes it plays with.)
-            if self.brain == "xoi" then
+            if self.brain and self.brain:sub(1, 3) == "xoi" then
                 local notes = smart.pair_notes(self.record.id, foe.record.id)
                 local factor = notes and notes.factor[key]
+                if notes and self.brain ~= "xoi:m" and self.brain ~= "xoi:p" then
+                    local doing, far, low = smart.note_situation(self, foe)
+                    factor = smart.situation_factor(notes, key, {"s" .. doing, "d" .. far, "h" .. low})
+                end
                 if factor then score = score / factor end
             end
+            local doing, far, low = smart.note_situation(self, foe)
             open[self] = {a = self.record.id, b = foe.record.id, key = key,
                 ends = tick + math.max(t or 0, busy) + 8, expected = math.max(score, 0) * ((t or 0) + 10) / 14,
-                cost = math.max(move.hp or 0, 0), dealt = 0, taken = 0, landed = false, cut = false}
+                cost = math.max(move.hp or 0, 0), dealt = 0, taken = 0, landed = false, cut = false,
+                situation = {"s" .. doing, "d" .. far, "h" .. low}}
         elseif t and window then
             window.ends = math.max(window.ends, tick + math.max(t, busy) + 8)
         elseif window then
@@ -121,6 +147,29 @@ function learn.run(config)
         a.brain, b.brain = names[1], names[2]
         open, foe_of = {}, {[a] = b, [b] = a}
         local hp = {[a] = a.hp, [b] = b.hp}
+        -- The spots: each frame a fighter stands free with the opponent free on its feet, the damage dealt and
+        -- taken in the 45 frames after it (a queue of such frames, settled 45 frames on or at the game's end).
+        local queue = {[a] = {first = 1, last = 0}, [b] = {first = 1, last = 0}}
+        local dealt_so_far, taken_so_far = {[a] = 0, [b] = 0}, {[a] = 0, [b] = 0}
+        local function free(value)
+            local st = value.record.frame(value.frame).state
+            return value.y_int == 0 and (st == constants.frame_states.standing or st == constants.frame_states.walking
+                or st == constants.frame_states.running)
+        end
+        local function settle(value, upto)
+            local q = queue[value]
+            local spots = moves_of(value.record.id, foe_of[value].record.id).spots
+            while q.first <= q.last and q[q.first].tick <= upto do
+                local e = q[q.first]
+                q[q.first] = nil
+                q.first = q.first + 1
+                local c = spots[e.cell]
+                if not c then c = {0, 0, 0, 0, 0}; spots[e.cell] = c end
+                local d, t = dealt_so_far[value] - e.dealt, taken_so_far[value] - e.taken
+                c[1], c[2], c[3], c[4], c[5] = c[1] + 1, c[2] + (e.new and 1 or 0), c[3] + d, c[4] + t, c[5] + (d - t) * (d - t)
+            end
+        end
+        local last_spot = {}
         local held = {functions = "", function_presses = "", keys = {}}
         tick = 0
         while tick < (config.limit or 9000) do
@@ -128,6 +177,20 @@ function learn.run(config)
             match.step(state, held)
             for value, foe in pairs(foe_of) do
                 local lost, foe_lost = math.max(hp[value] - value.hp, 0), math.max(hp[foe] - foe.hp, 0)
+                dealt_so_far[value] = dealt_so_far[value] + foe_lost
+                if lost > 2 then taken_so_far[value] = taken_so_far[value] + lost end
+                settle(value, tick - 45)
+                if free(value) and free(foe) then
+                    local q = queue[value]
+                    q.last = q.last + 1
+                    local front = (foe.facing == constants.facings.right) == (value.x_int >= foe.x_int)
+                    local cell = smart.spot_cell(foe.x_int - value.x_int, foe.z_int - value.z_int, front)
+                    -- (A visit: the frames on one spot in a row.)
+                    local last = last_spot[value]
+                    q[q.last] = {tick = tick, cell = cell, dealt = dealt_so_far[value], taken = taken_so_far[value],
+                        new = not (last and last.tick == tick - 1 and last.cell == cell)}
+                    last_spot[value] = {tick = tick, cell = cell}
+                end
                 local window = open[value]
                 if window then
                     -- (A move's own price in HP, paid as it starts, is not a blow taken.)
@@ -146,6 +209,7 @@ function learn.run(config)
             if state.round_counter > 0 then break end
         end
         for value, window in pairs(open) do close(window); open[value] = nil end
+        for value in pairs(foe_of) do settle(value, tick) end
         local left_a, left_b = math.max(a.hp, 0), math.max(b.hp, 0)
         local mine, theirs = moves_of(pair[1], pair[2]), moves_of(pair[2], pair[1])
         mine.games, theirs.games = mine.games + 1, theirs.games + 1
@@ -176,8 +240,14 @@ function learn.run(config)
                 records[a] = {}
                 for b, entry in pairs(mine) do
                     local copy = {games = entry.games, wins = entry.wins, draws = entry.draws,
-                        risk_starts = entry.risk_starts, risk_hits = entry.risk_hits, moves = {}}
+                        risk_starts = entry.risk_starts, risk_hits = entry.risk_hits, moves = {}, situations = {}, spots = {}}
                     for key, row in pairs(entry.moves) do copy.moves[key] = {row[1], row[2], row[3], row[4], row[5], row[6]} end
+                    for key, by in pairs(entry.situations) do
+                        local c = {}
+                        for name, row in pairs(by) do c[name] = {row[1], row[2], row[3]} end
+                        copy.situations[key] = c
+                    end
+                    for cell, row in pairs(entry.spots) do copy.spots[cell] = {row[1], row[2], row[3], row[4], row[5]} end
                     records[a][b] = copy
                 end
             end
@@ -199,6 +269,20 @@ function learn.run(config)
                 engine.log(string.format("XOI M %d %d %s %d %d %d %d %d %d", ids[1], ids[2], key, row[1], row[2], row[3],
                     row[4], row[5], math.floor(row[6] + 0.5)))
             end
+            for _, key in ipairs(sorted_keys(entry.situations)) do
+                local by, parts = entry.situations[key], {}
+                for _, name in ipairs(sorted_keys(by)) do
+                    local c = by[name]
+                    parts[#parts + 1] = string.format("%s:%d,%d,%d", name, c[1], c[2], math.floor(c[3] + 0.5))
+                end
+                if #parts > 0 then engine.log(string.format("XOI C %d %d %s %s", ids[1], ids[2], key, table.concat(parts, " "))) end
+            end
+            local parts = {}
+            for _, cell in ipairs(sorted_keys(entry.spots)) do
+                local c = entry.spots[cell]
+                if c[1] >= 5 then parts[#parts + 1] = string.format("%s:%d,%d,%d,%d,%d", cell, c[1], c[2], c[3], c[4], c[5]) end
+            end
+            if #parts > 0 then engine.log(string.format("XOI P %d %d %s", ids[1], ids[2], table.concat(parts, " "))) end
         end
         local entry = moves_of(pair[1], pair[2])
         engine.log(string.format("pair %d of %d done: %d vs %d, %d - %d, draws %d", number, #list, pair[1], pair[2],

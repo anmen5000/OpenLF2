@@ -33,6 +33,7 @@ local camera = require("base/game/camera")
 local smart = {}
 
 local abs, floor, min, max = math.abs, math.floor, math.min, math.max
+local sqrt = math.sqrt
 local states = constants.frame_states
 local frames = constants.character_frames
 local combo = constants.combo_indices
@@ -55,8 +56,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 26
+smart.version = 27
 smart.history = {
+    {27, "2026-11-01", "Knows its own untouchable forms: a body kept only on a far layer (a mod's own interactions, 1000 and more off the visible one) is out of reach of every blow but those aimed at that layer, reckoned for each opponent; a form whose frames are all out there (Drake's T-rex, Magellan's Venom Demon in One Piece GrandWorld) is worth entering for that alone and is fought in up close, its own run or creeping walk steered onto the opponent's line and stopped with its own key, and the guard's way into a form (Magellan's) no longer ends at its first frame. A move that restores HP (Marco's phoenix) is measured with HP missing and used when much lost HP can come back and nothing reaches the fighter meanwhile; the roll out of a run is learned with what follows it (Marco's phoenix flight), and a flight that steers in depth is flown onto the target's line. A grab is worth what follows it (measured) and is no blow to guard; a trap is never set again on an opponent already held (Yamato's wood prison, cast on and on from afar in Naruto 2.4, kept both fighters standing for good) — the held opponent is walked up to and struck. Short of MP with a charge of its own, the fighter backs off far enough to charge rather than waiting at the edge of the opponent's reach. XOI: notes of training by situation (what the opponent was doing, how far it was, the fighter's own HP) and of the spots found better or worse to stand on, used within narrow bounds"},
     {26, "2026-11-01", "No more turning left and right on the spot: a turn round is a step too (a direction key turns the fighter and walks it), so a step back from an enemy much too close goes on until turning round again leaves room, the edges of an enemy's reach and of a fallen enemy's wake-up blows are waited at rather than stepped in and out of, the way out of them once chosen is kept, and walking turns the fighter round at most once every few frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way out, not only in its first frames: its line is walked beside even while the enemy charges MP or is busy for a moment, and a run is not steered back onto the line while a wave flies along it"},
     {25, "2026-11-01", "Gets out of the way with a move of its own when no step does: a teleport, a rush or a leap whose path no blow on its way meets (Kuma of One Piece GrandWorld vanishes and comes down behind the enemy — the keys a mod's jump takes are now learned as moves), taken when the guard cannot hold the blow, or it is a heavy one and MP is left for a strong move after it, or the move strikes back; otherwise the guard, in time; a teleport lands where the game puts it (behind the enemy when the move turns the fighter round). XOI, the level after INSANE!, plays as INSANE! with notes of training shipped with the mod (xoi/notes.txt): each move weighed by what it brought against this opponent in many games, and the opponent's answers to a risky move expected from what training saw"},
     {24, "2026-11-01", "Weighs, rather than forbids, a move the opponent's quicker blow could beat on its way: it is started when what it brings outweighs the answer's damage by how often this opponent has struck such a move first in the match so far (learned as the match goes, from a hopeful start), so a rusher no longer stands off a fighter with long, quick blows (Rock Lee against Neji in Naruto: The Setting Dawn) while a punishing opponent is soon not rushed at"},
@@ -73,7 +75,7 @@ smart.history = {
 -- AI script of its own (made for that fighter, which then plays as at CRAZY!). (The bench names the player of each
 -- fighter: "smart" plays as at INSANE!, "xoi" as at XOI.)
 function smart.enabled(state, value, index)
-    if value.brain then return value.brain == "smart" or value.brain == "xoi" end
+    if value.brain then return value.brain == "smart" or value.brain:sub(1, 3) == "xoi" end
     if state.random_game or state.replay_demo then return false end
     if smart.levels[state.difficulty] == nil then return false end
     return not require("base/game/ai_scripts").has(state, index)
@@ -434,28 +436,43 @@ local function mode_drain(record, mode)
         set_keys(me, {right = true}); me.previous_keys.right = true; step(); note_frame()
         fastest = max(fastest, abs(me.vx))
     end
+    local crept = 0
     for _ = 1, 6 do
+        local x = me.x_int
         set_keys(me, nil); step()
-        if abs(me.vx) > walk + 2 then note_frame() end
+        if abs(me.vx) > walk + 2 or (own_run and me.x_int ~= x) then note_frame() end
+        if me.x_int ~= x then crept = crept + 1 end
     end
-    if own_run and fastest > walk + 2 then
+    -- (A slow walk of the mode's own counts too, when it goes on by itself: Magellan's Venom Demon in One Piece
+    -- GrandWorld creeps on step by step in frames of its own, its speed in no vx, until defend brings it to rest.)
+    local creeping = own_run and crept >= 4 and moving[me.frame] == true
+    local going = abs(me.vx) > walk + 2 or creeping
+    if own_run and (fastest > walk + 2 or creeping) then
         mode.moving = moving
-        if abs(me.vx) > walk + 2 then
+        if going then
             mode.runs_on = true
             set_keys(me, {defend = true}); me.previous_keys.defend = false; step()
-            for _ = 1, 8 do
+            -- (Back in a resting frame, or one of the walking or standing state on the way to them: Drake's T-rex
+            -- stops through two of those.)
+            for _ = 1, 30 do
                 set_keys(me, nil); step()
-                if mode.idle[me.frame] then mode.stop_key = "defend"; break end
+                local rest_state = me.record.frame(me.frame).state
+                if mode.idle[me.frame] or me.frame == mode.frame
+                   or ((rest_state == states.standing or rest_state == states.walking) and not moving[me.frame]) then
+                    mode.stop_key = "defend"
+                    break
+                end
             end
         end
     end
     return drain, fastest
 end
 
-local function play(record, entry, mp, weapon_record)
+local function play(record, entry, mp, weapon_record, hp)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
     if mp then me.mp = mp end
+    if hp then me.hp = hp end
     if weapon_record then arm(state, me, weapon_record) end
     local function step()
         if smart.full_sandbox then require("base/game/match").step(state, held_nothing) else sandbox_step(state) end
@@ -525,6 +542,7 @@ local function play(record, entry, mp, weapon_record)
         local at_pass = me.frame_at_pass or me.frame
         move.frames[t] = at_pass
         local frame = me.record.frame(at_pass)
+        if frame.state == states.heal_self then move.self_heal = true end
         for _, area in ipairs(frame.interactions) do
             if damaging(area) then add_box(move.boxes, t, me, frame, area, origin, true, me) end
         end
@@ -755,6 +773,9 @@ local function explore(record, analysis, mode, first_index)
         if data.frames[frames.jump_attack] then want({context = "air", frame = frames.jump_attack, basic = "jump_attack"}) end
         if data.frames[frames.run_attack] then want({context = "run", frame = frames.run_attack, basic = "run_attack"}) end
         if data.frames[frames.dash_attack] then want({context = "dash", frame = frames.dash_attack, basic = "dash_attack"}) end
+        -- Defend out of a run rolls (frame 102); a mod's fighter may go on from the roll into a form of its own
+        -- (Marco of One Piece GrandWorld takes off as a phoenix with jump): explored for the keys its frames take.
+        if data.frames[frames.rowing + 2] then want({context = "run", press = "defend", basic = "roll"}) end
         -- A mod's move out of the jump's own frames (Kuma of One Piece GrandWorld vanishes and comes down behind
         -- the enemy with defend pressed as he jumps): the jump is explored as a move for the keys they take.
         for frame_id = frames.jump, frames.jump + 4 do
@@ -778,6 +799,16 @@ local function explore(record, analysis, mode, first_index)
             local ok_again, again = pcall(play, record, entry, 150, weapon_record)
             if ok_again and again and again.mp < 0 then move = again end
         end
+        -- Nor with HP full: a move whose frames restore HP (state 1700: Marco's phoenix in One Piece GrandWorld)
+        -- only shows it when there is HP to restore.
+        if ok and move and not move.first and move.self_heal and move.hp <= 0 and not move.mode and not move.transform then
+            engine.set_random_state(random_table(), 0, 0)
+            local ok_again, again = pcall(play, record, entry, nil, weapon_record, 150)
+            if ok_again and again and again.hp < -20 then
+                again.heal = -again.hp
+                move = again
+            end
+        end
         -- In a mode, a key that changes nothing (the fighter goes on round its resting frames) is no move.
         if ok and move and mode and not move.first and not move.mode then
             local moved = false
@@ -792,7 +823,7 @@ local function explore(record, analysis, mode, first_index)
         -- frames take are explored below: a mod's fighter may strike out of its guard (Sanji of One Piece
         -- GrandWorld). Otherwise the defend key is one of the fighter's moves (Blackbeard's dark field), kept as such.
         local guard_move
-        if ok and move and (entry.basic == "defend" or entry.press == "defend") and not entry.chain then
+        if ok and move and (entry.basic == "defend" or (entry.press == "defend" and entry.basic ~= "roll")) and not entry.chain then
             local guards = false
             for t = 1, min(3, move.length) do
                 local id = move.frames[t]
@@ -819,6 +850,19 @@ local function explore(record, analysis, mode, first_index)
                             min(box.t + 30, horizon_ticks))
                         if measured_ok then move.hit_damage = measured end
                     end
+                    break
+                end
+            end
+            -- What a catch of its own brings: a grab's box does no damage itself, what follows it does (Neji's punch
+            -- in Naruto 2.4, continued with jump, dashes and grabs, and the 64 palms that follow take 400 HP) —
+            -- measured on a fighter standing where the grab first reaches.
+            for _, box in ipairs(move.boxes) do
+                if box.own and box.kind == attack_kinds.catch then
+                    engine.set_random_state(random_table(), 0, 0)
+                    local measured_ok, measured = pcall(measure_hit, record, entry,
+                        floor((box.x1 + box.x2) / 2) + (move.traj_x[box.t] or 0), box.z + (move.traj_z[box.t] or 0),
+                        min(box.t + 70, 150))
+                    if measured_ok and measured > 45 then move.catch_damage = measured end
                     break
                 end
             end
@@ -1547,6 +1591,94 @@ function positioning.flying_line(state, index, self)
     return best_z
 end
 
+-- Far layers. A mod keeps bodies (and blows) far above or below where anything is seen, 1000 and more off, for
+-- interactions of its own; a frame whose bodies are all out there, or which has none, is out of reach of every
+-- blow but those aimed at the same layer: Drake's T-rex, Magellan's Venom Demon and Marco's phoenix in One Piece
+-- GrandWorld are struck by almost nothing. The layers a fighter's blows (and what it throws) reach out there:
+-- {top, bottom} pairs, relative to where it stands, with a margin.
+function positioning.far_reach(analysis)
+    local found = analysis.far_reach
+    if found then return found end
+    found = {}
+    local seen = {}
+    for _, move in ipairs(analysis.moves) do
+        for _, box in ipairs(move.boxes) do
+            if box.y1 >= 900 or box.y2 <= -900 then
+                local key = floor(box.y1 / 100)
+                if not seen[key] then
+                    seen[key] = true
+                    found[#found + 1] = {box.y1 - 300, box.y2 + 300}
+                end
+            end
+        end
+    end
+    analysis.far_reach = found
+    return found
+end
+-- Whether a blow of a fighter whose far layers are `far` (far_reach) can touch a body of `frame`.
+function positioning.reachable(frame, far)
+    local bodies = frame.bodies
+    for index = 1, #bodies do
+        local body = bodies[index]
+        if abs(body.y) < 1000 then return true end
+        local top = body.y - frame.center_y
+        for k = 1, #far do
+            local layer = far[k]
+            if top < layer[2] and top + body.height > layer[1] then return true end
+        end
+    end
+    return false
+end
+-- Whether a mode's resting and moving frames (play, mode_drain) are all out of reach of such blows.
+function positioning.mode_shielded(record, mode, far)
+    for id in pairs(mode.idle) do
+        if positioning.reachable(record.frame(id), far) then return false end
+    end
+    for id in pairs(mode.moving or {}) do
+        if positioning.reachable(record.frame(id), far) then return false end
+    end
+    return true
+end
+-- Whether a fighter has a move that fills MP (a chakra charge in Naruto: The Setting Dawn).
+function positioning.can_charge(analysis)
+    if analysis.can_charge ~= nil then return analysis.can_charge end
+    local found = false
+    for _, move in ipairs(analysis.moves) do
+        if move.charge and not move.entry.parent then found = true; break end
+    end
+    analysis.can_charge = found
+    return found
+end
+-- How far a mode's own quickest blow from rest reaches (the far end of its first strike): what a fighter out of
+-- the target's reach in it closes to.
+function positioning.mode_reach(view, mode)
+    if mode.reach then return mode.reach end
+    local best_first, reach
+    for _, move in ipairs(view.moves) do
+        local entry = move.entry
+        if entry.mode == mode and move.first and not entry.parent and entry.context == "ground" then
+            local far_x
+            for _, box in ipairs(move.boxes) do
+                if box.t == move.first then
+                    local x2 = box.x2 + (box.own and (move.traj_x[box.t] or 0) or 0)
+                    far_x = max(far_x or x2, x2)
+                end
+            end
+            if far_x and far_x > 0 and (not best_first or move.first < best_first) then best_first, reach = move.first, far_x end
+        end
+    end
+    mode.reach = reach or 60
+    return mode.reach
+end
+-- Whether every frame of a move is, from frame `from_t` of it on until it is over (free again).
+function positioning.move_shielded(record, move, far, from_t)
+    for t = from_t or 1, min(move.ready - 1, move.length) do
+        local id = move.frames[t]
+        if id and positioning.reachable(record.frame(id), far) then return false end
+    end
+    return true
+end
+
 ---------------------------------------------------------------------------------------------------------------
 -- Choosing.
 ---------------------------------------------------------------------------------------------------------------
@@ -1580,11 +1712,25 @@ local function can_start(self, frame, fstate, move)
         local resting = entry.mode.idle[self.frame] or fstate == states.standing or fstate == states.walking
         if entry.context == "air" then return self.y_int < 0 end
         if entry.context == "run" then
-            return self.y_int == 0 and (fstate == states.running
-                or (not resting and fstate ~= states.attacking and abs(self.vx) > ((self.record.movement or {}).walking_speed or 4) + 2))
+            if self.y_int ~= 0 then return false end
+            -- (Out of the mode's own run, in frames of the attacking state: where the key leads to the same frame.)
+            local moving = entry.mode.moving
+            if moving and moving[self.frame] and entry.press and move.frames[1] ~= nil
+               and frame.hits[entry.press == "attack" and "a" or (entry.press == "jump" and "j" or "d")] == move.frames[1] then
+                return true
+            end
+            return fstate == states.running
+                or (not resting and fstate ~= states.attacking and abs(self.vx) > ((self.record.movement or {}).walking_speed or 4) + 2)
         end
         if entry.context == "dash" then return fstate == states.dashing end
-        if entry.press then return resting and self.y_int == 0 end
+        if entry.press then
+            if self.y_int ~= 0 then return false end
+            if resting then return true end
+            -- (The same key out of the mode's own walk or run, where it leads to the same frame.)
+            local moving = entry.mode.moving
+            return moving ~= nil and moving[self.frame] == true and move.frames[1] ~= nil
+                and frame.hits[entry.press == "attack" and "a" or (entry.press == "jump" and "j" or "d")] == move.frames[1]
+        end
         -- The item's own weapon moves (a throw, a swing) start as a weapon's.
     end
     if entry.held then
@@ -1613,6 +1759,7 @@ local function can_start(self, frame, fstate, move)
     if basic == "run_attack" then return fstate == states.running end
     if basic == "dash_attack" then return fstate == states.dashing end
     if basic == "jump" then return (fstate == states.standing or fstate == states.walking) and self.y_int == 0 end
+    if basic == "roll" then return fstate == states.running and self.y_int == 0 end
     return false
 end
 
@@ -1692,7 +1839,14 @@ local function worth(target, box, blocked, move)
         return floor(injury / 10)
     end
     local value = injury
-    if box.kind == attack_kinds.catch then value = max(value, 45) end
+    if box.kind == attack_kinds.catch then
+        -- A catch is worth what follows it (measured, see explore; a grab's punches and throw at least) — and
+        -- nothing on a target already held: a trap set again only holds it on, what the trap does to a fighter it
+        -- caught itself never comes, and the two stood there for good (Yamato's wood prison in Naruto: The Setting
+        -- Dawn, cast again and again from afar), when the target held is there to be struck.
+        if target.record.frame(target.frame).state == states.caught then return 0 end
+        value = max(value, move and move.catch_damage or 45, 45)
+    end
     if box.fall >= 60 or target.timer_b0 + max(box.fall, 20) > 60 then value = value + 12 end
     if box.effect == constants.effects.freeze or box.effect == constants.effects.burn then value = value + 8 end
     return value
@@ -1863,7 +2017,7 @@ local function danger_zones(analysis, guard_chains)
         if move.first and move.first <= 16 and not entry.parent and entry.context == "ground" and not move.teleport
            and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack"
                 or (guard_chains and entry.basic == "defend" and entry.chain)) then
-            local damage = max(move.damage, move.hit_damage or 0)
+            local damage = max(move.damage, move.hit_damage or 0, move.catch_damage or 0)
             if damage >= 25 then
                 local x1, x2, z, unguardable, bdefend = 100000, -100000, 0, false, 0
                 for _, box in ipairs(move.boxes) do
@@ -1872,7 +2026,8 @@ local function danger_zones(analysis, guard_chains)
                     local oz = box.own and (move.traj_z[box.t] or 0) or 0
                     x1, x2 = min(x1, box.x1 + ox), max(x2, box.x2 + ox)
                     z = max(z, abs(box.z + oz) + box.zw)
-                    if box.bdefend >= 61 then unguardable = true end
+                    -- (A grab holds a guarding fighter as well: base/game/combat catches whatever it reaches.)
+                    if box.bdefend >= 61 or box.kind == attack_kinds.catch then unguardable = true end
                     bdefend = max(bdefend, box.bdefend)
                 end
                 zones[#zones + 1] = {x1 = x1, x2 = x2, z = z, t = move.first, damage = damage,
@@ -1895,7 +2050,7 @@ function positioning.long_zones(analysis)
         if move.first and move.first <= 16 and not entry.parent and entry.context == "ground" and not move.teleport
            and (entry.sequence or entry.basic == "attack" or entry.basic == "attack2" or entry.basic == "weapon_attack"
                 or (entry.basic == "defend" and entry.chain)) then
-            local damage = max(move.damage, move.hit_damage or 0)
+            local damage = max(move.damage, move.hit_damage or 0, move.catch_damage or 0)
             if damage >= 40 then
                 local x1, x2, z = 100000, -100000, 0
                 for _, box in ipairs(move.boxes) do
@@ -2242,6 +2397,13 @@ smart.note_key = note_key
 --   XOI G <fighter id> <opponent id> <games> <wins> <draws>
 --   XOI R <fighter id> <opponent id> <moves started at a risk> <struck first>
 --   XOI M <fighter id> <opponent id> <move> <starts> <landed> <struck first> <damage dealt> <damage taken> <expected>
+--   XOI C <fighter id> <opponent id> <move> <situation>:<starts>,<dealt - taken>,<expected> ...
+--          the same move by the situation it was started in (smart.note_situation): sf sr sb sa sg sh what the
+--          opponent was doing, dn dm df how far off it was, hl hh whether the fighter's own HP had run low
+--   XOI P <fighter id> <opponent id> <spot>:<frames>,<visits>,<dealt>,<taken>,<squares> ...
+--          the frames the fighter stood free, the opponent free on its feet too, at a distance and depth and on the
+--          side it faced or behind it (smart.spot_cell), in how many visits (frames on the spot in a row), the damage
+--          dealt and taken in the 45 frames after each, and the sum of the squares of (dealt - taken)
 -- A mod's notes may hold every pair of a large roster (megabytes): only the lines of the pairs in the match are
 -- read, found as plain text.
 local notes_given -- notes handed over (the bench), instead of the mod's file
@@ -2290,8 +2452,47 @@ function smart.notes_pairs()
 end
 
 -- A move's record is weighed against the fighter's average over this many starts of it, so that a move seldom
--- tried keeps close to the average; a factor stays within these bounds.
+-- tried keeps close to the average; a factor stays within these bounds. A move's record in one situation is
+-- weighed against the move's own over situation_prior starts; what each of the three sides of a situation says
+-- changes the move's factor by a part within situation_step, all three together within situation_span, and the
+-- factor by situation stays within situation_low and situation_high.
 local note_prior, note_low, note_high = 8, 0.5, 1.6
+local situation_prior, situation_low, situation_high = 12, 0.45, 1.75
+local situation_step, situation_span = {0.75, 1.33}, {0.7, 1.4}
+-- A spot's record is weighed against the pair's average as if it had been visited this many more times; a spot's
+-- spread is taken to be at least this (HP over 45 frames).
+local spot_prior, spot_spread = 3, 10
+
+-- The situation a move is started in, as XOI's notes count it, in training and in play alike: what the opponent
+-- is doing (f free on its feet and turned toward the fighter, r the same turned away, b busy in a move, a in the
+-- air, g guarding, h hurt, down or held), how far off it is (n within 80, m within 220, f farther) and whether the
+-- fighter's own HP has run low (l a third of the bar or less, h more).
+function smart.note_situation(self, target)
+    local ts = target.record.frame(target.frame).state
+    local doing
+    if exposed_states[ts] or ts == states.lying or ts == states.caught then doing = "h"
+    elseif ts == states.defending then doing = "g"
+    elseif target.y_int < 0 then doing = "a"
+    elseif ts == states.standing or ts == states.walking or ts == states.running then
+        doing = ((target.facing == facing_right) == (self.x_int >= target.x_int)) and "f" or "r"
+    else doing = "b" end
+    local dx = abs(target.x_int - self.x_int)
+    local far = dx < 80 and "n" or (dx < 220 and "m" or "f")
+    local low = self.hp * 3 <= (self.max_hp or constants.points.full) and "l" or "h"
+    return doing, far, low
+end
+
+-- The spot a fighter stands on against the opponent, both free, as the notes count it: "f" in front of the
+-- opponent (on the side it faces), "b" behind it, then which of the distances 30 60 100 150 220 320 480 it is
+-- past, then which of the depths 8 18 32. (`front`: the fighter is on the side the opponent faces.)
+local spot_dx, spot_dz = {30, 60, 100, 150, 220, 320, 480}, {8, 18, 32}
+function smart.spot_cell(dx, dz, front)
+    dx, dz = abs(dx), abs(dz)
+    local i, j = 0, 0
+    while i < #spot_dx and dx >= spot_dx[i + 1] do i = i + 1 end
+    while j < #spot_dz and dz >= spot_dz[j + 1] do j = j + 1 end
+    return (front and "f" or "b") .. i .. j
+end
 -- What the notes say of `a` (a fighter id) against `b`: factor (by move name: how much more, or less, than the
 -- fighter's moves on the whole, a move brought of what was expected of it) and risk (the opponent's share of
 -- answers to a move started at a risk, around the hopeful start the match itself uses), or nil.
@@ -2322,25 +2523,98 @@ local function pair_notes(a, b)
             m.d, m.t, m.p = m.d + tonumber(d), m.t + tonumber(t), m.p + tonumber(p)
         end
     end)
+    local situations = {}
+    note_lines(text, "XOI C " .. head, function(rest)
+        local key, cells = rest:match("^(%S+)%s+(.*)$")
+        if not key then return end
+        local by = situations[key]
+        if not by then by = {}; situations[key] = by end
+        for name, s, net, p in cells:gmatch("(%a%a):(%d+),(%-?%d+),(%d+)") do
+            local c = by[name]
+            if not c then c = {s = 0, net = 0, p = 0}; by[name] = c end
+            c.s, c.net, c.p = c.s + tonumber(s), c.net + tonumber(net), c.p + tonumber(p)
+        end
+    end)
+    local cells = {}
+    note_lines(text, "XOI P " .. head, function(rest)
+        for name, n, v, d, t, q in rest:gmatch("(%a%d%d):(%d+),(%d+),(%d+),(%d+),(%d+)") do
+            local c = cells[name]
+            if not c then c = {n = 0, v = 0, d = 0, t = 0, q = 0}; cells[name] = c end
+            c.n, c.v, c.d, c.t, c.q = c.n + tonumber(n), c.v + tonumber(v), c.d + tonumber(d), c.t + tonumber(t), c.q + tonumber(q)
+        end
+    end)
     -- (Sums of whole numbers only, in any order: the same everywhere.)
     local brought, expected = 0, 0
     for _, m in pairs(moves) do brought, expected = brought + m.d - m.t, expected + m.p end
-    local factor = {}
+    local factor, own, situ = {}, {}, {}
+    local ratio = 1
     if expected > 0 then
-        local ratio = max(brought, expected * 0.25) / expected
+        ratio = max(brought, expected * 0.25) / expected
         for key, m in pairs(moves) do
             if m.p > 0 then
                 local each = m.p / m.s
-                local own = (m.d - m.t + note_prior * ratio * each) / (m.p + note_prior * each)
-                factor[key] = min(note_high, max(note_low, own / ratio))
+                local mine_own = (m.d - m.t + note_prior * ratio * each) / (m.p + note_prior * each)
+                factor[key] = min(note_high, max(note_low, mine_own / ratio))
+                own[key] = mine_own
+                -- By situation: what the move brought there, weighed against what it brought on the whole.
+                local by = situations[key]
+                if by then
+                    local d = {}
+                    for name, c in pairs(by) do
+                        if c.p > 0 then
+                            d[name] = (c.net + situation_prior * mine_own * each) / (c.p + situation_prior * each)
+                        end
+                    end
+                    situ[key] = d
+                end
             end
         end
     end
-    local pair = {factor = factor, risk = (risk_hits + 1) / (risk_starts + 4), games = games, moves = moves}
+    -- The spots: net damage over the 45 frames after standing there, weighed against the pair's average by how
+    -- many visits it rests on (frames in a row tell little more than one), and how far it may be off (its spread
+    -- over the visits).
+    local spots
+    local frames, net = 0, 0
+    for _, c in pairs(cells) do frames, net = frames + c.n, net + c.d - c.t end
+    if frames > 0 then
+        local mean = net / frames
+        spots = {mean = mean, cells = {}}
+        for name, c in pairs(cells) do
+            local own = (c.d - c.t) / c.n
+            local spread = max(c.q / c.n - own * own, spot_spread * spot_spread)
+            local visits = max(c.v, 1)
+            spots.cells[name] = {v = (visits * own + spot_prior * mean) / (visits + spot_prior),
+                se = sqrt(spread / (visits + spot_prior)), visits = visits}
+        end
+    end
+    local pair = {factor = factor, own = own, situ = situ, ratio = ratio, spots = spots,
+        risk = (risk_hits + 1) / (risk_starts + 4), games = games, moves = moves}
     mine[b] = pair
     return pair
 end
 smart.pair_notes = pair_notes
+
+-- A move's factor in a situation (the codes of smart.note_situation, as "s".. "d".. "h"..): its factor on the whole,
+-- changed by what each of the three sides of the situation said of it — the factor its record there would have,
+-- against the one it has — within bounds (a side seldom seen there says little: its record keeps close to the
+-- move's own, pair_notes).
+local function situation_factor(notes, key, situation)
+    local base = notes.factor[key]
+    if not base then return 1 end
+    local by = notes.situ[key]
+    if not by then return base end
+    local ratio, adjust = notes.ratio, 1
+    for i = 1, 3 do
+        local there = by[situation[i]]
+        if there then
+            local f = min(note_high, max(note_low, there / ratio))
+            adjust = adjust * min(situation_step[2], max(situation_step[1], f / base))
+        end
+    end
+    adjust = min(situation_span[2], max(situation_span[1], adjust))
+    return min(situation_high, max(situation_low, base * adjust))
+end
+smart.situation_factor = situation_factor
 
 -- What `move` (started `lead` frames from now) landing its box `box` on `target` after `t` frames is worth:
 -- damage weighed by how sure the hit is, what a guard would cost, MP, and what being busy afterwards would cost.
@@ -2378,9 +2652,14 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
         if not last then score = score * 1.1
         elseif context.now - last < 90 then score = score * 0.85 end
     end
-    -- XOI: what the move brought against this opponent in training, against the fighter's moves on the whole.
+    -- XOI: what the move brought against this opponent in training, against the fighter's moves on the whole — in
+    -- the situation it would be started in now, when the notes have it.
     local notes = context.notes
-    if notes and score > 0 then score = score * (notes.factor[note_key(move)] or 1) end
+    if notes and score > 0 then
+        local situation = context.notes_situation
+        if situation then score = score * situation_factor(notes, note_key(move), situation)
+        else score = score * (notes.factor[note_key(move)] or 1) end
+    end
     return score
 end
 
@@ -2560,6 +2839,15 @@ function positioning.keep_distance(self, dx, distance, near, far, back)
     return 0
 end
 
+-- XOI's spots (pair_notes): how good training found it to stand free at (dx, dz) from the opponent, it free on its
+-- feet too, in front of it or behind — the net damage of the 45 frames after, against the pair's average by the
+-- visits seen there — how far that may be off, and the visits.
+function positioning.spot_value(spots, dx, dz, front)
+    local cell = spots.cells[smart.spot_cell(dx, dz, front)]
+    if not cell then return spots.mean, 1000, 0 end
+    return cell.v, cell.se, cell.visits
+end
+
 -- The distance to keep: near the far end of where the fighter's best quick, cheap move strikes first.
 local function preferred_range(context, self)
     local analysis = context.analysis_of(self)
@@ -2735,7 +3023,7 @@ local function escape_move(state, index, self, frame, fstate, context, level, th
     local best, best_value, best_strikes
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
-        if not entry.parent and not move.charge and not move.transform and not move.mode and not move.heal
+        if not entry.parent and not move.charge and not move.transform and not move.mode and not (move.heal and move.weapon)
            and move.length > 1 and not ((entry.basic == "jump" or entry.basic == "defend") and not entry.chain)
            and can_start(self, frame, fstate, move) then
             local plan, frames_at = move_path(self, move, enemy)
@@ -2761,7 +3049,9 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     local can_defend = (fstate == states.standing or fstate == states.walking) and self.defend_lock == 0
         and self.weapon ~= record_kinds.heavy_item and analysis.guard ~= false
     -- A guard takes a tenth of the damage; it holds unless the defence points reach the break threshold.
-    local guardable = threat_box.bdefend < 61
+    -- (A grab holds a guarding fighter as well: no guard against it.)
+    local catch = threat_box.kind == attack_kinds.catch
+    local guardable = threat_box.bdefend < 61 and not catch
     local blockable = guardable and threat_box.bdefend + self.timer_b8 < break_threshold
     -- Strike first when a move lands before the threat does (landing together is a trade: taken only when our
     -- blow is clearly the heavier).
@@ -2786,7 +3076,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     end
     -- A heavy blow is better dodged than guarded when there is time (a guard broken by the next one lets a
     -- worse one in); a light one is simply guarded.
-    local heavy = threat_box.injury >= 45 or threat_box.bdefend >= 16
+    local heavy = threat_box.injury >= 45 or threat_box.bdefend >= 16 or catch
     if blockable and can_defend and threat_t <= guard and threat_t <= 3 and not (heavy and threat_t >= 2) then
         face_against(self, source)
         fresh(self, "defend")
@@ -2967,7 +3257,7 @@ function smart.control(state, index)
         function context.analysis_of(value) return view_of(context, value) end
         state.smart_context = context
     end
-    context.notes = nil
+    context.notes, context.notes_situation, context.notes_spots = nil, nil, nil
     clear_keys(self)
     -- (When the fighter last turned round: positioning does not turn it round again at once, see there; and when
     -- a walk to a weapon last ended, see the weapons below.)
@@ -3047,7 +3337,9 @@ function smart.control(state, index)
                 fresh(self, "attack")
                 memory.note = "pick up"
                 return
-            elseif not free then
+            elseif not idle then
+                -- (Still on the way to that frame: a guard or jump on the way counts as free, but is not over
+                -- yet — Magellan of One Piece GrandWorld lays his item down from the guard's second frame.)
                 memory.note = "to pick-up frame"
                 return
             else
@@ -3067,9 +3359,19 @@ function smart.control(state, index)
 
     local target_index = choose_target(state, index, self, memory)
     local target = target_index and items[target_index]
-    -- XOI: the notes of this fighter against this opponent, if training saw the two.
-    if target and (self.brain == "xoi" or (self.brain == nil and level.notes)) then
-        context.notes = pair_notes(self.record.id, target.record.id)
+    -- XOI: the notes of this fighter against this opponent, if training saw the two, read in the situation of the
+    -- moment (what the opponent is doing, how far off, the fighter's own HP), with the spots training found better
+    -- or worse to stand on. (The bench's "xoi:m" plays with the moves' factors alone, as XOI did up to version 26;
+    -- "xoi:c" adds the situations, "xoi:p" the spots.)
+    local brain = self.brain
+    if target and ((brain and brain:sub(1, 3) == "xoi") or (brain == nil and level.notes)) then
+        local notes = pair_notes(self.record.id, target.record.id)
+        context.notes = notes
+        if notes and brain ~= "xoi:m" and brain ~= "xoi:p" then
+            local doing, far, low = smart.note_situation(self, target)
+            context.notes_situation = {"s" .. doing, "d" .. far, "h" .. low}
+        end
+        if notes and brain ~= "xoi:m" and brain ~= "xoi:c" then context.notes_spots = notes.spots end
     end
     memory.risk_prior = context.notes and context.notes.risk or nil
     -- What this opponent does: watched every frame it is the target, busy or not (a blow of ours lands while
@@ -3164,6 +3466,12 @@ function smart.control(state, index)
     local target_lock = target_lock_of(context, target, tframe)
     context.target_lock = target_lock
     local target_analysis = context.analysis_of(target)
+    -- Out of the target's reach in a mode whose resting and moving frames have no body its blows touch (a body only
+    -- on a far layer, positioning.far_reach: Drake's T-rex, Magellan's Venom Demon): nothing it does can hit us
+    -- there, so its reach is no reason to keep away — until MP is about to run out and end the mode.
+    local far = positioning.far_reach(target_analysis)
+    local shielded = mode_now ~= nil and (mode_resting or mode_moving) and not positioning.reachable(frame, far)
+        and positioning.mode_shielded(self.record, mode_now, far) and not ((mode_now.drain or 0) > 0 and self.mp < 40)
     -- A target down, or up again and still blinking from its fall (not the blink of a match's first frames).
     local target_down = tframe.state == states.lying or tframe.state == states.falling
     if target_down then memory.target_down_at = state.frame_number end
@@ -3226,14 +3534,18 @@ function smart.control(state, index)
             if mode and mode.start == candidate and can_start(self, frame, fstate, candidate) then
                 if mode.worth == nil then armed_analysis(self.record, mode.record, #analyze(self.record).moves + 1) end
                 local draining = (mode.drain or 0) > 0
-                local wanted = self.mp >= candidate.mp + 50 + (draining and 120 or 0)
+                -- A mode out of the target's reach (positioning.far_reach) is worth more than its blows, and is
+                -- entered near the target too (only the way in must be clear), with MP for a while in it.
+                local shield = positioning.mode_shielded(self.record, mode, far)
+                local wanted = self.mp >= candidate.mp + 50 + (draining and (shield and 200 or 120) or 0)
                 local dx, dz = abs(target.x_int - self.x_int), abs(target.z_int - self.z_int)
                 local opening = target_lock > candidate.ready + 2
                 local out_of_reach = dx > melee_reach(context.analysis_of(target)) + 70 or dz > 100
                 -- A mode that burns MP is worth entering while the target is held, or is near enough to be fought
                 -- soon (not while it wanders far off, or off our line); one that costs nothing whenever it is safe.
-                local timely = draining and (opening or (out_of_reach and dx < 360 and dz < 60)) or (not draining and (opening or out_of_reach))
-                if wanted and (mode.worth or 0) >= 1.2 and timely
+                local timely = (shield and dx < 500 and dz < 120)
+                    or draining and (opening or (out_of_reach and dx < 360 and dz < 60)) or (not draining and (opening or out_of_reach))
+                if wanted and (shield and max(mode.worth or 0, 2) or (mode.worth or 0)) >= 1.2 and timely
                    and not earliest_threat(state, index, self, candidate.ready + 6, nil, level.reaction, context) then
                     start(self, candidate, target)
                     memory.mode_tried = state.frame_number
@@ -3294,7 +3606,8 @@ function smart.control(state, index)
     end
     if move and not checked then move = nil end
     if smart.trace then
-        smart.trace(state, index, string.format("lock %d danger %s best %s t%s s%.1f", target_lock, tostring(danger),
+        smart.trace(state, index, string.format("lock %d untouchable %d danger %s best %s t%s s%.1f", target_lock,
+            untouchable_for(context, target, tframe.state, target_lock), tostring(danger),
             move and (move.entry.field or move.entry.basic or "chain") or "-", tostring(t), score or 0))
     end
     if move and score > 2.5 then
@@ -3310,6 +3623,27 @@ function smart.control(state, index)
     end
 
     local grounded = self.y_int >= 0
+    -- Healing (a move whose frames restore HP, see explore: Marco's phoenix in One Piece GrandWorld): when much of
+    -- the HP lost can still come back, MP allows for it, and nothing can reach us on its way — its frames out of
+    -- the target's reach (positioning.far_reach), or the target held, or far off, for as long.
+    if grounded and self.dark_hp - self.hp >= 60 and (fstate == states.standing or fstate == states.walking) then
+        for _, candidate in ipairs(context.analysis_of(self).moves) do
+            if candidate.heal and not candidate.weapon and not candidate.entry.parent and self.mp >= candidate.mp + 20
+               and can_start(self, frame, fstate, candidate) then
+                -- (Its first few frames, the keys on the way into it — a guard's — may be ordinary ones.)
+                local safe = target_lock > candidate.length or abs(target.x_int - self.x_int) > 450
+                    or positioning.move_shielded(self.record, candidate, far, 4)
+                if safe then
+                    local plan, frames_at = move_path(self, candidate, target)
+                    if not earliest_threat(state, index, self, min(candidate.length, 40), plan, level.reaction, context, frames_at) then
+                        start(self, candidate, target)
+                        memory.note = "heal"
+                        return
+                    end
+                end
+            end
+        end
+    end
     -- Jumping in, or dashing out of the run: when a move from the air would land as the fighter flies at the
     -- target (its moves in the air are as much its own as those on the ground), and nothing reaches it as it
     -- takes off. Not twice in a row: a landing is a moment to be used, not to jump again.
@@ -3435,6 +3769,10 @@ function smart.control(state, index)
             press(self, memory.jump_dir > 0 and "right" or "left")
         else
             face(self, target.x_int)
+            -- A flight that steers in depth (frames with dvz: Marco's phoenix in One Piece GrandWorld): onto the
+            -- target's line.
+            local dz = target.z_int - self.z_int
+            if frame.dvz ~= 0 and abs(dz) > 3 then press(self, dz > 0 and "down" or "up") end
         end
         return
     end
@@ -3457,14 +3795,14 @@ function smart.control(state, index)
     local near_z, far_z = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     local coming = target.y_int < 0 and tframe.state ~= states.caught and abs(dz) < 32 and abs(dx) < 420
         and (target.vx == 0 or (target.vx > 0) == (dx < 0))
-    if coming and target_lock == 0 then
+    if coming and target_lock == 0 and not shielded then
         -- An enemy in the air keeps its depth until it lands: leave its line before it strikes.
         if dz >= 0 then want_dz = -1 else want_dz = 1 end
         if want_dz < 0 and self.z_int - near_z < 12 then want_dz = 1 end
         if want_dz > 0 and far_z - self.z_int < 12 then want_dz = -1 end
         keep_facing = true
         memory.note = "leave air line"
-    elseif target_lock == 0 and not (target_pressure and target_pressure < 0.2)
+    elseif target_lock == 0 and not (target_pressure and target_pressure < 0.2) and not shielded
            and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= keep_out - (memory.leaving == state.frame_number - 1 and 20 or 0) then
         -- Where the free enemy's quick, strong moves land: step to the nearest spot they do not reach (and on
         -- out of them for a while once started, rather than stepping in and out at their edge). An opponent
@@ -3502,10 +3840,16 @@ function smart.control(state, index)
         -- longer arms, just outside them until the target commits.
         -- Just outside a free enemy's arms (unless ours are clearly longer): it has to come to us, and walks
         -- into our blow; a long standoff ends the patience.
-        local hold = range
+        local hold = shielded and max(positioning.mode_reach(context.analysis_of(self), mode_now) - 15, 30) or range
         local their_reach = melee_reach(context.analysis_of(target)) + 25
-        if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 and (target_pressure or 1) >= 0.2 then
+        if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 and (target_pressure or 1) >= 0.2 and not shielded then
             hold = max(range, their_reach + 15)
+            -- Short of MP for the fighter's strong moves, with a charge of its own: far enough off to charge (see
+            -- there: beyond the target's quick reach and 85 more), rather than waiting at the edge of its arms with
+            -- little to strike with. (The distance kept is from hold - 50 to hold - 20.)
+            if self.mp < min(special_mp(context.analysis_of(self)), 200) and positioning.can_charge(context.analysis_of(self)) then
+                hold = max(hold, their_reach + 115)
+            end
         end
         -- A target down, or up and still blinking: nothing of ours lands on it until the blinking ends, while it
         -- can strike as soon as it is on its feet — with whatever quick blow it has, however far that reaches
@@ -3514,7 +3858,7 @@ function smart.control(state, index)
         -- off its line, we may close in x and wait there. (Not against one that hardly ever attacks.)
         local untouchable = untouchable_for(context, target, tframe.state, target_lock)
         local waking, edge_note = false, nil
-        if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) then
+        if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) and not shielded then
             local zone_z, zone_x = wake_zone(target, target_analysis, distance)
             if zone_z > 0 then
                 waking = true
@@ -3569,7 +3913,7 @@ function smart.control(state, index)
             -- Nor a step back into where the blows of a target getting up strike (just stepped out of: they reach
             -- further as we near it): we wait at their edge, turned toward it (turning round, a step toward it,
             -- only once a step further out leaves room for it).
-            if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) then
+            if untouchable > 0 and target_waking and not (target_pressure and target_pressure < 0.2) and not shielded then
                 local toward = dx > 0 and 1 or -1
                 local facing_away = (dx > 0) == (self.facing == facing_left)
                 if want_dx == toward or (want_dx == 0 and facing_away and distance >= 6) then
@@ -3595,7 +3939,7 @@ function smart.control(state, index)
         -- (Also when it is busy for now but free again before we could be there, and with its MP counted as it will
         -- be by then: a wave it cannot afford yet comes once it can — charging, Neji in NTSD 2.4 soon can.)
         local line_z
-        if target_lock * 10 < distance - range and distance > range + 40 and not (target_pressure and target_pressure < 0.2) then
+        if target_lock * 10 < distance - range and distance > range + 40 and not (target_pressure and target_pressure < 0.2) and not shielded then
             for _, zone in ipairs(positioning.long_zones(target_analysis)) do
                 if target.mp + 150 >= zone.mp and zone.x2 >= distance - 40 and zone.x1 <= distance + 40 then
                     line_z = max(line_z or 0, zone.z + 10)
@@ -3633,13 +3977,81 @@ function smart.control(state, index)
             end
             memory.note = "flank"
         end
+        -- XOI: the spots training found better or worse to stand on against this opponent, both free. Not a step
+        -- into one clearly worse than where we stand; on to one clearly better within a few steps (and on that way
+        -- for a few frames). Clearly: by more than either may be off (spots seldom visited may be far off), and by
+        -- more again the longer a standoff has lasted — the rules above then have their way. (The same test both
+        -- ways: a step allowed in is never one to step back out of.)
+        local spots = context.notes_spots
+        if spots and not waking and not shielded and tframe.state <= states.running and target.y_int == 0 then
+            local movement = self.record.movement or {}
+            local sx, sz = movement.walking_speed or 4, movement.walking_speedz or 2
+            local faces_right = target.facing == facing_right
+            local here, here_se, here_visits = positioning.spot_value(spots, dx, dz, faces_right == (self.x_int >= target.x_int))
+            local margin = 6 * context.aggression
+            local function after(ox, oz, k)
+                local x, z = self.x_int + ox * sx * k, self.z_int + oz * sz * k
+                if x < 20 or x > width - 20 or z < near_z or z > far_z then return nil, 0, 0 end
+                return positioning.spot_value(spots, target.x_int - x, target.z_int - z, faces_right == (x >= target.x_int))
+            end
+            local way = memory.spot_way
+            local going = false
+            if way and state.frame_number <= (memory.spot_until or -1) then
+                local v, se = after(way[1], way[2], 3)
+                if v and v + se >= here - here_se then
+                    want_dx, want_dz, going = way[1], way[2], true
+                    memory.note = "spot: on"
+                end
+            end
+            if not going then
+                memory.spot_way = nil
+                if here_visits >= 5 then
+                    local best_v, bx, bz
+                    for ox = -1, 1 do
+                        for oz = -1, 1 do
+                            if ox ~= 0 or oz ~= 0 then
+                                for k = 3, 6, 3 do
+                                    local v, se, visits = after(ox, oz, k)
+                                    if v and visits >= 5 then
+                                        v = v - se - k * 0.1
+                                        if not best_v or v > best_v then best_v, bx, bz = v, ox, oz end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if best_v and best_v > here + here_se + margin then
+                        want_dx, want_dz, going = bx, bz, true
+                        memory.spot_way, memory.spot_until = {bx, bz}, state.frame_number + 8
+                        memory.note = string.format("spot: to %d %d", bx, bz)
+                    end
+                end
+            end
+            if not going and (want_dx ~= 0 or want_dz ~= 0) and here_visits >= 5 then
+                local floor_v = here - here_se - margin
+                local v, se, visits = after(want_dx, want_dz, 3)
+                if v and visits >= 5 and v + se < floor_v then
+                    local both = want_dx ~= 0 and want_dz ~= 0
+                    local vx, sex = nil, 0
+                    local vz, sez = nil, 0
+                    if both then
+                        vx, sex = after(want_dx, 0, 3)
+                        vz, sez = after(0, want_dz, 3)
+                    end
+                    if vx and vx + sex >= floor_v then want_dz = 0
+                    elseif vz and vz + sez >= floor_v then want_dx, keep_facing = 0, true
+                    else want_dx, want_dz, keep_facing = 0, 0, true end
+                    memory.note = "spot: hold"
+                end
+            end
+        end
         -- Not back into the quick blows of a free enemy just stepped out of: a step toward it, in x or onto its
         -- depth, waits at their edge (or comes once the standoff has made the fighter bolder), rather than in and
         -- out of them every few frames, turning round each time.
         local closer_x = want_dx ~= 0 and (want_dx > 0) == (dx > 0)
         local closer_z = want_dz ~= 0 and (want_dz > 0) == (dz > 0)
         if (closer_x or closer_z) and target_lock == 0 and not waking and not (target_pressure and target_pressure < 0.2)
-           and state.frame_number - (memory.leaving or -999) < 45 then
+           and not shielded and state.frame_number - (memory.leaving or -999) < 45 then
             local movement = self.record.movement or {}
             local x = self.x_int + want_dx * (movement.walking_speed or 4) * 3
             local z = self.z_int + want_dz * (movement.walking_speedz or 2) * 3
@@ -3654,7 +4066,7 @@ function smart.control(state, index)
     if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end
     if want_dz > 0 and far - self.z_int < 6 then want_dz = 0 end
     -- Nor toward the depth of something flying at us along it.
-    local flying_z = want_dz ~= 0 and positioning.flying_line(state, index, self)
+    local flying_z = want_dz ~= 0 and not shielded and positioning.flying_line(state, index, self)
     if flying_z and (want_dz > 0) == (flying_z > self.z_int) then
         want_dz = 0
         memory.note = tostring(memory.note) .. " (not onto its line)"
@@ -3730,6 +4142,9 @@ function smart.control(state, index)
         local zkey = dz > 0 and "down" or "up"
         local run_speed = mode_now.run_speed or 20
         local function run_plan(dir) return function(k) return trunc(dir * run_speed * k), 0, 0 end end
+        -- Out of the target's reach in the mode (shielded): up to where the mode's own blows strike, and onto its
+        -- line (the run steers in depth as it goes; past the target, it stops and comes back).
+        if shielded then hold = max(positioning.mode_reach(context.analysis_of(self), mode_now) - 15, 30) end
         if mode_moving then
             local heading = self.vx > 0 and 1 or (self.vx < 0 and -1 or (self.facing == facing_right and 1 or -1))
             local goal = memory.mode_run_goal or "toward"
@@ -3737,6 +4152,8 @@ function smart.control(state, index)
             local done
             if goal == "away" then
                 done = distance > hold + 60 or heading == (dx > 0 and 1 or -1)
+            elseif shielded then
+                done = (distance < hold + 10 and not off_line) or heading ~= (dx > 0 and 1 or -1)
             else
                 done = distance < hold + 30 or heading ~= (dx > 0 and 1 or -1)
             end
@@ -3751,12 +4168,13 @@ function smart.control(state, index)
             end
         elseif threat_t then
             memory.note = string.format("mode rest (hold %d)", hold)
-        elseif distance > hold + 90 and not earliest_threat(state, index, self, 10, run_plan(dx > 0 and 1 or -1), level.reaction, context) then
+        elseif (distance > hold + 90 or (shielded and (distance > hold + 10 or off_line)))
+               and not earliest_threat(state, index, self, 10, run_plan(dx > 0 and 1 or -1), level.reaction, context) then
             fresh(self, toward)
             if off_line then press(self, zkey) end
             memory.mode_run_goal = "toward"
             memory.note = "mode run: go"
-        elseif target_lock == 0 and abs(dz) < 60
+        elseif target_lock == 0 and abs(dz) < 60 and not shielded
                and (distance < melee_reach(context.analysis_of(target)) + 30
                     or ((mode_now.drain or 0) > 0 and self.mp < 20 and distance < melee_reach(context.analysis_of(target)) + 110)) then
             -- Inside a free target's arms (the mode may have no guard): out of them. A draining mode about to
@@ -3808,5 +4226,6 @@ end
 smart.internals = {earliest_threat = earliest_threat, where_of = where_of, analyze = analyze, move_hits = move_hits,
     danger_at = danger_at, danger_zones = danger_zones, melee_reach = melee_reach, best_attack = best_attack,
     enemy_reach = enemy_reach, defend_ticks = defend_ticks, target_lock_of = target_lock_of, armed_analysis = armed_analysis,
-    stance_exit = stance_exit, lock_of = lock_of}
+    stance_exit = stance_exit, lock_of = lock_of, new_sandbox = new_sandbox, sandbox_step = sandbox_step, arm = arm,
+    set_keys = set_keys}
 return smart

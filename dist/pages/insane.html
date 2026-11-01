@@ -179,6 +179,17 @@
           its own moves and runs, and, when its MP is about to run out, let end away from the enemy's arms. Sanji's Diable
           Jambe and a Rasengan formed in the hand work the same way; a form reached from inside another form (Zoro's Asura)
           is not learned yet.</li>
+        <li><b>Untouchable forms, healing, flight.</b> Mods keep bodies far above or below the visible layer — a thousand
+          pixels and more — for interactions of their own, and a frame whose bodies are all out there is out of reach of
+          every blow except those aimed at the same layer. Drake's T-rex and Magellan's Venom Demon in One Piece GrandWorld
+          are built that way: invulnerable while MP lasts. The AI reckons, for each opponent, which of its own frames that
+          opponent's blows (and what it throws) can still reach; a form whose resting and moving frames none of them
+          reaches is worth entering for that alone, and in it the fighter walks straight up and strikes instead of minding
+          the opponent's reach — its own run or creeping walk steered onto the opponent's line and stopped with the form's
+          own key. A move that restores HP (Marco's phoenix, state 1700) is measured in the copy with HP missing, and used
+          when much of the HP lost can still come back and nothing can reach the fighter meanwhile. The roll out of a run
+          is learned with what its frames lead to (Marco takes off as a phoenix with jump and strikes from the flight),
+          and a flight that steers in depth is flown onto the opponent's line.</li>
         <li><b>Respecting the get-up.</b> A fallen opponent cannot be hit until it is up again, and after it rises it is
           invulnerable for a moment while it can already strike. Until the AI's quickest blow could land as that moment
           ends, it waits outside the opponent's arms instead of beside it — farther away, and longer, when its own HP is low.</li>
@@ -189,7 +200,9 @@
         <li><b>Trapped opponents.</b> Some mods hold an opponent with an object (Yamato's wood prison in Naruto: The
           Setting Dawn). The AI knows a held opponent is harmless and, when the trap lets blows through, hittable: it
           walks up and strikes — or, when its MP is short of a strong move and the hold has time to spare, charges MP
-          first, while the trap keeps the opponent harmless, and lands the strong move before the hold ends.</li>
+          first, while the trap keeps the opponent harmless, and lands the strong move before the hold ends. A trap is
+          never set again on an opponent already held: cast on and on from afar, it only held the opponent on, and the
+          two fighters stood there for the rest of the match.</li>
         <li><b>Out of the wake-up blows.</b> A fallen opponent gets up invulnerable for a moment and can strike at once —
           in some mods with a blow that reaches half the stage (Yamato's wood spike). Standing beside it is a blow taken for
           nothing, and so is standing anywhere its quick moves reach. The AI now works out where those moves strike and is
@@ -258,15 +271,17 @@
           <tr><td>Weapons</td><td><span class="status done">Done</span></td><td class="num">v20</td><td>Picks up knives, sticks, stones and drinks when nothing presses; swings, throws or drinks by what it learned with the weapon in hand.</td></tr>
           <tr><td>Teleport moves</td><td><span class="status done">Done</span></td><td class="num">v20, v25</td><td>Moves that teleport to the enemy (state 400) are aimed from where they land: 120 in front of the target, or behind it when the move turns the fighter round first.</td></tr>
           <tr><td>Escaping with a move</td><td><span class="status done">Done</span></td><td class="num">v25</td><td>When no step avoids what is coming, a teleport, rush or leap whose path no blow meets: against an unguardable or heavy blow, or to strike back; otherwise the guard.</td></tr>
-          <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach. Forms inside forms (Zoro's Asura) not yet.</td></tr>
+          <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21, v27</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach; a form entered from the guard (Magellan) or one that creeps on by itself is handled too. Forms inside forms (Zoro's Asura) not yet.</td></tr>
+          <tr><td>Untouchable forms (bodies on far layers)</td><td><span class="status done">Done</span></td><td class="num">v27</td><td>Which of its own frames each opponent's blows can reach at all: a form out of everyone's reach (Drake's T-rex, Magellan's Venom Demon) is entered for that alone and fought in up close; a phoenix flight is flown onto the opponent's line.</td></tr>
           <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21, v23</td><td>Out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they reach — until its blink ends: a few steps in depth off its line, or back out of reach; no charging, drinking or weapon pick-up in that zone; farther at low HP.</td></tr>
           <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22, v26</td><td>Against an opponent whose long blows cover the line between them (a beam, a wave across the stage — reckoned all the way out), closes in offset in depth and steps onto the line only when its own blows reach; also while the opponent charges MP or is busy for a moment, and never while a wave flies along the line.</td></tr>
           <tr><td>Steady footwork</td><td><span class="status done">Done</span></td><td class="num">v26</td><td>A turn round is a step too: no stepping in and out at the edge of a distance, of an enemy's reach or of its wake-up blows; a way out once chosen is kept; while walking it turns round at most once every few frames.</td></tr>
-          <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends.</td></tr>
+          <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22, v27</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends. A trap is not set again on an opponent already held. A grab is worth what follows it, and no guard holds it.</td></tr>
           <tr><td>Weapons versus specials</td><td><span class="status done">Done</span></td><td class="num">v22</td><td>With MP for its own specials, a weapon is worth only the few steps to one close by; drinks are taken whenever HP or MP are wanted.</td></tr>
           <tr><td>Counters along a move's path</td><td><span class="status done">Done</span></td><td class="num">v23, v24</td><td>The opponent's quickest answer is reckoned where a rush or a jump-in takes the fighter, not where it starts, and weighed against what the blow brings by how often this opponent has answered such a blow in the match so far. A charging opponent is known to be free as soon as it can leave the charge, with the MP it gained.</td></tr>
           <tr><td>Team play (2 on 2, Stage)</td><td><span class="status partial">Partial</span></td><td class="num">v19–20</td><td>Prefers the busy, the weak and the enemy holding a teammate; the second attacker goes round to the other side. No shared plan yet.</td></tr>
-          <tr><td>Healing, buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit have no score yet, so they are only used when they also charge MP or heal (drinks).</td></tr>
+          <tr><td>Healing moves</td><td><span class="status done">Done</span></td><td class="num">v27</td><td>A move that restores HP is measured with HP missing and used when much of the HP lost can come back and nothing reaches the fighter meanwhile (Marco's phoenix); drinks as before.</td></tr>
+          <tr><td>Buff and summon moves without damage</td><td><span class="status planned">Planned</span></td><td class="num">—</td><td>Moves whose effect is not a hit, a heal or MP have no score yet.</td></tr>
           <tr><td>Memory across matches</td><td><span class="status partial">Experimental</span></td><td class="num">v25</td><td>INSANE! learns habits within a match only (a memory kept on one machine would break the lock-step of network games). XOI plays with notes of training shipped inside the mod's file, the same on every machine: see <a href="#xoi">XOI</a>.</td></tr>
         </tbody>
       </table></div>
@@ -296,9 +311,18 @@
           average (its record counts over a few starts' worth of the average), and the weight stays between 0.5 and 1.6:
           the notes tilt choices rather than make them. The opponent's answers to a risky rush are expected from what
           training saw, and the match goes on counting them.</li>
+        <li><b>The situation, too (version 27).</b> Training also writes down each move's record by the situation it
+          was started in — what the opponent was doing (on its feet facing the fighter or turned away, busy in a move, in
+          the air, guarding, hurt or held), how far off it was (near, middle, far) and whether the fighter's own HP had run
+          low — and, for every spot the fighter stood on with both fighters free (by distance, depth and side), the
+          damage dealt and taken in the 45 frames after. At XOI each side of the situation changes a move's weight by a
+          small part only (three quarters to four thirds, all three together seven tenths to seven fifths), and only as far
+          as the starts seen there bear it out; a step onto a spot training found clearly worse is not taken, one onto a
+          clearly better spot within a few steps is — clearly meaning by more than either may be off.</li>
         <li><b>In step.</b> The notes are part of the mod's file, which every machine in a network room has, so what XOI
           decides still depends only on the match and that file: rooms and replays stay in sync. A mod without notes plays
-          XOI exactly as INSANE!; the match line shows <code>(XOI v26, N matchups)</code>, or <code>no notes</code>.</li>
+          XOI exactly as INSANE!; the match line shows <code>(XOI v27, N matchups)</code>, or <code>no notes</code>.
+          Notes trained before version 27 have no situations or spots: XOI then weighs moves as before.</li>
       </ol>
       <p class="note" id="xoi-results">First measurement, Naruto: The Setting Dawn: 8 pairs of fighters, 100 training games
         each (800 games), then XOI against INSANE! on the same pairs with random seeds training never used, each fighter of
@@ -309,6 +333,12 @@
         169–146 on the same games, against 176–139: the notes only weigh which move is chosen, and that is soon learned.
         The notes were made against INSANE!'s own play, and a human plays differently: that is why XOI is a level of its own
         and INSANE! is not changed by them.</p>
+      <p class="note" id="xoi-situations">The situations, measured (version 27): 100 training games on each of 8 pairs of
+        Naruto 2.4 and of KT-LF2, then XOI with the situations and spots against XOI with the moves' weights alone, each
+        fighter of each pair played by each in 10 games: 75–80 and 83–73, 158–153 together — as strong, not stronger.
+        A first, bolder version (situations added up in full, weights from 0.4 to 1.8) lost 63–93 on Naruto: a move's record
+        split three ways rests on few starts, and much of what it shows is chance. What a situation adds is kept small
+        for that reason; it is a memory to grow with more training rather than a gain yet.</p>
     </section>
 
     <section id="results">
@@ -319,13 +349,14 @@
       <div class="table-wrap"><table>
         <thead><tr><th>Mod</th><th>INSANE! wins</th><th>CRAZY! wins</th><th>Draws</th><th>Average HP left (INSANE! / CRAZY!)</th></tr></thead>
         <tbody>
-          <tr><td>One Piece GrandWorld</td><td class="num">38</td><td class="num">1</td><td class="num">1</td><td class="num">474 / 15</td></tr>
-          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">40</td><td class="num">0</td><td class="num">0</td><td class="num">391 / 0</td></tr>
-          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">29</td><td class="num">11</td><td class="num">0</td><td class="num">230 / 65</td></tr>
-          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">36</td><td class="num">4</td><td class="num">0</td><td class="num">311 / 15</td></tr>
+          <tr><td>One Piece GrandWorld</td><td class="num">39</td><td class="num">1</td><td class="num">0</td><td class="num">479 / 1</td></tr>
+          <tr><td>Naruto: The Setting Dawn 2.4</td><td class="num">38</td><td class="num">2</td><td class="num">0</td><td class="num">350 / 4</td></tr>
+          <tr><td>KT-LF2 v3.0 (original LF2 roster plus new fighters)</td><td class="num">36</td><td class="num">4</td><td class="num">0</td><td class="num">308 / 19</td></tr>
+          <tr><td>Sx2 ~ The power of emancipation</td><td class="num">36</td><td class="num">4</td><td class="num">0</td><td class="num">320 / 11</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Version 26 figures with <code>--seed 12345</code> (version 25 gave 40–0, 39–1, 31–9 and 38–2, version 24
+      <p class="note">Version 27 figures with <code>--seed 12345</code> (version 26 gave 38–1 with a draw, 40–0, 29–11 and 36–4,
+        version 25 40–0, 39–1, 31–9 and 38–2, version 24
         35–4 with a draw, 35–4 with a draw,
         30–10 and 37–3, version 23 34–5 with a draw, 37–3, 30–10 and 35–5, version 22 36–3 with a draw, 39–1, 29–11 and 38–2,
         version 20 35–5, 35–5, 28–12 and 30–10 on the same games; the LuaJIT desktop build and the Lua 5.2 web build give the
@@ -341,7 +372,11 @@
         draws), cut short less often in both. Version 26 against version 25 the same way: 94–66 and 86–71 in Naruto, 83–62
         (15 draws) and 75–71 (14 draws) in One Piece — 338–270 over the four, hit less often in each (86–71 and 83–62 were
         measured just before a last small change to the walk to a weapon; on Naruto's first seed it moved 93–66 to 94–66); Gaara
-        against Neji, both played by one version, wins 17 games in 20 with version 26 and 4 with version 25. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
+        against Neji, both played by one version, wins 17 games in 20 with version 26 and 4 with version 25. Version 27 against
+        version 26 the same way: 82–74 and 89–65 in Naruto, 77–68 (15 draws) and 75–69 (16 draws) in One Piece, 76–79 in KT-LF2
+        and 76–79 in Sx2 — 475–434 over the six, ahead where the new reckoning has something to work on (untouchable forms, traps, grabs,
+        charging) and level elsewhere; Naruto, Kakashi, Kankuro, Jiraiya and Kisame against Neji, both played by one version,
+        win 10 games in 50 with version 27 and 4 with version 26. In the matchup that version 24 was made for, Rock Lee against Neji in Naruto, 20,000
         games between versions 24 and 23 end 10,928–9,047 with 25 draws (54.7%, ±0.6%): version 24's Lee wins 38.9% against
         version 23's Neji, where version 23's own Lee won 28.2%, and its Neji is as strong as version 23's.
         (Until 1 November 2026 the two players of a head-to-head match on the bench shared one context — how they read the
