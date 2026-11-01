@@ -3,8 +3,9 @@
 # Copyright (c) 2026 OpenLF2 contributors
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
-# choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod) and dau-nhieu.bat (measure),
-# beside this checkout's game scripts and AI bench, which the three files lay over the installed game's scripts.
+# choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure) and
+# spsa.bat (tune INSANE!'s numbers by play), beside this checkout's game scripts and AI bench, which they lay over
+# the installed game's scripts.
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 out=$(realpath -m "$1")
@@ -29,7 +30,7 @@ def crlf(data):
 
 
 windows = root / "tools/ai-bench/windows"
-for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat"):
+for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat"):
     data = (windows / name).read_bytes()
     # cmd reads labels wrongly in a batch file without CRLF line ends (.gitattributes keeps them).
     if data.count(b"\n") != data.count(b"\r\n"):
@@ -49,7 +50,8 @@ for source, target in ((root / "scripts", "scripts"), (root / "tools/ai-bench", 
         files.append((f"{target}/{relative.as_posix()}", path.read_bytes()))
 names = {name for name, _ in files}
 for needed in ("scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
-               "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/package.manifest"):
+               "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
+               "tools/ai-bench/package.manifest"):
     if needed not in names:
         sys.exit(f"the kit lacks {needed}")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as kit:

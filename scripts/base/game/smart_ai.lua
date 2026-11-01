@@ -53,6 +53,54 @@ smart.levels = {
     [constants.difficulties.insane] = {reaction = 1, eagerness = 100},
     [constants.difficulties.xoi] = {reaction = 1, eagerness = 100, notes = true},
 }
+-- Numbers of the computer player's judgement gathered in one place, for tuning them by play (SPSA,
+-- tools/ai-bench/spsa.lua): name, value, the range a tuning may try, whether it is a whole number. smart.tune holds
+-- the values in use (smart.set_tune lays a tuned set over them); each is described where it is used.
+smart.tune_ranges = {
+    -- How a move's hit is weighed (attack_score): the sureness lost per frame the target is free to act, its floor,
+    -- the part left when the target's answer could come first, how much a standoff's boldness lowers the expected
+    -- guard, the price of MP and HP a move costs, the frames that halve a blow's worth (time_bias 10: 14/(t + 10)),
+    -- the share of the target's counter counted when the fighter is still busy as it could land, the price per
+    -- frame left open after the blow, and the pull of a move not yet tried or the push of one just used.
+    {"sure_decay", 0.04, 0.01, 0.1}, {"sure_floor", 0.2, 0.05, 0.5}, {"danger_sure", 0.6, 0.3, 1},
+    {"guard_aggression", 0.5, 0, 1}, {"mp_cost", 0.06, 0, 0.15}, {"hp_cost", 0.5, 0, 1.5},
+    {"time_bias", 10, 4, 25}, {"counter_price", 0.7, 0.2, 1.5}, {"open_cost", 0.2, 0, 0.6},
+    {"novelty", 1.1, 1, 1.4}, {"repeat_factor", 0.85, 0.5, 1},
+    -- The score a move needs to be started, on the ground or from a jump; frames between jump-ins.
+    {"attack_threshold", 2.5, 0.5, 6}, {"jump_cooldown", 50, 15, 120, true},
+    -- Boldness: frames without a blow before a standoff makes the fighter bolder, and over how many more it grows
+    -- to the full; how bold it is against an opponent that hardly attacks.
+    {"calm_start", 90, 30, 240}, {"calm_span", 150, 50, 400}, {"passive_aggression", 0.6, 0.2, 1},
+    -- The answer expected to a risky move: the chance before anything is seen (XOI's notes set their own) and how
+    -- many risky moves' worth that guess counts for; the share of the target's strongest blow a strike out of its
+    -- guard is reckoned to cost; how much heavier a blow must be to trade with a threat landing as it does.
+    {"risk_prior", 0.25, 0.05, 0.6}, {"risk_weight", 4, 1, 12}, {"guard_counter", 0.5, 0.1, 1},
+    {"trade_factor", 1.3, 0.8, 2.5},
+    -- Spacing: how much an enemy's quick blows must threaten a spot for it to be left, and how much more as a
+    -- standoff drags on; beyond longer arms, how far out to wait, and how far to charge MP from when short of it.
+    {"keep_out_base", 30, 5, 70}, {"keep_out_aggression", 60, 0, 120},
+    {"hold_margin", 15, -10, 60, true}, {"charge_gap", 115, 60, 220, true},
+    -- A fallen enemy's wake-up blows: the margins of their zone in depth and in x, the step in depth it can take
+    -- once up, and, off its line, how near and how far from the fighter's own range to wait.
+    {"wake_margin_z", 8, 0, 20, true}, {"wake_margin_x", 24, 0, 60, true}, {"wake_step", 6, 0, 14, true},
+    {"off_line_near", 15, -10, 40, true}, {"off_line_far", 10, -10, 40, true},
+    -- Charging MP: how far beyond the target's quick reach, and how much below full MP.
+    {"charge_room", 85, 30, 180, true}, {"charge_below", 80, 20, 200, true},
+}
+local tune = {}
+for _, entry in ipairs(smart.tune_ranges) do tune[entry[1]] = entry[2] end
+smart.tune = tune
+-- Lays `values` (name = number) over the numbers in use, each kept within its range and whole numbers rounded.
+function smart.set_tune(values)
+    for _, entry in ipairs(smart.tune_ranges) do
+        local value = values[entry[1]]
+        if type(value) == "number" and value == value then
+            value = max(entry[3], min(entry[4], value))
+            if entry[5] then value = floor(value + 0.5) end
+            tune[entry[1]] = value
+        end
+    end
+end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
@@ -2101,8 +2149,8 @@ local function wake_zone(target, analysis, distance)
     if reach > 0 and distance < reach + 20 then zone_z, zone_x = 14, reach + 20 end
     for _, zone in ipairs(danger_zones(analysis)) do
         if target.mp >= zone.mp and zone.t <= 12 and distance < zone.x2 + 24 and distance > zone.x1 - 24 then
-            zone_z = max(zone_z, zone.z + 8)
-            zone_x = max(zone_x, zone.x2 + 24)
+            zone_z = max(zone_z, zone.z + tune.wake_margin_z)
+            zone_x = max(zone_x, zone.x2 + tune.wake_margin_x)
         end
     end
     return zone_z, zone_x
@@ -2623,35 +2671,35 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
     local blocked = would_block(target, target_state_at(context, target, t - 1), face == 1 and facing_right or facing_left, box)
     -- A hit is sure while the target cannot act; otherwise it may step away or guard in time.
     local sure = 1.0
-    if t > stunned then sure = max(0.2, 1.0 - (t - stunned) * 0.04) end
-    if danger and t > danger - 2 then sure = sure * 0.6 end
+    if t > stunned then sure = max(tune.sure_floor, 1.0 - (t - stunned) * tune.sure_decay) end
+    if danger and t > danger - 2 then sure = sure * tune.danger_sure end
     -- A free target facing the blow can raise its guard in time (mods' fighters then often strike back from
     -- the guard): the likelier the longer the blow takes, and the more this one has guarded so far; a guarded
     -- blow is worth a tenth, or a broken guard. The longer nothing has happened, the more it is worth trying.
     local guarded = blocked and 1 or 0
     if not blocked and t > stunned and box.bdefend < 61 and (tstate == states.standing or tstate == states.walking)
        and target.facing ~= (face == 1 and facing_right or facing_left) then
-        guarded = guard_rate(model_of(context, target)) * min(1, (1 - 0.9 ^ (t - stunned)) * 1.25) * (1 - 0.5 * (context.aggression or 0))
+        guarded = guard_rate(model_of(context, target)) * min(1, (1 - 0.9 ^ (t - stunned)) * 1.25) * (1 - tune.guard_aggression * (context.aggression or 0))
     end
     local damage = worth(target, box, false, move) * (1 - guarded) + worth(target, box, true, move) * guarded
     local score = damage * sure
     if not blocked and guarded > 0 then score = score - guarded * (context.guard_counter or 20) end
-    score = score - move.mp * 0.06 - max(move.hp, 0) * 0.5
-    score = score * 14 / (t + 10)
+    score = score - move.mp * tune.mp_cost - max(move.hp, 0) * tune.hp_cost
+    score = score * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
     -- Still busy when the target, back on its feet, could land its quickest blow: that blow is the price.
     local ready = move.ready + lead
     local knocked = box.fall >= 60 or target.timer_b0 + max(box.fall, 20) > 60
     local back_at = t + (knocked and 30 or stagger) + (context.counter_first or 99)
-    if ready >= back_at - 1 then score = score - (context.counter_damage or 0) * 0.7 * 14 / (t + 10) end
+    if ready >= back_at - 1 then score = score - (context.counter_damage or 0) * tune.counter_price * 14 / (t + tune.time_bias) * (tune.time_bias / 10) end
     local open = ready - t - (knocked and 30 or stagger)
-    if open > 0 then score = score - open * 0.2 end
+    if open > 0 then score = score - open * tune.open_cost end
     -- The whole of what the fighter can do gets its turn: a move not yet tried this match is a little more
     -- tempting, one just used a little less (the choice stays the fighter's own, from its own data).
     local last_use = context.last_use
     if last_use and score > 0 then
         local last = last_use[move.index]
-        if not last then score = score * 1.1
-        elseif context.now - last < 90 then score = score * 0.85 end
+        if not last then score = score * tune.novelty
+        elseif context.now - last < 90 then score = score * tune.repeat_factor end
     end
     -- XOI: what the move brought against this opponent in training, against the fighter's moves on the whole — in
     -- the situation it would be started in now, when the notes have it.
@@ -2940,13 +2988,13 @@ end
 -- punishes is soon not rushed at; one that does not is.
 -- (At XOI the start is what training saw this opponent do: memory.risk_prior.)
 local function answer_chance(memory)
-    return ((memory.risk_hits or 0) + 4 * (memory.risk_prior or 0.25)) / ((memory.risk_starts or 0) + 4)
+    return ((memory.risk_hits or 0) + tune.risk_weight * (memory.risk_prior or tune.risk_prior)) / ((memory.risk_starts or 0) + tune.risk_weight)
 end
 -- What a move scored `score`, landing in `t` frames, is worth when the target's answer (`damage`) may beat it
 -- on the way: the move lands only if the answer does not come, and the answer's damage is the price if it does.
 local function worth_the_risk(memory, score, t, damage)
     local chance = answer_chance(memory)
-    return score * (1 - chance) - chance * (damage or 0) * 14 / (t + 10)
+    return score * (1 - chance) - chance * (damage or 0) * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
 end
 
 local function choose_target(state, index, self, memory)
@@ -3061,7 +3109,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         local move, t, score = best_attack(context, self, frame, fstate, source, threat_t, nil)
         if not move then
             move, t, score = best_attack(context, self, frame, fstate, source, threat_t + 1, nil)
-            if move and not (t == threat_t + 1 and move.damage > threat_box.injury * 1.3) then move = nil end
+            if move and not (t == threat_t + 1 and move.damage > threat_box.injury * tune.trade_factor) then move = nil end
         end
         if move then
             start(self, move, source, t, score)
@@ -3484,9 +3532,9 @@ function smart.control(state, index)
     local hp_sum = self.hp + target.hp
     if memory.hp_sum and hp_sum < memory.hp_sum - 6 then memory.calm = 0 else memory.calm = (memory.calm or 0) + 1 end
     memory.hp_sum = hp_sum
-    context.aggression = min(1, max(0, (memory.calm - 90) / 150))
+    context.aggression = min(1, max(0, (memory.calm - tune.calm_start) / tune.calm_span))
     local target_pressure = pressure(model)
-    if target_pressure and target_pressure < 0.2 then context.aggression = max(context.aggression, 0.6) end
+    if target_pressure and target_pressure < 0.2 then context.aggression = max(context.aggression, tune.passive_aggression) end
     -- A target that flips up out of its falls as soon as it may: where its roll takes it is where to strike.
     context.target_path = nil
     if (target.frame == 182 or target.frame == 188) and flips_up(model) then
@@ -3515,7 +3563,7 @@ function smart.control(state, index)
     context.counter_first, context.counter_damage = nil, nil
     local strongest = 0
     for _, zone in ipairs(danger_zones(target_analysis_of(context, target))) do strongest = max(strongest, zone.damage) end
-    context.guard_counter = min(strongest, 80) * 0.5
+    context.guard_counter = min(strongest, 80) * tune.guard_counter
     local danger = counter_time(context, target, self, target_lock)
     -- Blinking, the counter can only land once the blinking is over: the time to strike freely.
     if danger and blinking > 0 then danger = max(danger, blinking) end
@@ -3588,14 +3636,14 @@ function smart.control(state, index)
     local excluded, checked, at_risk
     for _ = 1, 4 do
         checked, at_risk = false, false
-        if not (move and score > 2.5) then break end
+        if not (move and score > tune.attack_threshold) then break end
         local plan, frames_at = move_path(self, move, target)
         local into = earliest_threat(state, index, self, t - 1, plan, level.reaction, context, frames_at)
         local reason = into and "into" or nil
         if not into and not (target_pressure and target_pressure < 0.2) and t >= 4 then
             local along, along_damage = counter_along(context, target, self, target_lock, plan, frames_at)
             if along and (along < t or (along == t and target_lock > 0)) then
-                if worth_the_risk(memory, score, t, along_damage) > 2.5 then at_risk = true
+                if worth_the_risk(memory, score, t, along_damage) > tune.attack_threshold then at_risk = true
                 else into = true; reason = "along" end
             end
         end
@@ -3611,7 +3659,7 @@ function smart.control(state, index)
             untouchable_for(context, target, tframe.state, target_lock), tostring(danger),
             move and (move.entry.field or move.entry.basic or "chain") or "-", tostring(t), score or 0))
     end
-    if move and score > 2.5 then
+    if move and score > tune.attack_threshold then
         start(self, move, target, t, score)
         memory.last_use[move.index] = state.frame_number
         if at_risk then
@@ -3654,7 +3702,7 @@ function smart.control(state, index)
         local distance = abs(target.x_int - self.x_int)
         if distance > 50 and distance < 460 then
             local jump_move, jump_t, jump_score, lead, flight, flight_frames = approach_attack(context, self, fstate, target, danger)
-            if jump_move and jump_score > 2.5 then
+            if jump_move and jump_score > tune.attack_threshold then
                 local dir = target.x_int >= self.x_int and 1 or -1
                 local movement = self.record.movement or {}
                 local speed = fstate == states.running and (movement.dash_distance or 0) or (movement.jump_distance or 0)
@@ -3665,7 +3713,7 @@ function smart.control(state, index)
                 if not (target_pressure and target_pressure < 0.2) then
                     local along, along_damage = counter_along(context, target, self, target_lock, flight, flight_frames)
                     if along ~= nil and along <= jump_t then
-                        if worth_the_risk(memory, jump_score, jump_t, along_damage) > 2.5 then jump_risk = true else met = true end
+                        if worth_the_risk(memory, jump_score, jump_t, along_damage) > tune.attack_threshold then jump_risk = true else met = true end
                     end
                 end
                 if not met and not earliest_threat(state, index, self, lead + 6, plan, level.reaction, context) then
@@ -3677,7 +3725,7 @@ function smart.control(state, index)
                     if fstate ~= states.running then press(self, dir > 0 and "right" or "left") end
                     -- (The direction held as the feet leave the ground sets the jump's speed.)
                     memory.jump_dir, memory.jump_hold = dir, state.frame_number + lead + 2
-                    memory.next_jump = state.frame_number + 50
+                    memory.next_jump = state.frame_number + tune.jump_cooldown
                     memory.note = string.format("jump in %s f%s t%d s%.1f", jump_move.entry.field or jump_move.entry.basic or "chain",
                         tostring(jump_move.entry.frame or jump_move.entry.press), jump_t, jump_score)
                     return
@@ -3705,8 +3753,8 @@ function smart.control(state, index)
     -- frames: it can walk up and strike as its blink ends while nothing of ours lands on it meanwhile, and a stance
     -- takes time to leave; the way out of its reach comes first.)
     local in_wake = (target_down or target.blink ~= 0) and wake_escape(target, target_analysis, self)
-    if grounded and fstate ~= states.running and self.mp < constants.points.full - 80
-       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + 85 or target_lock > 25)
+    if grounded and fstate ~= states.running and self.mp < constants.points.full - tune.charge_below
+       and (abs(target.x_int - self.x_int) > melee_reach(context.analysis_of(target)) + tune.charge_room or target_lock > 25)
        and not held_open and not in_wake then
         for _, candidate in ipairs(context.analysis_of(self).moves) do
             if candidate.charge and can_start(self, frame, fstate, candidate)
@@ -3791,7 +3839,7 @@ function smart.control(state, index)
     -- Standing, not turned toward the target either (turning round is a step toward it: into its reach, here).
     local keep_facing = false
     -- How much a free enemy's quick blows must threaten a spot for it to be left (more as a standoff drags on).
-    local keep_out = 30 + 60 * context.aggression
+    local keep_out = tune.keep_out_base + tune.keep_out_aggression * context.aggression
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
     local near_z, far_z = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     local coming = target.y_int < 0 and tframe.state ~= states.caught and abs(dz) < 32 and abs(dx) < 420
@@ -3844,12 +3892,12 @@ function smart.control(state, index)
         local hold = shielded and max(positioning.mode_reach(context.analysis_of(self), mode_now) - 15, 30) or range
         local their_reach = melee_reach(context.analysis_of(target)) + 25
         if their_reach > range - 10 and target_lock == 0 and context.aggression < 0.5 and (target_pressure or 1) >= 0.2 and not shielded then
-            hold = max(range, their_reach + 15)
+            hold = max(range, their_reach + tune.hold_margin)
             -- Short of MP for the fighter's strong moves, with a charge of its own: far enough off to charge (see
             -- there: beyond the target's quick reach and 85 more), rather than waiting at the edge of its arms with
             -- little to strike with. (The distance kept is from hold - 50 to hold - 20.)
             if self.mp < min(special_mp(context.analysis_of(self)), 200) and positioning.can_charge(context.analysis_of(self)) then
-                hold = max(hold, their_reach + 115)
+                hold = max(hold, their_reach + tune.charge_gap)
             end
         end
         -- A target down, or up and still blinking: nothing of ours lands on it until the blinking ends, while it
@@ -3871,7 +3919,7 @@ function smart.control(state, index)
                 -- just off its line was inside again as it rose, and on a shallow stage with no room left for the
                 -- step, caught there: Rock Lee beside a fallen Neji, Hot Springs in Naruto: The Setting Dawn. With
                 -- no room for it, the way out is back out of their reach.)
-                zone_z = zone_z + 6
+                zone_z = zone_z + tune.wake_step
                 if abs(dz) < zone_z then
                     local movement = self.record.movement or {}
                     local tx = (zone_x - distance) / (movement.walking_speed or 4)
@@ -3910,7 +3958,7 @@ function smart.control(state, index)
                     -- 27 in Naruto: The Setting Dawn.)
                     local away = dx > 0 and -1 or 1
                     local walled = (away < 0 and self.x_int < 80) or (away > 0 and self.x_int > width - 80)
-                    want_dx = positioning.keep_distance(self, dx, distance, range - 15, range + 10, not walled) * (dx > 0 and 1 or -1)
+                    want_dx = positioning.keep_distance(self, dx, distance, range - tune.off_line_near, range + tune.off_line_far, not walled) * (dx > 0 and 1 or -1)
                     memory.note = string.format("wait off line %d (z %d)", want_dx, zone_z)
                 end
             end
@@ -3933,7 +3981,7 @@ function smart.control(state, index)
                     local zone_z = wake_zone(target, target_analysis, d)
                     if zone_z > 0 then
                         if self.hp < 120 then zone_z = zone_z + 6 end
-                        zone_z = zone_z + 6
+                        zone_z = zone_z + tune.wake_step
                     end
                     if zone_z > 0 and abs(dz) < zone_z then
                         want_dx = facing_away and -toward or 0

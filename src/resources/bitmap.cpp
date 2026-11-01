@@ -10,6 +10,7 @@ namespace {
 constexpr std::size_t header_size = 40;
 constexpr std::uint32_t uncompressed = 0;
 constexpr std::uint32_t run_length_8 = 1;
+constexpr std::uint32_t bit_fields = 3;
 
 void append_u32(Bytes& output, std::uint32_t value) {
     for (int shift = 0; shift < 32; shift += 8) output.push_back(static_cast<char>((value >> shift) & 255));
@@ -18,6 +19,77 @@ void store_u32(Bytes& output, std::size_t offset, std::uint32_t value) {
     for (std::size_t byte = 0; byte < 4; ++byte) {
         output[offset + byte] = static_cast<char>((value >> (byte * 8)) & 255);
     }
+}
+
+// One channel of a 16-bit pixel, by its mask, scaled to 0-255.
+std::uint8_t channel(std::uint32_t pixel, std::uint32_t mask) {
+    if (mask == 0) return 0;
+    int shift = 0;
+    while (((mask >> shift) & 1U) == 0) ++shift;
+    const std::uint32_t top = mask >> shift;
+    const std::uint32_t value = (pixel & mask) >> shift;
+    return static_cast<std::uint8_t>((std::uint64_t{value} * 255 + top / 2) / top);
+}
+
+// 16-bit pixels (5-5-5, or the masks of BI_BITFIELDS such as 5-6-5) become 24-bit ones, which every
+// consumer reads: Windows draws such a picture as it stands (the One Piece mod OPLoS 2.1X has two among its
+// background layers, bg/sys/kf/land3.bmp and land4.bmp). Rows keep their order and the header its height.
+Bytes convert_16(std::span<const char> dib, std::uint32_t compression, std::optional<std::size_t> pixel_offset) {
+    const BinaryView header(dib);
+    std::uint32_t masks[3] = {0x7c00U, 0x03e0U, 0x001fU};
+    std::size_t palette_end = header_size;
+    if (compression == bit_fields) {
+        for (std::size_t index = 0; index < 3; ++index) masks[index] = header.u32(header_size + index * 4);
+        palette_end += 12;
+        for (const auto mask : masks) {
+            if (mask == 0 || mask > 0xffffU) throw FormatError("unsupported 16-bit bitmap masks");
+        }
+    } else if (compression != uncompressed) {
+        throw FormatError("unsupported bitmap compression");
+    }
+    // (A colour table may follow, as a hint for palette displays; the pixels do not use it.)
+    const auto colors = header.u32(32);
+    if (colors > 256) throw FormatError("oversized bitmap palette");
+    palette_end += std::size_t{colors} * 4;
+    header.slice(0, palette_end);
+    const auto width = header.u32(4);
+    const auto height_bits = header.u32(8);
+    const bool top_down = height_bits >= 0x80000000U;
+    const std::uint64_t height = top_down ? std::uint64_t{0x100000000ULL} - height_bits : height_bits;
+    if (width == 0 || width > 8192 || height == 0 || height > 8192) {
+        throw FormatError("bitmap dimensions exceed limits");
+    }
+    const auto rows = static_cast<std::size_t>(height);
+    const auto stride = static_cast<std::size_t>(((std::uint64_t{width} * 16 + 31) / 32) * 4);
+    const auto output_stride = static_cast<std::size_t>(((std::uint64_t{width} * 24 + 31) / 32) * 4);
+    const auto start = pixel_offset.value_or(palette_end);
+    if (start < palette_end || start > dib.size()) throw FormatError("bitmap pixels overlap header");
+    const BinaryView stored(header.slice(start, stride * rows));
+
+    Bytes output{'B', 'M'};
+    append_u32(output, static_cast<std::uint32_t>(14 + header_size + output_stride * rows));
+    append_u32(output, 0);
+    append_u32(output, static_cast<std::uint32_t>(14 + header_size));
+    const auto info = header.slice(0, header_size);
+    output.insert(output.end(), info.begin(), info.end());
+    output[14 + 14] = 24;
+    output[14 + 15] = 0;
+    store_u32(output, 14 + 16, uncompressed);
+    store_u32(output, 14 + 20, static_cast<std::uint32_t>(output_stride * rows));
+    store_u32(output, 14 + 32, 0);
+    store_u32(output, 14 + 36, 0);
+    const auto pixels_at = output.size();
+    output.resize(pixels_at + output_stride * rows, '\0');
+    for (std::size_t row = 0; row < rows; ++row) {
+        for (std::size_t x = 0; x < width; ++x) {
+            const std::uint32_t pixel = stored.u16(row * stride + x * 2);
+            const auto at = pixels_at + row * output_stride + x * 3;
+            output[at] = static_cast<char>(channel(pixel, masks[2]));
+            output[at + 1] = static_cast<char>(channel(pixel, masks[1]));
+            output[at + 2] = static_cast<char>(channel(pixel, masks[0]));
+        }
+    }
+    return output;
 }
 
 // Expands bottom-up RLE8. Pixels skipped by delta or line escapes stay index 0.
@@ -71,6 +143,7 @@ Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset
     }
     const auto bits = header.u16(14);
     const auto compression = header.u32(16);
+    if (bits == 16) return convert_16(dib, compression, pixel_offset);
     if (bits != 1 && bits != 4 && bits != 8 && bits != 24 && bits != 32) {
         throw FormatError("unsupported bitmap bit depth");
     }

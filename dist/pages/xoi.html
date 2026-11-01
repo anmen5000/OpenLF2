@@ -172,6 +172,7 @@
       <a href="#play"><span class="en">Play</span><span class="vi">Chơi</span></a>
       <a href="#train"><span class="en">Train XOI</span><span class="vi">Huấn luyện XOI</span></a>
       <a href="#measure"><span class="en">Measure</span><span class="vi">Đo</span></a>
+      <a href="#tune"><span class="en">Tune INSANE!</span><span class="vi">Chỉnh INSANE!</span></a>
       <a href="#share"><span class="en">Share</span><span class="vi">Chia sẻ</span></a>
       <a href="#kit"><span class="en">Inside the kit</span><span class="vi">Trong bộ XOI</span></a>
       <a href="#help"><span class="en">Troubleshooting</span><span class="vi">Gặp lỗi</span></a>
@@ -489,6 +490,61 @@
       </ul>
     </section>
 
+    <section id="tune">
+      <h2><span class="en">Tune INSANE!'s numbers (SPSA)</span><span class="vi">Chỉnh các con số của INSANE! (SPSA)</span></h2>
+      <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 31 numbers
+        INSANE!'s judgement rests on in every mod — what a hit is worth against what it costs, the score a move needs, how bold
+        a standoff makes it, how far to keep from longer arms or from a fallen enemy, when to charge MP — the way chess engines
+        tune theirs.</p>
+      <p class="lede vi">XOI học theo từng cặp xem chiêu nào hiệu quả. <code>spsa.bat</code> chỉnh thứ khác: 31 con số mà phán
+        đoán của INSANE! dựa vào ở mọi bản mod — một đòn đáng bao nhiêu so với cái giá của nó, điểm một chiêu cần có để ra
+        đòn, đứng nhìn nhau lâu thì máy bạo dạn lên bao nhiêu, đứng cách đối thủ tay dài hay đối thủ đã ngã bao xa, khi nào
+        nạp MP — giống cách các chương trình cờ vua chỉnh số của chúng.</p>
+      <ol class="steps en">
+        <li><b>Put one or more mods' <code>.zip</code> next to <code>spsa.bat</code></b> (not the <code>*-xoi.zip</code> copies), or drag
+          one onto it. Several mods: the processes are shared among them, and the numbers suit them all.</li>
+        <li><b>Double-click.</b> Each round, every process (one per CPU thread) plays 40 game pairs: two INSANE! players, the 31
+          numbers nudged one way for one and the other way for the other (each number up or down at random), each playing each
+          fighter of a random pair on the same stage; every number then moves toward whichever did better. After the round
+          the processes' numbers are averaged, and the next round starts from there.</li>
+        <li><b>12 rounds</b> by default, then the tuned numbers play the AI's own (<code>KIEM_TRA</code> game pairs per process). On
+          a 104-thread PC that is about an hour or two, all on the CPU (about 0.3 GB of memory per process). Stopped half way (a
+          restart, a closed window)? Double-click again: it goes on from the round it was in.</li>
+        <li><b>Send <code>spsa\ket-qua.txt</code></b> to whoever maintains the AI: the tuned numbers, how far each moved, and how the
+          tuned numbers did against the AI's own. They go into INSANE! only after they also win the usual measures.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt một hay nhiều file <code>.zip</code> bản mod cạnh <code>spsa.bat</code></b> (không phải các bản <code>*-xoi.zip</code>), hoặc
+          kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, các con số hợp với tất cả.</li>
+        <li><b>Nháy đúp.</b> Mỗi vòng, mỗi tiến trình (một luồng CPU) đánh 40 cặp trận: hai máy INSANE!, 31 con số nhích một phía
+          cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy cầm mỗi nhân vật của một cặp ngẫu
+          nhiên trên cùng một sân; mọi con số rồi dịch về phía máy đánh tốt hơn. Hết vòng, lấy trung bình các tiến trình, vòng sau
+          bắt đầu từ đó.</li>
+        <li><b>Mặc định 12 vòng</b>, rồi bản đã chỉnh đấu bản gốc (<code>KIEM_TRA</code> cặp trận mỗi tiến trình). Máy 104 luồng mất
+          khoảng một, hai giờ, chỉ dùng CPU (mỗi tiến trình chừng 0,3 GB bộ nhớ). Dừng giữa chừng (khởi động lại máy, lỡ đóng cửa sổ)?
+          Nháy đúp lại: làm tiếp từ vòng đang dở.</li>
+        <li><b>Gửi <code>spsa\ket-qua.txt</code></b> cho người làm AI: các số đã chỉnh, mỗi số dịch bao nhiêu, và bản đã chỉnh đấu bản gốc
+          ra sao. Số chỉ được đưa vào INSANE! khi cũng thắng ở các phép đo thường dùng.</li>
+      </ol>
+      <h3><span class="en">Settings at the top of spsa.bat</span><span class="vi">Các dòng chỉnh ở đầu spsa.bat</span></h3>
+      <ul class="plain en">
+        <li><code>VONG</code> rounds (12), <code>CAP</code> game pairs per process per round (40), <code>SONG_SONG</code> processes
+          (every CPU thread), <code>KIEM_TRA</code> game pairs per process for the final check (20; 0 skips it).</li>
+        <li><code>HAT_GIONG</code>: the seed; the same seed plays the same games. A new tuning from scratch: delete the
+          <code>spsa</code> folder (or rename it).</li>
+        <li><b>Start from earlier numbers:</b> put a <code>return {...}</code> line of a previous <code>ket-qua.txt</code> into
+          <code>spsa\bat-dau.lua</code> before the first round.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><code>VONG</code> số vòng (12), <code>CAP</code> số cặp trận mỗi tiến trình mỗi vòng (40), <code>SONG_SONG</code> số tiến trình
+          (mọi luồng CPU), <code>KIEM_TRA</code> số cặp trận mỗi tiến trình khi kiểm tra cuối (20; 0 là bỏ qua).</li>
+        <li><code>HAT_GIONG</code>: hạt giống; cùng hạt giống thì đánh lại đúng những trận ấy. Chỉnh lại từ đầu: xóa (hoặc đổi tên) thư
+          mục <code>spsa</code>.</li>
+        <li><b>Bắt đầu từ các số của lần trước:</b> chép dòng <code>return {...}</code> của một <code>ket-qua.txt</code> cũ vào
+          <code>spsa\bat-dau.lua</code> trước vòng đầu.</li>
+      </ul>
+    </section>
+
     <section id="share">
       <h2><span class="en">Share what you trained</span><span class="vi">Chia sẻ những gì đã huấn luyện</span></h2>
       <ul class="plain en">
@@ -519,6 +575,7 @@
   choi.bat              <i>play a mod with INSANE! and XOI</i>
   xoi-hoc.bat           <i>train XOI for a mod</i>
   dau-nhieu.bat         <i>measure: two computer players on every pair</i>
+  spsa.bat              <i>tune INSANE!'s numbers by play</i>
   README.txt            <i>the short version of this page</i>
   version.txt           <i>which INSANE! and OpenLF2 this kit is</i>
   scripts\              <i>the game's scripts with INSANE! and XOI (base\game\smart_ai.lua)</i>
@@ -533,11 +590,13 @@
     ban-mod.txt         <i>which mod zip was trained</i>
     dot-&lt;seed&gt;\         <i>one round: p1…pN\out.txt (the game's output) and config.lua</i>
     goi\xoi\notes.txt   <i>a copy, to put into a zip by hand</i>
-  ket-qua-&lt;seed&gt;\       <i>a measurement: cap.txt, run-*.txt</i></div>
+  ket-qua-&lt;seed&gt;\       <i>a measurement: cap.txt, run-*.txt</i>
+  spsa\                 <i>a tuning: ket-qua.txt (the result), vong-&lt;n&gt;\ (each round), kiem-tra\ (the check)</i></div>
 <div class="tree vi">LF2-XOI-kit\
   choi.bat              <i>chơi bản mod với INSANE! và XOI</i>
   xoi-hoc.bat           <i>huấn luyện XOI cho bản mod</i>
   dau-nhieu.bat         <i>đo: hai loại máy đấu mọi cặp</i>
+  spsa.bat              <i>chỉnh các con số của INSANE! bằng cách cho máy đánh</i>
   README.txt            <i>bản ngắn của trang này</i>
   version.txt           <i>bộ này là INSANE! và OpenLF2 phiên bản nào</i>
   scripts\              <i>scripts của game có INSANE! và XOI (base\game\smart_ai.lua)</i>
@@ -552,7 +611,8 @@
     ban-mod.txt         <i>file zip bản mod đã được học</i>
     dot-&lt;hạt giống&gt;\    <i>một đợt: p1…pN\out.txt (kết quả game in ra) và config.lua</i>
     goi\xoi\notes.txt   <i>bản sao, để tự đặt vào file zip bằng tay</i>
-  ket-qua-&lt;hạt giống&gt;\  <i>một lần đo: cap.txt, run-*.txt</i></div>
+  ket-qua-&lt;hạt giống&gt;\  <i>một lần đo: cap.txt, run-*.txt</i>
+  spsa\                 <i>một lần chỉnh: ket-qua.txt (kết quả), vong-&lt;n&gt;\ (từng vòng), kiem-tra\ (phần kiểm tra)</i></div>
       <p class="note en"><b>The notes file</b> is plain text, one fact per line, each starting with <code>XOI</code>: <code>G</code> the
         games of a pair, <code>R</code> the opponent's answers to risky moves, <code>M</code> a move's record against an opponent,
         <code>C</code> its record by situation, <code>P</code> the spots the fighter stood on. A big mod's notes run to megabytes; in a match

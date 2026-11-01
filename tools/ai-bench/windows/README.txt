@@ -16,8 +16,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    top of the file: right-click it, Edit). It makes <mod>-xoi.zip (the mod with xoi\notes.txt inside) and
    xoi-<mod>\notes.txt (the notes alone, to share).
 4. Measure: dau-nhieu.bat plays XOI against INSANE! on every pair of fighters and prints the win rate.
+5. Tune INSANE!'s own numbers (SPSA): put one or more mods' .zip next to spsa.bat and double-click it. Two
+   INSANE! players fight with the AI's 31 numbers nudged one way and the other; the numbers move toward
+   whichever did better, round after round (12 rounds by default, one process per CPU thread), then the
+   tuned numbers play the AI's own. Result: spsa\ket-qua.txt - send it to whoever maintains the AI. It can
+   be stopped and started again: it goes on from the round it was in.
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), scripts\ (the game's scripts with the
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), scripts\ (the game's scripts with the
 computer players, laid over the installed game's), tools\ai-bench\ (the training and measuring jobs),
 version.txt (which version this kit is).
 
@@ -38,7 +43,12 @@ chơi được chính các file của bản mod.
    ở đầu file: chuột phải, Edit). Kết quả: <tên>-xoi.zip (bản mod có xoi\notes.txt bên trong) và
    xoi-<tên>\notes.txt (riêng bộ nhớ, để chia sẻ).
 4. Đo: dau-nhieu.bat cho XOI đấu INSANE! mọi cặp nhân vật và in tỉ lệ thắng.
+5. Chỉnh các con số của chính INSANE! (SPSA): đặt một hay nhiều file .zip bản mod cạnh spsa.bat rồi nháy
+   đúp. Hai máy INSANE! đánh nhau, 31 con số của AI nhích về hai phía ngược nhau; các số dịch về phía bản
+   đánh tốt hơn, vòng này qua vòng khác (mặc định 12 vòng, mỗi luồng CPU một tiến trình), cuối cùng bản đã
+   chỉnh đấu với bản gốc. Kết quả: spsa\ket-qua.txt - gửi file này cho người làm AI. Tắt giữa chừng được:
+   chạy lại là làm tiếp từ vòng đang dở.
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), scripts\ (scripts của game có
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), scripts\ (scripts của game có
 máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc huấn luyện và đo),
 version.txt (bộ này là phiên bản nào).

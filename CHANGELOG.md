@@ -76,6 +76,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (`XOI P` lines); used within narrow bounds (measured as strong as the moves' weights alone, 158–153 over 320 games);
   notes made before have neither and play as before; the bench's `xoi:m`, `xoi:c` and `xoi:p` brains play with the
   moves' weights alone, with the situations, with the spots (v27)
+- INSANE!: the 31 numbers its judgement rests on — what a hit is worth against what it costs, the score a move
+  needs, how bold a standoff makes it, how far to keep from longer arms or from a fallen enemy, when to charge MP —
+  gathered in `smart.tune_ranges` (with the range a tuning may try; `smart.set_tune` lays a tuned set over them; the
+  values are unchanged and play is the same frame for frame), and tuning them by play: the bench's `spsa` job (SPSA,
+  as chess engines tune their numbers: two versions with every number nudged opposite ways fight, and the numbers
+  move toward the better one; chains averaged between rounds; tuned numbers against the AI's own) and the kit's
+  `spsa.bat`, which runs it on every thread of a PC over the mods beside it, round after round, resumable
 - INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
   is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
   flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the
@@ -119,6 +126,12 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
+- Mods: VS and Stage mode (and every screen with the character list) no longer stop at a black screen on a
+  `data/data.txt` that the original reads although its object list is untidy — the list is read as the original reads
+  it, word by word, each `id:` with the five words after it whatever the two keywords say, any other word passed
+  over (the One Piece mod OPLoS 2.1X, `OPLoS2.1X.exe`, has `fileb:` for `file:` in one record and lines holding a
+  lone `%`, `$`, `&` or `*`); and 16-bit pictures (5-5-5, or BI_BITFIELDS masks such as 5-6-5) are drawn, read as 24-bit ones — the
+  same mod has two among a stage's layers (`bg/sys/kf/land3.bmp`, `land4.bmp`)
 - Windows: a game window that stayed the menu's blue with no picture or text (SDL's GPU renderer, the first one tried,
   opened without an error on the project owner's PC and drew only fills): on Windows the game now tries a renderer
   once as it opens it — a red test picture, opaque and colour-keyed, drawn into the window, into a frame texture and

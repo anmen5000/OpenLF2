@@ -30,32 +30,50 @@ local function decode(source)
     end
     return table.concat(result)
 end
-function catalog.load()
-    if cached then return cached end
+-- The <object> records in file order, as the original reads them: word by word, each "id:" followed by five
+-- words (the id, the word before the type, the type, the word before the file, the file), whatever the two
+-- words in between say, and every other word passed over. The One Piece mod OPLoS 2.1X (OPLoS2.1X.exe) has
+-- "fileb:" for "file:" in one record and lines of a lone "%", "$", "&" or "*", which the original reads past;
+-- a note such as "#meat" after a record is passed over the same way.
+local function object_records()
     local source = data_text()
     local section = assert(source:match("<object>(.-)<object_end>"), "missing object catalog")
-    local fighters = {}
-    local record = -1
-    for line in (section .. "\n"):gmatch("([^\n]*)\n") do
-        line = line:gsub("#.*$", "")
-        local id, kind, path = line:match("id:%s*(%d+)%s+type:%s*(%d+)%s+file:%s*(%S+)")
-        -- Object records are numbered in file order across all types.
-        if id then record = record + 1 end
-        if id and tonumber(kind) == 0 then
-            id = tonumber(id)
-            do
-                path = canonical(path)
-                local data = engine.read_resource(path)
-                if path:sub(-4) == ".dat" then data = decode(data) end
-                local header = assert(data:match("<bmp_begin>(.-)<bmp_end>"), "missing character header: " .. path)
-                local name = assert(header:match("name:%s*(%S+)"), "missing character name: " .. path)
-                local portrait = assert(header:match("head:%s*(%S+)"), "missing portrait: " .. path)
-                local family = math.floor(id / 10)
-                fighters[#fighters + 1] = {id = id, record = record, name = name,
-                    portrait = canonical(portrait), path = path, hidden = family == 3 or family == 5}
-                assert(#fighters <= 400, "too many character records")
+    local words = {}
+    for word in section:gmatch("%S+") do words[#words + 1] = word end
+    local records = {}
+    local position = 1
+    while position <= #words do
+        if words[position] == "id:" then
+            local id, kind, path = words[position + 1], words[position + 3], words[position + 5]
+            if not (id and id:match("^%d+$") and kind and kind:match("^%d+$") and path) then
+                error("invalid object catalog record: id: " .. tostring(id))
             end
-        elseif line:find("%S") and not id then error("invalid object catalog line") end
+            records[#records + 1] = {id = tonumber(id), kind = tonumber(kind), path = path}
+            position = position + 6
+        else
+            position = position + 1
+        end
+    end
+    return records
+end
+function catalog.load()
+    if cached then return cached end
+    local fighters = {}
+    -- Object records are numbered in file order across all types, from 0.
+    for index, entry in ipairs(object_records()) do
+        if entry.kind == 0 then
+            local id = entry.id
+            local path = canonical(entry.path)
+            local data = engine.read_resource(path)
+            if path:sub(-4) == ".dat" then data = decode(data) end
+            local header = assert(data:match("<bmp_begin>(.-)<bmp_end>"), "missing character header: " .. path)
+            local name = assert(header:match("name:%s*(%S+)"), "missing character name: " .. path)
+            local portrait = assert(header:match("head:%s*(%S+)"), "missing portrait: " .. path)
+            local family = math.floor(id / 10)
+            fighters[#fighters + 1] = {id = id, record = index - 1, name = name,
+                portrait = canonical(portrait), path = path, hidden = family == 3 or family == 5}
+            assert(#fighters <= 400, "too many character records")
+        end
     end
     assert(#fighters > 0, "empty fighter catalog")
     cached = fighters
@@ -135,11 +153,9 @@ end
 -- takes the first record with a given id.
 function catalog.objects()
     if cached_objects then return cached_objects end
-    local source = data_text()
-    local section = assert(source:match("<object>(.-)<object_end>"), "missing object catalog")
     local objects, by_id = {}, {}
-    for id, kind, path in section:gmatch("id:%s*(%d+)%s+type:%s*(%d+)%s+file:%s*(%S+)") do
-        local entry = {id = tonumber(id), kind = tonumber(kind), path = canonical(path)}
+    for _, record in ipairs(object_records()) do
+        local entry = {id = record.id, kind = record.kind, path = canonical(record.path)}
         objects[#objects + 1] = entry
         if not by_id[entry.id] then by_id[entry.id] = entry end
         assert(#objects <= 500, "too many object records")
