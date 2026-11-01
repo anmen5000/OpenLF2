@@ -11,6 +11,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
 2. Play: put a mod's .zip next to choi.bat and double-click choi.bat, or drag the mod's .zip, its folder
    or its .exe onto choi.bat. In the game, cycle the difficulty past CRAZY! to INSANE!, then XOI.
    XOI notes: a <mod>-xoi.zip has them inside; a notes .txt is dragged onto choi.bat together with the mod.
+   A window that stays blue with no pictures: open choi.bat in Notepad and set VE=software.
 3. Train XOI for a mod: put the mod's .zip next to xoi-hoc.bat and double-click it (its settings are at the
    top of the file: right-click it, Edit). It makes <mod>-xoi.zip (the mod with xoi\notes.txt inside) and
    xoi-<mod>\notes.txt (the notes alone, to share).
@@ -32,6 +33,7 @@ chơi được chính các file của bản mod.
    là tới INSANE!, rồi XOI.
    Bộ nhớ XOI: file <tên>-xoi.zip có sẵn bên trong; có file bộ nhớ .txt riêng thì kéo nó cùng bản mod
    vào choi.bat.
+   Cửa sổ game chỉ xanh, không có hình: mở choi.bat bằng Notepad, sửa thành VE=software.
 3. Huấn luyện XOI cho một bản mod: đặt file .zip bản mod cạnh xoi-hoc.bat rồi nháy đúp (các dòng chỉnh
    ở đầu file: chuột phải, Edit). Kết quả: <tên>-xoi.zip (bản mod có xoi\notes.txt bên trong) và
    xoi-<tên>\notes.txt (riêng bộ nhớ, để chia sẻ).

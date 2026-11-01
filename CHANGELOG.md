@@ -76,6 +76,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (`XOI P` lines); used within narrow bounds (measured as strong as the moves' weights alone, 158–153 over 320 games);
   notes made before have neither and play as before; the bench's `xoi:m`, `xoi:c` and `xoi:p` brains play with the
   moves' weights alone, with the situations, with the spots (v27)
+- INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
+  is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
+  flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the
+  frames to get there count crossing the line, and the step in depth the enemy can take once up is reckoned while it
+  is still down (reckoned only once it was up, a fighter just off its line was inside its blows again as it rose;
+  with no room for that depth, the fighter now backs out of reach); blows taken from enemies just up again on three
+  shallow stages of Naruto 2.4: 2,485 damage instead of 3,511; against v27, 160–148 in Naruto 2.4 and 152–145 in
+  One Piece GrandWorld; waiting out of the enemy's plain arms at any depth was tried and dropped (fewer such blows,
+  but 136–168 against v27 in Naruto) (v28)
 - INSANE! and XOI on a PC (a mod's own `.exe` is the original LF2 and stops at CRAZY!): `tools/ai-bench/windows/choi.bat`
   plays a mod on the installed Windows game — the mod's ZIP, its folder (zipped once) or its `.exe` dragged onto it,
   with a notes file packed into `<mod>-xoi.zip` — laying the kit's newer scripts over the installed game's; the
@@ -110,6 +119,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
+- Windows: a game window that stayed the menu's blue with no picture or text (SDL's GPU renderer, the first one tried,
+  opened without an error on the project owner's PC and drew only fills): on Windows the game now tries a renderer
+  once as it opens it — a red test picture, opaque and colour-keyed, drawn into the window, into a frame texture and
+  through xBRZ, each read back — and passes over one whose pictures do not show (then OpenGL, SDL's default and at
+  last the software renderer), or leaves out an xBRZ upscaler that shows nothing; a read SDL cannot make counts as
+  shown. `choi.bat` draws with OpenGL unless its `VE` line names a renderer, and starts the game again with its
+  usual renderer when OpenGL does not open
 - Builds: `dist/collect-licenses.py` tries a dropped or stalled download of a license source again (after 15, 30,
   60 and 120 seconds) instead of failing the build — GitHub's Windows arm64 runner lost ffmpeg.org's archive in the
   last three Windows runs, which marked them failed although x86 and x64 had built

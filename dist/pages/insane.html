@@ -206,11 +206,14 @@
           two fighters stood there for the rest of the match.</li>
         <li><b>Out of the wake-up blows.</b> A fallen opponent gets up invulnerable for a moment and can strike at once —
           in some mods with a blow that reaches half the stage (Yamato's wood spike). Standing beside it is a blow taken for
-          nothing, and so is standing anywhere its quick moves reach. The AI now works out where those moves strike and is
-          out of that zone by the time the opponent is on its feet, by the quicker way: a few steps in depth off its line,
-          or back out of reach; off the line it may wait at its own range rather than far away. It does not charge MP,
-          drink or pick up a weapon inside the zone, and a charge stance beside a fallen opponent is left early enough
-          to get out.</li>
+          nothing, and so is standing anywhere its quick moves reach. The AI now works out where those moves strike (and how
+          far in depth, with the step the opponent can take once it is up) and is out of that zone by the time the opponent
+          is on its feet, by the quicker way: a few steps in depth off its line, or back out of reach, as on a stage too
+          shallow for the first; off the line it may wait at its own range rather than far away. Which side of the line has
+          room is judged from the opponent's line, so on a stage only a few steps deep it does not turn back and forth
+          (version 28: before, Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until Neji got up, or
+          waited just off it, to be inside the zone again as Neji rose). It does not charge MP, drink or pick up a weapon
+          inside the zone, and a charge stance beside a fallen opponent is left early enough to get out.</li>
         <li><b>Weighing the counter along the way.</b> Before a move, the AI already asked whether the opponent's quickest
           answer would land first; it asked that from where the fighter stood. A rush or a jump-in carries the fighter into
           blows that did not reach its starting spot, and a punch the opponent starts as the rush sets off lands first
@@ -274,7 +277,7 @@
           <tr><td>Escaping with a move</td><td><span class="status done">Done</span></td><td class="num">v25</td><td>When no step avoids what is coming, a teleport, rush or leap whose path no blow meets: against an unguardable or heavy blow, or to strike back; otherwise the guard.</td></tr>
           <tr><td>Forms of a mod's own making (Gear Second, Diable Jambe)</td><td><span class="status done">Done</span></td><td class="num">v21, v27</td><td>A move that leaves an item in the hand is a form: its keys, runs, MP burn and worth are learned; entered when worth it and safe, fought in, and let end out of reach; a form entered from the guard (Magellan) or one that creeps on by itself is handled too. Forms inside forms (Zoro's Asura) not yet.</td></tr>
           <tr><td>Untouchable forms (bodies on far layers)</td><td><span class="status done">Done</span></td><td class="num">v27</td><td>Which of its own frames each opponent's blows can reach at all: a form out of everyone's reach (Drake's T-rex, Magellan's Venom Demon) is entered for that alone and fought in up close; a phoenix flight is flown onto the opponent's line.</td></tr>
-          <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21, v23</td><td>Out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they reach — until its blink ends: a few steps in depth off its line, or back out of reach; no charging, drinking or weapon pick-up in that zone; farther at low HP.</td></tr>
+          <tr><td>Get-up invulnerability spacing</td><td><span class="status done">Done</span></td><td class="num">v21, v23, v28</td><td>Out of a fallen or just-risen opponent's wake-up blows — its quick moves, however far they reach, and the step it can take once up — until its blink ends: a few steps in depth off its line (on shallow stages too), or back out of reach; no charging, drinking or weapon pick-up in that zone; farther at low HP.</td></tr>
           <tr><td>Approach beside the line of fire</td><td><span class="status done">Done</span></td><td class="num">v22, v26</td><td>Against an opponent whose long blows cover the line between them (a beam, a wave across the stage — reckoned all the way out), closes in offset in depth and steps onto the line only when its own blows reach; also while the opponent charges MP or is busy for a moment, and never while a wave flies along the line.</td></tr>
           <tr><td>Steady footwork</td><td><span class="status done">Done</span></td><td class="num">v26</td><td>A turn round is a step too: no stepping in and out at the edge of a distance, of an enemy's reach or of its wake-up blows; a way out once chosen is kept; while walking it turns round at most once every few frames.</td></tr>
           <tr><td>Trapped opponents (a mod's holds)</td><td><span class="status done">Done</span></td><td class="num">v22, v27</td><td>An opponent held by an object is known to be held and, when the hold lets blows through, hittable: struck, or MP charged first and a strong move landed before the hold ends. A trap is not set again on an opponent already held. A grab is worth what follows it, and no guard holds it.</td></tr>

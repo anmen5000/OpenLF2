@@ -17,6 +17,8 @@
 #include <iostream>
 #include <list>
 #include <mutex>
+#include <optional>
+#include <string>
 #include <utility>
 #include <map>
 #include <set>
@@ -529,14 +531,96 @@ public:
         upscaler_.reset();
         renderer_.reset(SDL_CreateRenderer(window_.get(), name));
         if (!renderer_) return false;
+        upscaler_ = make_frame_upscaler(*renderer_);
+        if constexpr (check_drawing_enabled) {
+            const char* opened = SDL_GetRendererName(renderer_.get());
+            const std::string kind = opened != nullptr ? opened : "";
+            auto found = drawing_checks_.find(kind);
+            if (found == drawing_checks_.end()) found = drawing_checks_.emplace(kind, check_drawing()).first;
+            if (!found->second.pictures) report_once("pictures " + kind, "Renderer " + kind + ": pictures drawn with it do not show on this computer");
+            if (upscaler_ && !found->second.upscaler) {
+                report_once("xbrz " + kind, "xBRZ: the " + kind + " renderer's upscaler shows nothing on this computer; left out");
+                upscaler_.reset();
+            }
+        }
         if (!SDL_SetRenderLogicalPresentation(renderer_.get(), viewport_.width, viewport_.height,
                                               SDL_LOGICAL_PRESENTATION_LETTERBOX)) return false;
-        upscaler_ = make_frame_upscaler(*renderer_);
         return true;
+    }
+    // Whether the renderer that is open showed its pictures (check_drawing); one not checked counts as yes.
+    bool draws_pictures() const {
+        if (!renderer_) return false;
+        const char* name = SDL_GetRendererName(renderer_.get());
+        const auto found = drawing_checks_.find(name != nullptr ? name : "");
+        return found == drawing_checks_.end() || found->second.pictures;
+    }
+    // What a renderer showed when first opened (open_renderer, on Windows): a red picture of each kind the game's
+    // sprites are — opaque XRGB8888 as a BMP loads, and colour-keyed — drawn on the launch screen's blue straight into
+    // the window and into a frame texture, then that frame through the xBRZ upscaler into the window, each read back.
+    // On the project owner's PC (Windows, November 2026) SDL's GPU renderer opened without an error and showed nothing
+    // but the launch screen's blue: no picture, no text. A read SDL cannot make counts as shown, so a renderer or its
+    // upscaler is left out only on proof; the window is cleared afterwards.
+    struct DrawingCheck {
+        bool pictures = true;
+        bool upscaler = true;
+    };
+    DrawingCheck check_drawing() {
+        DrawingCheck check;
+        SDL_Renderer* const renderer = renderer_.get();
+        const auto red_at = [renderer](int x, int y) -> std::optional<bool> {
+            const SDL_Rect pixel{x, y, 1, 1};
+            const std::unique_ptr<SDL_Surface, DestroySurface> read(SDL_RenderReadPixels(renderer, &pixel));
+            Uint8 red = 0, green = 0, blue = 0, alpha = 0;
+            if (!read || !SDL_ReadSurfacePixel(read.get(), 0, 0, &red, &green, &blue, &alpha)) return std::nullopt;
+            return red >= 192 && green <= 64 && blue <= 64;
+        };
+        const auto shows_red = [&](int x, int y) {
+            const auto shown = red_at(x, y);
+            return !shown || *shown;
+        };
+        const auto fill_blue = [renderer] {
+            return SDL_SetRenderDrawColor(renderer, 16, 32, 108, 255) && SDL_RenderClear(renderer);
+        };
+        const auto red_picture = [renderer](bool keyed) -> Texture {
+            const std::unique_ptr<SDL_Surface, DestroySurface> surface(SDL_CreateSurface(4, 4, SDL_PIXELFORMAT_XRGB8888));
+            if (!surface || !SDL_FillSurfaceRect(surface.get(), nullptr, SDL_MapSurfaceRGB(surface.get(), 255, 0, 0))) return nullptr;
+            if (keyed && !SDL_SetSurfaceColorKey(surface.get(), true, SDL_MapSurfaceRGB(surface.get(), 0, 0, 0))) return nullptr;
+            Texture texture(SDL_CreateTextureFromSurface(renderer, surface.get()));
+            if (texture && !SDL_SetTextureScaleMode(texture.get(), SDL_SCALEMODE_NEAREST)) texture.reset();
+            return texture;
+        };
+        const Texture opaque = red_picture(false);
+        const Texture keyed = red_picture(true);
+        Texture frame(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 16, 8));
+        if (frame && (!SDL_SetTextureScaleMode(frame.get(), SDL_SCALEMODE_NEAREST)
+                      || !SDL_SetTextureBlendMode(frame.get(), SDL_BLENDMODE_NONE))) frame.reset();
+        if (!opaque || !keyed || !frame) return check;
+        const SDL_FRect left{2.0f, 2.0f, 4.0f, 4.0f}, right{10.0f, 2.0f, 4.0f, 4.0f};
+        const auto draw_pictures = [&] {
+            return fill_blue() && SDL_RenderTexture(renderer, opaque.get(), nullptr, &left)
+                && SDL_RenderTexture(renderer, keyed.get(), nullptr, &right);
+        };
+        // Straight into the window, then into the frame texture.
+        if (draw_pictures() && !(shows_red(4, 4) && shows_red(12, 4))) check.pictures = false;
+        if (check.pictures && SDL_SetRenderTarget(renderer, frame.get())) {
+            if (draw_pictures() && !(shows_red(4, 4) && shows_red(12, 4))) check.pictures = false;
+            SDL_SetRenderTarget(renderer, nullptr);
+        }
+        // The frame through xBRZ, twice its size, into the window.
+        if (check.pictures && upscaler_) {
+            const SDL_FRect whole{0.0f, 0.0f, 32.0f, 16.0f};
+            if (!fill_blue() || !upscaler_->draw(*renderer, *frame, &whole) || !(shows_red(8, 8) && shows_red(24, 8))) {
+                check.upscaler = false;
+            }
+        }
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+        return check;
     }
     // A named renderer (--renderer) or SDL's hint is taken as it is. Otherwise: SDL_GPU, then OpenGL, then the
     // system's default; the first that can also run the xBRZ shader wins (the GPU renderer fails at that on some
-    // drivers, and the default renderer of Windows, Direct3D 11, never can), else the first that opens at all.
+    // drivers, and the default renderer of Windows, Direct3D 11, never can), else the first that opens at all. On
+    // Windows a renderer whose pictures do not show (check_drawing) counts as not opening.
     bool choose_renderer(const std::string& requested) {
         bool opened = false;
         if (!requested.empty()) {
@@ -546,12 +630,24 @@ public:
         } else {
             const char* first_opened = nullptr;
             for (const char* name : {"gpu", "opengl"}) {
-                if (open_renderer(name) && upscaler_) break;
-                if (renderer_ && first_opened == nullptr) first_opened = name;
+                // A renderer whose pictures do not show (check_drawing) is passed over.
+                const bool opened_here = open_renderer(name) && draws_pictures();
+                if (opened_here && upscaler_) break;
+                if (opened_here && first_opened == nullptr) first_opened = name;
+                upscaler_.reset();
                 renderer_.reset();
             }
-            // Nothing offered xBRZ: the first renderer that opened, else the default.
-            opened = renderer_ || (first_opened != nullptr && open_renderer(first_opened)) || open_renderer(nullptr);
+            // Nothing offered xBRZ: the first renderer that opened (and showed its pictures), else the default — and
+            // when even the default's pictures do not show, the software renderer.
+            opened = renderer_ || (first_opened != nullptr && open_renderer(first_opened));
+            if (!opened) {
+                opened = open_renderer(nullptr);
+                if (opened && !draws_pictures()) {
+                    upscaler_.reset();
+                    renderer_.reset();
+                    opened = open_renderer("software") || open_renderer(nullptr);
+                }
+            }
         }
         if (opened) {
             const char* name = SDL_GetRendererName(renderer_.get());
@@ -1274,6 +1370,14 @@ private:
     bool was_maximized_ = false;
     std::string requested_renderer_; // --renderer, or empty
     std::string renderer_name_;      // the renderer that opened, to open it again
+    // check_drawing's findings by renderer name, made once a run: on Windows, where SDL's GPU renderer showed one
+    // computer nothing but blue (OPENLF2_CHECK_DRAWING turns the check on elsewhere, for tests).
+#if defined(_WIN32) || defined(OPENLF2_CHECK_DRAWING)
+    static constexpr bool check_drawing_enabled = true;
+#else
+    static constexpr bool check_drawing_enabled = false;
+#endif
+    std::map<std::string, DrawingCheck> drawing_checks_;
     bool rebuild_pending_ = false;
     Uint64 rebuild_after_ = 0;
     bool enter_consumed_ = false; // Enter belongs to an Alt+Enter until it is released

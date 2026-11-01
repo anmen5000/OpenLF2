@@ -295,10 +295,11 @@
           <code>&lt;mod&gt;-xoi.zip</code> in the kit folder; your mod's own file is not changed.</li>
         <li><b>In the game:</b> <i>Game Start</i>, choose the fighters and add computer players (<i>Com</i>); on the difficulty
           line, go round <i>Easy → Normal → Difficult → CRAZY! → <b>INSANE!</b> → <b>XOI</b></i>. In the match, the level shows its
-          version — <code>INSANE! v27</code>, or <code>XOI v27, 2926 matchups</code> with how many pairs of fighters its notes
+          version — <code>INSANE! v28</code>, or <code>XOI v28, 2926 matchups</code> with how many pairs of fighters its notes
           know (<code>no notes</code> without any).</li>
-        <li><b>A blue or black window?</b> Right-click <code>choi.bat</code>, <i>Edit</i>, set <code>VE=opengl</code> (or
-          <code>software</code>), save, and run it again.</li>
+        <li><b>A window that stays blue or black, with no pictures?</b> <code>choi.bat</code> draws with OpenGL, since the game's
+          usual renderer ("gpu") shows some PCs nothing but the menu's blue. Should it still happen: right-click
+          <code>choi.bat</code>, <i>Edit</i>, set <code>VE=software</code>, save, and run it again.</li>
       </ol>
       <ol class="steps vi">
         <li><b>Đặt file <code>.zip</code> bản mod vào thư mục bộ XOI, cạnh <code>choi.bat</code>, rồi nháy đúp <code>choi.bat</code>.</b>
@@ -311,10 +312,11 @@
           <code>choi.bat</code> sẽ tạo <code>&lt;tên&gt;-xoi.zip</code> trong thư mục bộ XOI; file bản mod của bạn giữ nguyên.</li>
         <li><b>Trong game:</b> <i>Game Start</i>, chọn nhân vật và thêm máy (<i>Com</i>); ở dòng mức khó, bấm vòng
           <i>Easy → Normal → Difficult → CRAZY! → <b>INSANE!</b> → <b>XOI</b></i>. Trong trận, tên mức hiện kèm phiên bản —
-          <code>INSANE! v27</code>, hoặc <code>XOI v27, 2926 matchups</code> cùng số cặp nhân vật mà bộ nhớ biết
+          <code>INSANE! v28</code>, hoặc <code>XOI v28, 2926 matchups</code> cùng số cặp nhân vật mà bộ nhớ biết
           (<code>no notes</code> khi không có).</li>
-        <li><b>Cửa sổ game chỉ xanh hay đen?</b> Chuột phải <code>choi.bat</code>, <i>Edit</i>, sửa thành <code>VE=opengl</code>
-          (hoặc <code>software</code>), lưu, chạy lại.</li>
+        <li><b>Cửa sổ game chỉ xanh hay đen, không có hình?</b> <code>choi.bat</code> vẽ bằng OpenGL, vì cách vẽ thường dùng
+          của game ("gpu") ở vài máy chỉ hiện nền xanh của menu. Nếu vẫn bị: chuột phải <code>choi.bat</code>, <i>Edit</i>,
+          sửa thành <code>VE=software</code>, lưu, chạy lại.</li>
       </ol>
       <h3><span class="en">Settings at the top of choi.bat</span><span class="vi">Các dòng chỉnh ở đầu choi.bat</span></h3>
       <div class="table-wrap en">
@@ -323,7 +325,7 @@
           <tr><td><code>GAME</code></td><td data-label="Empty (default) means">The installed game, found by itself (for you, for all users, or an <code>OpenLF2</code> folder next to the file)</td><td data-label="Set it to">The full path of <code>openlf2.exe</code> installed elsewhere</td></tr>
           <tr><td><code>PACK</code></td><td data-label="Empty (default) means">The first <code>*-xoi.zip</code> next to <code>choi.bat</code>, else the first <code>.zip</code> (or what you drag onto it)</td><td data-label="Set it to">One mod to always play: a <code>.zip</code> or a folder</td></tr>
           <tr><td><code>NOTES</code></td><td data-label="Empty (default) means"><code>&lt;mod&gt;-notes.txt</code> or <code>xoi-&lt;mod&gt;\notes.txt</code> next to <code>choi.bat</code>, if there</td><td data-label="Set it to">A notes file to add to the mod</td></tr>
-          <tr><td><code>VE</code></td><td data-label="Empty (default) means">The game's usual renderer</td><td data-label="Set it to"><code>opengl</code> or <code>software</code> where the window stays blue or black</td></tr>
+          <tr><td><code>VE</code></td><td data-label="Empty (default) means">OpenGL — and the game's usual renderer when OpenGL does not open</td><td data-label="Set it to"><code>software</code> where the window stays blue or black; <code>gpu</code>, <code>opengl</code>, <code>direct3d11</code> to pick one</td></tr>
         </table>
       </div>
       <div class="table-wrap vi">
@@ -332,7 +334,7 @@
           <tr><td><code>GAME</code></td><td data-label="Để trống (mặc định) là">Game đã cài, tự tìm (cài cho bạn, cho mọi người, hoặc thư mục <code>OpenLF2</code> cạnh file)</td><td data-label="Sửa thành">Đường dẫn đầy đủ tới <code>openlf2.exe</code> cài ở chỗ khác</td></tr>
           <tr><td><code>PACK</code></td><td data-label="Để trống (mặc định) là">File <code>*-xoi.zip</code> đầu tiên cạnh <code>choi.bat</code>, không có thì file <code>.zip</code> đầu tiên (hoặc thứ bạn kéo thả vào)</td><td data-label="Sửa thành">Một bản mod luôn chơi: file <code>.zip</code> hoặc thư mục</td></tr>
           <tr><td><code>NOTES</code></td><td data-label="Để trống (mặc định) là"><code>&lt;tên&gt;-notes.txt</code> hoặc <code>xoi-&lt;tên&gt;\notes.txt</code> cạnh <code>choi.bat</code>, nếu có</td><td data-label="Sửa thành">Một file bộ nhớ để thêm vào bản mod</td></tr>
-          <tr><td><code>VE</code></td><td data-label="Để trống (mặc định) là">Cách vẽ mặc định của game</td><td data-label="Sửa thành"><code>opengl</code> hoặc <code>software</code> khi cửa sổ chỉ xanh hay đen</td></tr>
+          <tr><td><code>VE</code></td><td data-label="Để trống (mặc định) là">OpenGL — và cách vẽ thường dùng của game khi OpenGL không mở được</td><td data-label="Sửa thành"><code>software</code> khi cửa sổ chỉ xanh hay đen; <code>gpu</code>, <code>opengl</code>, <code>direct3d11</code> để chọn hẳn một cách</td></tr>
         </table>
       </div>
       <p class="note en">The kit's <code>scripts</code> folder holds the game scripts with the newest INSANE! and XOI. When they are
@@ -579,7 +581,7 @@
           <tr><td><code>... khong phai file zip</code></td><td data-label="What to do">A <code>.rar</code> or <code>.7z</code>: extract it (7-Zip) and drag the folder onto <code>choi.bat</code>.</td></tr>
           <tr><td><code>khong co data/data.txt</code></td><td data-label="What to do">Not an LF2 game folder: pick the folder that has <code>data\data.txt</code> (where the mod's <code>.exe</code> is).</td></tr>
           <tr><td>The difficulty never goes past Difficult</td><td data-label="What to do">The hidden content is locked: on the start screen open <i>Options</i> and tick <i>Unlock hidden characters</i>, or type <kbd>lf2.net</kbd>.</td></tr>
-          <tr><td>The game window stays blue or black</td><td data-label="What to do"><code>VE=opengl</code> (or <code>software</code>) at the top of <code>choi.bat</code>.</td></tr>
+          <tr><td>The game window stays blue or black</td><td data-label="What to do"><code>VE=software</code> at the top of <code>choi.bat</code>. Started some other way, OpenLF2 from version 29 of this build checks by itself that its renderer shows pictures and changes it when not.</td></tr>
           <tr><td><i>Windows protected your PC</i></td><td data-label="What to do"><i>More info</i>, then <i>Run anyway</i>.</td></tr>
           <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="What to do">PowerShell is blocked on this PC. By hand: open the mod's zip (7-Zip), go into the folder that has <code>data</code>, and drag in the folder <code>xoi-&lt;mod&gt;\goi\xoi</code>.</td></tr>
           <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="What to do">A training window was closed or failed: the pairs it finished are kept; the lines with <code>ERROR</code> say why.</td></tr>
@@ -596,7 +598,7 @@
           <tr><td><code>... khong phai file zip</code></td><td data-label="Cách xử lý">File <code>.rar</code> hay <code>.7z</code>: giải nén (7-Zip) rồi kéo thư mục vào <code>choi.bat</code>.</td></tr>
           <tr><td><code>khong co data/data.txt</code></td><td data-label="Cách xử lý">Không phải thư mục game LF2: chọn thư mục có <code>data\data.txt</code> (nơi có file <code>.exe</code> của bản mod).</td></tr>
           <tr><td>Mức khó không qua được Difficult</td><td data-label="Cách xử lý">Nội dung ẩn đang khóa: ở màn hình khởi động mở <i>Options</i>, tích <i>Unlock hidden characters</i>, hoặc gõ <kbd>lf2.net</kbd>.</td></tr>
-          <tr><td>Cửa sổ game chỉ xanh hay đen</td><td data-label="Cách xử lý"><code>VE=opengl</code> (hoặc <code>software</code>) ở đầu <code>choi.bat</code>.</td></tr>
+          <tr><td>Cửa sổ game chỉ xanh hay đen</td><td data-label="Cách xử lý"><code>VE=software</code> ở đầu <code>choi.bat</code>. Mở game theo cách khác thì OpenLF2 từ bản 29 của bản dựng này tự kiểm tra cách vẽ có hiện hình không và tự đổi khi không.</td></tr>
           <tr><td><i>Windows protected your PC</i></td><td data-label="Cách xử lý"><i>More info</i>, rồi <i>Run anyway</i>.</td></tr>
           <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="Cách xử lý">Máy chặn PowerShell. Làm tay: mở file zip bản mod (7-Zip), vào thư mục có <code>data</code>, kéo thư mục <code>xoi-&lt;tên&gt;\goi\xoi</code> vào đó.</td></tr>
           <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="Cách xử lý">Một cửa sổ huấn luyện bị đóng hoặc lỗi: những cặp nó đã xong vẫn được giữ; các dòng có <code>ERROR</code> cho biết lý do.</td></tr>

@@ -14,7 +14,8 @@ set "PACK="
 rem Bo nho XOI cua ban mod (notes.txt cua nguoi da huan luyen). De trong thi tim <ten ban mod>-notes.txt hoac
 rem xoi-<ten ban mod>\notes.txt canh file nay. File *-xoi.zip da co san bo nho thi khong can.
 set "NOTES="
-rem Bo ve hinh: de trong la mac dinh; may nao cua so game chi xanh tron thi doi thanh opengl (hoac software).
+rem Cach ve hinh. De trong: opengl (cach ve "gpu" mac dinh cua game de cua so xanh tron, khong hinh, o vai may),
+rem va neu opengl khong mo duoc thi cach ve mac dinh cua game. Hoac ghi han: opengl, software, gpu, direct3d11.
 set "VE="
 rem =====================================
 
@@ -121,15 +122,20 @@ if defined MOI (
     echo May INSANE ban !V_CAI! cua game da cai
   )
 )
-set "XR="
+set "XR=--renderer opengl"
 if defined VE set "XR=--renderer %VE%"
 
 echo Game: %GAME%
 echo Ban mod: %PACK%
 echo Chon nhan vat, them may (Com), o dong muc kho bam qua CRAZY la toi INSANE, roi XOI.
 "%GAME%" %XR% %XS% --pack "%PACK%"
+if errorlevel 1 if not defined VE (
+  echo.
+  echo Cach ve opengl khong mo duoc tren may nay - thu lai voi cach ve mac dinh cua game ...
+  "%GAME%" %XS% --pack "%PACK%"
+)
 if errorlevel 1 (
   echo.
-  echo Game dung voi loi ^(xem cac dong o tren^). Cua so game chi xanh tron: sua dong VE=opengl o dau file.
+  echo Game dung voi loi ^(xem cac dong o tren^). Cua so game chi xanh hay den: sua dong VE o dau file ^(opengl, software^).
   pause
 )

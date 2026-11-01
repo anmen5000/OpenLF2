@@ -56,8 +56,9 @@ smart.levels = {
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 27
+smart.version = 28
 smart.history = {
+    {28, "2026-11-01", "Keeps its distance from a fallen enemy, on shallow stages too. Stepping off the line of an enemy that is down, it counted the room left in depth from where it stood, so the room shrank with every step and on a stage only 60 deep (Hot Springs in Naruto: The Setting Dawn) the side flipped every few steps: the fighter walked to and fro on the fallen enemy's line until it got up. The room is now counted from the enemy's line, and the frames to get there count crossing it. And the step in depth that an enemy can take once up, before it strikes, is reckoned while it is still down: reckoned only once it was up, a fighter that had stepped just off its line was inside its blows again as it rose (Rock Lee waited right beside a fallen Neji, and was struck as he rose more often than before); where the stage has no room for that depth, the fighter backs out of reach instead. Blows taken from enemies just up again, on three shallow stages of Naruto 2.4: 2,485 damage instead of 3,511; against version 27, 312–293 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld. (Waiting out of the enemy's plain arms at any depth was tried: fewer such blows, but the enemy just up had the first move, 136–168 in Naruto 2.4.)"},
     {27, "2026-11-01", "Knows its own untouchable forms: a body kept only on a far layer (a mod's own interactions, 1000 and more off the visible one) is out of reach of every blow but those aimed at that layer, reckoned for each opponent; a form whose frames are all out there (Drake's T-rex, Magellan's Venom Demon in One Piece GrandWorld) is worth entering for that alone and is fought in up close, its own run or creeping walk steered onto the opponent's line and stopped with its own key, and the guard's way into a form (Magellan's) no longer ends at its first frame. A move that restores HP (Marco's phoenix) is measured with HP missing and used when much lost HP can come back and nothing reaches the fighter meanwhile; the roll out of a run is learned with what follows it (Marco's phoenix flight), and a flight that steers in depth is flown onto the target's line. A grab is worth what follows it (measured) and is no blow to guard; a trap is never set again on an opponent already held (Yamato's wood prison, cast on and on from afar in Naruto 2.4, kept both fighters standing for good) — the held opponent is walked up to and struck. Short of MP with a charge of its own, the fighter backs off far enough to charge rather than waiting at the edge of the opponent's reach. XOI: notes of training by situation (what the opponent was doing, how far it was, the fighter's own HP) and of the spots found better or worse to stand on, used within narrow bounds"},
     {26, "2026-11-01", "No more turning left and right on the spot: a turn round is a step too (a direction key turns the fighter and walks it), so a step back from an enemy much too close goes on until turning round again leaves room, the edges of an enemy's reach and of a fallen enemy's wake-up blows are waited at rather than stepped in and out of, the way out of them once chosen is kept, and walking turns the fighter round at most once every few frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way out, not only in its first frames: its line is walked beside even while the enemy charges MP or is busy for a moment, and a run is not steered back onto the line while a wave flies along it"},
     {25, "2026-11-01", "Gets out of the way with a move of its own when no step does: a teleport, a rush or a leap whose path no blow on its way meets (Kuma of One Piece GrandWorld vanishes and comes down behind the enemy — the keys a mod's jump takes are now learned as moves), taken when the guard cannot hold the blow, or it is a heavy one and MP is left for a strong move after it, or the move strikes back; otherwise the guard, in time; a teleport lands where the game puts it (behind the enemy when the move turns the fighter round). XOI, the level after INSANE!, plays as INSANE! with notes of training shipped with the mod (xoi/notes.txt): each move weighed by what it brought against this opponent in many games, and the opponent's answers to a risky move expected from what training saw"},
@@ -3865,28 +3866,37 @@ function smart.control(state, index)
                 memory.respecting = state.frame_number
                 local low = self.hp < 120
                 if low then zone_z, zone_x = zone_z + 6, zone_x + 30 end
-                -- (On its feet already, it can step in depth before it strikes: a step's worth more.)
-                if not target_down then zone_z = zone_z + 6 end
+                -- (On its feet, it can step in depth before it strikes: a step's worth more — reckoned while it is
+                -- still down too, as that is where its blows reach once it is up. Counted only from then, a fighter
+                -- just off its line was inside again as it rose, and on a shallow stage with no room left for the
+                -- step, caught there: Rock Lee beside a fallen Neji, Hot Springs in Naruto: The Setting Dawn. With
+                -- no room for it, the way out is back out of their reach.)
+                zone_z = zone_z + 6
                 if abs(dz) < zone_z then
                     local movement = self.record.movement or {}
-                    local tz = (zone_z - abs(dz)) / (movement.walking_speedz or 2)
                     local tx = (zone_x - distance) / (movement.walking_speed or 4)
                     local away = dx > 0 and -1 or 1
                     local walled = (away < 0 and self.x_int < 80) or (away > 0 and self.x_int > width - 80)
-                    -- The side of its line we are on, when there is room there; else the other (and the side
-                    -- once chosen is kept: at its very depth, the side we are on changes with every step).
+                    -- The side of its line we are on, when the stage has room there for the zone's depth; else the
+                    -- other (and the side once chosen is kept: at its very depth, the side we are on changes with
+                    -- every step). The room is counted from its line, where the zone is, not from us: counted from
+                    -- us it shrank as we walked there, and on a shallow stage (Hot Springs in Naruto: The Setting
+                    -- Dawn, 60 deep) the side flipped every few steps — the fighter walked to and fro on the line
+                    -- of the fallen enemy until it got up.
+                    local function room_on(side) return side < 0 and (target.z_int - near_z) or (far_z - target.z_int) end
                     local side = memory.wake_side or (dz > 0 and -1 or 1)
-                    local room = side < 0 and (self.z_int - near_z) or (far_z - self.z_int)
-                    if room < zone_z + 4 then
-                        side = -side
-                        room = side < 0 and (self.z_int - near_z) or (far_z - self.z_int)
-                    end
+                    if room_on(side) < zone_z + 1 and room_on(-side) > room_on(side) then side = -side end
+                    local room = room_on(side)
                     memory.wake_side = side
+                    -- Frames to be out in depth: from where we are, across its line first when the side with room
+                    -- is the other one.
+                    local across = (side < 0) ~= (dz > 0)
+                    local tz = (zone_z + (across and abs(dz) or -abs(dz))) / (movement.walking_speedz or 2)
                     -- (And the way out once chosen — in depth or back along x — is kept: each step changes which
                     -- is quicker, and the fighter otherwise went one way and the other in turn.)
                     local way = memory.wake_way
                     if not way then
-                        way = ((tz <= tx or walled) and room >= zone_z + 4 or walled) and "z" or "x"
+                        way = ((tz <= tx or walled) and room >= zone_z + 1 or walled) and "z" or "x"
                         memory.wake_way = way
                     end
                     if way == "x" and not walled then want_dx = away else want_dz = side end
@@ -3895,7 +3905,9 @@ function smart.control(state, index)
                 else
                     memory.wake_way = nil
                     -- Off its line: keep this depth; in x, about our own range away (not beside it: a step in
-                    -- depth would put it back on us).
+                    -- depth would put it back on us). (Not farther: waiting out of its plain arms instead, the fighter
+                    -- took fewer blows from enemies getting up but left them the first move — 136–168 against version
+                    -- 27 in Naruto: The Setting Dawn.)
                     local away = dx > 0 and -1 or 1
                     local walled = (away < 0 and self.x_int < 80) or (away > 0 and self.x_int > width - 80)
                     want_dx = positioning.keep_distance(self, dx, distance, range - 15, range + 10, not walled) * (dx > 0 and 1 or -1)
@@ -3921,7 +3933,7 @@ function smart.control(state, index)
                     local zone_z = wake_zone(target, target_analysis, d)
                     if zone_z > 0 then
                         if self.hp < 120 then zone_z = zone_z + 6 end
-                        if not target_down then zone_z = zone_z + 6 end
+                        zone_z = zone_z + 6
                     end
                     if zone_z > 0 and abs(dz) < zone_z then
                         want_dx = facing_away and -toward or 0
