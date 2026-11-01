@@ -18,6 +18,9 @@
 --              decaying as a / (total / 10 + k)^0.602 and c / k^0.101 at the chain's k-th iteration
 --   seed       the chain's own random numbers (pairs, stages, nudges)
 --   ids        fighter ids to draw pairs from (all a player can choose when absent); limit: frames per game
+--   stall      a game in which nobody loses HP for this many frames ends there (default 1800, a minute; 0: never),
+--              scored as at the limit: a mod's training dummy that only stands, or two fighters that cannot reach
+--              each other, says nothing about the numbers and only costs time
 --   chains     (merge) module returning the chains' end numbers, {{name = value, ...}, ...}
 --   games      (check) game pairs to play
 -- Output: "SPSA it ..." per iteration and the chain's end numbers as "{...}, --SPSA_END"; the merge prints the
@@ -102,9 +105,13 @@ local function play(config, fighters, backgrounds, row, first, second, swap)
         local own, other = state.items[10 + smart_slot], state.items[11 - smart_slot]
         own.brain, other.brain = "smart", "smart@" .. (config.alt or "spsa_alt")
         local held = {functions = "", function_presses = "", keys = {}}
+        local stall, quiet, own_hp, other_hp = config.stall or 1800, 0, own.hp, other.hp
         for _ = 1, config.limit or 9000 do
             match.step(state, held)
             if state.round_counter > 0 then break end
+            if own.hp < own_hp or other.hp < other_hp then quiet = 0 else quiet = quiet + 1 end
+            own_hp, other_hp = own.hp, other.hp
+            if stall > 0 and quiet >= stall then break end
         end
         local mine, theirs = max(own.hp, 0), max(other.hp, 0)
         local score = 0

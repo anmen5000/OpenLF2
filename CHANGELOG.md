@@ -85,7 +85,12 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   `spsa.bat`, which runs it on every thread of a PC over the mods beside it, round after round, resumable; it says
   how long each round took and about how long the rest will take (also kept in `spsa\thoi-gian.txt`), gives the
   check's result for each mod as well as in all, and runs fewer processes than CPU threads on a PC short of memory
-  (about 0.6 GB a process at most, 4 GB kept for Windows)
+  (about 0.6 GB a process at most, 4 GB kept for Windows); a process still running at four times the time half of them
+  took (and at least 10 minutes more) is taken as stuck and stopped, the round going on without it
+- AI bench: a game of the `spsa` and `learn` jobs in which nobody loses HP for a minute (`stall`, 1800 frames) ends
+  there, scored as at the time limit — a mod's training dummy that only stands (One Piece GrandWorld's Dummy, OPLoS's
+  TrainingBot) kept every game of its pairs to the limit, so the XOI training window with those pairs finished long
+  after the others; other games are untouched (Naruto 2.4 training and tuning frame for frame the same)
 - INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
   is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
   flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the

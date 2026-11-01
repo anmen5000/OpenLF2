@@ -290,18 +290,37 @@ exit /b 0
 rem --- Cho moi tien trinh xong: dong cuoi %2 trong out.txt, hoac xong.txt (game tat, ke ca khi loi) ---
 rem (THU_WINE: chi dung dong cuoi - khi thu file nay bang Wine, cmd khong cho game chay xong.)
 :cho
-set /a CHO=0
+set /a CHO=0, NHIP=-1
+if not defined DOI_THEM set /a DOI_THEM=600
 :cho_tiep
 ping -n 6 127.0.0.1 >nul 2>&1
-set /a XONG=0
+set /a XONG=0, TOT=0
 for /L %%k in (1,1,%N%) do (
   set "X="
+  set "Y="
+  if exist "%~1\p%%k\out.txt" findstr /c:"%~2" "%~1\p%%k\out.txt" >nul 2>&1 && set "Y=1"
+  if defined Y set "X=1"
   if not defined THU_WINE if exist "%~1\p%%k\xong.txt" set "X=1"
-  if not defined X if exist "%~1\p%%k\out.txt" findstr /c:"%~2" "%~1\p%%k\out.txt" >nul 2>&1 && set "X=1"
   if defined X set /a XONG+=1
+  if defined Y set /a TOT+=1
 )
 if !XONG! GEQ %N% exit /b 0
 set /a CHO+=5
+rem Mot nua so tien trinh xong (co dong cuoi) thi dat nhip: tien trinh nao con chay qua 4 lan nhip ay, va qua it
+rem nhat 10 phut (DOI_THEM giay) sau nhip, coi nhu bi treo (game dung o mot cho, hay hop bao loi cua Windows) -
+rem dung no va lam tiep voi cac tien trinh da xong, de mot cua so treo khong giu ca dem.
+set /a "NUA=TOT*2"
+if !NUA! GEQ %N% if !NHIP! LSS 0 set /a NHIP=CHO
+if !NHIP! GEQ 0 (
+  set /a "HAN=NHIP*4, HAN2=NHIP+DOI_THEM"
+  if !HAN2! GTR !HAN! set /a HAN=HAN2
+  if !CHO! GEQ !HAN! (
+    set /a CON_LAI=N-XONG
+    echo   [CHU Y] !CON_LAI! tien trinh chay qua lau ^(qua 4 lan nua so kia^) - dung chung, lam tiep voi !XONG!/%N% tien trinh.
+    call :dung_treo "%~1"
+    exit /b 0
+  )
+)
 set /a PHUT=CHO%%60
 rem Moi phut: bao tien do; khong con openlf2.exe nao chay ma van thieu thi mot cua so tien trinh da bi dong, thoi cho.
 if !PHUT! EQU 0 (
@@ -312,6 +331,17 @@ if !PHUT! EQU 0 (
   )
 )
 goto cho_tiep
+
+rem --- Dung game cua cac tien trinh chua xong trong thu muc %1 (tim theo duong dan --mod "...\p<k>"; cua so tu dong) ---
+:dung_treo
+for /L %%k in (1,1,%N%) do (
+  if not exist "%~1\p%%k\xong.txt" (
+    set "TREO=%~1\p%%k"
+    >>"%LV%\thoi-gian.txt" echo   Dung tien trinh bi treo: !TREO!
+    powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:TREO + [char]34) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+  )
+)
+exit /b 0
 
 rem --- Cho dong %2 xuat hien trong file %1 (toi da khoang mot phut) ---
 :cho_dong

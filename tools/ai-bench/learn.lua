@@ -24,6 +24,9 @@
 -- config.brains = {"smart", "smart"} by default ("xoi" plays with the notes given, to train further on top of
 -- them: config.notes names a module of this package returning {text = <the notes>}). Each pair's lines are written as
 -- soon as its games are over, so that a job stopped half-way keeps what it did; a game that fails is left out.
+-- config.limit: frames per game (9000); config.stall: a game in which nobody loses HP for this many frames ends there
+-- (default 1800, a minute; 0: never) — a mod's training dummy that only stands (One Piece GrandWorld's Dummy,
+-- OPLoS's TrainingBot) kept every game of its pairs to the limit.
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -172,6 +175,7 @@ function learn.run(config)
         local last_spot = {}
         local held = {functions = "", function_presses = "", keys = {}}
         tick = 0
+        local stall, quiet = config.stall or 1800, 0
         while tick < (config.limit or 9000) do
             tick = tick + 1
             match.step(state, held)
@@ -205,8 +209,10 @@ function learn.run(config)
                     if tick > window.ends then close(window); open[value] = nil end
                 end
             end
+            if hp[a] > a.hp or hp[b] > b.hp then quiet = 0 else quiet = quiet + 1 end
             hp[a], hp[b] = a.hp, b.hp
             if state.round_counter > 0 then break end
+            if stall > 0 and quiet >= stall then break end
         end
         for value, window in pairs(open) do close(window); open[value] = nil end
         for value in pairs(foe_of) do settle(value, tick) end

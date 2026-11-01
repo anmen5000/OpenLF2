@@ -163,6 +163,9 @@ After each round it gives the round's minutes and about how long the rest will t
 check's result comes for each mod as well as in all. A pair takes a process about 1 to 2 seconds with LuaJIT (Naruto
 2.4 1.0, OPLoS 2.1X 1.1, One Piece GrandWorld 1.7, KT-LF2 2.1; PUC Lua 2.5 to 5 times as long), and a process holds up
 to about half a GB once it has met its mod's fighters (fewer chains on a PC short of memory: 0.6 GB each, 4 GB kept).
+A chain still running at four times the time half of them took (and 10 minutes more) is stopped as stuck. In `spsa`
+and `learn`, a game in which nobody loses HP for `stall` frames (1800, a minute; 0: never) ends there: a training
+dummy that only stands kept its games to the time limit.
 Tuned numbers are taken into the AI only after they beat its own over the usual measures (`duel` against the
 previous version on the standard pairs of several mods).
 

@@ -25,7 +25,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    A pair (CAP) is two games, same fighters and stage, sides swapped; a round (VONG) is CAP pairs in every
    process, then the processes' numbers are averaged. After each round it says how long the round took and
    about how long the rest will take. Several mods at once: put their .zip files next to it; the processes
-   are dealt out among them in turn, and the check (KIEM_TRA) gives each mod's result too.
+   are dealt out among them in turn, and the check (KIEM_TRA) gives each mod's result too. A game in which
+   nobody loses HP for a minute ends there, and a window stuck far longer than the others is stopped.
 6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
@@ -59,7 +60,8 @@ chơi được chính các file của bản mod.
    Một cặp (CAP) là hai trận, cùng nhân vật và sân, đổi bên; một vòng (VONG) là CAP cặp ở mọi tiến trình,
    rồi lấy trung bình các số của các tiến trình. Hết mỗi vòng, file in vòng ấy mất bao lâu và còn khoảng
    bao lâu. Nhiều bản mod cùng lúc: đặt các file .zip cạnh nó; các tiến trình chia lần lượt cho từng bản
-   mod, và phần kiểm tra (KIEM_TRA) cho cả kết quả của từng bản mod.
+   mod, và phần kiểm tra (KIEM_TRA) cho cả kết quả của từng bản mod. Trận nào một phút không ai mất máu thì
+   dừng ở đó, và cửa sổ nào treo lâu hơn hẳn các cửa sổ khác thì bị dừng.
 6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 
