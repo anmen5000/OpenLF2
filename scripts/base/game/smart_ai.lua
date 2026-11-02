@@ -59,33 +59,39 @@ smart.levels = {
 smart.tune_ranges = {
     -- How a move's hit is weighed (attack_score): the sureness lost per frame the target is free to act, its floor,
     -- the part left when the target's answer could come first, how much a standoff's boldness lowers the expected
-    -- guard, the price of MP and HP a move costs, the frames that halve a blow's worth (time_bias 10: 14/(t + 10)),
+    -- guard, the price of MP and HP a move costs, the frames that halve a blow's worth (time_bias b: 14/(t + b) * b/10),
     -- the share of the target's counter counted when the fighter is still busy as it could land, the price per
     -- frame left open after the blow, and the pull of a move not yet tried or the push of one just used.
-    {"sure_decay", 0.04, 0.01, 0.1}, {"sure_floor", 0.2, 0.05, 0.5}, {"danger_sure", 0.6, 0.3, 1},
-    {"guard_aggression", 0.5, 0, 1}, {"mp_cost", 0.06, 0, 0.15}, {"hp_cost", 0.5, 0, 1.5},
-    {"time_bias", 10, 4, 25}, {"counter_price", 0.7, 0.2, 1.5}, {"open_cost", 0.2, 0, 0.6},
-    {"novelty", 1.1, 1, 1.4}, {"repeat_factor", 0.85, 0.5, 1},
+    {"sure_decay", 0.0518097, 0.01, 0.1}, {"sure_floor", 0.149675, 0.05, 0.5}, {"danger_sure", 0.651264, 0.3, 1},
+    {"guard_aggression", 0.510426, 0, 1}, {"mp_cost", 0.0728747, 0, 0.15}, {"hp_cost", 0.512323, 0, 1.5},
+    {"time_bias", 8.96876, 4, 25}, {"counter_price", 0.573046, 0.2, 1.5}, {"open_cost", 0.119825, 0, 0.6},
+    {"novelty", 1.0844, 1, 1.4}, {"repeat_factor", 0.884091, 0.5, 1},
     -- The score a move needs to be started, on the ground or from a jump; frames between jump-ins.
-    {"attack_threshold", 2.5, 0.5, 6}, {"jump_cooldown", 50, 15, 120, true},
+    {"attack_threshold", 2.38656, 0.5, 6}, {"jump_cooldown", 48, 15, 120, true},
     -- Boldness: frames without a blow before a standoff makes the fighter bolder, and over how many more it grows
     -- to the full; how bold it is against an opponent that hardly attacks.
-    {"calm_start", 90, 30, 240}, {"calm_span", 150, 50, 400}, {"passive_aggression", 0.6, 0.2, 1},
+    {"calm_start", 91.0397, 30, 240}, {"calm_span", 151.314, 50, 400}, {"passive_aggression", 0.583288, 0.2, 1},
     -- The answer expected to a risky move: the chance before anything is seen (XOI's notes set their own) and how
     -- many risky moves' worth that guess counts for; the share of the target's strongest blow a strike out of its
     -- guard is reckoned to cost; how much heavier a blow must be to trade with a threat landing as it does.
-    {"risk_prior", 0.25, 0.05, 0.6}, {"risk_weight", 4, 1, 12}, {"guard_counter", 0.5, 0.1, 1},
-    {"trade_factor", 1.3, 0.8, 2.5},
+    {"risk_prior", 0.246865, 0.05, 0.6}, {"risk_weight", 3.28654, 1, 12}, {"guard_counter", 0.353181, 0.1, 1},
+    {"trade_factor", 1.13503, 0.8, 2.5},
     -- Spacing: how much an enemy's quick blows must threaten a spot for it to be left, and how much more as a
     -- standoff drags on; beyond longer arms, how far out to wait, and how far to charge MP from when short of it.
-    {"keep_out_base", 30, 5, 70}, {"keep_out_aggression", 60, 0, 120},
-    {"hold_margin", 15, -10, 60, true}, {"charge_gap", 115, 60, 220, true},
+    {"keep_out_base", 25.5549, 5, 70}, {"keep_out_aggression", 58.2205, 0, 120},
+    {"hold_margin", 13, -10, 60, true}, {"charge_gap", 117, 60, 220, true},
     -- A fallen enemy's wake-up blows: the margins of their zone in depth and in x, the step in depth it can take
     -- once up, and, off its line, how near and how far from the fighter's own range to wait.
-    {"wake_margin_z", 8, 0, 20, true}, {"wake_margin_x", 24, 0, 60, true}, {"wake_step", 6, 0, 14, true},
-    {"off_line_near", 15, -10, 40, true}, {"off_line_far", 10, -10, 40, true},
+    {"wake_margin_z", 7, 0, 20, true}, {"wake_margin_x", 25, 0, 60, true}, {"wake_step", 6, 0, 14, true},
+    {"off_line_near", 16, -10, 40, true}, {"off_line_far", 8, -10, 40, true},
     -- Charging MP: how far beyond the target's quick reach, and how much below full MP.
-    {"charge_room", 85, 30, 180, true}, {"charge_below", 80, 20, 200, true},
+-- (Version 29: the values tuned by play, tools/ai-bench/spsa.lua over 40 rounds on 99 threads; the ones set by hand
+-- before were sure_decay 0.04, sure_floor 0.2, danger_sure 0.6, guard_aggression 0.5, mp_cost 0.06, hp_cost 0.5,
+-- time_bias 10, counter_price 0.7, open_cost 0.2, novelty 1.1, repeat_factor 0.85, attack_threshold 2.5,
+-- jump_cooldown 50, calm_start 90, calm_span 150, passive_aggression 0.6, risk_prior 0.25, risk_weight 4,
+-- guard_counter 0.5, trade_factor 1.3, keep_out_base 30, keep_out_aggression 60, hold_margin 15, charge_gap 115,
+-- wake_margin_z 8, wake_margin_x 24, wake_step 6, off_line_near 15, off_line_far 10, charge_room 85, charge_below 80.)
+    {"charge_room", 76, 30, 180, true}, {"charge_below", 85, 20, 200, true},
 }
 local tune = {}
 for _, entry in ipairs(smart.tune_ranges) do tune[entry[1]] = entry[2] end
@@ -104,8 +110,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 28
+smart.version = 29
 smart.history = {
+    {29, "2026-11-02", "Its 31 numbers tuned by play (SPSA, as chess engines tune theirs): 40 rounds on the project owner's 99 threads over the original LF2, Naruto 2.4 and One Piece GrandWorld, about 850,000 pairs of games, each pair two INSANE! players with every number nudged opposite ways and the numbers moved toward the better one. The tuned player is a little bolder and surer: it reckons a strike out of the opponent's guard to cost less (guard_counter 0.5 to 0.35), and so a counter while it is still busy (counter_price 0.7 to 0.57) and a frame left open after its blow (open_cost 0.2 to 0.12); it trades blows sooner (trade_factor 1.3 to 1.14), trusts a hit on a target long free to act less (sure_decay 0.04 to 0.052, sure_floor 0.2 to 0.15), holds MP dearer (mp_cost 0.06 to 0.073) and waits a little nearer (keep_out_base 30 to 26). Against version 28: 37,441 to 34,541 over 76,286 games of the tuning's own check (52.0% of the games won by either; the original LF2 52.8%, Naruto 51.2%, One Piece 51.2%); 297 to 311 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either way); against CRAZY! 150 to 9 over four mods, version 28 153 to 6 on the same games"},
     {28, "2026-11-01", "Keeps its distance from a fallen enemy, on shallow stages too. Stepping off the line of an enemy that is down, it counted the room left in depth from where it stood, so the room shrank with every step and on a stage only 60 deep (Hot Springs in Naruto: The Setting Dawn) the side flipped every few steps: the fighter walked to and fro on the fallen enemy's line until it got up. The room is now counted from the enemy's line, and the frames to get there count crossing it. And the step in depth that an enemy can take once up, before it strikes, is reckoned while it is still down: reckoned only once it was up, a fighter that had stepped just off its line was inside its blows again as it rose (Rock Lee waited right beside a fallen Neji, and was struck as he rose more often than before); where the stage has no room for that depth, the fighter backs out of reach instead. Blows taken from enemies just up again, on three shallow stages of Naruto 2.4: 2,485 damage instead of 3,511; against version 27, 312–293 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld. (Waiting out of the enemy's plain arms at any depth was tried: fewer such blows, but the enemy just up had the first move, 136–168 in Naruto 2.4.)"},
     {27, "2026-11-01", "Knows its own untouchable forms: a body kept only on a far layer (a mod's own interactions, 1000 and more off the visible one) is out of reach of every blow but those aimed at that layer, reckoned for each opponent; a form whose frames are all out there (Drake's T-rex, Magellan's Venom Demon in One Piece GrandWorld) is worth entering for that alone and is fought in up close, its own run or creeping walk steered onto the opponent's line and stopped with its own key, and the guard's way into a form (Magellan's) no longer ends at its first frame. A move that restores HP (Marco's phoenix) is measured with HP missing and used when much lost HP can come back and nothing reaches the fighter meanwhile; the roll out of a run is learned with what follows it (Marco's phoenix flight), and a flight that steers in depth is flown onto the target's line. A grab is worth what follows it (measured) and is no blow to guard; a trap is never set again on an opponent already held (Yamato's wood prison, cast on and on from afar in Naruto 2.4, kept both fighters standing for good) — the held opponent is walked up to and struck. Short of MP with a charge of its own, the fighter backs off far enough to charge rather than waiting at the edge of the opponent's reach. XOI: notes of training by situation (what the opponent was doing, how far it was, the fighter's own HP) and of the spots found better or worse to stand on, used within narrow bounds"},
     {26, "2026-11-01", "No more turning left and right on the spot: a turn round is a step too (a direction key turns the fighter and walks it), so a step back from an enemy much too close goes on until turning round again leaves room, the edges of an enemy's reach and of a fallen enemy's wake-up blows are waited at rather than stepped in and out of, the way out of them once chosen is kept, and walking turns the fighter round at most once every few frames. A wave sent along the ground across the stage (Neji's air palm in Naruto 2.4) is reckoned all the way out, not only in its first frames: its line is walked beside even while the enemy charges MP or is busy for a moment, and a run is not steered back onto the line while a wave flies along it"},

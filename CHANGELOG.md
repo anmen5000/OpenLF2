@@ -96,6 +96,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   there, scored as at the time limit — a mod's training dummy that only stands (One Piece GrandWorld's Dummy, OPLoS's
   TrainingBot) kept every game of its pairs to the limit, so the XOI training window with those pairs finished long
   after the others; other games are untouched (Naruto 2.4 training and tuning frame for frame the same)
+- INSANE!/XOI v29: the 31 numbers of its judgement tuned by play (SPSA, `spsa.bat`): 40 rounds on the project
+  owner's 99 threads over the original LF2, Naruto 2.4 and One Piece GrandWorld, about 850,000 pairs of games. A
+  little bolder — a strike out of the opponent's guard, a counter while still busy and a frame left open after a blow
+  reckoned cheaper (guard_counter 0.5 to 0.35, counter_price 0.7 to 0.57, open_cost 0.2 to 0.12), trades taken sooner
+  (trade_factor 1.3 to 1.14) — and surer: a hit on a target long free to act trusted less (sure_decay 0.04 to 0.052),
+  MP held dearer (mp_cost 0.06 to 0.073), waiting a little nearer (keep_out_base 30 to 26). Against v28: 52.0% of the
+  76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
+  51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
+  way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
 - INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
   is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
   flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the
