@@ -105,6 +105,21 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
   51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
   way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
+- Network play in the browser: the network in a corner of the game while in a room — the ping to whoever keeps the
+  beat (the relay, or the host's page: on the host's page its slowest player's), which way the frames come (`direct`
+  or `relay`), how unevenly the frames of the last 5 seconds came (`jitter`, ms between the earliest and the latest,
+  beat for beat; orange from 100 ms) and, when it is more than half a second, how far behind the newest frame the
+  game runs (`behind`); for Hero Fighter the ping and the way, at the bottom in the middle (its own panels take
+  the corners). The relay is timed in every room now, also without direct connections
+- Hero Fighter rooms: direct links between the players' pages (`dist/pages/hf-direct.js`). The game's socket is the
+  page's own object: it talks to the relay as before (the relay stays the room's server and passes every frame on)
+  and besides passes the game's frames straight to the other pages of the fight over WebRTC, the game taking each
+  other game's frame once and in order from whichever way brings it first, and never one of another fight (the relay
+  numbers the fights, `{"t":"fight"}`, and announces who is in the room, `{"t":"peers"}`). On one LAN a frame takes
+  a millisecond or two instead of the way to the relay and back. A link that never opens or breaks only means the
+  frames come the usual way. The page shows the links under the game (`Network: direct links: …`, and after a fight
+  how many frames came directly); the room's journal has the links of each fight and those counts.
+  `?hfdirect=0` plays through the relay only
 - Network play in the browser: direct connections. The game pages of a room also connect to the host's page
   directly (WebRTC data channels, set up through the relay; public STUN servers for players on different
   networks) and time both ways; when every player reaches the host directly, none more than 10 ms later than
@@ -189,7 +204,19 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
-- Mods: VS and Stage mode (and every screen with the character list) no longer stop at a black screen on a
+- Network play in the browser, the host's page keeping the beat: a network packet lost between the pages (as on
+  Wi-Fi) no longer holds the other players' game up. A lost packet on WebRTC's reliable channel held up everything
+  after it until it was sent again, a quarter of a second or more (longer on Wi-Fi), then the frames came at once: the
+  players saw the host's moves late, then fast. Version 2 links (both pages say so on the link) number the game's
+  messages and send each also on a second channel that never sends again what was lost, with the 7 before it, so
+  a lost one comes with the next, 33 ms later. With 3% of packets lost (two Chromium pages): the longest wait for a
+  frame 268 ms before, 67 ms now; 99% of frames within 110 ms of their time before, 10 ms now
+- Hero Fighter rooms: a fight in Battle mode no longer goes out of step when a player who plays as player 2 (no
+  player 1 on that computer, as with the W A S D keys) hires a hero: the game reads player 2's hire number from
+  `<n1>` (a slip in its Console.receiveData), so every other game hired the first hero on the list instead of the
+  one chosen; the relay (and the pages, for direct frames) put that number in `<n1>` too. And a game's frames go on
+  to the others as its packet comes, up to 10 ms sooner than the original's 10 ms rounds
+ (and every screen with the character list) no longer stop at a black screen on a
   `data/data.txt` that the original reads although its object list is untidy — the list is read as the original reads
   it, word by word, each `id:` with the five words after it whatever the two keywords say, any other word passed
   over (the One Piece mod OPLoS 2.1X, `OPLoS2.1X.exe`, has `fileb:` for `file:` in one record and lines holding a

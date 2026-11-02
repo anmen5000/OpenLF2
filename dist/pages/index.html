@@ -82,6 +82,8 @@
   progress#progress[hidden] { display: none; }
   @media (max-width: 480px) { .wrap { padding: 0 1rem; } #play { padding: 1.25rem; } }
   p#status { margin: .9rem 0 0; color: var(--text-dim); font-size: .92rem; min-height: 1.3em; }
+  p#hf-net { margin: .3rem 0 0; color: var(--text-dim); font-size: .85rem; }
+  .stage:not(.hf) .hf-corner { display: none !important; } /* Hero Fighter's ping (hero-fighter.js), only with it */
   .stage {
     position: relative;
     background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border);
@@ -236,6 +238,7 @@
       </div>
       <progress id="progress" hidden></progress>
       <p id="status" role="status">Loading WebAssembly…</p>
+      <p id="hf-net" hidden></p>
       <div class="stage" id="stage">
         <canvas id="canvas" width="794" height="550" tabindex="0" aria-label="OpenLF2 game canvas"></canvas>
       </div>
@@ -278,11 +281,13 @@
      without an invite link find it set (and its mods listed); a relay typed on the page or in a link wins. -->
 <script>window.OPENLF2_RELAY = 'wss://sybilproxy.com/lf2-relay/relay';</script>
 <script src="online.js"></script>
+<script src="hf-direct.js"></script>
 <script src="hero-fighter.js"></script>
 <script>
   const installer = document.getElementById('installer');
   const start = document.getElementById('start');
   const status = document.getElementById('status');
+  const hfNet = document.getElementById('hf-net'); // Hero Fighter's direct links (hf-direct.js)
   const log = document.getElementById('log');
   const canvas = document.getElementById('canvas');
   const fullscreenButton = document.getElementById('fullscreen');
@@ -709,6 +714,7 @@
       hfPlayer = await HeroFighter.start({
         stage, movie, site: new URL('.', location.href).href, relay: window.OpenLF2Online ? OpenLF2Online.relay : '',
         status: text => { status.textContent = text; }, log: message,
+        net: text => { hfNet.textContent = text ? 'Network: ' + text : ''; hfNet.hidden = !text; },
       });
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       status.textContent = 'Running Hero Fighter. Log in with any e-mail and password for Network Game; '

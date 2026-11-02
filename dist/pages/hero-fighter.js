@@ -2,7 +2,8 @@
 //
 // Hero Fighter v0.7+ on the game page: the game (a Flash movie, inside the Windows program of its ZIP
 // file) runs in Ruffle, a Flash player in WebAssembly the site keeps in ruffle/. What it needs online
-// goes to the relay (tools/relay/hf.js): its accounts, room list and rooms. The movie comes from the
+// goes to the relay (tools/relay/hf.js): its accounts, room list and rooms; in a room, the pages also pass
+// the game's frames to each other directly when they can (hf-direct.js). The movie comes from the
 // relay (its admin uploads it once) or from a file the player selects; the browser keeps it.
 //
 //   HeroFighter.movieFrom(blob)       the movie (Uint8Array) in a .swf, a projector .exe or a ZIP of one; or null
@@ -277,9 +278,33 @@ window.HeroFighter = (() => {
 
   // ---- Running the game ----------------------------------------------------------------------------
   // options: stage (element), movie (Uint8Array), site (the page's folder URL), relay (wss://… or ''),
-  //          status(text), log(text). Returns the Ruffle player element.
+  //          status(text), log(text), net(text): how the room's direct links are ('' for nothing to say).
+  //          Returns the Ruffle player element.
   async function start(options) {
     const { stage, site, status, log } = options;
+    // Direct links between the pages of a room (hf-direct.js), when this browser makes them; hfdirect=0 in the
+    // page's address plays through the relay only.
+    // In a room, the ping at the bottom of the game (as for LF2: online.js), from the same figures: in the middle,
+    // as the game's own panels take its corners (the troops and the language on the left, the map on the right).
+    const corner = document.createElement('div');
+    corner.className = 'hf-corner';
+    corner.hidden = true;
+    corner.setAttribute('aria-hidden', 'true');
+    corner.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:4px;z-index:5;pointer-events:none;padding:2px 7px;'
+      + 'border-radius:5px;background:rgba(0,0,0,.5);color:#fff;font:600 12px/1.45 system-ui,sans-serif;white-space:nowrap;'
+      + 'text-shadow:0 1px 1px #000';
+    const direct = !/[?&]hfdirect=0(&|$)/.test(location.search) && Boolean(window.HfDirect && window.HfDirect.install(window, {
+      status: (text, figures) => {
+        if (typeof options.net === 'function') options.net(text);
+        if (!figures) {
+          corner.hidden = true;
+          return;
+        }
+        corner.textContent = `Ping ${figures.ping === null ? '…' : `${Math.round(figures.ping)} ms`} · ${figures.way}`;
+        corner.hidden = false;
+      },
+      log,
+    }));
     status('Starting Ruffle (the Flash player)…');
     // The site's Ruffle (ruffle/: built with OpenLF2's change when that build worked), or with ruffle=stock in the
     // page's address the stock one beside it (ruffle-stock/), if the site has it.
@@ -333,7 +358,8 @@ window.HeroFighter = (() => {
         const info = await response.json();
         for (const room of info.rooms || []) {
           sockets.push({ host: info.host, port: room.port,
-            proxyUrl: relay + (relay.includes('?') ? '&' : '?') + 'game=hf&room=' + room.room + '&build=' + encodeURIComponent(build) });
+            proxyUrl: relay + (relay.includes('?') ? '&' : '?') + 'game=hf&room=' + room.room + '&build=' + encodeURIComponent(build)
+              + (direct ? '&direct=1' : '') });
         }
         rewrites.push([/^https?:\/\/s\.herofighter\.com\//, relayHttp + 'hf/s/']);
         rewrites.push([/^https?:\/\/(www\.)?herofighter\.com\/hf\//, relayHttp + 'hf/hf/']);
@@ -348,6 +374,7 @@ window.HeroFighter = (() => {
     player.className = 'hf-player';
     player.tabIndex = 0;
     stage.appendChild(player);
+    stage.appendChild(corner);
     addTouchControls(stage, player);
     status('Loading Hero Fighter…');
     await player.ruffle().load({

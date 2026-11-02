@@ -108,7 +108,10 @@ connection, an older page — the relay keeps the beat as before. The Online pan
 the times) in the lobby and during play. With the host keeping the beat, the room ends when the
 host leaves, and the host's tab should stay open (its beat runs in a worker, which a hidden tab does
 not slow down). As in any game played directly, the players' and the host's IP addresses are known
-to each other's browsers.
+to each other's browsers. Between pages of this version, each link has a second channel that never
+sends again what was lost (a datagram): the game's messages are numbered and each also goes there with
+the 7 before it, so a packet lost on the way (Wi-Fi) costs 33 ms instead of holding everything up until
+it is sent again. During play the game's corner shows the ping, `direct` or `relay`, and the jitter.
 
 When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
@@ -147,6 +150,17 @@ the game itself is not changed, except for two regular expressions Ruffle reads 
   its connection ("Synchronization error"), which ends the match for everyone; the relay compares
   them itself and, when two differ, ends that fight only (the games go back to the room's menu,
   with a notice) so that the players can start another.
+- Direct links: a page that adds `&direct=1` (`dist/pages/hf-direct.js`, in browsers with WebRTC) also
+  passes its game's frames straight to the other pages of the fight, and gives its game the others'
+  frames from whichever way brings each first (once each, in order). The relay stays the room's server
+  and still passes everything on. It greets such a page with `{"t":"hello","id":…}` (text), tells it who
+  else in the room does so (`{"t":"peers","cid":…,"peers":[{"id","cid","name"}]}`), passes on what two
+  pages need to link (`{"t":"signal","to"|"from":<id>,"data":…}`), numbers each fight just before its
+  `<allstartedgame>` (`{"t":"fight","n":…,"ids":[…]}`: a page takes no frame of another fight), answers
+  `{"t":"ping","at":…}` with a pong, and writes the pages' reports to the journal (each link with its
+  round trip, and after a fight how many of the others' frames came directly).
+- Player 2's hire: the game reads the hero number of a hire by player 2 from `<n1>` (a slip in it): the
+  relay puts it there too, else the other games hired another hero and the fight went out of step.
 - Journal: each room keeps the last 400 lines of what happened in it — who joined (with the page's
   build and the client address), the fights started (mode, difficulty, settings, fighters, latencies),
   pauses, leaves, timeouts, and every out-of-step check with the latencies, the last packets, the
@@ -213,7 +227,10 @@ only, as `{"t":"signal","from":<id>,"data":…}`) and `{"t":"ping","n":…}` (an
 the host's page sends `{"t":"beat","by":"host"}` before START when it will keep the beat, and the
 relay then tells every page `{"t":"beat","by":"host","host":<id>}` before STARTED, sends no frames,
 takes no INPUT, READY or CHECK, tells the host's page `{"t":"left","id":<id>}` when a player's
-connection closes, and ends the room when the host leaves. `/healthz` says `"direct":true`.
+connection closes, and ends the room when the host leaves. `/healthz` says `"direct":true`. On the
+links themselves (pages of this version say `{"t":"hello","v":2}` there), the game's messages are
+numbered: `[0xF0][number of the last u32 LE][count u8]` then each `[length u16 LE][message]`, oldest first,
+once on the reliable channel and, with the ones before it, on the datagram channel `lf2-fast`.
 
 Protocol 1, two players (older game pages): `ws(s)://host/relay?role=host|join&room=<code>`. The
 relay answers with JSON text frames `{"t":"waiting","room":"…"}` and then `{"t":"paired"}`; after

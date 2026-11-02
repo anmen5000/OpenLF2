@@ -465,6 +465,45 @@ test('on one LAN the host\'s page keeps the beat: the same frames for all, keys 
   }
 });
 
+test('on a LAN that loses packets (Wi-Fi), the players\' frames do not stall: a lost one comes with the next', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  // One packet in 20 lost: on the reliable channel it comes 300 ms late and holds up the ones after it.
+  const wifi = fakeWebRtc({ delay: 1, loss: 0.05, stall: 300, seed: 7 });
+  try {
+    await startedGames(relay, 3, [0, 1, 2].map(() => ({ oneWay: 25, rtc: wifi })), games, hostKeepsTheBeat);
+    for (const game of games) assert.equal(game.online.beatBy, 'host');
+    for (const game of games.slice(1)) {
+      const link = game.online.links.get('host');
+      assert.equal(link.version, 2);
+      assert.ok(link.fast && link.fast.readyState === 'open', 'the datagram channel is open');
+    }
+    let pressed = 0;
+    await Promise.all(games.map((game, index) => game.play({
+      until: (self) => self.frames.length >= 150,
+      input: (self) => {
+        if (index === 2) {
+          if (!pressed && self.frames.length && self.frames.at(-1).number >= 60) pressed = self.frames.at(-1).number;
+          return { players: [pressed ? 'c' : '-'] };
+        }
+        return { players: [Math.floor(performance.now() / 70) % 2 ? 'r' : '-'] };
+      },
+    })));
+    assertLockstep(games);
+    for (const game of games) {
+      const { mean, worst } = pacing(game, 20);
+      assert.ok(mean > 31 && mean < 36, `${game.online.role}: frames every ${mean.toFixed(1)} ms`);
+      assert.ok(worst < 120, `${game.online.role}: longest gap ${worst.toFixed(1)} ms (a stall of the reliable channel is 300)`);
+    }
+    // A guest's keys still get to the host's beat quickly, though some of its packets are lost.
+    const used = games[0].frames.find((frame) => frame.slots.split(',')[6] === 'c').number;
+    assert.ok(used - pressed <= 3, `pressed on frame ${pressed}, used on frame ${used}`);
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
 test('a player who cannot connect directly, or whose page cannot: the relay keeps the beat', { skip }, async () => {
   for (const third of [{ rtc: fakeWebRtc({ blocked: true }) }, { rtc: null }]) {
     const relay = await startRelay();

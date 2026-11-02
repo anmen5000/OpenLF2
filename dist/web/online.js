@@ -66,7 +66,17 @@
     samples: 5, // round trips kept (their median counts)
     slack: 10, // ms a player's direct connection may be slower than his way through the relay
     input: 16, queue: 64, // the relay's limits (ROOM_LIMITS)
+    // Version 2 links (both pages say so on the link): the game's messages numbered, each on the reliable
+    // channel once and on a second channel that never sends again what was lost (a datagram), together
+    // with the few before it. A lost packet on the reliable channel holds up everything after it until it
+    // is sent again (a quarter of a second or more, worse on Wi-Fi); the next datagram brings it 33 ms later.
+    version: 2,
+    fastLabel: 'lf2-fast',
+    again: 8, // messages each datagram repeats (the newest last)
+    datagram: 1100, // bytes a datagram holds at most (one network packet)
+    held: 512, // messages kept that came after a missing one
   });
+  const NUMBERED = 0xf0; // first byte of a numbered message (protocol 2 kinds are below 0x87)
   const EMPTY = new Uint8Array(0);
 
   class OnlineTransport {
@@ -113,6 +123,9 @@
       this.beat = null; // the host's page, keeping the beat
       this.incoming = EMPTY; // relay messages not yet complete
       this.outgoing = EMPTY; // game messages not yet complete
+      // For the corner of the game (netStats): frames as they came, and the last one the game ran and checked.
+      this.arrivals = []; // [frame number, ms]
+      this.lastRun = -1;
     }
 
     // Ends direct connections and the beat (before reset()).
@@ -208,6 +221,9 @@
     // Queues bytes for the relay. Returns false with error() set when it cannot.
     send(bytes) {
       this.sendError = '';
+      eachPacket(bytes, (kind, payload) => {
+        if (kind === KIND.check && payload.length >= 4) this.lastRun = readU32(payload, 0);
+      });
       const socket = this.socket;
       if (!socket || this.state !== STATUS.connected || socket.readyState !== OPEN) {
         this.sendError = 'Network peer is not connected';
@@ -235,7 +251,7 @@
             if (this.beat) this.beat.receive(this.id, kind, payload.slice());
           } else {
             const link = this.links.get('host');
-            if (!link || !link.send(whole.slice())) {
+            if (!link || !link.sendGame(whole.slice())) {
               ok = false;
               this.lostHost();
             }
@@ -305,7 +321,7 @@
         if (message.t === 'welcome' && message.v === 2 && this.state !== STATUS.connected) {
           this.state = STATUS.connected;
           this.id = Number(message.id) || 0;
-          if (message.direct && typeof this.RTCPeerConnection === 'function' && this.id) this.startDirect(message.direct);
+          if (message.direct && this.id) this.startDirect(message.direct);
           this.emit();
         } else if (message.t === 'room') {
           this.players = Number(message.players) || 0;
@@ -336,6 +352,44 @@
     receive(bytes) {
       this.chunks.push(bytes);
       this.buffered += bytes.length;
+      const at = now();
+      eachPacket(bytes, (kind, payload) => {
+        if (kind !== KIND.frame || payload.length < 4) return;
+        this.arrivals.push([readU32(payload, 0), at]);
+        if (this.arrivals.length > 300) this.arrivals.splice(0, this.arrivals.length - 200);
+      });
+    }
+
+    // How the network is, for the corner of the game: the round trip (ms) to whoever keeps the beat (the
+    // relay or the host's page; on the host's page, to its slowest player), which way, how unevenly the
+    // frames of the last 5 seconds came (ms between the earliest and the latest, beat for beat), and how
+    // far behind the newest frame the game runs (ms, when it is more than the frames' usual wait).
+    netStats() {
+      if (this.state !== STATUS.connected) return null;
+      const direct = this.beatBy === 'host' && this.started;
+      let ping = null;
+      if (direct && this.role === 'host') {
+        const times = [...this.links.values()].filter((link) => link.open).map((link) => median(link.times)).filter(Number.isFinite);
+        ping = times.length ? Math.max(...times) : 0;
+      } else if (direct || (!this.started && this.role !== 'host' && this.links.get('host') && this.links.get('host').open)) {
+        ping = median(this.links.get('host') ? this.links.get('host').times : []);
+      } else {
+        ping = median(this.relayTimes);
+      }
+      const way = direct || (!this.started && ping !== null && this.links.get('host') && this.links.get('host').open) ? 'direct' : 'relay';
+      const at = now();
+      const recent = this.arrivals.filter(([, time]) => at - time < 5000);
+      let jitter = null;
+      if (this.started && recent.length >= 10) {
+        const offsets = recent.map(([frame, time]) => time - frame * this.tickMs);
+        jitter = Math.max(...offsets) - Math.min(...offsets);
+      }
+      let behind = null;
+      if (this.started && this.lastRun >= 0 && recent.length) {
+        // CHECKs come every 8 frames: the game is somewhere in the 8 after the last one.
+        behind = Math.max(0, recent[recent.length - 1][0] - this.lastRun - 8) * this.tickMs;
+      }
+      return { ping, way, jitter, behind, host: this.role === 'host' };
     }
 
     // ---- Direct connections -------------------------------------------------------------------
@@ -345,7 +399,8 @@
       this.rules = {
         repeat: Number(rules.repeat) || 15, grace: Number(rules.grace) || 5000, buffered: Number(rules.buffered) || 1048576,
       };
-      if (this.role !== 'host') this.links.set('host', new Link(this, 'host', true));
+      // (Without WebRTC, no links: the relay keeps the beat; the round trips to it still show in the corner.)
+      if (this.role !== 'host' && typeof this.RTCPeerConnection === 'function') this.links.set('host', new Link(this, 'host', true));
       this.pingTimer = setInterval(() => this.ping(), DIRECT.pingMs);
       this.ping();
     }
@@ -388,6 +443,7 @@
         try { message = JSON.parse(data); } catch (error) { return; }
         if (!message) return;
         if (message.t === 'ping') link.say({ t: 'pong', at: message.at });
+        else if (message.t === 'hello') link.greeted(Number(message.v) || 0);
         else if (message.t === 'pong' && Number.isFinite(message.at)) {
           addSample(link.times, now() - message.at);
           // What the host's page weighs at START: both ways, from here.
@@ -401,14 +457,18 @@
         return;
       }
       const bytes = new Uint8Array(data);
-      if (this.role !== 'host') {
-        if (this.beatBy === 'host') this.receive(bytes);
-        return;
+      // A numbered message (version 2 links): the game's messages in it not had yet, in order; the rest as it is.
+      const parts = bytes[0] === NUMBERED ? link.unwrap(bytes) : [bytes];
+      for (const part of parts) {
+        if (this.role !== 'host') {
+          if (this.beatBy === 'host') this.receive(part.slice());
+          continue;
+        }
+        link.pending = Uint8Array.from(splitPackets(concatBytes(link.pending, part), (kind, payload) => {
+          if (this.beat) this.beat.receive(link.id, kind, payload.slice());
+          else link.early.push([kind, payload.slice()]);
+        }));
       }
-      link.pending = Uint8Array.from(splitPackets(concatBytes(link.pending, bytes), (kind, payload) => {
-        if (this.beat) this.beat.receive(link.id, kind, payload.slice());
-        else link.early.push([kind, payload.slice()]);
-      }));
     }
 
     linkChanged(link) {
@@ -558,6 +618,11 @@
       this.early = []; // its messages that came before the beat began (host's page)
       this.queue = Promise.resolve();
       this.channel = null;
+      this.offerer = offerer;
+      this.version = 1; // the other page's (its hello on the link; pages before version 2 say nothing)
+      this.fast = null; // version 2: the datagram channel
+      this.sent = { number: 0, recent: [] }; // the game's messages out: the last number, the newest few
+      this.got = { number: 0, held: new Map() }; // and in: the last taken, those after a missing one
       try {
         this.pc = new online.RTCPeerConnection({ iceServers: online.iceServers });
       } catch (error) {
@@ -585,16 +650,44 @@
     }
 
     attach(channel) {
+      if (channel.label === DIRECT.fastLabel) return this.attachFast(channel);
       this.channel = channel;
       channel.binaryType = 'arraybuffer';
       channel.onopen = () => {
         if (this.closed) return;
         this.open = true;
         clearTimeout(this.timer);
+        this.say({ t: 'hello', v: DIRECT.version });
         this.online.linkChanged(this);
       };
       channel.onclose = () => this.close();
       channel.onmessage = (event) => { if (!this.closed) this.online.onLinkMessage(this, event.data); };
+    }
+
+    // The datagram channel (version 2): only the game's numbered messages; losing it loses nothing.
+    attachFast(channel) {
+      if (this.fast || this.closed) {
+        try { channel.close(); } catch (error) { /* closed */ }
+        return;
+      }
+      this.fast = channel;
+      channel.binaryType = 'arraybuffer';
+      channel.onclose = () => { if (this.fast === channel) this.fast = null; };
+      channel.onmessage = (event) => {
+        if (!this.closed && typeof event.data !== 'string') this.online.onLinkMessage(this, event.data);
+      };
+    }
+
+    // The other page's hello: from version 2 on, numbered messages, and the page that offered the link
+    // opens the datagram channel (on the link as it is: no new set-up through the relay).
+    greeted(version) {
+      if (this.closed || version <= this.version) return;
+      this.version = version;
+      if (version >= 2 && this.offerer && !this.fast) {
+        try {
+          this.attachFast(this.pc.createDataChannel(DIRECT.fastLabel, { ordered: false, maxRetransmits: 0 }));
+        } catch (error) { /* the reliable channel alone */ }
+      }
     }
 
     // The other page's offer, answer or route (in order: a route may not come before its offer).
@@ -619,6 +712,64 @@
       try { this.channel.send(bytes); } catch (error) { return false; }
       return true;
     }
+
+    // One of the game's messages (protocol 2, whole): with a version 2 page numbered, on the reliable channel
+    // and in a datagram with the few before it; else as it is.
+    sendGame(bytes) {
+      if (this.version < 2) return this.send(bytes);
+      const sent = this.sent;
+      sent.number = (sent.number + 1) >>> 0;
+      sent.recent.push(bytes);
+      if (sent.recent.length > DIRECT.again) sent.recent.shift();
+      const ok = this.send(numbered(sent.number, [bytes]));
+      const fast = this.fast;
+      if (ok && fast && fast.readyState === 'open' && fast.bufferedAmount < DIRECT.datagram * 16) {
+        let size = 6;
+        let from = sent.recent.length;
+        while (from > 0 && size + 2 + sent.recent[from - 1].length <= DIRECT.datagram) {
+          from -= 1;
+          size += 2 + sent.recent[from].length;
+        }
+        if (from < sent.recent.length) {
+          try { fast.send(numbered(sent.number, sent.recent.slice(from))); } catch (error) { /* the reliable copy */ }
+        }
+      }
+      return ok;
+    }
+
+    // A numbered message: the game's messages in it that come next (in order, each once), keeping those
+    // after one that has not come yet.
+    unwrap(bytes) {
+      if (bytes.length < 6) return [];
+      const last = (bytes[1] | (bytes[2] << 8) | (bytes[3] << 16) | (bytes[4] << 24)) >>> 0;
+      const count = bytes[5];
+      const items = [];
+      for (let at = 6; items.length < count && at + 2 <= bytes.length;) {
+        const length = bytes[at] | (bytes[at + 1] << 8);
+        if (at + 2 + length > bytes.length) return [];
+        items.push(bytes.subarray(at + 2, at + 2 + length));
+        at += 2 + length;
+      }
+      const got = this.got;
+      const out = [];
+      items.forEach((item, k) => {
+        const number = last - (items.length - 1 - k);
+        if (number <= got.number || got.held.has(number)) return;
+        if (number !== got.number + 1) {
+          if (got.held.size < DIRECT.held) got.held.set(number, item.slice());
+          return;
+        }
+        out.push(item);
+        got.number = number;
+        for (let next = got.held.get(got.number + 1); next; next = got.held.get(got.number + 1)) {
+          got.held.delete(got.number + 1);
+          out.push(next);
+          got.number += 1;
+        }
+      });
+      return out;
+    }
+
     say(message) { if (this.open) this.send(JSON.stringify(message)); }
     ping() { this.say({ t: 'ping', at: now() }); }
     buffered() { return this.channel ? this.channel.bufferedAmount : 0; }
@@ -629,10 +780,12 @@
       const wasOpen = this.open;
       this.open = false;
       clearTimeout(this.timer);
-      if (this.channel) {
-        this.channel.onopen = this.channel.onclose = this.channel.onmessage = null;
-        try { this.channel.close(); } catch (error) { /* closed */ }
+      for (const channel of [this.channel, this.fast]) {
+        if (!channel) continue;
+        channel.onopen = channel.onclose = channel.onmessage = null;
+        try { channel.close(); } catch (error) { /* closed */ }
       }
+      this.fast = null;
       if (this.pc) {
         this.pc.onicecandidate = this.pc.onconnectionstatechange = this.pc.ondatachannel = null;
         try { this.pc.close(); } catch (error) { /* closed */ }
@@ -701,7 +854,7 @@
       const link = this.online.links.get(member.id);
       if (!link || !link.open) return this.leave(member.id);
       if (link.buffered() > this.rules.buffered) return this.drop(member);
-      if (!link.send(message)) this.leave(member.id);
+      if (!link.sendGame(message)) this.leave(member.id);
     }
 
     startBeat() {
@@ -821,6 +974,41 @@
 
   const now = () => (root.performance && root.performance.now ? root.performance.now() : Date.now());
 
+  // Each whole protocol 2 message in `bytes` (a part message at the end is left).
+  function eachPacket(bytes, each) {
+    for (let at = 0; at + 3 <= bytes.length;) {
+      const length = bytes[at + 1] | (bytes[at + 2] << 8);
+      if (at + 3 + length > bytes.length) return;
+      each(bytes[at], bytes.subarray(at + 3, at + 3 + length));
+      at += 3 + length;
+    }
+  }
+  function readU32(bytes, at) {
+    return (bytes[at] | (bytes[at + 1] << 8) | (bytes[at + 2] << 16) | (bytes[at + 3] << 24)) >>> 0;
+  }
+
+  // A numbered message (version 2 links): NUMBERED, the number of the last message in it (4 bytes, little
+  // endian), how many, then each (2 bytes of length, the message), the oldest first.
+  function numbered(last, messages) {
+    let size = 6;
+    for (const message of messages) size += 2 + message.length;
+    const bytes = new Uint8Array(size);
+    bytes[0] = NUMBERED;
+    bytes[1] = last & 255;
+    bytes[2] = (last >>> 8) & 255;
+    bytes[3] = (last >>> 16) & 255;
+    bytes[4] = (last >>> 24) & 255;
+    bytes[5] = messages.length;
+    let at = 6;
+    for (const message of messages) {
+      bytes[at] = message.length & 255;
+      bytes[at + 1] = message.length >> 8;
+      bytes.set(message, at + 2);
+      at += 2 + message.length;
+    }
+    return bytes;
+  }
+
   // A protocol 2 message: kind, payload length (2 bytes, little endian), payload.
   function packet(kind, payload) {
     const message = new Uint8Array(3 + payload.length);
@@ -913,6 +1101,45 @@
   }
 
   // The panel above the game: room code, invite link, relay address and connection status.
+  // The network in a corner of the game, while in a room: the ping, which way the frames come (direct or
+  // through the relay), how unevenly they came lately ("jitter"; much of it means the game waits now and
+  // then) and, when it does, how far behind the others the game runs.
+  function createCorner(online, document) {
+    const stage = document.getElementById('stage');
+    if (!stage) return;
+    const corner = document.createElement('div');
+    corner.id = 'online-corner';
+    corner.hidden = true;
+    corner.setAttribute('aria-hidden', 'true');
+    corner.style.cssText = 'position:absolute;left:8px;bottom:6px;z-index:5;pointer-events:none;padding:2px 7px;'
+      + 'border-radius:5px;background:rgba(0,0,0,.5);color:#fff;font:600 12px/1.45 system-ui,sans-serif;'
+      + 'letter-spacing:.01em;white-space:nowrap;text-shadow:0 1px 1px #000';
+    stage.appendChild(corner);
+    const ms = (value) => `${Math.round(value)} ms`;
+    const show = () => {
+      const stats = online.netStats();
+      if (!stats || stage.classList.contains('hf')) {
+        corner.hidden = true;
+        return;
+      }
+      const parts = [`Ping ${stats.ping === null ? '…' : ms(stats.ping)}`, stats.way === 'direct' ? 'direct' : 'relay'];
+      let trouble = false;
+      if (stats.jitter !== null) {
+        parts.push(`jitter ${ms(stats.jitter)}`);
+        trouble = stats.jitter >= 100;
+      }
+      if (stats.behind !== null && stats.behind >= 500) {
+        parts.push(`behind ${(stats.behind / 1000).toFixed(1)} s`);
+        trouble = true;
+      }
+      corner.textContent = parts.join(' · ');
+      corner.style.color = trouble ? '#ffb74d' : '#fff';
+      corner.hidden = false;
+    };
+    setInterval(show, 500);
+    online.onChange(show);
+  }
+
   function createPanel(online, document) {
     const stage = document.getElementById('stage') || document.getElementById('canvas');
     if (!stage || !stage.parentNode) return;
@@ -1095,7 +1322,10 @@
   if (!storageGet(STORAGE.room)) storageSet(STORAGE.room, online.room);
   root.OpenLF2Online = online;
   if (root.document) {
-    const build = () => createPanel(online, root.document);
+    const build = () => {
+      createPanel(online, root.document);
+      createCorner(online, root.document);
+    };
     if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', build);
     else build();
   }

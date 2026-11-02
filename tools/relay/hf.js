@@ -13,7 +13,9 @@
 //   GET  <relay folder>/hf/hf/rlg.php                 the room list: this relay's rooms
 //   GET  <relay folder>/hf/rooms.json                 the rooms for the page (its socket proxy settings)
 //   WebSocket <relay path>?game=hf&room=<n>&build=<b> room n (hf-room.js); b: the page's movie and Ruffle, which
-//                                                    must be the same for every game in a room
+//                                                    must be the same for every game in a room; &direct=1: the
+//                                                    page also passes frames to the others directly (WebRTC,
+//                                                    dist/pages/hf-direct.js), set up with text messages here
 // Accounts (name, a hash of the password, each character's level and experience, story progress)
 // are kept in <PACKS_DIR>/hf/accounts.json (or HF_DIR). Every story is open, and every character a player
 // may have is at level 16 from the start; the premium characters (and Yaga, whom the game keeps for
@@ -397,7 +399,9 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
     return true;
   }
 
-  // A game's socket to room n, through the page's WebSocket.
+  // A game's socket to room n, through the page's WebSocket: its bytes as binary messages both ways. A page
+  // with direct=1 (dist/pages/hf-direct.js) also passes the game's frames to the other pages of the room
+  // directly; its own messages for that are text (JSON), both ways.
   function connect(ws, req, url) {
     const number = Number(url.searchParams.get('room'));
     const room = rooms[number - 1];
@@ -405,6 +409,8 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
       ws.close(4000, 'Relay: no such Hero Fighter room');
       return;
     }
+    const direct = url.searchParams.get('direct') === '1';
+    const id = direct ? crypto.randomBytes(6).toString('hex') : '';
     const connection = new HfConnection(room, {
       write(text) {
         if (ws.readyState !== 1) return;
@@ -414,14 +420,18 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         }
         ws.send(Buffer.from(text, 'utf8'), { binary: true });
       },
+      say(message) { if (ws.readyState === 1) ws.send(JSON.stringify(message)); },
       close() { if (ws.readyState === 0 || ws.readyState === 1) ws.close(1000, 'Relay: room left'); },
-    }, { address: clientAddress(req), build: String(url.searchParams.get('build') || '').replace(/[^\w.+-]/g, '').slice(0, 80) });
-    ws.on('message', (data) => {
+    }, { address: clientAddress(req), build: String(url.searchParams.get('build') || '').replace(/[^\w.+-]/g, '').slice(0, 80), id, direct });
+    if (direct) ws.send(JSON.stringify({ t: 'hello', v: 1, id }));
+    ws.on('message', (data, isBinary) => {
       if (budget && !budget(ws, data.length)) {
         ws.close(4007, 'Relay: too much traffic');
         return;
       }
-      connection.receive(Buffer.isBuffer(data) ? data : Buffer.from(data));
+      const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (direct && isBinary === false) connection.control(bytes.toString('utf8'));
+      else connection.receive(bytes);
     });
     ws.on('close', () => connection.closed());
   }

@@ -180,6 +180,23 @@ function tagValue(doc, name, index = 0) {
   return valueOf(byTag(doc, name)[index]);
 }
 
+// ---- Frames ------------------------------------------------------------------------------------------
+// A frame of a game's keys: <f><c>computer</c><i>frame</i> and, per player n (1 to 3), its keys (<pn>, <sn>)
+// and a troop command (<mn> what, <nn> which hero to hire, <in> which troop). The game reads the frames of
+// the others with a slip (Console.receiveData): player 2's hire number from <n1>, not <n2>. A computer's
+// troop panel commands for its first player only, so a frame has one command at most; but when that
+// player is player 2 (a computer with no player 1, as with W A S D), every other game hired the first
+// hero on the list instead of the one chosen, and the fight went out of step ("Battle", OUT OF STEP in
+// the journal). So player 2's number goes in <n1> too, which the game then reads. (dist/pages/hf-direct.js
+// does the same for the frames the pages pass each other directly.)
+function fixCommandNumber(line) {
+  if (line.indexOf('<m2>') < 0 || line.indexOf('<n1>') >= 0) return line;
+  const number = /<n2>([^<]*)<\/n2>/.exec(line);
+  const end = line.lastIndexOf('</f>');
+  if (!number || end < 0) return line;
+  return `${line.slice(0, end)}<n1>${number[1]}</n1>${line.slice(end)}`;
+}
+
 // ---- A room ------------------------------------------------------------------------------------------
 
 function newMan() { // as
@@ -225,6 +242,7 @@ class HfRoom {
     // frame, so that the cause can be looked for afterwards.
     this.journal = [];
     this.winReported = false; // h.c
+    this.fights = 0; // fights begun, numbered for the pages that pass frames directly (announceFight)
     this.build = null; // the build of the games in the room (acceptsBuild)
     this.steps = new Map(); // frame -> the random numbers used by then, as the first game reported it
     this.outOfStep = false;
@@ -324,6 +342,46 @@ class HfRoom {
     countdown.on = true;
     countdown.action = 'quitgame';
     countdown.count = 1;
+  }
+
+  // ---- Direct links (dist/pages/hf-direct.js): pages that say so (direct=1) also pass their game's frames
+  // straight to the other pages of the room over WebRTC, and each game takes whichever copy of a frame
+  // comes first; everything else, and every frame too, still goes through here as before. The room tells
+  // these pages who else is in it, passes on what they need to set up a link, and numbers the fights, so
+  // that a page never takes a frame of another fight.
+
+  // The game with this connection id among those in the room that pass frames directly.
+  directPeer(id) {
+    for (const slot of this.online()) if (slot.connection.direct && slot.connection.id === id) return slot.connection;
+    return null;
+  }
+
+  // Each such page learns the others (when the games in the room change), to link with them.
+  announcePeers() {
+    const games = this.online().map((slot) => slot.connection).filter((connection) => connection.direct);
+    for (const connection of games) {
+      connection.say({ t: 'peers', cid: connection.index, peers: games.filter((other) => other !== connection)
+        .map((other) => ({ id: other.id, cid: other.index, name: other.name })) });
+    }
+  }
+
+  // A fight begins (just before <allstartedgame>): its number and the pages fighting in it; in the journal,
+  // the direct links it may use.
+  announceFight() {
+    this.fights += 1;
+    const fighting = this.online().filter((slot) => slot.page !== 'WAITROOM').map((slot) => slot.connection);
+    const ids = fighting.filter((connection) => connection.direct).map((connection) => connection.id);
+    for (const slot of this.online()) slot.connection.say({ t: 'fight', n: this.fights, ids });
+    if (fighting.length < 2) return;
+    const links = [];
+    for (const a of fighting) {
+      for (const b of fighting) {
+        if (a.index >= b.index || !(a.links.has(b.id) || b.links.has(a.id))) continue;
+        const ms = [a.links.get(b.id), b.links.get(a.id)].filter(Number.isFinite);
+        links.push(`${a.name}-${b.name}${ms.length ? ` ${Math.min(...ms)} ms` : ''}`);
+      }
+    }
+    this.jot(`fight ${this.fights}: direct links ${links.join(', ') || 'none'}`);
   }
 
   // A line in the room's journal (kept: the last 400).
@@ -472,6 +530,7 @@ class HfRoom {
           // game builds the fight from this list once <allstartedgame> comes).
           this.broadcastMen(0);
           this.newSeed();
+          this.announceFight();
           this.broadcast('<allstartedgame></allstartedgame>');
         }
       }
@@ -677,13 +736,19 @@ class HfRoom {
 
 // ---- One computer in a room (the original's thread "i") -------------------------------------------
 
+const MESSAGE_LIMIT = 16384; // a page's own message (control), in characters
+
 class HfConnection {
-  // socket: { write(text), close() }; feed it the received bytes with receive(), and closed() at the end.
-  constructor(room, socket, { address = '', build = '' } = {}) {
+  // socket: { write(text), close(), say(message)? }; feed it the received bytes with receive(), the page's own
+  // messages (text, with direct) with control(), and closed() at the end.
+  constructor(room, socket, { address = '', build = '', id = '', direct = false } = {}) {
     this.room = room;
     this.socket = socket;
     this.address = address;
     this.build = build; // the page's movie and Ruffle (acceptsBuild)
+    this.id = id; // the room's name for this connection, for the pages' direct links
+    this.direct = Boolean(direct && id); // the page passes frames directly too (Room "Direct links")
+    this.links = new Map(); // id of another game -> round trip in ms (or null), the direct links this page reported
     this.index = -1; // n
     this.name = ''; // o
     this.cc = ''; // p
@@ -741,6 +806,46 @@ class HfConnection {
   send(text) { // i.a(String)
     if (this.ended) return;
     try { this.socket.write(text + '\n'); } catch { /* the closing follows */ }
+  }
+
+  // A message to the page itself (not to the game), for its direct links.
+  say(message) {
+    if (!this.direct || this.ended || typeof this.socket.say !== 'function') return;
+    try { this.socket.say(message); } catch { /* the closing follows */ }
+  }
+
+  // A message of the page's own: what another page needs to set up a direct link with it (passed on), or
+  // how its links went (for the journal).
+  control(text) {
+    if (!this.direct || this.ended || this.index < 0 || text.length > MESSAGE_LIMIT) return;
+    let message;
+    try { message = JSON.parse(text); } catch { return; }
+    if (!message || typeof message !== 'object') return;
+    const room = this.room;
+    if (message.t === 'ping') { // the page times its way here (for its corner of the game)
+      this.say({ t: 'pong', at: Number.isFinite(message.at) ? message.at : 0 });
+      return;
+    }
+    if (message.t === 'frames') { // after a fight: how many of the others' frames came directly
+      const direct = Math.max(0, Math.trunc(Number(message.direct) || 0));
+      const relayed = Math.max(0, Math.trunc(Number(message.relay) || 0));
+      if (direct + relayed > 0) room.jot(`${this.name}: ${direct} of the others' frames came directly, ${relayed} through the relay`);
+      return;
+    }
+    const other = room.directPeer(String(message.to || message.with || ''));
+    if (!other || other === this) return;
+    if (message.t === 'signal') {
+      other.say({ t: 'signal', from: this.id, data: message.data });
+    } else if (message.t === 'link') {
+      const ms = Number(message.ms);
+      if (message.open) {
+        const known = this.links.has(other.id);
+        this.links.set(other.id, Number.isFinite(ms) && ms >= 0 ? Math.round(ms) : null);
+        if (!known) room.jot(`${this.name}: direct link to ${other.name}${Number.isFinite(ms) && ms >= 0 ? ` (${Math.round(ms)} ms)` : ''}`);
+      } else if (this.links.delete(other.id)) {
+        room.jot(`${this.name}: direct link to ${other.name} closed`);
+      }
+    }
   }
 
   close() {
@@ -847,8 +952,9 @@ class HfConnection {
     }
     room.broadcastStatus();
     room.log(`hf room ${room.number}: ${this.name} (latency ${latency - 1}) joins`);
-    room.jot(`${this.name} joins (latency ${latency - 1}, build ${this.build || 'unknown'}, from ${this.address || '?'})${room.fightingNow ? ' during a fight' : ''}`);
+    room.jot(`${this.name} joins (latency ${latency - 1}, build ${this.build || 'unknown'}, from ${this.address || '?'}${this.direct ? ', direct links' : ''})${room.fightingNow ? ' during a fight' : ''}`);
     room.broadcastList(this.index, -1);
+    room.announcePeers();
     if (room.connected === 2 && room.fightingNow) {
       room.countdown.on = true;
       room.countdown.action = 'quitgame';
@@ -902,14 +1008,14 @@ class HfConnection {
       const frame = int(tagValue(doc, 'i'));
       if (frame === 1) room.winReported = false;
       if (this.lastFrame + 1 === frame) {
-        slot.frames[frame % FRAMES_KEPT] = line;
+        slot.frames[frame % FRAMES_KEPT] = fixCommandNumber(line);
         this.lastFrame = frame;
       }
       return;
     }
     if (kind === 'pk') { // the end of a packet: the others may get this game's frames
       slot.lastPacket = this.lastFrame;
-      this.requestFlushes();
+      this.requestFlushes(true);
       return;
     }
     if (kind === 't') {
@@ -1055,12 +1161,16 @@ class HfConnection {
     }
   }
 
-  // i.i(): this game's packet came; each other fighting game gets a send.
-  requestFlushes() {
+  // i.i(): this game's packet came (now: true) or it left; each other fighting game gets a send. The
+  // original's frame senders looked every 10 ms; a packet's frames go on at once here, up to 10 ms sooner.
+  requestFlushes(now = false) {
     const room = this.room;
     if (!room.fightingNow) return;
     for (let index = 0; index < CLIENTS; index += 1) {
-      if (index !== this.index && room.slots[index].fighting) room.slots[index].flushes += 1;
+      const other = room.slots[index];
+      if (index === this.index || !other.fighting) continue;
+      if (now && !room.starting && other.connection) other.connection.sendFrames();
+      else other.flushes += 1;
     }
   }
 
@@ -1129,6 +1239,7 @@ class HfConnection {
       room.log(`hf room ${room.number}: ${this.name} leaves`);
       room.jot(`${this.name} leaves${this.kicked ? ' (taken out)' : ''}${room.fightingNow ? ` during a fight, at frame ${slot.leftFrame}` : ''}`);
       room.recount();
+      room.announcePeers();
     }
     this.index = -1;
   }
@@ -1639,4 +1750,4 @@ class HfConnection {
   }
 }
 
-module.exports = { HfRoom, HfConnection, parseXml, byTag, valueOf, XmlError, VERSION, CLIENTS, CHARACTERS };
+module.exports = { HfRoom, HfConnection, parseXml, byTag, valueOf, XmlError, fixCommandNumber, VERSION, CLIENTS, CHARACTERS };
