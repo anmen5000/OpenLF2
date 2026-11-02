@@ -135,8 +135,9 @@ to latest release" attaches beside the Windows installers.
 
 ## Tuning INSANE!'s numbers (SPSA)
 
-The judgement of the INSANE! player — what a hit is worth against what it costs, the score a move needs, how bold a
-standoff makes it, how far to keep from longer arms or from a fallen enemy, when to charge MP — rests on 31 numbers
+The judgement of the INSANE! player — what a hit is worth against what it costs, the score a move needs, how far
+ahead it answers a blow on its way and when it guards, how bold a standoff makes it, how far to keep from longer arms
+or from a fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — rests on 77 numbers
 gathered in `smart.tune_ranges` at the top of `scripts/base/game/smart_ai.lua` (each with the range a tuning may try;
 `smart.tune` holds the values in use, `smart.set_tune(values)` lays a set over them). `spsa.lua` tunes them by play,
 the way chess engines tune theirs (SPSA: simultaneous perturbation stochastic approximation): each iteration nudges
@@ -152,7 +153,14 @@ side that did better, by how much better (a win counts 1 and the HP left above t
 {command = "spsa", step = "merge", chains = "spsa_chains", start = "spsa_start"}
 -- tuned numbers (spsa_start.lua) against the AI's own: "SPSA_CHECK <tuned wins> <own wins> <draws> <result>"
 {command = "spsa", step = "check", start = "spsa_start", games = 20, seed = 1}
+-- ... or against other numbers (spsa_base.lua: the run's start, say)
+{command = "spsa", step = "check", start = "spsa_start", base = "spsa_base", games = 20, seed = 1}
 ```
+
+A mod may carry its own numbers: `xoi/tune.txt` beside its `data` folder, "name = value" (the merge's `return {...}`
+line will do; numbers it does not name keep the AI's own). `smart.prepare` lays them over the AI's own numbers in every
+match of that mod — every machine of a network room has the mod's file, so the same numbers — and the match shows
+"mod tuned" beside the level. The tuner sets the numbers itself (`smart.tune_fixed`), whatever the mod carries.
 
 The gains are shares of each number's range: `a` (0.02) for the steps, `c` (0.08) for the nudges, decaying as
 `a / (total / 10 + k)^0.602` and `c / k^0.101`. A chain alone is noisy; many run side by side and their numbers are
@@ -164,7 +172,9 @@ played and its mod (`{n = ..., mod = ..., ...}, --SPSA_END`, and every `report` 
 the merge takes each mod's mean step per pair, every mod weighing the same, times the pairs a chain played on
 average; it prints `SPSA_K`, the next round's `first`. `windows/spsa.bat` does all of it on a PC: one chain per CPU
 thread at below-normal priority, the mods beside it shared among the chains, `VONG` rounds of `PHUT_VONG` minutes
-(12 × 5), then the tuned numbers against the AI's own for `PHUT_KIEM_TRA` minutes; it writes `spsa\ket-qua.txt`.
+(12 × 5), then the tuned numbers against those it started from for `PHUT_KIEM_TRA` minutes; it writes
+`spsa\ket-qua.txt`, and each mod's numbers to `xoi-<mod>\tune.txt` and into `<mod>-xoi.zip` (the mod with `xoi/tune.txt`,
+and XOI's notes if trained, inside). With one mod beside it, a run starts from that mod's numbers.
 Stopped half way (windows closed, the PC shut down), it goes on when started again: finished rounds stay, and the
 round under way keeps what its chains had reported (`spsa\vong-<n>\truoc\<attempt>\p<k>.txt`), merged with what
 a new attempt plays. After each round it gives the round's minutes and about how long the rest will take
@@ -202,7 +212,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
-| `spsa` | Tunes INSANE!'s numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against the AI's own. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `a`, `c`, `names`, `ids`, `limit` |
+| `spsa` | Tunes INSANE!'s numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against the AI's own (or `base`). | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows
 about a fighter and what it actually uses; a move it never starts has a reason worth finding (too slow for the

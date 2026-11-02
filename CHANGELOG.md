@@ -105,6 +105,38 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
   51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
   way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
+- INSANE!/XOI v30: no endless loops. A standoff with no blow between the two fighters for 300 frames free to act
+  (`loop_calm`, ten seconds and more) is taken for a loop, and then: a move tried again and again since the last
+  blow, all to no avail, is worth less with every try beyond three (`loop_free`, `loop_factor`, at least `loop_floor`
+  of its worth; its tries count with those of its family — how it starts and from where, whatever it continues into —
+  and one is forgotten every five seconds it is not tried, `loop_forget`), so something else gets its turn; no spot
+  is left for the enemy's blows any more, so one of the two comes in; and a thrower that has kept the fighter dodging
+  four times (`loop_dodges`) is jumped toward over its throws, when that jump clears them and lands outside its arms.
+  Before that, play is as in v29. Itachi's fireballs met Sai's ink birds for good in Naruto: The Setting Dawn (a game
+  played to its five-minute limit, 8,458 frames without a blow), and Gaara jumped Itachi's kunai on the spot for good.
+  A heavy item in hand (a stone, a log) is thrown, landing or not, once the target comes within its quick reach and
+  `heavy_room` (40) more: holding it the fighter can neither guard, jump nor strike, and Kakashi with a stone and Gaara
+  with a log stood face to face at a wall for good. And a fighter too close to its target at a wall no longer steps
+  back to the wall and turns round again every few frames (once walled, walled on that side for a second).
+  Against v29 on the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (two seeds, 640 games): 299–308
+  (Naruto 152–161, One Piece 147–147), as even as that many games can tell (±4%); over Itachi's 48 games against
+  every fighter of Naruto 2.4, the frames spent in standoffs beyond ten seconds fell from 8,890 to 2,058 and no game
+  ran out of time (one had). A first try that weighed the tries from the start of a match, without waiting for a
+  standoff, lost 209–233 on the same pairs: loops are rare, and play changes only once one is sure
+- INSANE!: 46 more numbers open to tuning by play, 77 in all — the 39 written into the code by hand until then
+  (how a free target's guard is expected, what knocking down, breaking a guard, freezing or burning add to a blow,
+  how far ahead blows on their way are answered and when the guard is raised, the margins of dodges, when an
+  opponent counts as passive, how dangerous a spot within an enemy's blows is, the distance kept, when a run starts
+  and stops, flips, charging, weapons, forms) keep their values, the same play frame for frame on Naruto 2.4, One
+  Piece GrandWorld, OPLoS and KT; and the seven of the loops and heavy items above
+- INSANE!/XOI: a mod's own numbers — `xoi/tune.txt` beside its data ("name = value", as `spsa.bat` writes them),
+  laid over the AI's own in every match of that mod, the same on every machine of a network room; a mod without it
+  plays with the AI's own; the match shows "mod tuned" beside the level. The bench's tuning keeps the numbers its
+  own (`smart.tune_fixed`)
+- XOI kit: `spsa.bat` writes each mod's tuned numbers to `xoi-<mod>\tune.txt` and packs `<mod>-xoi.zip`, the mod with
+  `xoi/tune.txt` (and XOI's notes, if trained) inside, the one before kept as `<mod>-xoi-truoc.zip`; with one mod
+  beside it, a run starts from that mod's numbers, and its check plays the tuned numbers against the numbers it
+  started from (the bench's `spsa` check: `base`); `xoi-hoc.bat` keeps a mod's tuned numbers in the packages it makes
 - INSANE!/XOI: keeps its distance from a fallen enemy, on shallow stages too — the room to step off the enemy's line
   is counted from that line (counted from the fighter, it shrank with every step, and on a stage 60 deep the side
   flipped every few steps: Rock Lee walked to and fro on a fallen Neji's line on Hot Springs until he got up), the

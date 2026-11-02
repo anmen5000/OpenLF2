@@ -509,19 +509,22 @@
 
     <section id="tune">
       <h2><span class="en">Tune INSANE!'s numbers (SPSA)</span><span class="vi">Chỉnh các con số của INSANE! (SPSA)</span></h2>
-      <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 31 numbers
-        INSANE!'s judgement rests on in every mod — what a hit is worth against what it costs, the score a move needs, how bold
-        a standoff makes it, how far to keep from longer arms or from a fallen enemy, when to charge MP — the way chess engines
-        tune theirs.</p>
-      <p class="lede vi">XOI học theo từng cặp xem chiêu nào hiệu quả. <code>spsa.bat</code> chỉnh thứ khác: 31 con số mà phán
-        đoán của INSANE! dựa vào ở mọi bản mod — một đòn đáng bao nhiêu so với cái giá của nó, điểm một chiêu cần có để ra
-        đòn, đứng nhìn nhau lâu thì máy bạo dạn lên bao nhiêu, đứng cách đối thủ tay dài hay đối thủ đã ngã bao xa, khi nào
-        nạp MP — giống cách các chương trình cờ vua chỉnh số của chúng.</p>
+      <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 77 numbers
+        INSANE!'s judgement rests on — what a hit is worth against what it costs, the score a move needs, how far ahead it
+        answers a blow on its way and when it guards, how bold a standoff makes it, how far to keep from longer arms or from a
+        fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — the way chess engines tune
+        theirs. The numbers can suit every mod at once, or one mod alone: a mod then carries its own.</p>
+      <p class="lede vi">XOI học theo từng cặp xem chiêu nào hiệu quả. <code>spsa.bat</code> chỉnh thứ khác: 77 con số mà phán
+        đoán của INSANE! dựa vào — một đòn đáng bao nhiêu so với cái giá của nó, điểm một chiêu cần có để ra đòn, nhìn trước bao
+        xa để đỡ hay né đòn đang tới và khi nào thì đỡ, đứng nhìn nhau lâu thì máy bạo dạn lên bao nhiêu, đứng cách đối thủ tay
+        dài hay đối thủ đã ngã bao xa, khi nào nạp MP, một chiêu cứ ra mà không ăn thì bao lâu mới bỏ — giống cách các chương
+        trình cờ vua chỉnh số của chúng. Các số có thể hợp với mọi bản mod, hoặc riêng một bản mod: bản mod ấy giữ bộ số riêng.</p>
       <ol class="steps en">
         <li><b>Put one or more mods' <code>.zip</code> next to <code>spsa.bat</code></b> (not the <code>*-xoi.zip</code> copies), or drag
-          one onto it. Several mods: the processes are shared among them, and the numbers suit them all.</li>
+          one onto it. Several mods: the processes are shared among them, and the numbers suit them all. One mod: the
+          numbers suit that mod best.</li>
         <li><b>Double-click.</b> Each round, every process (one per CPU thread) plays game pairs for <code>PHUT_VONG</code>
-          minutes: two INSANE! players, the 31 numbers nudged one way for one and the other way for the other (each number up or
+          minutes: two INSANE! players, the 77 numbers nudged one way for one and the other way for the other (each number up or
           down at random), each playing each fighter of a random pair on the same stage; every number then moves toward
           whichever did better. All processes stop together, so no thread sits waiting for a slower one (a fast mod simply
           plays more pairs). After the round the mean step per pair is taken, every mod weighing the same, and the next round
@@ -532,14 +535,22 @@
           long it took and about how long the rest will take. <b>To pause</b>, close its window and the minimized SPSA windows
           (or shut the PC down); double-click again to go on — finished rounds stay, and so does what the round under way had
           played, but for its last few pairs.</li>
+        <li><b>Each mod's numbers, ready to use:</b> at the end, <code>xoi-&lt;mod&gt;\tune.txt</code> holds the tuned numbers and
+          <code>&lt;mod&gt;-xoi.zip</code> is the mod with them inside (<code>xoi/tune.txt</code> beside its <code>data</code>
+          folder, with XOI's notes if <code>xoi-hoc.bat</code> trained it). Uploaded to the relay in place of the mod, INSANE! and XOI
+          play that mod with its own numbers, every player in a room alike; the match shows <i>mod tuned</i> beside the level.
+          Upload it only if the check came out above 50%. With that mod alone next to <code>spsa.bat</code>, the next run goes on
+          from its numbers (and checks against them).</li>
         <li><b>Send <code>spsa\ket-qua.txt</code></b> to whoever maintains the AI: the tuned numbers, how far each moved, and how the
-          tuned numbers did against the AI's own. They go into INSANE! only after they also win the usual measures.</li>
+          tuned numbers did against the numbers they started from. Numbers that suit every mod go into INSANE! itself only after
+          they also win the usual measures.</li>
       </ol>
       <ol class="steps vi">
         <li><b>Đặt một hay nhiều file <code>.zip</code> bản mod cạnh <code>spsa.bat</code></b> (không phải các bản <code>*-xoi.zip</code>), hoặc
-          kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, các con số hợp với tất cả.</li>
+          kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, các con số hợp với tất cả. Một bản mod: các con số
+          hợp nhất với bản mod ấy.</li>
         <li><b>Nháy đúp.</b> Mỗi vòng, mỗi tiến trình (một luồng CPU) đánh liền các cặp trận trong <code>PHUT_VONG</code> phút: hai
-          máy INSANE!, 31 con số nhích một phía cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy
+          máy INSANE!, 77 con số nhích một phía cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy
           cầm mỗi nhân vật của một cặp ngẫu nhiên trên cùng một sân; mọi con số rồi dịch về phía máy đánh tốt hơn. Mọi tiến trình
           dừng cùng lúc nên không luồng nào ngồi chờ luồng chậm (bản mod nhanh chỉ đánh được nhiều cặp hơn). Hết vòng, lấy bước dịch
           trung bình mỗi cặp, mỗi bản mod nặng như nhau, vòng sau bắt đầu từ đó.</li>
@@ -548,8 +559,15 @@
           nên máy vẫn dùng được. Hết mỗi vòng <code>spsa.bat</code> in vòng ấy mất bao lâu và còn khoảng bao lâu. <b>Tạm dừng:</b>
           đóng cửa sổ của nó và các cửa sổ SPSA thu nhỏ (hoặc tắt máy); nháy đúp lại là làm tiếp — các vòng đã xong được giữ, và
           cả phần vòng đang dở đã đánh, trừ vài cặp cuối.</li>
-        <li><b>Gửi <code>spsa\ket-qua.txt</code></b> cho người làm AI: các số đã chỉnh, mỗi số dịch bao nhiêu, và bản đã chỉnh đấu bản gốc
-          ra sao. Số chỉ được đưa vào INSANE! khi cũng thắng ở các phép đo thường dùng.</li>
+        <li><b>Bộ số của từng bản mod, dùng được ngay:</b> chạy xong, <code>xoi-&lt;tên&gt;\tune.txt</code> là các số đã chỉnh, và
+          <code>&lt;tên&gt;-xoi.zip</code> là bản mod có bộ số ấy bên trong (<code>xoi/tune.txt</code> cạnh thư mục <code>data</code>,
+          kèm bộ nhớ XOI nếu <code>xoi-hoc.bat</code> đã huấn luyện). Tải nó lên relay thay cho bản mod: INSANE! và XOI chơi bản mod
+          ấy bằng bộ số riêng của nó, mọi người trong phòng như nhau; trong trận ghi <i>mod tuned</i> cạnh mức khó. Chỉ tải lên
+          khi phần kiểm tra trên 50%. Để riêng bản mod ấy cạnh <code>spsa.bat</code> thì lần sau chỉnh tiếp từ bộ số của nó (và
+          kiểm tra so với bộ số ấy).</li>
+        <li><b>Gửi <code>spsa\ket-qua.txt</code></b> cho người làm AI: các số đã chỉnh, mỗi số dịch bao nhiêu, và bản đã chỉnh đấu với
+          các số lúc bắt đầu ra sao. Bộ số hợp với mọi bản mod chỉ được đưa vào chính INSANE! khi cũng thắng ở các phép đo thường
+          dùng.</li>
       </ol>
       <h3><span class="en">Settings at the top of spsa.bat</span><span class="vi">Các dòng chỉnh ở đầu spsa.bat</span></h3>
       <ul class="plain en">
@@ -567,6 +585,9 @@
         <li><b>Several mods:</b> the processes are dealt out among them in turn (24 processes, 3 mods: 8 each); each mod
           weighs the same in the step taken, so the numbers suit them all. The check gives each mod's result under the
           total.</li>
+        <li><b>Several PCs:</b> give each PC its own mods, one or two (one mod per PC: each mod gets the numbers best for it).
+          Copy the whole kit to each; next to <code>spsa.bat</code>, keep only that PC's mods. Two PCs on the same mod: set a
+          different <code>HAT_GIONG</code> on each (9000 and 19000), or they play the very same games.</li>
         <li><b>A stuck window cannot hold up the night:</b> a game in which nobody loses HP for a minute (a training dummy
           that only stands) ends there, and a process still running at twice the time half of them took (and at least 5
           minutes more) is stopped; the round goes on with the others, and <code>ket-qua.txt</code> says so.</li>
@@ -589,6 +610,9 @@
           (<i>Settings → System → Power</i>).</li>
         <li><b>Nhiều bản mod:</b> các tiến trình chia lần lượt cho từng bản mod (24 tiến trình, 3 bản mod: mỗi bản 8); mỗi bản mod
           nặng như nhau trong bước dịch, nên các số hợp với tất cả. Phần kiểm tra cho kết quả từng bản mod dưới dòng tổng.</li>
+        <li><b>Nhiều máy:</b> mỗi máy lo bản mod riêng của nó, một hai bản (mỗi máy một bản mod: bản mod nào cũng có bộ số tốt nhất
+          cho nó). Chép nguyên bộ XOI sang từng máy; cạnh <code>spsa.bat</code> chỉ để các bản mod của máy ấy. Hai máy cùng một bản
+          mod: đặt <code>HAT_GIONG</code> khác nhau (9000 và 19000), không thì hai máy đánh y hệt nhau.</li>
         <li><b>Một cửa sổ treo không giữ được cả đêm:</b> trận nào một phút không ai mất máu (nhân vật tập đánh chỉ đứng yên)
           thì dừng ở đó, và tiến trình nào còn chạy khi đã gấp đôi thời gian một nửa số tiến trình cần (và quá ít nhất 5 phút)
           thì bị dừng; vòng làm tiếp với các tiến trình kia, và <code>ket-qua.txt</code> có ghi lại.</li>

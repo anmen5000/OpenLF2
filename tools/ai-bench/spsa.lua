@@ -31,6 +31,8 @@
 --              and mod in them, each mod's mean step per pair, the mods weighing the same, times the chains' mean n
 --              (chains of any length, cut short ones too); first: the round's first k, for "SPSA_K <next first>"
 --   games      (check) game pairs to play (at most, with seconds)
+--   base       (check) module of this package with the numbers to check against (name = value; the run's start,
+--              say); the AI's own when absent
 -- Output: "SPSA it ..." per iteration and the chain's end numbers as "{n = ..., mod = ..., ...}, --SPSA_END"; the
 -- merge prints the new numbers as "return {...} --SPSA_START", a readable list, "SPSA_PAIRS <pairs>", "SPSA_MODS
 -- <mod>:<pairs>/<chains> ..." and "SPSA_K <k>"; the check prints "SPSA_CHECK <tuned wins> <own wins> <draws> <result>".
@@ -85,6 +87,8 @@ local function players(config)
     assert(alt and alt.set_tune and alt.tune_ranges,
         (config.alt or "spsa_alt") .. ".lua must be a copy of scripts/base/game/smart_ai.lua with smart.tune_ranges")
     assert(smart.set_tune, "scripts/base/game/smart_ai.lua has no smart.tune_ranges: the scripts are older than the tuner")
+    -- (The numbers are the tuner's to set: not the mod's own, xoi/tune.txt, at each game's start.)
+    smart.tune_fixed, alt.tune_fixed = true, true
     return smart, alt
 end
 
@@ -262,6 +266,7 @@ local function check(config)
     local defaults = {}
     for _, entry in ipairs(alt.tune_ranges) do defaults[entry[1]] = entry[2] end
     alt.set_tune(defaults)
+    if config.base then alt.set_tune(require("bench/" .. config.base)) end
     local fighters, backgrounds = catalog.load(), catalog.backgrounds()
     local pool = choices(config, fighters)
     local random = generator(config.seed or 1)

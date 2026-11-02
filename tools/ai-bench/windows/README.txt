@@ -18,7 +18,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    xoi-<mod>\notes.txt (the notes alone, to share).
 4. Measure: dau-nhieu.bat plays XOI against INSANE! on every pair of fighters and prints the win rate.
 5. Tune INSANE!'s own numbers (SPSA): put one or more mods' .zip next to spsa.bat and double-click it. Two
-   INSANE! players fight with the AI's 31 numbers nudged one way and the other; the numbers move toward
+   INSANE! players fight with the AI's 77 numbers nudged one way and the other; the numbers move toward
    whichever did better, round after round (VONG rounds of PHUT_VONG minutes, 12 x 5 by default, one
    process per CPU thread), then the tuned numbers play the AI's own for PHUT_KIEM_TRA minutes. Result:
    spsa\ket-qua.txt - send it to whoever maintains the AI. A night: VONG=60, PHUT_VONG=10, PHUT_KIEM_TRA=15.
@@ -28,6 +28,11 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    again to go on - finished rounds stay, and so does what the round under way had played. Several mods at
    once: put their .zip files next to it; the check gives each mod's result too. A game in which nobody
    loses HP for a minute ends there, and a window stuck far longer than the others is stopped.
+   Each mod's numbers: at the end it writes xoi-<mod>\tune.txt and <mod>-xoi.zip, the mod with xoi\tune.txt
+   (and XOI's notes, if trained) inside: uploaded to the relay, INSANE! and XOI play that mod with its own
+   numbers ("mod tuned" in the match). With one mod next to it, the next run goes on from that mod's numbers.
+   Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
+   two PCs on the same mod need different HAT_GIONG.
 6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
@@ -54,7 +59,7 @@ chơi được chính các file của bản mod.
    xoi-<tên>\notes.txt (riêng bộ nhớ, để chia sẻ).
 4. Đo: dau-nhieu.bat cho XOI đấu INSANE! mọi cặp nhân vật và in tỉ lệ thắng.
 5. Chỉnh các con số của chính INSANE! (SPSA): đặt một hay nhiều file .zip bản mod cạnh spsa.bat rồi nháy
-   đúp. Hai máy INSANE! đánh nhau, 31 con số của AI nhích về hai phía ngược nhau; các số dịch về phía bản
+   đúp. Hai máy INSANE! đánh nhau, 77 con số của AI nhích về hai phía ngược nhau; các số dịch về phía bản
    đánh tốt hơn, vòng này qua vòng khác (VONG vòng, mỗi vòng PHUT_VONG phút, mặc định 12 x 5; mỗi luồng CPU
    một tiến trình), cuối cùng bản đã chỉnh đấu với bản gốc trong PHUT_KIEM_TRA phút. Kết quả:
    spsa\ket-qua.txt - gửi file này cho người làm AI. Một đêm: VONG=60, PHUT_VONG=10, PHUT_KIEM_TRA=15.
@@ -64,6 +69,11 @@ chơi được chính các file của bản mod.
    tiếp - các vòng đã xong được giữ, cả phần vòng đang dở đã đánh. Nhiều bản mod cùng lúc: đặt các file .zip
    cạnh nó; phần kiểm tra cho cả kết quả từng bản mod. Trận nào một phút không ai mất máu thì dừng ở đó, và
    cửa sổ nào treo lâu hơn hẳn các cửa sổ khác thì bị dừng.
+   Bộ số của từng bản mod: chạy xong, nó ghi xoi-<tên>\tune.txt và <tên>-xoi.zip, tức bản mod có xoi\tune.txt
+   (và bộ nhớ XOI nếu đã huấn luyện) bên trong: tải lên relay thì INSANE! và XOI chơi bản mod ấy bằng bộ số
+   riêng của nó (trong trận ghi "mod tuned"). Chỉ một bản mod cạnh nó thì lần sau chỉnh tiếp từ bộ số ấy.
+   Nhiều máy: mỗi máy lo một hai bản mod riêng (mỗi máy một bản mod thì bản mod nào cũng có bộ số tốt nhất
+   cho nó); hai máy cùng một bản mod thì đặt HAT_GIONG khác nhau.
 6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 
