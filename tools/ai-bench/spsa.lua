@@ -13,7 +13,13 @@
 --   step       "chain" (default), "merge" or "check"
 --   start      module of this package returning the numbers to start from (name = value); the AI's own when absent
 --   names      the numbers to tune (all of smart.tune_ranges by default)
---   iterations game pairs in this run; first: iterations this chain did before (for the gains); total: all it will do
+--   iterations game pairs in this run (at most); first: iterations this chain did before (for the gains); total: all
+--              it will do
+--   seconds    stop after the game pair under way once this many seconds have gone by (the engine's clock): all the
+--              chains of a round, started together, end together, the fast ones not waiting idle for the slow ones;
+--              each chain then reports how many pairs it played (n) and its mod (mod: a number the caller gives)
+--   report     every this many pairs (10), the chain's numbers so far as "{n = ..., mod = ..., ...}, --SPSA_STATE",
+--              so that a round stopped half way (a closed window) keeps what it did
 --   a, c       gains, as shares of each number's range: a the step size, c the nudge (defaults 0.02 and 0.08),
 --              decaying as a / (total / 10 + k)^0.602 and c / k^0.101 at the chain's k-th iteration
 --   seed       the chain's own random numbers (pairs, stages, nudges)
@@ -21,11 +27,13 @@
 --   stall      a game in which nobody loses HP for this many frames ends there (default 1800, a minute; 0: never),
 --              scored as at the limit: a mod's training dummy that only stands, or two fighters that cannot reach
 --              each other, says nothing about the numbers and only costs time
---   chains     (merge) module returning the chains' end numbers, {{name = value, ...}, ...}
---   games      (check) game pairs to play
--- Output: "SPSA it ..." per iteration and the chain's end numbers as "{...}, --SPSA_END"; the merge prints the
--- average as "return {...} --SPSA_START" and a readable list; the check prints "SPSA_CHECK <tuned wins> <own wins>
--- <draws> <result>".
+--   chains     (merge) module returning the chains' end numbers, {{name = value, ...}, ...}; with n (pairs played)
+--              and mod in them, each mod's mean step per pair, the mods weighing the same, times the chains' mean n
+--              (chains of any length, cut short ones too); first: the round's first k, for "SPSA_K <next first>"
+--   games      (check) game pairs to play (at most, with seconds)
+-- Output: "SPSA it ..." per iteration and the chain's end numbers as "{n = ..., mod = ..., ...}, --SPSA_END"; the
+-- merge prints the new numbers as "return {...} --SPSA_START", a readable list, "SPSA_PAIRS <pairs>", "SPSA_MODS
+-- <mod>:<pairs>/<chains> ..." and "SPSA_K <k>"; the check prints "SPSA_CHECK <tuned wins> <own wins> <draws> <result>".
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -57,6 +65,11 @@ local function numbers(names)
         end
     end
     return list
+end
+-- Seconds on the engine's steady clock (nil where there is none): time boxes, not game logic.
+local function clock_seconds()
+    local clock = engine.network_time
+    return clock and clock() / 1000 or nil
 end
 local function share(number, value) return min(1, max(0, (value - number.low) / (number.high - number.low))) end
 local function value_at(number, u) return number.low + min(1, max(0, u)) * (number.high - number.low) end
@@ -139,10 +152,18 @@ local function chain(config)
     local iterations = config.iterations or 20
     local first = config.first or 0
     local stability = max(1, floor((config.total or (first + iterations)) / 10))
+    local seconds, report, mod = config.seconds, config.report or 10, config.mod or 1
+    local began = seconds and clock_seconds()
+    local function numbers_now()
+        local values = {}
+        for index, number in ipairs(list) do values[number.name] = value_at(number, u[index]) end
+        return values
+    end
     engine.log(string.format("SPSA chain: %d numbers, %d iterations from %d (of %s), %d fighters, %d stages, a %.4g c %.4g, seed %d",
         #list, iterations, first, tostring(config.total or "?"), #pool, #backgrounds, a, c, config.seed or 1))
-    local sum, played = 0, 0
+    local sum, played, timed_out = 0, 0, false
     for iteration = 1, iterations do
+        if began and clock_seconds() - began >= seconds then timed_out = true; break end
         local k = first + iteration
         local nudge = c / k ^ gamma
         local step = a / (stability + k) ^ alpha
@@ -164,12 +185,14 @@ local function chain(config)
             sum, played = sum + y, played + 1
             engine.log(string.format("SPSA it %d k %d fighters %d %d stage %d result %.3f", iteration, k,
                 fighters[first_fighter].id, fighters[second_fighter].id, row, y))
+            if played % report == 0 then
+                engine.log(string.format("{n = %d, mod = %d, %s}, --SPSA_STATE", played, mod, format_numbers(list, numbers_now())))
+            end
         end
     end
-    local values = {}
-    for index, number in ipairs(list) do values[number.name] = value_at(number, u[index]) end
-    engine.log(string.format("{%s}, --SPSA_END", format_numbers(list, values)))
-    engine.log(string.format("SPSA chain done: %d of %d iterations played, mean result %.3f", played, iterations, sum / max(played, 1)))
+    engine.log(string.format("{n = %d, mod = %d, %s}, --SPSA_END", played, mod, format_numbers(list, numbers_now())))
+    engine.log(string.format("SPSA chain done: %d game pairs played%s, mean result %.3f", played,
+        timed_out and string.format(" in %d seconds", seconds) or string.format(" of %d", iterations), sum / max(played, 1)))
 end
 
 local function merge(config)
@@ -178,13 +201,52 @@ local function merge(config)
     local start = config.start and require("bench/" .. config.start) or {}
     assert(#chains > 0, "no chain finished this round")
     local values = {}
-    for _, number in ipairs(list) do
-        local total = 0
-        for _, values_of in ipairs(chains) do total = total + (values_of[number.name] or start[number.name] or number.default) end
-        values[number.name] = total / #chains
+    local function start_value(number) return start[number.name] or number.default end
+    if chains[1].n then
+        -- Chains of different lengths (stopped by the clock, or cut short with their last report): each mod's mean
+        -- step per game pair, every mod weighing the same, times the pairs a chain played on average.
+        local by_mod, mods, pairs_played, chains_played = {}, {}, 0, 0
+        for _, ended in ipairs(chains) do
+            local n = ended.n or 0
+            if n > 0 then
+                local m = ended.mod or 1
+                local entry = by_mod[m]
+                if not entry then
+                    entry = {n = 0, chains = 0, sums = {}}
+                    by_mod[m], mods[#mods + 1] = entry, m
+                end
+                entry.n, entry.chains = entry.n + n, entry.chains + 1
+                pairs_played, chains_played = pairs_played + n, chains_played + 1
+                for _, number in ipairs(list) do
+                    local moved = share(number, ended[number.name] or start_value(number)) - share(number, start_value(number))
+                    entry.sums[number.name] = (entry.sums[number.name] or 0) + moved
+                end
+            end
+        end
+        assert(#mods > 0, "no chain played a game pair this round")
+        table.sort(mods)
+        local per_chain = pairs_played / chains_played
+        for _, number in ipairs(list) do
+            local step = 0
+            for _, m in ipairs(mods) do step = step + by_mod[m].sums[number.name] / by_mod[m].n end
+            values[number.name] = value_at(number, share(number, start_value(number)) + per_chain * step / #mods)
+        end
+        local parts = {}
+        for _, m in ipairs(mods) do parts[#parts + 1] = string.format("%d:%d/%d", m, by_mod[m].n, by_mod[m].chains) end
+        engine.log(string.format("return {%s} --SPSA_START", format_numbers(list, values)))
+        engine.log(string.format("SPSA merge: %d chains, %d game pairs, %.0f a chain", chains_played, pairs_played, per_chain))
+        engine.log(string.format("SPSA_PAIRS %d", pairs_played))
+        engine.log("SPSA_MODS " .. table.concat(parts, " "))
+        engine.log(string.format("SPSA_K %d", (config.first or 0) + floor(per_chain + 0.5)))
+    else
+        for _, number in ipairs(list) do
+            local total = 0
+            for _, values_of in ipairs(chains) do total = total + (values_of[number.name] or start_value(number)) end
+            values[number.name] = total / #chains
+        end
+        engine.log(string.format("return {%s} --SPSA_START", format_numbers(list, values)))
+        engine.log(string.format("SPSA merge: %d chains", #chains))
     end
-    engine.log(string.format("return {%s} --SPSA_START", format_numbers(list, values)))
-    engine.log(string.format("SPSA merge: %d chains", #chains))
     for _, number in ipairs(list) do
         local value = values[number.name]
         local before = start[number.name] or number.default
@@ -204,7 +266,10 @@ local function check(config)
     local pool = choices(config, fighters)
     local random = generator(config.seed or 1)
     local wins, losses, draws, sum = 0, 0, 0, 0
+    local seconds = config.seconds
+    local began = seconds and clock_seconds()
     for _ = 1, config.games or 20 do
+        if began and clock_seconds() - began >= seconds then break end
         local first_fighter, second_fighter = pool[random(#pool)], pool[random(#pool)]
         local row = random(#backgrounds) - 1
         for _, swap in ipairs({false, true}) do

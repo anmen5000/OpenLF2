@@ -85,8 +85,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   `spsa.bat`, which runs it on every thread of a PC over the mods beside it, round after round, resumable; it says
   how long each round took and about how long the rest will take (also kept in `spsa\thoi-gian.txt`), gives the
   check's result for each mod as well as in all, and runs fewer processes than CPU threads on a PC short of memory
-  (about 0.6 GB a process at most, 4 GB kept for Windows); a process still running at four times the time half of them
-  took (and at least 10 minutes more) is taken as stuck and stopped, the round going on without it
+  (about 0.6 GB a process at most, 4 GB kept for Windows); a process still running at twice the time half of them
+  took (and at least 5 minutes more) is taken as stuck and stopped, the round going on without it. Its rounds are
+  minutes long (`VONG` rounds of `PHUT_VONG` minutes, the check `PHUT_KIEM_TRA` minutes), the chains stopping
+  together by the engine's clock instead of after a fixed number of game pairs — which had left the chains on a fast
+  mod idle while those on a slow one finished — and merged by their mean step per pair, every mod weighing the same;
+  a round stopped half way keeps what its chains had reported when started again; the processes run at below-normal
+  priority (`UU_TIEN`), so the PC stays usable
 - AI bench: a game of the `spsa` and `learn` jobs in which nobody loses HP for a minute (`stall`, 1800 frames) ends
   there, scored as at the time limit — a mod's training dummy that only stands (One Piece GrandWorld's Dummy, OPLoS's
   TrainingBot) kept every game of its pairs to the limit, so the XOI training window with those pairs finished long

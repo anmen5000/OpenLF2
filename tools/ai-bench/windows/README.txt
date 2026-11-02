@@ -19,14 +19,15 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
 4. Measure: dau-nhieu.bat plays XOI against INSANE! on every pair of fighters and prints the win rate.
 5. Tune INSANE!'s own numbers (SPSA): put one or more mods' .zip next to spsa.bat and double-click it. Two
    INSANE! players fight with the AI's 31 numbers nudged one way and the other; the numbers move toward
-   whichever did better, round after round (12 rounds by default, one process per CPU thread), then the
-   tuned numbers play the AI's own. Result: spsa\ket-qua.txt - send it to whoever maintains the AI. It can
-   be stopped and started again: it goes on from the round it was in.
-   A pair (CAP) is two games, same fighters and stage, sides swapped; a round (VONG) is CAP pairs in every
-   process, then the processes' numbers are averaged. After each round it says how long the round took and
-   about how long the rest will take. Several mods at once: put their .zip files next to it; the processes
-   are dealt out among them in turn, and the check (KIEM_TRA) gives each mod's result too. A game in which
-   nobody loses HP for a minute ends there, and a window stuck far longer than the others is stopped.
+   whichever did better, round after round (VONG rounds of PHUT_VONG minutes, 12 x 5 by default, one
+   process per CPU thread), then the tuned numbers play the AI's own for PHUT_KIEM_TRA minutes. Result:
+   spsa\ket-qua.txt - send it to whoever maintains the AI. A night: VONG=60, PHUT_VONG=10, PHUT_KIEM_TRA=15.
+   A pair is two games, same fighters and stage, sides swapped. In a round every process plays pairs until
+   the minutes are up, all stopping together (no thread waits for a slower one); then the mean step per pair
+   is taken, every mod weighing the same. To pause: close its window and the minimized SPSA windows; run it
+   again to go on - finished rounds stay, and so does what the round under way had played. Several mods at
+   once: put their .zip files next to it; the check gives each mod's result too. A game in which nobody
+   loses HP for a minute ends there, and a window stuck far longer than the others is stopped.
 6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
@@ -54,14 +55,15 @@ chơi được chính các file của bản mod.
 4. Đo: dau-nhieu.bat cho XOI đấu INSANE! mọi cặp nhân vật và in tỉ lệ thắng.
 5. Chỉnh các con số của chính INSANE! (SPSA): đặt một hay nhiều file .zip bản mod cạnh spsa.bat rồi nháy
    đúp. Hai máy INSANE! đánh nhau, 31 con số của AI nhích về hai phía ngược nhau; các số dịch về phía bản
-   đánh tốt hơn, vòng này qua vòng khác (mặc định 12 vòng, mỗi luồng CPU một tiến trình), cuối cùng bản đã
-   chỉnh đấu với bản gốc. Kết quả: spsa\ket-qua.txt - gửi file này cho người làm AI. Tắt giữa chừng được:
-   chạy lại là làm tiếp từ vòng đang dở.
-   Một cặp (CAP) là hai trận, cùng nhân vật và sân, đổi bên; một vòng (VONG) là CAP cặp ở mọi tiến trình,
-   rồi lấy trung bình các số của các tiến trình. Hết mỗi vòng, file in vòng ấy mất bao lâu và còn khoảng
-   bao lâu. Nhiều bản mod cùng lúc: đặt các file .zip cạnh nó; các tiến trình chia lần lượt cho từng bản
-   mod, và phần kiểm tra (KIEM_TRA) cho cả kết quả của từng bản mod. Trận nào một phút không ai mất máu thì
-   dừng ở đó, và cửa sổ nào treo lâu hơn hẳn các cửa sổ khác thì bị dừng.
+   đánh tốt hơn, vòng này qua vòng khác (VONG vòng, mỗi vòng PHUT_VONG phút, mặc định 12 x 5; mỗi luồng CPU
+   một tiến trình), cuối cùng bản đã chỉnh đấu với bản gốc trong PHUT_KIEM_TRA phút. Kết quả:
+   spsa\ket-qua.txt - gửi file này cho người làm AI. Một đêm: VONG=60, PHUT_VONG=10, PHUT_KIEM_TRA=15.
+   Một cặp là hai trận, cùng nhân vật và sân, đổi bên. Trong một vòng, mọi tiến trình đánh liền các cặp cho
+   tới hết số phút và dừng cùng lúc (không luồng nào ngồi chờ luồng chậm); rồi lấy bước dịch trung bình mỗi
+   cặp, mỗi bản mod nặng như nhau. Tạm dừng: đóng cửa sổ của nó và các cửa sổ SPSA thu nhỏ; chạy lại là làm
+   tiếp - các vòng đã xong được giữ, cả phần vòng đang dở đã đánh. Nhiều bản mod cùng lúc: đặt các file .zip
+   cạnh nó; phần kiểm tra cho cả kết quả từng bản mod. Trận nào một phút không ai mất máu thì dừng ở đó, và
+   cửa sổ nào treo lâu hơn hẳn các cửa sổ khác thì bị dừng.
 6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 

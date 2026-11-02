@@ -156,16 +156,24 @@ side that did better, by how much better (a win counts 1 and the HP left above t
 
 The gains are shares of each number's range: `a` (0.02) for the steps, `c` (0.08) for the nudges, decaying as
 `a / (total / 10 + k)^0.602` and `c / k^0.101`. A chain alone is noisy; many run side by side and their numbers are
-averaged after every round, the next round starting from the average. `windows/spsa.bat` does all of it on a PC: one
-chain per CPU thread, the mods beside it shared among the chains, 12 rounds of 40 game pairs, then the tuned
-numbers against the AI's own; it writes `spsa\ket-qua.txt` and goes on from the round it was in when started again.
-After each round it gives the round's minutes and about how long the rest will take (`spsa\thoi-gian.txt`), and the
-check's result comes for each mod as well as in all. A pair takes a process about 1 to 2 seconds with LuaJIT (Naruto
-2.4 1.0, OPLoS 2.1X 1.1, One Piece GrandWorld 1.7, KT-LF2 2.1; PUC Lua 2.5 to 5 times as long), and a process holds up
-to about half a GB once it has met its mod's fighters (fewer chains on a PC short of memory: 0.6 GB each, 4 GB kept).
-A chain still running at four times the time half of them took (and 10 minutes more) is stopped as stuck. In `spsa`
-and `learn`, a game in which nobody loses HP for `stall` frames (1800, a minute; 0: never) ends there: a training
-dummy that only stands kept its games to the time limit.
+averaged after every round, the next round starting from the average. With `seconds`, a chain plays until that much
+time has gone by (the engine's steady clock, `engine.network_time`), so the chains of a round, started together, end
+together — with a fixed number of pairs, the chains on a fast mod sat idle while those on a slow one finished (half
+the threads of the project owner's 104-thread PC, at times). Chains then differ in length: each prints its pairs
+played and its mod (`{n = ..., mod = ..., ...}, --SPSA_END`, and every `report` pairs the same as `--SPSA_STATE`), and
+the merge takes each mod's mean step per pair, every mod weighing the same, times the pairs a chain played on
+average; it prints `SPSA_K`, the next round's `first`. `windows/spsa.bat` does all of it on a PC: one chain per CPU
+thread at below-normal priority, the mods beside it shared among the chains, `VONG` rounds of `PHUT_VONG` minutes
+(12 × 5), then the tuned numbers against the AI's own for `PHUT_KIEM_TRA` minutes; it writes `spsa\ket-qua.txt`.
+Stopped half way (windows closed, the PC shut down), it goes on when started again: finished rounds stay, and the
+round under way keeps what its chains had reported (`spsa\vong-<n>\truoc\<attempt>\p<k>.txt`), merged with what
+a new attempt plays. After each round it gives the round's minutes and about how long the rest will take
+(`spsa\thoi-gian.txt`), and the check's result comes for each mod as well as in all. A pair takes a process about 1
+to 2 seconds with LuaJIT (Naruto 2.4 1.0, OPLoS 2.1X 1.1, One Piece GrandWorld 1.7, KT-LF2 2.1; PUC Lua 2.5 to 5
+times as long), and a process holds up to about half a GB once it has met its mod's fighters (fewer chains on a PC
+short of memory: 0.6 GB each, 4 GB kept). A chain still running at twice the time half of them took (and 5 minutes
+more) is stopped as stuck. In `spsa` and `learn`, a game in which nobody loses HP for `stall` frames (1800, a
+minute; 0: never) ends there: a training dummy that only stands kept its games to the time limit.
 Tuned numbers are taken into the AI only after they beat its own over the usual measures (`duel` against the
 previous version on the standard pairs of several mods).
 
