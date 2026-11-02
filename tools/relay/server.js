@@ -76,6 +76,8 @@ const KIND = Object.freeze({
   welcome: 0x81, lobby: 0x82, started: 0x83, frame: 0x84, checked: 0x85, left: 0x86,
 });
 const ROOM_LIMITS = Object.freeze({ players: 8, profile: 200, info: 64, input: 16, setup: 8192, queue: 64 });
+// The largest text message a page may send (a direct connection's offer or answer).
+const SIGNAL_LIMIT = 16384;
 
 function readConfig(env = process.env) {
   const number = (name, fallback) => {
@@ -182,7 +184,7 @@ function createRelay(overrides = {}) {
       });
       res.end(JSON.stringify({
         ok: true, rooms: rooms.size + groups.size, clients: wss.clients.size, installer: installerSize() > 0,
-        protocols: [1, 2], players: config.roomPlayers, packs: Boolean(config.packsDir), hf: hf.describe(),
+        protocols: [1, 2], players: config.roomPlayers, packs: Boolean(config.packsDir), hf: hf.describe(), direct: true,
       }));
       return;
     }
@@ -365,8 +367,19 @@ function createRelay(overrides = {}) {
   //                 per player: input length (1), input
   //   CHECKED 0x85  index (1), frame (4), hash (2)
   //   LEFT    0x86  index (1): that player is gone; his input stays empty
-  // Text (JSON) messages are for the page around the game: {"t":"welcome","v":2,"room":"…","host":true}
-  // and {"t":"room","players":3,"started":false}.
+  // Text (JSON) messages are for the page around the game: {"t":"welcome","v":2,"room":"…","host":true,
+  // "id":2,"direct":{…}} and {"t":"room","players":3,"started":false}.
+  //
+  // Direct connections (dist/web/online.js): the pages of a room may connect to the host's page
+  // directly (WebRTC), the relay passing on what they say to set it up, and the host's page may keep
+  // the beat itself — on a LAN, or wherever every player reaches the host sooner than the relay. Page
+  // to relay, text: {"t":"signal","to":"host"|<id>,"data":{…}} (passed on as {"t":"signal","from":<id>,
+  // "data":{…}}, between the host and another player only), {"t":"ping","n":<number>} (answered with
+  // {"t":"pong","n":…}), and from the host before START {"t":"beat","by":"host"|"relay"}. When the
+  // host keeps the beat, START is followed by {"t":"beat","by":"host","host":<id>} to every page before
+  // STARTED; the relay then sends no frames, takes no INPUT, READY or CHECK, tells the host's page
+  // {"t":"left","id":<id>} when a player's connection to it closes (the host's page sends LEFT among its
+  // frames), and ends the room when the host leaves.
 
   function joinGroup(ws, role, code) {
     if (rooms.has(code)) return closeWith(ws, CLOSE.codeInUse);
@@ -376,6 +389,7 @@ function createRelay(overrides = {}) {
       room = {
         code, members: [], host: null, nextId: 1, profile: null, started: false, order: [], frame: 0,
         ticking: false, ticks: 0, tickStart: 0, lobbyTimer: null, graceTimer: null, tickTimer: null, ended: false,
+        beatBy: 'relay', // or 'host': the host's page keeps the beat (direct connections)
       };
       groups.set(code, room);
       room.lobbyTimer = setTimeout(() => endGroup(room, CLOSE.notStarted), config.lobbyWaitMs);
@@ -394,7 +408,12 @@ function createRelay(overrides = {}) {
     if (member.host) room.host = member;
     ws.on('message', (data, isBinary) => onGroupMessage(member, data, isBinary));
     ws.on('close', () => leaveGroup(member));
-    sendControl(ws, { t: 'welcome', v: 2, room: code, host: member.host });
+    // (`direct`: this relay passes on direct connection set-ups, and the host's page keeps the beat by
+    // these rules when it takes it over.)
+    sendControl(ws, {
+      t: 'welcome', v: 2, room: code, host: member.host, id: member.id,
+      direct: { repeat: config.repeatLimit, grace: config.startGraceMs, buffered: config.maxBufferedBytes },
+    });
     const welcome = Buffer.alloc(5 + code.length);
     welcome[0] = member.id;
     // Flags: bit 0 the host; bits 1-2 the beat's thirds of a millisecond beyond welcome[3].
@@ -432,11 +451,12 @@ function createRelay(overrides = {}) {
 
   function onGroupMessage(member, data, isBinary) {
     const { ws, room } = member;
-    if (!isBinary || room.ended || !room.members.includes(member)) return;
+    if (room.ended || !room.members.includes(member)) return;
     if (!ws.messageBudget.take(1) || !ws.byteBudget.take(data.length)) {
       log(`room ${room.code}: rate limit`);
       return closeWith(ws, CLOSE.rateLimited);
     }
+    if (!isBinary) return handleGroupText(member, data);
     let at = 0;
     while (at < data.length) {
       if (data.length - at < 3) return closeWith(ws, CLOSE.protocol);
@@ -450,9 +470,32 @@ function createRelay(overrides = {}) {
     }
   }
 
+  // A page's text message (direct connections, see above); anything else is ignored.
+  function handleGroupText(member, data) {
+    const room = member.room;
+    if (data.length > SIGNAL_LIMIT) return null;
+    let message;
+    try { message = JSON.parse(data.toString('utf8')); } catch (error) { return null; }
+    if (!message || typeof message !== 'object') return null;
+    if (message.t === 'ping') {
+      if (Number.isFinite(message.n)) sendControl(member.ws, { t: 'pong', n: message.n });
+    } else if (message.t === 'signal') {
+      if (!message.data || typeof message.data !== 'object') return null;
+      // Between the host and another player only.
+      const target = message.to === 'host' ? room.host : room.members.find((other) => other.id === message.to);
+      if (!target || target === member || (!member.host && !target.host)) return null;
+      sendControl(target.ws, { t: 'signal', from: member.id, data: message.data });
+    } else if (message.t === 'beat') {
+      if (member.host && !room.started) room.beatBy = message.by === 'host' ? 'host' : 'relay';
+    }
+    return null;
+  }
+
   // Returns the close code and reason for a message the game should not have sent.
   function handleGroupMessage(member, kind, payload) {
     const room = member.room;
+    // The host's page keeps the beat: the games' INPUT, READY and CHECK go to it, not here.
+    if (room.started && room.beatBy === 'host' && (kind === KIND.input || kind === KIND.ready || kind === KIND.check)) return null;
     if (kind === KIND.hello) {
       if (member.info || room.started || payload.length < 1) return CLOSE.protocol;
       const length = payload[0];
@@ -505,12 +548,16 @@ function createRelay(overrides = {}) {
     const length = Buffer.alloc(2);
     length.writeUInt16LE(setup.length, 0);
     const message = packet(KIND.started, Buffer.concat([describePlayers(room.order), length, setup]));
+    const hostBeat = room.beatBy === 'host' && room.host && room.host.index >= 0;
+    if (!hostBeat) room.beatBy = 'relay';
     for (const member of room.order) {
+      // (Before STARTED, so that the page sends the game's READY and input the right way.)
+      if (hostBeat) sendControl(member.ws, { t: 'beat', by: 'host', host: room.host.id });
       sendBinary(member.ws, message);
       sendControl(member.ws, { t: 'room', players: room.order.length, started: true });
     }
-    room.graceTimer = setTimeout(() => startBeat(room), config.startGraceMs);
-    log(`room ${room.code}: started with ${room.order.length} players`);
+    if (!hostBeat) room.graceTimer = setTimeout(() => startBeat(room), config.startGraceMs);
+    log(`room ${room.code}: started with ${room.order.length} players${hostBeat ? ', the beat kept by the host' : ''}`);
   }
 
   function startBeat(room) {
@@ -595,6 +642,19 @@ function createRelay(overrides = {}) {
       } else if (member.info) {
         sendLobby(room);
       }
+      return;
+    }
+    if (room.beatBy === 'host') {
+      // The beat leaves with the host. Another player: the host's page sends LEFT among its frames.
+      if (member.host) return endGroup(room, CLOSE.hostLeft);
+      if (member.index >= 0 && member.present) {
+        member.present = false;
+        const players = room.order.filter((other) => other.present).length;
+        if (room.host) sendControl(room.host.ws, { t: 'left', id: member.id });
+        for (const other of room.order) if (other.present) sendControl(other.ws, { t: 'room', players, started: true });
+        log(`room ${room.code}: player ${member.index + 1} left`);
+      }
+      if (!room.order.some((other) => other.present)) endGroup(room);
       return;
     }
     if (member.index >= 0 && member.present) {

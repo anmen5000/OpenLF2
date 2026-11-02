@@ -98,6 +98,18 @@ player far from the relay (or on a slow connection) only sees his own keys take 
 ping later. A player whose connection cannot keep up with the frames at all is let go, and the
 others play on.
 
+Direct connections: the game pages also connect to the host's page directly (WebRTC data channels,
+set up through the relay, with public STUN servers to cross home routers) and time both ways. When
+every player reaches the host directly, none of them more than 10 ms later than through the relay,
+and the round trips add up to less, the host's page keeps the beat itself from START, by the
+relay's rules: players on one LAN play with no relay in between (a few milliseconds instead of the
+way to the relay and back). Otherwise — a player behind a proxy or a network that allows no direct
+connection, an older page — the relay keeps the beat as before. The Online panel shows which (and
+the times) in the lobby and during play. With the host keeping the beat, the room ends when the
+host leaves, and the host's tab should stay open (its beat runs in a worker, which a hidden tab does
+not slow down). As in any game played directly, the players' and the host's IP addresses are known
+to each other's browsers.
+
 When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
 setting again.
@@ -193,6 +205,15 @@ room's, and its players' names), the host asks to start, every game answers read
 relay sends a frame every beat with each player's input; each game sends its input when it changes.
 The welcome message gives the beat: whole milliseconds in its fourth byte, thirds of one in bits 1
 and 2 of its flags. See `server.js` and `scripts/base/game/room.lua`.
+
+Direct connections add text messages between the page and the relay (the game itself sees the same
+binary messages): the welcome names the page's id in the room and the beat rules (`direct`); a page
+sends `{"t":"signal","to":"host"|<id>,"data":…}` (passed on, between the host and another player
+only, as `{"t":"signal","from":<id>,"data":…}`) and `{"t":"ping","n":…}` (answered `{"t":"pong","n":…}`);
+the host's page sends `{"t":"beat","by":"host"}` before START when it will keep the beat, and the
+relay then tells every page `{"t":"beat","by":"host","host":<id>}` before STARTED, sends no frames,
+takes no INPUT, READY or CHECK, tells the host's page `{"t":"left","id":<id>}` when a player's
+connection closes, and ends the room when the host leaves. `/healthz` says `"direct":true`.
 
 Protocol 1, two players (older game pages): `ws(s)://host/relay?role=host|join&room=<code>`. The
 relay answers with JSON text frames `{"t":"waiting","room":"…"}` and then `{"t":"paired"}`; after

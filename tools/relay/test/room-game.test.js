@@ -18,6 +18,7 @@ const { createRelay } = require('../server.js');
 const repository = path.join(__dirname, '..', '..', '..');
 const harness = path.join(__dirname, 'room-harness.lua');
 const { OnlineTransport } = require(path.join(repository, 'dist', 'web', 'online.js'));
+const { fakeWebRtc } = require('./fake-webrtc.js');
 
 const lua = [process.env.LUA, 'lua5.2', 'lua5.1', 'luajit', 'lua'].filter(Boolean)
   .find((candidate) => spawnSync(candidate, ['-v']).status === 0);
@@ -49,7 +50,8 @@ function distantWebSocket(oneWay) {
     get readyState() { return this.inner.readyState; }
     get bufferedAmount() { return this.inner.bufferedAmount; }
     send(data) {
-      const copy = Buffer.from(data);
+      // (Text stays text: the page's notes to the relay.)
+      const copy = typeof data === 'string' ? data : Buffer.from(data);
       setTimeout(() => { if (this.inner.readyState === WebSocket.OPEN) this.inner.send(copy); }, oneWay);
     }
     close(code, reason) { this.inner.close(code, reason); }
@@ -57,9 +59,11 @@ function distantWebSocket(oneWay) {
 }
 
 // One game: a Lua process running room.lua, its engine network calls answered by online.js.
+// `rtc`: the page's RTCPeerConnection (fake-webrtc.js); none: no direct connections, as in Node.
 class Game {
-  constructor(relay, room, { oneWay = 0, names = ['A', '', '', ''], checksum } = {}) {
-    this.online = new OnlineTransport({ WebSocket: oneWay ? distantWebSocket(oneWay) : WebSocket, relay: relay.url, room });
+  constructor(relay, room, { oneWay = 0, names = ['A', '', '', ''], checksum, rtc = null } = {}) {
+    this.online = new OnlineTransport({ WebSocket: oneWay ? distantWebSocket(oneWay) : WebSocket, relay: relay.url, room,
+      RTCPeerConnection: rtc });
     const env = { ...process.env, ROOM_SEED: String(crypto.randomInt(1000000)) };
     if (checksum !== undefined) env.ROOM_DATA_CHECKSUM = String(checksum);
     this.process = spawn(lua, [harness, repository], { stdio: ['pipe', 'pipe', 'inherit'], env });
@@ -162,7 +166,8 @@ class Game {
 }
 
 // Players who joined one room in order, the first one hosting, and the started game.
-async function startedGames(relay, count, options = [], games = []) {
+// `before`: awaited once everyone is in, before the host starts.
+async function startedGames(relay, count, options = [], games = [], before = null) {
   const code = String(100000 + crypto.randomInt(900000));
   for (let index = 0; index < count; index += 1) {
     const game = new Game(relay, code, { names: [`P${index + 1}`, `Q${index + 1}`, '', ''], ...options[index] });
@@ -181,6 +186,7 @@ async function startedGames(relay, count, options = [], games = []) {
     if (tries > 200) throw new Error('the host can never start');
     await sleep(10);
   }
+  if (before) await before(games);
   assert.deepEqual(await games[0].command('begin'), ['ok']);
   const random = await Promise.all(games.map((game) => game.pollUntilReady()));
   assert.deepEqual(random, games.map((game, index) => (index === 0 ? 'own' : 'other')), 'everyone uses the host\'s random table');
@@ -411,5 +417,122 @@ test('another version of the game cannot join the room', { skip }, async () => {
     await host.quit();
     await other.quit();
     await relay.close();
+  }
+});
+
+// ---- Direct connections (dist/web/online.js): the host's page keeping the beat ---------------------
+
+// Until `check()` holds (polling every 20 ms), or fails after `timeout` ms.
+async function until(check, timeout, what) {
+  const deadline = Date.now() + timeout;
+  while (!check()) {
+    if (Date.now() > deadline) throw new Error(`${what}: not in time`);
+    await sleep(20);
+  }
+}
+const hostKeepsTheBeat = (games) => until(() => games[0].online.chooseBeat() === 'host', 8000, 'direct links timed');
+
+test('on one LAN the host\'s page keeps the beat: the same frames for all, keys used sooner', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  const lan = fakeWebRtc({ delay: 0 });
+  try {
+    // The relay is 25 ms away each way; the players are next to each other.
+    await startedGames(relay, 3, [0, 1, 2].map(() => ({ oneWay: 25, rtc: lan })), games, hostKeepsTheBeat);
+    for (const game of games) assert.equal(game.online.beatBy, 'host');
+    assert.match(games[1].online.directText(), /^direct: the host keeps the beat/);
+    let pressed = 0;
+    await Promise.all(games.map((game, index) => game.play({
+      until: (self) => self.frames.length >= 120,
+      input: (self) => {
+        if (index === 2) {
+          if (!pressed && self.frames.length && self.frames.at(-1).number >= 40) pressed = self.frames.at(-1).number;
+          return { players: [pressed ? 'c' : '-'] };
+        }
+        return { players: [Math.floor(performance.now() / 100) % 2 ? 'r' : '-'] };
+      },
+    })));
+    assertLockstep(games);
+    const { mean, worst } = pacing(games[0]);
+    assert.ok(mean > 31 && mean < 36, `frames every ${mean.toFixed(1)} ms`);
+    assert.ok(worst < 80, `longest gap ${worst.toFixed(1)} ms`);
+    // No relay in between: the key reaches the next beat or the one after (through the relay: 50 ms later).
+    const used = games[0].frames.find((frame) => frame.slots.split(',')[6] === 'c').number;
+    assert.ok(used - pressed <= 2, `pressed on frame ${pressed}, used on frame ${used}`);
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
+test('a player who cannot connect directly, or whose page cannot: the relay keeps the beat', { skip }, async () => {
+  for (const third of [{ rtc: fakeWebRtc({ blocked: true }) }, { rtc: null }]) {
+    const relay = await startRelay();
+    const games = [];
+    const lan = fakeWebRtc({ delay: 0 });
+    try {
+      await startedGames(relay, 3, [{ oneWay: 25, rtc: lan }, { oneWay: 25, rtc: lan }, { oneWay: 25, ...third }], games,
+        (list) => until(() => list[0].online.links.get(list[1].online.id)?.reported?.direct != null, 8000, 'second player timed'));
+      for (const game of games) assert.equal(game.online.beatBy, 'relay');
+      await Promise.all(games.map((game) => game.play({ until: (self) => self.frames.length >= 60, input: () => ({ players: ['l'] }) })));
+      assertLockstep(games);
+    } finally {
+      await Promise.all(games.map((game) => game.quit()));
+      await relay.close();
+    }
+  }
+});
+
+test('with the host keeping the beat, a player who leaves is announced among its frames', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  const lan = fakeWebRtc({ delay: 1 });
+  try {
+    await startedGames(relay, 3, [0, 1, 2].map(() => ({ oneWay: 25, rtc: lan })), games, hostKeepsTheBeat);
+    await Promise.all(games.map(async (game, index) => {
+      await game.play({ until: (self) => self.frames.length >= (index === 2 ? 40 : 100), input: () => ({ players: ['r'] }) });
+      if (index === 2) await game.quit();
+    }));
+    const frames = games[0].frames;
+    assert.equal(frames.find((frame) => frame.status).status, 'P3 left the game');
+    assert.equal(games[1].frames.find((frame) => frame.status).status, 'P3 left the game');
+    assert.equal(frames.at(-1).slots.split(',')[6], '-');
+    assert.equal(frames.at(-1).slots.split(',')[0], 'r');
+    assertLockstep(games.slice(0, 2));
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
+test('with the host keeping the beat, a desync is noticed and the room ends when the host leaves', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  const lan = fakeWebRtc({ delay: 0 });
+  try {
+    await startedGames(relay, 3, [0, 1, 2].map(() => ({ oneWay: 25, rtc: lan })), games, hostKeepsTheBeat);
+    await Promise.all(games.map((game, index) => game.play({
+      until: (self) => self.frames.length >= 120,
+      hp: (frame) => (index === 1 && frame === 48 ? 999 : (frame * 37) % 3000),
+    })));
+    for (const game of games) assert.equal(game.error, 'Network HP synchronization mismatch');
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+  const relay2 = await startRelay();
+  const others = [];
+  try {
+    await startedGames(relay2, 2, [0, 1].map(() => ({ oneWay: 25, rtc: lan })), others, hostKeepsTheBeat);
+    await Promise.all(others.map(async (game, index) => {
+      await game.play({ until: (self) => self.frames.length >= (index === 0 ? 30 : 400) || self.error });
+      if (index === 0) await game.quit();
+    }));
+    assert.ok(['Relay: the host left the room', 'Network: lost the direct connection to the host'].includes(others[1].error),
+      `the other game stops: ${others[1].error}`);
+    assert.ok(others[1].frames.length < 100, 'soon after the host left');
+  } finally {
+    await Promise.all(others.map((game) => game.quit()));
+    await relay2.close();
   }
 });

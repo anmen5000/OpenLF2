@@ -105,6 +105,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
   51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
   way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
+- Network play in the browser: direct connections. The game pages of a room also connect to the host's page
+  directly (WebRTC data channels, set up through the relay; public STUN servers for players on different
+  networks) and time both ways; when every player reaches the host directly, none more than 10 ms later than
+  through the relay, and the round trips add up to less, the host's page keeps the beat itself from START by the
+  relay's rules (in a worker, so a hidden tab does not slow it): players on one LAN play with a few milliseconds
+  between them instead of the way to the relay and back. Otherwise (a proxy, a network that allows no direct
+  connection, an older page) the relay keeps the beat as before; the Online panel shows which, with the times.
+  Rooms of up to 8 players as before. The relay passes the set-ups on (`{"t":"signal"}`), answers pings, and leaves
+  the beat to the host's page when told (installer version 11); the game itself is unchanged
 - INSANE!/XOI v30: no endless loops. A standoff with no blow between the two fighters for 300 frames free to act
   (`loop_calm`, ten seconds and more) is taken for a loop, and then: a move tried again and again since the last
   blow, all to no avail, is worth less with every try beyond three (`loop_free`, `loop_factor`, at least `loop_floor`

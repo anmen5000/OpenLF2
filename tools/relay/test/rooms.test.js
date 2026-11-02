@@ -420,3 +420,69 @@ test('eight players fill a room and the frames carry all of them', async () => {
     for (const one of players) one.ws.close();
   } finally { await relay.close(); }
 });
+
+test('direct connections: the relay passes on set-ups and pings, and leaves the beat to the host\'s page', async () => {
+  const relay = await startRelay();
+  try {
+    const code = room();
+    // Each page's messages in the order they came, text and binary alike.
+    const pages = [];
+    for (const role of ['host', 'join', 'join']) {
+      const ws = new WebSocket(`${relay.url}?v=2&role=${role}&room=${code}`);
+      const page = { ws, log: [] };
+      ws.on('message', (data, isBinary) => page.log.push(isBinary ? { kind: data[0] } : JSON.parse(data.toString())));
+      page.closed = new Promise((resolve) => ws.on('close', (closeCode) => resolve(closeCode)));
+      await new Promise((resolve) => ws.on('open', resolve));
+      await waitFor(() => page.log.some((entry) => entry.t === 'welcome'));
+      pages.push(page);
+    }
+    const welcome = (page) => page.log.find((entry) => entry.t === 'welcome');
+    const ids = pages.map((page) => welcome(page).id);
+    assert.deepEqual(welcome(pages[1]).direct, { repeat: 15, grace: 5000, buffered: 1048576 });
+    const text = (page, message) => page.ws.send(JSON.stringify(message));
+
+    text(pages[1], { t: 'ping', n: 7 });
+    await waitFor(() => pages[1].log.some((entry) => entry.t === 'pong' && entry.n === 7));
+    // Set-ups go between the host and another player only.
+    text(pages[1], { t: 'signal', to: 'host', data: { description: { type: 'offer', sdp: 'x' } } });
+    await waitFor(() => pages[0].log.some((entry) => entry.t === 'signal'));
+    assert.deepEqual(pages[0].log.find((entry) => entry.t === 'signal'), { t: 'signal', from: ids[1], data: { description: { type: 'offer', sdp: 'x' } } });
+    text(pages[0], { t: 'signal', to: ids[2], data: { candidate: { candidate: 'c' } } });
+    text(pages[1], { t: 'signal', to: ids[2], data: { candidate: { candidate: 'not between players' } } });
+    await waitFor(() => pages[2].log.some((entry) => entry.t === 'signal'));
+    await sleep(100);
+    assert.deepEqual(pages[2].log.filter((entry) => entry.t === 'signal').map((entry) => entry.from), [ids[0]]);
+
+    pages.forEach((page, index) => page.ws.send(packet(KIND.hello, Buffer.concat([Buffer.from([4]), Buffer.from('prof'), Buffer.from(`P${index}`)]))));
+    await waitFor(() => pages[0].log.filter((entry) => entry.kind === KIND.lobby).length >= 3);
+    text(pages[0], { t: 'beat', by: 'host' });
+    pages[0].ws.send(packet(KIND.start, Buffer.from('setup')));
+    await waitFor(() => pages.every((page) => page.log.some((entry) => entry.kind === KIND.started)));
+    for (const page of pages) {
+      // Before STARTED, so that the page routes the game's READY and input to the host.
+      const beat = page.log.findIndex((entry) => entry.t === 'beat');
+      assert.ok(beat >= 0 && beat < page.log.findIndex((entry) => entry.kind === KIND.started));
+      assert.deepEqual(page.log[beat], { t: 'beat', by: 'host', host: ids[0] });
+      page.ws.send(packet(KIND.ready, Buffer.alloc(0)));
+      page.ws.send(packet(KIND.input, Buffer.from([0, 16])));
+    }
+    await sleep(400);
+    assert.ok(pages.every((page) => !page.log.some((entry) => entry.kind === KIND.frame)), 'the relay sends no frames');
+    // A player gone: the host's page hears it (and sends LEFT among its own frames).
+    pages[2].ws.close();
+    await waitFor(() => pages[0].log.some((entry) => entry.t === 'left'));
+    assert.deepEqual(pages[0].log.find((entry) => entry.t === 'left'), { t: 'left', id: ids[2] });
+    assert.ok(!pages[1].log.some((entry) => entry.kind === KIND.left));
+    // The beat leaves with the host.
+    pages[0].ws.close();
+    assert.equal(await pages[1].closed, CLOSE.hostLeft[0]);
+  } finally { await relay.close(); }
+});
+
+async function waitFor(check, timeout = 4000) {
+  const deadline = Date.now() + timeout;
+  while (!check()) {
+    if (Date.now() > deadline) throw new Error('timed out waiting for condition');
+    await sleep(20);
+  }
+}
