@@ -504,6 +504,45 @@ test('on a LAN that loses packets (Wi-Fi), the players\' frames do not stall: a 
   }
 });
 
+test('a host page whose beat comes late now and then: the players\' games still run evenly', { skip }, async () => {
+  const relay = await startRelay();
+  const games = [];
+  const lan = fakeWebRtc({ delay: 1 });
+  try {
+    // The host's page is busy with its game now and then: one beat in 25 runs 40 to 80 ms late (as when the
+    // beat is kept on the page itself and the game's frame or a garbage collection holds it up; the worker
+    // of a browser host is not that late).
+    const jittery = (games) => {
+      const host = games[0].online;
+      let seed = 12345;
+      const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      host.ticker = (callback) => {
+        let timer = 0;
+        return {
+          schedule(ms) { clearTimeout(timer); timer = setTimeout(callback, ms + (random() < 0.04 ? 40 + random() * 40 : 0)); },
+          stop() { clearTimeout(timer); },
+        };
+      };
+      return hostKeepsTheBeat(games);
+    };
+    await startedGames(relay, 2, [0, 1].map(() => ({ oneWay: 25, rtc: lan })), games, jittery);
+    for (const game of games) assert.equal(game.online.beatBy, 'host');
+    await Promise.all(games.map((game) => game.play({ until: (self) => self.frames.length >= 600, display: 1000 / 60 })));
+    assertLockstep(games);
+    // The player's game: after the first late beats taught its pacing, frames run on time (two refreshes apart
+    // almost always: a late frame would be shown a refresh or more late, a visible hitch).
+    const times = games[1].frames.slice(100).map((frame) => frame.time);
+    const gaps = times.slice(1).map((time, index) => time - times[index]);
+    const long = gaps.filter((gap) => gap > 50).length;
+    assert.ok(long <= 3, `${long} of ${gaps.length} frames came more than 50 ms after the one before (${gaps.filter((gap) => gap > 50).map((gap) => gap.toFixed(0)).join(' ')})`);
+    const mean = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+    assert.ok(mean > 31 && mean < 36, `frames every ${mean.toFixed(1)} ms`);
+  } finally {
+    await Promise.all(games.map((game) => game.quit()));
+    await relay.close();
+  }
+});
+
 test('a player who cannot connect directly, or whose page cannot: the relay keeps the beat', { skip }, async () => {
   for (const third of [{ rtc: fakeWebRtc({ blocked: true }) }, { rtc: null }]) {
     const relay = await startRelay();

@@ -105,6 +105,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
   51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
   way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
+- Network play in the browser: the corner of the game also shows how busy each computer is (`busy`: the longest
+  the page stalled in the last 5 seconds; `host busy` / `player busy` for the other side, which tells it every
+  2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,
+  busy, the beat's lateness, each link's round trips and version, the frames' lateness per second, the page's
+  stalls), for a bug report. Hero Fighter's bottom line shows `busy` and `other busy` too
 - Network play in the browser: the network in a corner of the game while in a room — the ping to whoever keeps the
   beat (the relay, or the host's page: on the host's page its slowest player's), which way the frames come (`direct`
   or `relay`), how unevenly the frames of the last 5 seconds came (`jitter`, ms between the earliest and the latest,
@@ -204,7 +209,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
-- Network play in the browser, the host's page keeping the beat: a network packet lost between the pages (as on
+- Network play in the browser, direct (the host keeping the beat): the players' games no longer stutter while
+  the host's plays smoothly. The beat ran on the host's page's main thread, after whatever the page was busy
+  with (the game's own frame, the computer players' thinking, a garbage collection): every stall of the host's
+  page came to the players as a late frame, then a burst (seen as `jitter` rising on the player's corner while
+  the ping stayed at 1 ms). Now, in browsers that hand WebRTC data channels to a worker (Chrome, Edge), the
+  host's page gives each player's channels to a worker that keeps the beat, answers pings and takes inputs
+  there, unaffected by the page; the page only signals the links and mirrors their state. And every game's
+  pacing (`room.lua`) follows the latest frame of the last ten seconds instead of the 90th percentile of the last
+  three, so a rare late frame no longer shows as a hitch (with a host whose beat ran 40–80 ms late once in 25:
+  20 hitches in 500 frames before, 0 now), with the page noting each frame's arrival for it (`KIND.stamp`,
+  so the game's own frame time no longer blurs the measurement). Pings go over the datagram channel, where a
+  lost packet cannot hold them up, and both sides ping, so the host's corner shows a real ping
+- Mods: a spawned object sent to a frame its file does not have no longer stays for the rest of the match
+  (invisible and inert, holding one of the 400 object slots). One Piece GrandWorld's Enel, lying, spawns
+  enel_ball frame 112, which does not exist: in a long Survival stage that filled every slot in four minutes
+  (308 of them), after which no move could spawn anything — Ace's and Marco's attacks lost their effects and
+  did no damage. The original keeps such objects; here they are removed
+ between the pages (as on
   Wi-Fi) no longer holds the other players' game up. A lost packet on WebRTC's reliable channel held up everything
   after it until it was sent again, a quarter of a second or more (longer on Wi-Fi), then the frames came at once: the
   players saw the host's moves late, then fast. Version 2 links (both pages say so on the link) number the game's

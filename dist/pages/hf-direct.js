@@ -32,6 +32,7 @@
   const FAST_LABEL = 'hf-fast';
   const DATAGRAM = 1100; // characters a datagram holds at most (one network packet)
   const RECENT = 16; // frames kept for the datagrams
+  const LOAD_STEP = 20; // ms between the ticks that measure how busy the page is (a late tick = a stall)
   const FRAME = /^<f><c>(\d+)<\/c><i>(\d+)<\/i>/;
   const now = () => (root.performance && typeof root.performance.now === 'function' ? root.performance.now() : Date.now());
 
@@ -259,6 +260,7 @@
       this.closed = false;
       this.times = [];
       this.reported = false;
+      this.peerStall = null; // how busy the other page said it was lately, ms
       this.queue = Promise.resolve();
       this.channel = null;
       this.fast = null;
@@ -293,7 +295,7 @@
       if (channel.label === FAST_LABEL) {
         this.fast = channel;
         channel.onclose = () => { if (this.fast === channel) this.fast = null; };
-        channel.onmessage = (event) => this.onMessage(event);
+        channel.onmessage = (event) => this.onMessage(event, true);
         return;
       }
       this.channel = channel;
@@ -306,20 +308,22 @@
         this.owner.linkChanged(this);
       };
       channel.onclose = () => this.close();
-      channel.onmessage = (event) => this.onMessage(event);
+      channel.onmessage = (event) => this.onMessage(event, false);
     }
 
-    onMessage(event) {
+    onMessage(event, fast) {
       if (this.closed || typeof event.data !== 'string') return;
       let message;
       try { message = JSON.parse(event.data); } catch (error) { return; }
-      if (message && typeof message === 'object') this.receive(message);
+      if (message && typeof message === 'object') this.receive(message, fast);
     }
 
-    receive(message) {
+    receive(message, fast) {
       if (message.t === 'f') this.owner.merger.fromPeer(this.peer.cid, Number(message.e), message.f);
-      else if (message.t === 'ping') this.say({ t: 'pong', at: message.at });
-      else if (message.t === 'pong' && Number.isFinite(message.at)) {
+      else if (message.t === 'ping') {
+        this.sendText(JSON.stringify({ t: 'pong', at: message.at }), fast);
+        if (Number.isFinite(message.stall)) this.peerStall = message.stall;
+      } else if (message.t === 'pong' && Number.isFinite(message.at)) {
         this.times.push(Math.max(0, now() - message.at));
         if (this.times.length > 5) this.times.shift();
         if (!this.reported) {
@@ -350,7 +354,11 @@
 
     say(message) { return this.sendText(JSON.stringify(message)); }
 
-    sendText(text) {
+    // On the datagram channel when asked and open (a ping there is not held up by a lost packet), else reliable.
+    sendText(text, fast) {
+      if (fast && this.fast && this.fast.readyState === 'open' && this.fast.bufferedAmount < CHANNEL_LIMIT / 4) {
+        try { this.fast.send(text); return true; } catch (error) { /* the reliable channel then */ }
+      }
       if (!this.open || !this.channel || this.channel.readyState !== 'open') return false;
       if (this.channel.bufferedAmount > CHANNEL_LIMIT) return false;
       try { this.channel.send(text); } catch (error) { return false; }
@@ -364,7 +372,8 @@
       try { fast.send(text); } catch (error) { /* the reliable copy */ }
     }
 
-    ping() { this.say({ t: 'ping', at: now() }); }
+    // A round trip, on the datagram channel when there is one; with it, how busy this page was lately.
+    ping() { this.sendText(JSON.stringify({ t: 'ping', at: now(), stall: Math.round(this.owner.stall()) }), true); }
 
     time() {
       if (!this.times.length) return null;
@@ -421,6 +430,18 @@
       this.fromGame = new win.TextDecoder();
       this.merger = new Merger((text) => this.toGame(text));
       this.merger.onEnd = (counts) => this.fightEnded(counts);
+      // How busy this page is: a timer every LOAD_STEP ms, late by what the page was busy with (Ruffle's frame).
+      this.stalls = [];
+      this.loadLast = now();
+      this.loadTimer = setInterval(() => {
+        const at = now();
+        const late = at - this.loadLast - LOAD_STEP;
+        this.loadLast = at;
+        if (late >= 4) {
+          this.stalls.push([at, late]);
+          if (this.stalls.length > 2000) this.stalls.splice(0, 1000);
+        }
+      }, LOAD_STEP);
       const ws = new options.NativeWebSocket(url);
       ws.binaryType = 'arraybuffer';
       this.ws = ws;
@@ -603,7 +624,8 @@
         const name = peer.name || 'player';
         if (link && link.open) {
           const ms = link.time();
-          parts.push(`${name} ${ms === null ? '' : `${Math.round(ms)} ms`}`.trim());
+          const busy = Number.isFinite(link.peerStall) && link.peerStall >= 40 ? `, busy ${Math.round(link.peerStall)} ms` : '';
+          parts.push(`${name} ${ms === null ? '' : `${Math.round(ms)} ms`}${busy}`.trim());
         } else if ((link && !link.closed) || (!link && !this.failed.has(peer.id) && now() - peer.since < CONNECT_MS)) {
           parts.push(`${name} connecting…`);
         } else {
@@ -620,13 +642,25 @@
       const direct = this.peers.size > 0 && links.length === this.peers.size && links.every((link) => link.open);
       const times = direct ? links.map((link) => link.time()).filter((ms) => ms !== null) : [];
       const relayMs = middle(this.relayTimes);
-      const figures = { way: direct ? 'direct' : 'relay', ping: direct ? (times.length ? Math.max(...times) : null) : relayMs, relay: relayMs };
+      let peerBusy = null;
+      for (const link of links) if (link.open && Number.isFinite(link.peerStall)) peerBusy = Math.max(peerBusy === null ? 0 : peerBusy, link.peerStall);
+      const figures = { way: direct ? 'direct' : 'relay', ping: direct ? (times.length ? Math.max(...times) : null) : relayMs, relay: relayMs,
+        busy: this.stall(), peerBusy };
       try { this.options.status(text, figures); } catch (error) { /* only shown */ }
+    }
+
+    // The longest stall of the last 5 seconds, ms.
+    stall() {
+      const since = now() - 5000;
+      let worst = 0;
+      for (const [at, late] of this.stalls) if (at >= since && late > worst) worst = late;
+      return worst;
     }
 
     closeLinks() {
       clearTimeout(this.statusTimer);
       clearInterval(this.pinger);
+      clearInterval(this.loadTimer);
       for (const link of [...this.links.values()]) link.close();
       this.links.clear();
     }

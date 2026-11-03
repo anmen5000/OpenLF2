@@ -300,7 +300,12 @@ window.HeroFighter = (() => {
           corner.hidden = true;
           return;
         }
-        corner.textContent = `Ping ${figures.ping === null ? '…' : `${Math.round(figures.ping)} ms`} · ${figures.way}`;
+        const parts = [`Ping ${figures.ping === null ? '…' : `${Math.round(figures.ping)} ms`}`, figures.way];
+        // This computer busy (Ruffle's frames taking that long): the game itself runs slow, whatever the network.
+        if (figures.busy >= 40) parts.push(`busy ${Math.round(figures.busy)} ms`);
+        if (figures.peerBusy !== null && figures.peerBusy >= 40) parts.push(`other busy ${Math.round(figures.peerBusy)} ms`);
+        corner.textContent = parts.join(' · ');
+        corner.style.color = figures.busy >= 100 || (figures.peerBusy !== null && figures.peerBusy >= 100) ? '#ffb74d' : '#fff';
         corner.hidden = false;
       },
       log,

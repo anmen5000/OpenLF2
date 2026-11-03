@@ -111,7 +111,11 @@ not slow down). As in any game played directly, the players' and the host's IP a
 to each other's browsers. Between pages of this version, each link has a second channel that never
 sends again what was lost (a datagram): the game's messages are numbered and each also goes there with
 the 7 before it, so a packet lost on the way (Wi-Fi) costs 33 ms instead of holding everything up until
-it is sent again. During play the game's corner shows the ping, `direct` or `relay`, and the jitter.
+it is sent again. During play the game's corner shows the ping, `direct` or `relay`, the jitter and how busy
+each side is; the Online panel's **Copy network report** gives the last minute as text. On the host's page, in
+browsers that hand data channels to a worker (Chromium), the channels and the beat live in a worker
+(`online.js` loaded again as one), so the page's own work never delays a beat; elsewhere the beat runs on
+the page as before.
 
 When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own

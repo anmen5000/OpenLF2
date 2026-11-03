@@ -24,7 +24,8 @@ local unlock = require("base/game/unlock")
 local room = {}
 
 local kinds = {hello = 0x01, start = 0x02, input = 0x03, ready = 0x04, check = 0x05,
-    welcome = 0x81, lobby = 0x82, started = 0x83, frame = 0x84, checked = 0x85, left = 0x86}
+    welcome = 0x81, lobby = 0x82, started = 0x83, frame = 0x84, checked = 0x85, left = 0x86,
+    stamp = 0x90} -- stamp: the web page's note of when the next frame arrived (dist/web/online.js)
 local slot_count = 8
 local most_players = 8
 local connect_timeout, frame_timeout = 30000, 30000 -- ms
@@ -33,7 +34,7 @@ local check_interval = 8 -- frames between two desync checks sent
 local history_size = 1024 -- frames whose own checks are kept for comparison
 local max_backlog = 9000 -- frames (5 minutes) received and not run yet
 local heartbeat = 25 -- ms: while frames run, an input goes to the relay at least this often
-local playout_window = 90 -- frames whose arrival times set the pacing
+local playout_window = 300 -- frames (10 seconds) whose arrival times set the pacing
 local powers = {1, 2, 4, 8, 16, 32, 64, 128}
 
 local function has(value, index) return math.floor(value / powers[index]) % 2 == 1 end
@@ -167,8 +168,11 @@ local function apply_start(state, players, setup)
 end
 
 -- Pacing: a frame runs at (its number x the beat) + target, the target following the earliest
--- arrival of the recent frames plus most of their spread, so that frames that come a little early
--- or late still run evenly. The target rises at once and sinks slowly.
+-- arrival of the recent frames plus their whole spread (at most 100 ms), so that frames that come a
+-- little early or late still run evenly: the latest frame of the last ten seconds sets the pace, as a
+-- frame later than the target is shown late, a visible hitch. The target rises at once and sinks slowly.
+-- Arrival times come from the page when it notes them (kinds.stamp: the moment a frame reached the
+-- browser), else from the moment the game read the frame.
 local function note_arrival(state, number, now)
     state.offsets[state.offset_next] = now - state.tick * number
     state.offset_next = state.offset_next % playout_window + 1
@@ -179,10 +183,10 @@ local function update_target(state)
     for index = 1, state.offset_count do values[index] = state.offsets[index] end
     table.sort(values)
     local base = values[1]
-    local spread = values[math.max(1, math.ceil(#values * 0.9))] - base
-    local wanted = base + math.min(math.max(spread + 2, 2), 100)
+    local spread = values[#values] - base
+    local wanted = base + math.min(spread + 2, 100)
     if not state.target or wanted > state.target then state.target = wanted
-    else state.target = math.max(wanted, state.target - 0.5) end
+    else state.target = math.max(wanted, state.target - 0.25) end
 end
 
 local function compare(state, number, hash)
@@ -192,7 +196,17 @@ local function compare(state, number, hash)
 end
 
 local function handle(state, kind, payload)
-    if kind == kinds.welcome then
+    local stamp = state.stamp
+    state.stamp = nil
+    if kind == kinds.stamp then
+        -- When the next frame reached the page: performance.now() in whole milliseconds and thousandths,
+        -- the same clock as engine.network_time() in the web build (checked: within ten seconds of it).
+        if #payload == 6 then
+            local arrival = read_u32(payload, 1) + read_u16(payload, 5) / 1000
+            if math.abs(arrival - engine.network_time()) < 10000 then state.stamp = arrival end
+        end
+        return true
+    elseif kind == kinds.welcome then
         local id, flags, most, tick, length = payload:byte(1, 5)
         if not length or #payload ~= 5 + length then return nil, "Invalid network welcome" end
         state.id, state.host, state.most = id, flags % 2 == 1, math.min(most, most_players)
@@ -230,7 +244,7 @@ local function handle(state, kind, payload)
         if state.queue_last - state.queue_first + 1 > max_backlog then
             return nil, "Network: this computer fell too far behind the game"
         end
-        note_arrival(state, number, engine.network_time())
+        note_arrival(state, number, stamp or engine.network_time())
     elseif kind == kinds.checked then
         if state.phase ~= "ready" or #payload ~= 7 then return nil, "Invalid network check" end
         local number, hash = read_u32(payload, 2), read_u16(payload, 6)

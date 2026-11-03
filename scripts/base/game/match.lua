@@ -688,9 +688,19 @@ local function control_item(state, index, value)
     frame_rules.after_control(state, index, value)
 end
 
+local first_spawned_slot = constants.first_spawned_slot
+
 local function physics_item(state, index, value)
     physics.step(state, value)
-    if value.record.frame(value.frame).state == constants.frame_states.removed then objects.remove(state, index) end
+    local frame = value.record.frame(value.frame)
+    if frame.state == constants.frame_states.removed then objects.remove(state, index)
+    elseif frame.undefined and index >= first_spawned_slot and value.record.kind ~= record_kinds.character then
+        -- A spawned object sent to a frame its file does not have (OpenLF2 extension). The original keeps it:
+        -- an undefined frame is all zeros, so the object stays there, invisible and inert, for the rest of the
+        -- match, and a mod that does this often (One Piece GrandWorld's Enel lying spawns enel_ball frame 112)
+        -- fills the 400 object slots in a long Survival stage, after which no move can spawn anything.
+        objects.remove(state, index)
+    end
     frame_rules.after_physics(state, index, value)
 end
 

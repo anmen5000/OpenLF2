@@ -23,6 +23,12 @@
 (function (root) {
   'use strict';
 
+  // This script runs on the game page and, for the host of a direct room, again as a worker (workerMain).
+  const IN_WORKER = typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope;
+  const SCRIPT_URL = !IN_WORKER && root.document && root.document.currentScript && root.document.currentScript.src
+    ? root.document.currentScript.src : '';
+  const LOAD_STEP = 20; // ms between the ticks that measure how busy the page is (watchLoad)
+
   const STATUS = Object.freeze({ idle: 0, listening: 1, connecting: 2, connected: 3 });
   const ROOM_PATTERN = /^\d{4,12}$/;
   const SEND_LIMIT = 65536; // the TCP transport's send queue limit
@@ -57,6 +63,9 @@
   const KIND = Object.freeze({
     hello: 0x01, start: 0x02, input: 0x03, ready: 0x04, check: 0x05,
     welcome: 0x81, lobby: 0x82, started: 0x83, frame: 0x84, checked: 0x85, left: 0x86,
+    // This page's own, before each FRAME it gives the game: when the frame arrived here (performance.now(),
+    // whole milliseconds u32 and thousandths u16), for the game's pacing (room.lua; older games skip it).
+    stamp: 0x90,
   });
   const DIRECT = Object.freeze({
     // Public STUN servers: how a direct connection crosses home routers when the players are not on one LAN.
@@ -93,6 +102,8 @@
       this.setRoom(options.room);
       this.listeners = new Set();
       this.lastFailure = ''; // kept for the panel after the game has closed the failed connection
+      this.loadTimer = 0; // watchLoad: how busy this page is, measured while in a room
+      this.stalls = null;
       this.reset();
     }
 
@@ -120,7 +131,10 @@
       this.tickMs = 100 / 3;
       this.lobbyIds = [];
       this.beatBy = 'relay'; // who keeps the beat once started: 'relay' or 'host'
-      this.beat = null; // the host's page, keeping the beat
+      this.beat = null; // the host's side keeping the beat: Beat on this page, or WorkerBeat for the worker
+      this.worker = null; // the host's worker (startWorker), when the browser hands channels to one
+      this.workerReady = false;
+      this.workerBeating = false;
       this.incoming = EMPTY; // relay messages not yet complete
       this.outgoing = EMPTY; // game messages not yet complete
       // For the corner of the game (netStats): frames as they came, and the last one the game ran and checked.
@@ -137,6 +151,10 @@
       const links = [...this.links.values()];
       this.links = new Map();
       for (const link of links) link.close();
+      this.giveUpWorker();
+      this.workerBeating = false;
+      clearInterval(this.loadTimer);
+      this.loadTimer = 0;
     }
 
     // Accepts what people paste: wss://host/relay as printed by the installer, but also the
@@ -348,16 +366,15 @@
       this.receive(bytes);
     }
 
-    // Bytes for the game.
+    // Bytes for the game, each FRAME with a note of when it came (KIND.stamp), for the game's pacing.
     receive(bytes) {
-      this.chunks.push(bytes);
-      this.buffered += bytes.length;
       const at = now();
-      eachPacket(bytes, (kind, payload) => {
-        if (kind !== KIND.frame || payload.length < 4) return;
-        this.arrivals.push([readU32(payload, 0), at]);
-        if (this.arrivals.length > 300) this.arrivals.splice(0, this.arrivals.length - 200);
+      const stamped = stampFrames(bytes, at, (frame) => {
+        this.arrivals.push([frame, at]);
+        if (this.arrivals.length > 2400) this.arrivals.splice(0, this.arrivals.length - 1800);
       });
+      this.chunks.push(stamped);
+      this.buffered += stamped.length;
     }
 
     // How the network is, for the corner of the game: the round trip (ms) to whoever keeps the beat (the
@@ -389,18 +406,30 @@
         // CHECKs come every 8 frames: the game is somewhere in the 8 after the last one.
         behind = Math.max(0, recent[recent.length - 1][0] - this.lastRun - 8) * this.tickMs;
       }
-      return { ping, way, jitter, behind, host: this.role === 'host' };
+      // How busy this page was lately, and the other side (the host for a player; for the host, its busiest player).
+      const busy = this.stall();
+      let peerBusy = null;
+      for (const link of this.links.values()) {
+        if (link.open && Number.isFinite(link.peerStall)) peerBusy = Math.max(peerBusy === null ? 0 : peerBusy, link.peerStall);
+      }
+      return { ping, way, jitter, behind, busy, peerBusy, host: this.role === 'host' };
     }
 
     // ---- Direct connections -------------------------------------------------------------------
 
-    // The relay passes on set-ups: time the way to it, and reach the host's page directly.
+    // The relay passes on set-ups: time the way to it, and reach the host's page directly. On the host's
+    // page, when the browser can hand data channels to a worker, the channels and the beat live in one
+    // (startWorker): the game's own work on the page then never delays a beat or a pong.
     startDirect(rules) {
       this.rules = {
         repeat: Number(rules.repeat) || 15, grace: Number(rules.grace) || 5000, buffered: Number(rules.buffered) || 1048576,
       };
-      // (Without WebRTC, no links: the relay keeps the beat; the round trips to it still show in the corner.)
-      if (this.role !== 'host' && typeof this.RTCPeerConnection === 'function') this.links.set('host', new Link(this, 'host', true));
+      this.watchLoad();
+      if (typeof this.RTCPeerConnection === 'function') {
+        // (Without WebRTC, no links: the relay keeps the beat; the round trips to it still show in the corner.)
+        if (this.role === 'host') this.startWorker();
+        else this.links.set('host', new Link(this, 'host', true));
+      }
       this.pingTimer = setInterval(() => this.ping(), DIRECT.pingMs);
       this.ping();
     }
@@ -412,8 +441,12 @@
       this.relayPings.set(this.pings, now());
       if (this.relayPings.size > 8) this.relayPings.delete(this.relayPings.keys().next().value);
       socket.send(JSON.stringify({ t: 'ping', n: this.pings }));
-      const link = this.links.get('host');
-      if (link && link.open) link.ping();
+      const stall = this.stall();
+      if (this.worker) {
+        this.worker.postMessage({ t: 'load', stall });
+        return;
+      }
+      for (const link of this.links.values()) if (link.open) link.ping(stall);
     }
 
     signal(to, data) {
@@ -435,23 +468,26 @@
       if (link) link.signal(data);
     }
 
-    // A direct connection's messages: timing (text), and the game's (binary): to the host, the
-    // game's INPUT, READY and CHECK; from it, the beat's frames.
-    onLinkMessage(link, data) {
+    // A direct connection's messages on this page: timing (text), and the game's (binary): to the host,
+    // the game's INPUT, READY and CHECK; from it, the beat's frames.
+    onLinkMessage(link, data, fast) {
       if (typeof data === 'string') {
         let message;
         try { message = JSON.parse(data); } catch (error) { return; }
         if (!message) return;
-        if (message.t === 'ping') link.say({ t: 'pong', at: message.at });
-        else if (message.t === 'hello') link.greeted(Number(message.v) || 0);
-        else if (message.t === 'pong' && Number.isFinite(message.at)) {
+        if (message.t === 'ping') {
+          link.answer(message, fast);
+          if (Number.isFinite(message.stall)) link.peerStall = message.stall;
+        } else if (message.t === 'hello') {
+          link.greeted(Number(message.v) || 0);
+        } else if (message.t === 'pong' && Number.isFinite(message.at)) {
           addSample(link.times, now() - message.at);
-          // What the host's page weighs at START: both ways, from here.
-          link.say({ t: 'times', relay: median(this.relayTimes), direct: median(link.times) });
+          // What the host's page weighs at START: both ways, from here; and how busy this page is.
+          if (this.role !== 'host') link.say({ t: 'times', relay: median(this.relayTimes), direct: median(link.times), stall: this.stall() });
           this.emit();
-        }
-        else if (message.t === 'times') {
+        } else if (message.t === 'times') {
           link.reported = { relay: finiteOrNull(message.relay), direct: finiteOrNull(message.direct) };
+          if (Number.isFinite(message.stall)) link.peerStall = message.stall;
           this.emit();
         }
         return;
@@ -527,9 +563,116 @@
           this.lobbyIds = readPlayers(payload);
         } else if (kind === KIND.started) {
           const order = readPlayers(payload);
-          if (this.beatBy === 'host' && this.role === 'host' && !this.beat) this.beat = new Beat(this, order);
+          if (this.beatBy === 'host' && this.role === 'host' && !this.beat) {
+            this.beat = this.worker ? new WorkerBeat(this, order) : new Beat(this, order);
+          }
         }
       }));
+    }
+
+    // Beat's host interface, when the beat is kept on this page.
+    wire(id) { return this.links.get(id); }
+    toGame(bytes) { this.receive(bytes); }
+    ticker(callback) { return createTicker(callback); }
+
+    // ---- The host's worker ---------------------------------------------------------------------
+    // This script again, as a worker (workerMain below): it is given the data channels of the players'
+    // links as they come (transferred, so the page no longer holds them) and keeps the beat on them. The
+    // page keeps the signalling (RTCPeerConnection) and mirrors what the worker tells it about each link.
+
+    startWorker() {
+      if (!SCRIPT_URL || typeof root.Worker !== 'function') return;
+      let worker;
+      try {
+        worker = new root.Worker(SCRIPT_URL);
+      } catch (error) {
+        return;
+      }
+      this.worker = worker;
+      this.workerReady = false;
+      worker.onerror = () => { if (this.worker === worker) this.giveUpWorker(); };
+      worker.onmessage = (event) => { if (this.worker === worker) this.onWorkerMessage(event.data); };
+      worker.postMessage({ t: 'setup', id: this.id, rules: this.rules, tickMs: this.tickMs });
+      // Whether this browser hands data channels over to a worker (Chromium does): tried on a throwaway one,
+      // so that no link is caught halfway.
+      try {
+        const probe = new this.RTCPeerConnection({ iceServers: [] });
+        const channel = probe.createDataChannel('probe');
+        worker.postMessage({ t: 'probe', channel }, [channel]);
+        setTimeout(() => { try { probe.close(); } catch (error) { /* closed */ } }, 1000);
+      } catch (error) {
+        this.giveUpWorker();
+      }
+    }
+
+    // Back to keeping the beat on the page (an older browser, or the worker could not be loaded).
+    giveUpWorker() {
+      const worker = this.worker;
+      this.worker = null;
+      this.workerReady = false;
+      if (worker) {
+        try { worker.terminate(); } catch (error) { /* gone */ }
+      }
+    }
+
+    onWorkerMessage(message) {
+      if (!message || typeof message !== 'object') return;
+      if (message.t === 'ready') {
+        this.workerReady = true;
+      } else if (message.t === 'link') {
+        const link = this.links.get(message.id);
+        if (!link) return;
+        if (Array.isArray(message.times)) link.times = message.times;
+        if (message.reported !== undefined) link.reported = message.reported;
+        if (Number.isFinite(message.peerStall)) link.peerStall = message.peerStall;
+        if (message.version) link.version = message.version;
+        if (message.closed) {
+          link.close();
+          return;
+        }
+        if (message.open && !link.open) {
+          link.open = true;
+          clearTimeout(link.timer);
+          this.linkChanged(link);
+          return;
+        }
+        this.emit();
+      } else if (message.t === 'frame') {
+        this.receive(new Uint8Array(message.bytes));
+      } else if (message.t === 'beat') {
+        if (message.started) this.workerBeating = true;
+        if (this.beat && Number.isFinite(message.late)) this.beat.late = message.late;
+      }
+    }
+
+    // ---- The page's own load --------------------------------------------------------------------
+    // A timer every few milliseconds: the time it comes late is how long the page was busy (the game's frame,
+    // a garbage collection, another tab's work on this thread). The longest such stall of the last 5 seconds
+    // is shown in the corner and told to the other side: a busy host delays the beat for everyone when the
+    // beat runs on its page, a busy player delays only its own game.
+
+    watchLoad() {
+      if (this.loadTimer) return;
+      this.loadLast = now();
+      this.stalls = [];
+      this.loadTimer = setInterval(() => {
+        const at = now();
+        const late = at - this.loadLast - LOAD_STEP;
+        this.loadLast = at;
+        if (late >= 4) {
+          this.stalls.push([at, late]);
+          if (this.stalls.length > 2000) this.stalls.splice(0, 1000);
+        }
+      }, LOAD_STEP);
+    }
+
+    // The longest stall of the last 5 seconds, ms.
+    stall() {
+      if (!this.stalls) return 0;
+      const since = now() - 5000;
+      let worst = 0;
+      for (const [at, late] of this.stalls) if (at >= since && late > worst) worst = late;
+      return worst;
     }
 
     // For the panel: how this game plays with the others.
@@ -550,6 +693,50 @@
       if (!link || !link.open) return link && !link.closed ? 'connecting directly to the host...' : 'no direct link to the host: through the relay';
       const direct = median(link.times);
       return `direct link to the host${direct === null ? '' : `: ${Math.round(direct)} ms`}${relay === null ? '' : ` (relay ${Math.round(relay)} ms)`}`;
+    }
+
+    // A text of the network's last minute, for a report: what each number in the corner was, over time.
+    report() {
+      const lines = [];
+      const stats = this.netStats();
+      lines.push(`OpenLF2 network report, ${new Date().toISOString()}`);
+      lines.push(`role ${this.role || '-'}, room ${this.activeRoom || '-'}, started ${this.started}, beat by ${this.beatBy}, `
+        + `beat in a worker: ${this.role === 'host' ? Boolean(this.worker && this.workerBeating) : '-'}, tick ${this.tickMs.toFixed(2)} ms, `
+        + `relay ${this.relay}`);
+      if (stats) {
+        lines.push(`ping ${stats.ping === null ? '-' : Math.round(stats.ping)} ms (${stats.way}), jitter 5 s ${stats.jitter === null ? '-' : Math.round(stats.jitter)} ms, `
+          + `behind ${stats.behind === null ? '-' : Math.round(stats.behind)} ms, busy ${Math.round(stats.busy)} ms, other side busy ${stats.peerBusy === null ? '-' : Math.round(stats.peerBusy)} ms`);
+      }
+      if (this.beat && typeof this.beat.worstLate === 'function') lines.push(`the beat here: worst lateness of a beat in the last 5 s ${Math.round(this.beat.worstLate())} ms`);
+      lines.push(`relay round trips ${this.relayTimes.map((ms) => Math.round(ms)).join(' ') || '-'}`);
+      for (const [id, link] of this.links) {
+        lines.push(`link ${id}: ${link.closed ? 'closed' : link.open ? 'open' : 'connecting'}, version ${link.version}, datagrams ${link.fast ? 'yes' : (this.worker ? '(worker)' : 'no')}, `
+          + `round trips ${link.times.map((ms) => Math.round(ms)).join(' ') || '-'}, reported ${JSON.stringify(link.reported)}, other side busy ${link.peerStall === null ? '-' : Math.round(link.peerStall)} ms`);
+      }
+      // The frames of the last minute: how late each came after the earliest, by seconds.
+      const at = now();
+      const recent = this.arrivals.filter(([, time]) => at - time < 60000);
+      if (recent.length > 10) {
+        const offsets = recent.map(([frame, time]) => time - frame * this.tickMs);
+        const base = Math.min(...offsets);
+        const buckets = new Map();
+        for (const [index, [, time]] of recent.entries()) {
+          const second = Math.floor((at - time) / 1000);
+          const late = offsets[index] - base;
+          const bucket = buckets.get(second) || { count: 0, worst: 0, sum: 0 };
+          bucket.count += 1;
+          bucket.sum += late;
+          bucket.worst = Math.max(bucket.worst, late);
+          buckets.set(second, bucket);
+        }
+        const seconds = [...buckets.keys()].sort((a, b) => a - b);
+        lines.push(`frames of the last minute, per second ago (count, mean lateness, worst lateness ms): `
+          + seconds.map((second) => { const b = buckets.get(second); return `${second}s: ${b.count}/${Math.round(b.sum / b.count)}/${Math.round(b.worst)}`; }).join('  '));
+      }
+      const stalls = (this.stalls || []).filter(([time]) => at - time < 60000).map(([time, late]) => `${Math.round((at - time) / 1000)}s:${Math.round(late)}`);
+      lines.push(`this page's stalls of the last minute (seconds ago:ms, over 4 ms): ${stalls.slice(-80).join(' ') || 'none'}`);
+      lines.push(`browser ${root.navigator ? root.navigator.userAgent : '-'}`);
+      return lines.join('\n');
     }
 
     onClose(socket, event) {
@@ -605,48 +792,26 @@
     }
   }
 
-  // A direct connection to another page of the room (WebRTC data channel, ordered and reliable).
-  class Link {
-    constructor(online, id, offerer) {
-      this.online = online;
+  // A direct connection's channels, as used on a page or in the host's worker: the reliable channel, from
+  // version 2 the datagram channel beside it, the game's messages numbered on both (sendGame, unwrap), and
+  // the timing messages (ping, answer). `owner`: { wireOpened(wire), wireClosed(wire), wireMessage(wire, data,
+  // fast), wireOpenFast(wire) }.
+  class Wire {
+    constructor(owner, id) {
+      this.owner = owner;
       this.id = id;
       this.open = false;
       this.closed = false;
       this.times = []; // round trips through it
-      this.reported = null; // the player's own times (host's page)
-      this.pending = EMPTY; // its messages not yet complete (host's page)
-      this.early = []; // its messages that came before the beat began (host's page)
-      this.queue = Promise.resolve();
+      this.reported = null; // the other side's own times (on the host's side)
+      this.peerStall = null; // how busy the other side's page said it was lately, ms
+      this.pending = EMPTY; // its game messages not yet complete (host's side)
+      this.early = []; // its game messages that came before the beat began (host's side)
       this.channel = null;
-      this.offerer = offerer;
-      this.version = 1; // the other page's (its hello on the link; pages before version 2 say nothing)
       this.fast = null; // version 2: the datagram channel
+      this.version = 1; // the other page's (its hello on the link; pages before version 2 say nothing)
       this.sent = { number: 0, recent: [] }; // the game's messages out: the last number, the newest few
       this.got = { number: 0, held: new Map() }; // and in: the last taken, those after a missing one
-      try {
-        this.pc = new online.RTCPeerConnection({ iceServers: online.iceServers });
-      } catch (error) {
-        this.pc = null;
-        this.closed = true;
-        return;
-      }
-      this.pc.onicecandidate = (event) => {
-        if (event.candidate) online.signal(id, { candidate: plain(event.candidate) });
-      };
-      this.pc.onconnectionstatechange = () => {
-        const state = this.pc.connectionState;
-        if (state === 'failed' || state === 'closed') this.close();
-      };
-      this.timer = setTimeout(() => { if (!this.open) this.close(); }, DIRECT.connectMs);
-      if (offerer) {
-        this.attach(this.pc.createDataChannel('lf2', { ordered: true }));
-        this.queue = this.queue.then(async () => {
-          await this.pc.setLocalDescription(await this.pc.createOffer());
-          online.signal(id, { description: plain(this.pc.localDescription) });
-        }).catch(() => this.close());
-      } else {
-        this.pc.ondatachannel = (event) => this.attach(event.channel);
-      }
     }
 
     attach(channel) {
@@ -654,17 +819,18 @@
       this.channel = channel;
       channel.binaryType = 'arraybuffer';
       channel.onopen = () => {
-        if (this.closed) return;
+        if (this.closed || this.open) return;
         this.open = true;
-        clearTimeout(this.timer);
         this.say({ t: 'hello', v: DIRECT.version });
-        this.online.linkChanged(this);
+        this.owner.wireOpened(this);
       };
       channel.onclose = () => this.close();
-      channel.onmessage = (event) => { if (!this.closed) this.online.onLinkMessage(this, event.data); };
+      channel.onmessage = (event) => { if (!this.closed) this.owner.wireMessage(this, event.data, false); };
+      if (channel.readyState === 'open') channel.onopen();
+      return undefined;
     }
 
-    // The datagram channel (version 2): only the game's numbered messages; losing it loses nothing.
+    // The datagram channel (version 2): the game's numbered messages and pings; losing one loses nothing.
     attachFast(channel) {
       if (this.fast || this.closed) {
         try { channel.close(); } catch (error) { /* closed */ }
@@ -673,9 +839,7 @@
       this.fast = channel;
       channel.binaryType = 'arraybuffer';
       channel.onclose = () => { if (this.fast === channel) this.fast = null; };
-      channel.onmessage = (event) => {
-        if (!this.closed && typeof event.data !== 'string') this.online.onLinkMessage(this, event.data);
-      };
+      channel.onmessage = (event) => { if (!this.closed) this.owner.wireMessage(this, event.data, true); };
     }
 
     // The other page's hello: from version 2 on, numbered messages, and the page that offered the link
@@ -683,32 +847,11 @@
     greeted(version) {
       if (this.closed || version <= this.version) return;
       this.version = version;
-      if (version >= 2 && this.offerer && !this.fast) {
-        try {
-          this.attachFast(this.pc.createDataChannel(DIRECT.fastLabel, { ordered: false, maxRetransmits: 0 }));
-        } catch (error) { /* the reliable channel alone */ }
-      }
-    }
-
-    // The other page's offer, answer or route (in order: a route may not come before its offer).
-    signal(data) {
-      if (this.closed) return;
-      this.queue = this.queue.then(async () => {
-        if (this.closed) return;
-        if (data.description) {
-          await this.pc.setRemoteDescription(data.description);
-          if (data.description.type === 'offer') {
-            await this.pc.setLocalDescription(await this.pc.createAnswer());
-            this.online.signal(this.id, { description: plain(this.pc.localDescription) });
-          }
-        } else if (data.candidate) {
-          await this.pc.addIceCandidate(data.candidate);
-        }
-      }).catch(() => { /* a route that does not work: others may */ });
+      if (version >= 2 && !this.fast) this.owner.wireOpenFast(this);
     }
 
     send(bytes) {
-      if (!this.open || this.channel.readyState !== 'open') return false;
+      if (!this.open || !this.channel || this.channel.readyState !== 'open') return false;
       try { this.channel.send(bytes); } catch (error) { return false; }
       return true;
     }
@@ -770,57 +913,156 @@
       return out;
     }
 
-    say(message) { if (this.open) this.send(JSON.stringify(message)); }
-    ping() { this.say({ t: 'ping', at: now() }); }
+    say(message, fast) {
+      if (!this.open) return false;
+      const text = JSON.stringify(message);
+      if (fast && this.fast && this.fast.readyState === 'open') {
+        try { this.fast.send(text); return true; } catch (error) { /* the reliable channel then */ }
+      }
+      return this.send(text);
+    }
+
+    // A round trip timed on the datagram channel when there is one: a lost packet on the reliable channel
+    // would hold a ping up with everything else. `stall`: how busy this page was lately, for the other side.
+    ping(stall) { this.say({ t: 'ping', at: now(), stall: Number.isFinite(stall) ? Math.round(stall) : undefined }, true); }
+    answer(ping, fast) { this.say({ t: 'pong', at: ping.at }, fast); }
     buffered() { return this.channel ? this.channel.bufferedAmount : 0; }
 
     close() {
       if (this.closed) return;
       this.closed = true;
-      const wasOpen = this.open;
       this.open = false;
-      clearTimeout(this.timer);
       for (const channel of [this.channel, this.fast]) {
         if (!channel) continue;
         channel.onopen = channel.onclose = channel.onmessage = null;
         try { channel.close(); } catch (error) { /* closed */ }
       }
       this.fast = null;
+      this.owner.wireClosed(this);
+    }
+  }
+
+  // A direct connection to another page of the room, on the page: the set-up through the relay (an
+  // RTCPeerConnection) and, unless the host's worker holds them, its channels (Wire).
+  class Link extends Wire {
+    constructor(online, id, offerer) {
+      super(null, id);
+      this.owner = this;
+      this.online = online;
+      this.offerer = offerer;
+      this.handedOver = false; // the channels went to the host's worker
+      try {
+        this.pc = new online.RTCPeerConnection({ iceServers: online.iceServers });
+      } catch (error) {
+        this.pc = null;
+        this.closed = true;
+        return;
+      }
+      this.pc.onicecandidate = (event) => {
+        if (event.candidate) online.signal(id, { candidate: plain(event.candidate) });
+      };
+      this.pc.onconnectionstatechange = () => {
+        const state = this.pc.connectionState;
+        if (state === 'failed' || state === 'closed') this.close();
+      };
+      this.timer = setTimeout(() => { if (!this.open) this.close(); }, DIRECT.connectMs);
+      if (offerer) {
+        this.attach(this.pc.createDataChannel('lf2', { ordered: true }));
+        this.queue = Promise.resolve().then(async () => {
+          await this.pc.setLocalDescription(await this.pc.createOffer());
+          online.signal(id, { description: plain(this.pc.localDescription) });
+        }).catch(() => this.close());
+      } else {
+        this.queue = Promise.resolve();
+        this.pc.ondatachannel = (event) => this.attach(event.channel);
+      }
+    }
+
+    // A channel of this link: to the host's worker when there is one, else kept here.
+    attach(channel) {
+      const online = this.online;
+      if (online.worker && online.role === 'host') {
+        if (online.workerReady) {
+          try {
+            online.worker.postMessage({ t: 'channel', id: this.id, channel }, [channel]);
+            this.handedOver = true;
+            return undefined;
+          } catch (error) { /* this browser keeps channels on the page */ }
+        }
+        online.giveUpWorker();
+      }
+      return super.attach(channel);
+    }
+
+    // Wire's owner, on the page.
+    wireOpened() {
+      clearTimeout(this.timer);
+      this.online.linkChanged(this);
+    }
+    wireClosed() {
+      clearTimeout(this.timer);
       if (this.pc) {
         this.pc.onicecandidate = this.pc.onconnectionstatechange = this.pc.ondatachannel = null;
         try { this.pc.close(); } catch (error) { /* closed */ }
       }
-      if (wasOpen || this.online.links.size) this.online.linkChanged(this);
+      if (this.handedOver && this.online.worker) this.online.worker.postMessage({ t: 'close', id: this.id });
+      this.online.linkChanged(this);
+    }
+    wireMessage(wire, data, fast) { this.online.onLinkMessage(this, data, fast); }
+    wireOpenFast() {
+      if (!this.offerer || !this.pc) return;
+      try {
+        this.attach(this.pc.createDataChannel(DIRECT.fastLabel, { ordered: false, maxRetransmits: 0 }));
+      } catch (error) { /* the reliable channel alone */ }
+    }
+
+    // The other page's offer, answer or route (in order: a route may not come before its offer).
+    signal(data) {
+      if (this.closed) return;
+      this.queue = this.queue.then(async () => {
+        if (this.closed) return;
+        if (data.description) {
+          await this.pc.setRemoteDescription(data.description);
+          if (data.description.type === 'offer') {
+            await this.pc.setLocalDescription(await this.pc.createAnswer());
+            this.online.signal(this.id, { description: plain(this.pc.localDescription) });
+          }
+        } else if (data.candidate) {
+          await this.pc.addIceCandidate(data.candidate);
+        }
+      }).catch(() => { /* a route that does not work: others may */ });
     }
   }
 
-  // The beat kept on the host's page, by the relay's rules (tools/relay/server.js, "Rooms"): every
-  // beat, FRAME with each player's input (the inputs since the last beat merged; the newest kept,
-  // without its one-shot events, while nothing new comes; nothing after `repeat` beats without news),
-  // CHECK passed on as CHECKED, LEFT when a player is gone; the beat begins once every game is READY,
-  // or after `grace` ms; a player whose connection falls behind by more than `buffered` bytes is let go.
+  // The beat kept on the host's side (on its page, or in its worker), by the relay's rules
+  // (tools/relay/server.js, "Rooms"): every beat, FRAME with each player's input (the inputs since the
+  // last beat merged; the newest kept, without its one-shot events, while nothing new comes; nothing after
+  // `repeat` beats without news), CHECK passed on as CHECKED, LEFT when a player is gone; the beat begins
+  // once every game is READY, or after `grace` ms; a player whose connection falls behind by more than
+  // `buffered` bytes is let go. `host`: { id, rules, tickMs, wire(id), toGame(bytes), ticker(callback) }.
   class Beat {
-    constructor(online, ids) {
-      this.online = online;
-      this.rules = online.rules;
-      this.tickMs = online.tickMs;
+    constructor(host, ids) {
+      this.host = host;
+      this.rules = host.rules;
+      this.tickMs = host.tickMs;
       this.members = ids.map((id, index) => ({ id, index, present: true, ready: false, queue: [], last: EMPTY, repeats: 0 }));
       this.frame = 0;
       this.ticking = false;
       this.ticks = 0;
       this.tickStart = 0;
       this.ended = false;
-      this.ticker = createTicker(() => this.run());
+      this.lateness = []; // [at, ms]: how late each run of the beat came after its time (the last 5 s kept)
+      this.ticker = host.ticker(() => this.run());
       this.grace = setTimeout(() => this.startBeat(), this.rules.grace);
       for (const member of this.members) {
-        if (member.id === online.id) continue;
-        const link = online.links.get(member.id);
-        if (!link || !link.open) {
+        if (member.id === host.id) continue;
+        const wire = host.wire(member.id);
+        if (!wire || !wire.open) {
           this.leave(member.id);
           continue;
         }
-        const early = link.early;
-        link.early = [];
+        const early = wire.early;
+        wire.early = [];
         for (const [kind, payload] of early) this.receive(member.id, kind, payload);
       }
     }
@@ -847,14 +1089,14 @@
     }
 
     deliver(member, message) {
-      if (member.id === this.online.id) {
-        this.online.receive(message.slice());
+      if (member.id === this.host.id) {
+        this.host.toGame(message.slice());
         return;
       }
-      const link = this.online.links.get(member.id);
-      if (!link || !link.open) return this.leave(member.id);
-      if (link.buffered() > this.rules.buffered) return this.drop(member);
-      if (!link.sendGame(message)) this.leave(member.id);
+      const wire = this.host.wire(member.id);
+      if (!wire || !wire.open) return this.leave(member.id);
+      if (wire.buffered() > this.rules.buffered) return this.drop(member);
+      if (!wire.sendGame(message)) this.leave(member.id);
     }
 
     startBeat() {
@@ -863,6 +1105,7 @@
       this.ticking = true;
       this.tickStart = now();
       this.ticks = 0;
+      if (typeof this.host.onBeatStart === 'function') this.host.onBeatStart();
       this.schedule();
     }
 
@@ -875,6 +1118,11 @@
     run() {
       if (this.ended) return;
       const at = now();
+      const late = at - (this.tickStart + (this.ticks + 1) * this.tickMs);
+      if (late >= 2) {
+        this.lateness.push([at, late]);
+        if (this.lateness.length > 400) this.lateness.splice(0, 200);
+      }
       const due = Math.floor((at - this.tickStart) / this.tickMs) - this.ticks;
       for (let count = 0; count < Math.min(due, 4) && !this.ended; count += 1) {
         this.ticks += 1;
@@ -924,7 +1172,7 @@
     // A player gone: LEFT among the frames to the others.
     leave(id) {
       const member = this.member(id);
-      if (this.ended || !member || !member.present || id === this.online.id) return;
+      if (this.ended || !member || !member.present || id === this.host.id) return;
       member.present = false;
       member.queue = [];
       const message = packet(KIND.left, Uint8Array.of(member.index));
@@ -933,9 +1181,17 @@
     }
 
     drop(member) {
-      const link = this.online.links.get(member.id);
-      if (link) link.close();
+      const wire = this.host.wire(member.id);
+      if (wire) wire.close();
       this.leave(member.id);
+    }
+
+    // The worst lateness of a beat in the last 5 seconds, ms.
+    worstLate() {
+      const since = now() - 5000;
+      let worst = 0;
+      for (const [at, late] of this.lateness) if (at >= since && late > worst) worst = late;
+      return worst;
     }
 
     stop() {
@@ -945,10 +1201,124 @@
     }
   }
 
-  // A timer for the beat. In a browser it runs in a worker: a page's own timers slow down to once a
-  // second when its tab is hidden, a worker's do not.
+  // The page's side of a beat kept in the host's worker: the same calls, passed on.
+  class WorkerBeat {
+    constructor(online, ids) {
+      this.online = online;
+      this.late = 0; // the worker's word on its beat's worst lateness lately
+      online.worker.postMessage({ t: 'beat', ids });
+    }
+    worstLate() { return this.late; }
+    receive(id, kind, payload) {
+      if (this.online.worker) this.online.worker.postMessage({ t: 'game', kind, payload }, [payload.buffer]);
+    }
+    leave(id) { if (this.online.worker) this.online.worker.postMessage({ t: 'leave', id }); }
+    stop() { if (this.online.worker) this.online.worker.postMessage({ t: 'stop' }); }
+  }
+
+  // The worker (startWorker): the host's links' channels and the beat on them, away from the page's work.
+  function workerMain() {
+    const wires = new Map(); // player id -> Wire
+    let setup = null;
+    let beat = null;
+    let stall = 0; // the page's, told to the players with each ping
+    let pinger = 0;
+    const post = (message, transfer) => root.postMessage(message, transfer || []);
+    const tell = (wire, more) => post({ t: 'link', id: wire.id, open: wire.open, closed: wire.closed, version: wire.version,
+      times: wire.times.slice(), reported: wire.reported, peerStall: wire.peerStall, ...more });
+    const owner = {
+      wireOpened(wire) { tell(wire); },
+      wireClosed(wire) {
+        if (wires.get(wire.id) === wire) wires.delete(wire.id);
+        if (beat) beat.leave(wire.id);
+        tell(wire);
+      },
+      wireOpenFast() { /* the players offer the links and open the datagram channels */ },
+      wireMessage(wire, data, fast) {
+        if (typeof data === 'string') {
+          let message;
+          try { message = JSON.parse(data); } catch (error) { return; }
+          if (!message) return;
+          if (message.t === 'ping') {
+            wire.answer(message, fast);
+            if (Number.isFinite(message.stall)) wire.peerStall = message.stall;
+          } else if (message.t === 'hello') {
+            wire.greeted(Number(message.v) || 0);
+            tell(wire);
+          } else if (message.t === 'pong' && Number.isFinite(message.at)) {
+            addSample(wire.times, now() - message.at);
+            tell(wire);
+          } else if (message.t === 'times') {
+            wire.reported = { relay: finiteOrNull(message.relay), direct: finiteOrNull(message.direct) };
+            if (Number.isFinite(message.stall)) wire.peerStall = message.stall;
+            tell(wire);
+          }
+          return;
+        }
+        const bytes = new Uint8Array(data);
+        const parts = bytes[0] === NUMBERED ? wire.unwrap(bytes) : [bytes];
+        for (const part of parts) {
+          wire.pending = Uint8Array.from(splitPackets(concatBytes(wire.pending, part), (kind, payload) => {
+            if (beat) beat.receive(wire.id, kind, payload.slice());
+            else wire.early.push([kind, payload.slice()]);
+          }));
+        }
+      },
+    };
+    const host = {
+      get id() { return setup ? setup.id : 0; },
+      get rules() { return setup ? setup.rules : null; },
+      get tickMs() { return setup ? setup.tickMs : 100 / 3; },
+      wire: (id) => wires.get(id),
+      toGame: (bytes) => post({ t: 'frame', bytes: bytes.buffer }, [bytes.buffer]),
+      ticker: timeoutTicker,
+      onBeatStart: () => post({ t: 'beat', started: true }),
+    };
+    root.onmessage = (event) => {
+      const message = event.data;
+      if (!message || typeof message !== 'object') return;
+      if (message.t === 'setup') {
+        setup = { id: Number(message.id) || 0, rules: message.rules, tickMs: Number(message.tickMs) || 100 / 3 };
+        clearInterval(pinger);
+        pinger = setInterval(() => {
+          for (const wire of wires.values()) if (wire.open) wire.ping(stall);
+          if (beat) post({ t: 'beat', late: beat.worstLate() });
+        }, DIRECT.pingMs);
+        post({ t: 'ready' });
+      } else if (message.t === 'probe') {
+        try { message.channel.close(); } catch (error) { /* a throwaway */ }
+      } else if (message.t === 'channel') {
+        let wire = wires.get(message.id);
+        if (!wire || wire.closed) {
+          wire = new Wire(owner, message.id);
+          wires.set(message.id, wire);
+        }
+        wire.attach(message.channel);
+      } else if (message.t === 'beat') {
+        if (!beat && setup) beat = new Beat(host, Array.isArray(message.ids) ? message.ids : []);
+      } else if (message.t === 'game') {
+        if (beat) beat.receive(setup ? setup.id : 0, message.kind, new Uint8Array(message.payload));
+      } else if (message.t === 'leave') {
+        if (beat) beat.leave(message.id);
+      } else if (message.t === 'close') {
+        const wire = wires.get(message.id);
+        if (wire) wire.close();
+      } else if (message.t === 'load') {
+        stall = Number(message.stall) || 0;
+      } else if (message.t === 'stop') {
+        if (beat) beat.stop();
+        beat = null;
+        clearInterval(pinger);
+        for (const wire of [...wires.values()]) wire.close();
+        root.close();
+      }
+    };
+  }
+
+  // A timer for the beat on a page: in a worker, since a page's own timers slow down to once a second when
+  // its tab is hidden, a worker's do not. (In the host's worker the beat uses plain timers.)
   function createTicker(callback) {
-    if (typeof root.Worker === 'function' && typeof root.Blob === 'function' && root.URL && root.URL.createObjectURL) {
+    if (!IN_WORKER && typeof root.Worker === 'function' && typeof root.Blob === 'function' && root.URL && root.URL.createObjectURL) {
       try {
         const source = 'let t=0;onmessage=(e)=>{clearTimeout(t);if(e.data>=0)t=setTimeout(()=>postMessage(0),e.data)};';
         const url = root.URL.createObjectURL(new root.Blob([source], { type: 'text/javascript' }));
@@ -985,6 +1355,30 @@
   }
   function readU32(bytes, at) {
     return (bytes[at] | (bytes[at + 1] << 8) | (bytes[at + 2] << 16) | (bytes[at + 3] << 24)) >>> 0;
+  }
+  // `bytes` with a KIND.stamp message (the time `at`) before each whole FRAME in it; `each(frame number)`.
+  function stampFrames(bytes, at, each) {
+    let frames = 0;
+    eachPacket(bytes, (kind, payload) => { if (kind === KIND.frame && payload.length >= 4) frames += 1; });
+    if (!frames) return bytes;
+    const out = new Uint8Array(bytes.length + frames * 9);
+    const whole = Math.floor(at);
+    const thousandths = Math.max(0, Math.min(999, Math.round((at - whole) * 1000)));
+    let to = 0;
+    let from = 0;
+    eachPacket(bytes, (kind, payload) => {
+      const start = payload.byteOffset - bytes.byteOffset - 3;
+      if (kind === KIND.frame && payload.length >= 4) {
+        out.set(bytes.subarray(from, start), to);
+        to += start - from;
+        out.set([KIND.stamp, 6, 0, whole & 255, (whole >>> 8) & 255, (whole >>> 16) & 255, (whole >>> 24) & 255, thousandths & 255, thousandths >> 8], to);
+        to += 9;
+        from = start;
+        each(readU32(payload, 0));
+      }
+    });
+    out.set(bytes.subarray(from), to);
+    return out;
   }
 
   // A numbered message (version 2 links): NUMBERED, the number of the last message in it (4 bytes, little
@@ -1132,6 +1526,10 @@
         parts.push(`behind ${(stats.behind / 1000).toFixed(1)} s`);
         trouble = true;
       }
+      // This computer busy (its page stalled that long lately): its own game waits; the host's computer busy:
+      // with the beat on the host's page, everyone's frames come late.
+      if (stats.busy >= 40) parts.push(`busy ${ms(stats.busy)}`);
+      if (stats.peerBusy !== null && stats.peerBusy >= 40) parts.push(`${stats.host ? 'player' : 'host'} busy ${ms(stats.peerBusy)}`);
       corner.textContent = parts.join(' · ');
       corner.style.color = trouble ? '#ffb74d' : '#fff';
       corner.hidden = false;
@@ -1166,6 +1564,7 @@
         <label>Room <input id="online-room" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off"></label>
         <button type="button" id="online-new">New room</button>
         <button type="button" id="online-copy">Copy invite link</button>
+        <button type="button" id="online-report" title="The network's last minute, as text, for a bug report">Copy network report</button>
       </div>
       <div class="row">
         <label class="relay">Relay <input id="online-relay" type="url" placeholder="wss://relay.example.com/relay" autocomplete="off" spellcheck="false"></label>
@@ -1248,6 +1647,18 @@
       setTimeout(() => { button.textContent = 'Copy invite link'; }, 2000);
     });
 
+    $('online-report').addEventListener('click', async () => {
+      const button = $('online-report');
+      const text = online.report();
+      try {
+        await root.navigator.clipboard.writeText(text);
+        button.textContent = 'Report copied';
+      } catch (error) {
+        root.prompt('The network report:', text);
+      }
+      setTimeout(() => { button.textContent = 'Copy network report'; }, 2000);
+    });
+
     let checkTimer = 0;
     const checkRelay = async () => {
       relayCheck.textContent = '';
@@ -1301,9 +1712,13 @@
     checkRelay();
   }
 
-  const api = { OnlineTransport, STATUS, ROOM_PATTERN, CLOSE_REASONS, DIRECT };
+  const api = { OnlineTransport, STATUS, ROOM_PATTERN, CLOSE_REASONS, DIRECT, stampFrames, KIND };
   if (typeof module === 'object' && module.exports) {
     module.exports = api; // tests
+    return;
+  }
+  if (IN_WORKER) {
+    workerMain();
     return;
   }
 
