@@ -736,6 +736,9 @@
       const stalls = (this.stalls || []).filter(([time]) => at - time < 60000).map(([time, late]) => `${Math.round((at - time) / 1000)}s:${Math.round(late)}`);
       lines.push(`this page's stalls of the last minute (seconds ago:ms, over 4 ms): ${stalls.slice(-80).join(' ') || 'none'}`);
       lines.push(`browser ${root.navigator ? root.navigator.userAgent : '-'}`);
+      // What draws the page (index.html's check): the graphics card, or the CPU.
+      const graphics = root.OPENLF2_GRAPHICS;
+      if (graphics) lines.push(`graphics ${graphics.renderer}${graphics.software ? ' (drawn by the CPU: no hardware acceleration)' : ''}`);
       return lines.join('\n');
     }
 

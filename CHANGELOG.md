@@ -110,6 +110,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,
   busy, the beat's lateness, each link's round trips and version, the frames' lateness per second, the page's
   stalls), for a bug report. Hero Fighter's bottom line shows `busy` and `other busy` too
+- Hero Fighter: a computer too slow for its fight (a Battle with many soldiers) slows the room down much less. The
+  games of a room run every frame together, so the slowest sets everyone's pace; now, when its game is more than
+  100 ms behind and its own frames take longer than 33 ms (the game's timings of its last frame and last
+  drawing), it draws every other frame until it catches up — the fight itself still runs every frame, the same on
+  every computer. It is the game's own frame skip, which its author left switched off (both branches of the
+  frame loop set `skipI` to 0); `dist/pages/hero-fighter.js` changes those bytes of the loop to "behind and slow:
+  draw every other frame" in as many bytes. A computer that is only behind because it waits for a slower one
+  draws every frame, as before. Two Chromium pages too slow for their Battles (four kingdoms, Crazy): 5.0 frames a
+  second this way against 2.5–2.9 drawing every frame, the pages swapped as well; a page that never drew and one
+  drawing every other frame stayed in step for 1,880 frames of a Battle (the same count of random numbers every
+  20 frames, 87,319 at the end). `hfskip=0` in the page's address leaves the game as it was
+- The game page: a note under the status when the browser draws without the graphics card (WebGL by SwiftShader,
+  llvmpipe or Windows' Basic Render Driver, or no WebGL at all — hardware acceleration off, or a graphics card the
+  browser does not use): both games run slowly and Hero Fighter's battles most, as Ruffle waits for every picture
+  its game reads back; the note says how to turn hardware acceleration on (in English and Vietnamese). The
+  renderer is also in Diagnostic output and in the network report
 - Network play in the browser: the network in a corner of the game while in a room — the ping to whoever keeps the
   beat (the relay, or the host's page: on the host's page its slowest player's), which way the frames come (`direct`
   or `relay`), how unevenly the frames of the last 5 seconds came (`jitter`, ms between the earliest and the latest,

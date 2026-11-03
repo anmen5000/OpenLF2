@@ -160,6 +160,59 @@ window.HeroFighter = (() => {
     return { bytes, fixed };
   }
 
+  // ---- Fewer pictures on a computer that cannot keep up -------------------------------------------------
+  // Console.UpdateScreen, the game's frame loop, runs a frame of the fight (World.Run) and then draws it
+  // (World.Draw) every 33 ms. The games of a room run every frame together, so the slowest computer sets
+  // the pace for all: in a Battle with many soldiers a slower one that needs 45 ms for both slows every
+  // game down to 22 frames a second. The loop can leave out the drawing (skipI) when the game is more than
+  // fDurSkip (100 ms) behind, but the game sets skipI to 0 in both branches, so it always draws. These bytes
+  // of the loop (offsets 629-684 of its code: "if (T - nextT > fDurSkip || fasterF2 > 250) skipI = 0; else
+  // skipI = 0;") become "if (T - nextT > fDurSkip & Global.lastRunDur + Global.lastDrawDur > 33) skipI =
+  // !skipI; else skipI = 0;" in as many bytes: when this computer is behind AND its own frames take longer
+  // than 33 ms (the game's timings of its last frame and last drawing), it draws every other frame, so it
+  // still shows at least half of them and its frames cost less until it catches up. A computer that is
+  // only behind because it waits for a slower one (its own frames fast) draws every frame, as before. The
+  // fight itself (World.Run, the random numbers, what every game sends) is the same whether or not a game
+  // draws: World.Draw and what it calls only change pictures and their caches (the one call into a game
+  // object, a background item's Run, runs a decoration in a world of its own), so games that draw different
+  // frames stay in step. Tried on two Chromium pages in a network Battle (4 kingdoms, Crazy): one never
+  // drawing (hfskip=all), the other this way, 1,880 frames and every 20 frames the same count of random
+  // numbers on both (87,319 at the end), as the relay checks; and two pages alone in their rooms, too slow
+  // to keep up, ran their fights at 5.0 frames a second this way against 2.5-2.9 drawing every frame (and
+  // the same with the pages swapped). hfskip=0 in the page's address leaves the game as it is; hfskip=all
+  // (for measuring what the fight costs without its pictures) never draws a frame of a fight.
+  const DRAW_SKIP_FROM = [
+    0xd0, 0x66, 0xd2, 0x17, 0xd0, 0x66, 0xa9, 0x0d, 0x10, 0x00, 0x00, 0x00, // getlocal0 .T, getlocal0 .nextT, jump +0
+    0xa1, 0xd0, 0x66, 0xcd, 0x5c, 0xaf, 0x2a, 0x11, 0x09, 0x00, 0x00, // subtract, .fDurSkip, greaterthan, dup, iftrue
+    0x29, 0xd0, 0x66, 0xb3, 0x11, 0x25, 0xfa, 0x01, 0xaf, // pop, getlocal0 .fasterF2, pushshort 250, greaterthan
+    0x12, 0x0e, 0x00, 0x00, // iffalse (to the else branch)
+    0xd0, 0x10, 0x00, 0x00, 0x00, 0x24, 0x00, 0x68, 0xbb, 0x2b, // getlocal0, jump +0, pushbyte 0, initproperty skipI
+    0x10, 0x06, 0x00, 0x00, // jump (past the else branch)
+    0xd0, 0x24, 0x00, 0x68, 0xbb, 0x2b, // else: getlocal0, pushbyte 0, initproperty skipI
+  ];
+  const DRAW_SKIP_AUTO = [
+    0xd0, 0x66, 0xd2, 0x17, 0xd0, 0x66, 0xa9, 0x0d, 0xa1, // getlocal0 .T, getlocal0 .nextT, subtract
+    0xd0, 0x66, 0xcd, 0x5c, 0xaf, // getlocal0 .fDurSkip, greaterthan
+    0x60, 0x03, 0x66, 0x9f, 0x1e, 0x60, 0x03, 0x66, 0xc0, 0x22, 0xa0, // Global.lastRunDur + Global.lastDrawDur
+    0x24, 0x21, 0xaf, 0xa8, 0x02, 0x02, 0x02, // pushbyte 33, greaterthan, bitand, nop nop nop
+    0x12, 0x0e, 0x00, 0x00, // iffalse (to the else branch)
+    0xd0, 0xd0, 0x66, 0xbb, 0x2b, 0x96, 0x68, 0xbb, 0x2b, 0x02, // getlocal0, getlocal0 .skipI, not, initproperty skipI, nop
+    0x10, 0x06, 0x00, 0x00,
+    0xd0, 0x24, 0x00, 0x68, 0xbb, 0x2b,
+  ];
+  // Never draws in a fight: both branches set skipI to 1.
+  const DRAW_SKIP_ALL = DRAW_SKIP_FROM.map((byte, index) => (index === 42 || index === 52 ? 1 : byte));
+
+  // Changes the loop in bytes (an uncompressed movie, patchMovie's copy) for this mode ('auto', 'all' or
+  // 'off'); returns whether it found the loop (another version of the game has other bytes: left as it is).
+  function skipDrawing(bytes, mode) {
+    if (mode === 'off') return false;
+    const at = indexOfBytes(bytes, DRAW_SKIP_FROM);
+    if (at < 0 || indexOfBytes(bytes, DRAW_SKIP_FROM, at + 1) >= 0) return false;
+    bytes.set(mode === 'all' ? DRAW_SKIP_ALL : DRAW_SKIP_AUTO, at);
+    return true;
+  }
+
   // ---- Ruffle ------------------------------------------------------------------------------------------
   let rufflePromise = null;
   function loadRuffle(folder) {
@@ -339,6 +392,13 @@ window.HeroFighter = (() => {
       const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
       build = Array.from(digest.subarray(0, 8), (byte) => byte.toString(16).padStart(2, '0')).join('') + '-' + build;
     } catch (error) { /* no crypto.subtle (not https): the Ruffle version alone */ }
+    // After the build: games that draw fewer frames play the same fights, so they may share a room.
+    const skipMode = (/[?&]hfskip=(0|off|all)(&|$)/.exec(location.search) || [])[1];
+    const skipping = skipDrawing(bytes, skipMode === 'all' ? 'all' : skipMode ? 'off' : 'auto');
+    if (skipMode !== '0' && skipMode !== 'off') {
+      log('Hero Fighter: ' + (skipping ? (skipMode === 'all' ? 'never draws a fight (hfskip=all)' : 'draws every other frame when this computer falls behind')
+        : 'frame loop not found (another version of the game?): it draws every frame'));
+    }
 
     // The relay: rooms and accounts, when it has them (relays installed before Hero Fighter do not).
     const rewrites = [
@@ -404,5 +464,5 @@ window.HeroFighter = (() => {
     return player;
   }
 
-  return { movieFrom, looksLikeHeroFighter, patchMovie, start, KEYS };
+  return { movieFrom, looksLikeHeroFighter, patchMovie, skipDrawing, start, KEYS };
 })();

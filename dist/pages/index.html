@@ -83,6 +83,8 @@
   @media (max-width: 480px) { .wrap { padding: 0 1rem; } #play { padding: 1.25rem; } }
   p#status { margin: .9rem 0 0; color: var(--text-dim); font-size: .92rem; min-height: 1.3em; }
   p#hf-net { margin: .3rem 0 0; color: var(--text-dim); font-size: .85rem; }
+  p#gpu-note { margin: .5rem 0 0; padding: .5rem .75rem; border-radius: 10px; border: 1px solid #b7791f;
+    background: rgba(255, 183, 77, .12); color: #ffd8a8; font-size: .88rem; }
   .stage:not(.hf) .hf-corner { display: none !important; } /* Hero Fighter's ping (hero-fighter.js), only with it */
   .stage {
     position: relative;
@@ -239,6 +241,7 @@
       <progress id="progress" hidden></progress>
       <p id="status" role="status">Loading WebAssembly…</p>
       <p id="hf-net" hidden></p>
+      <p id="gpu-note" hidden></p>
       <div class="stage" id="stage">
         <canvas id="canvas" width="794" height="550" tabindex="0" aria-label="OpenLF2 game canvas"></canvas>
       </div>
@@ -351,6 +354,40 @@
     log.textContent += value + '\n';
     log.scrollTop = log.scrollHeight;
   }
+  // What draws the page's WebGL: the graphics card, or the CPU (SwiftShader, llvmpipe, Windows' "Basic Render
+  // Driver": no hardware acceleration, or a graphics card the browser does not use). Drawn by the CPU, both games
+  // slow down and Hero Fighter's Ruffle waits for each picture its game reads back; the note under the status
+  // says how to turn the graphics card on. The renderer also goes in Diagnostic output and in the network report
+  // (window.OPENLF2_GRAPHICS, online.js).
+  (() => {
+    let renderer = 'no WebGL';
+    try {
+      const probe = document.createElement('canvas');
+      const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+      if (gl) {
+        const info = gl.getExtension('WEBGL_debug_renderer_info');
+        renderer = String((info && gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || 'unknown');
+        const lose = gl.getExtension('WEBGL_lose_context');
+        if (lose) lose.loseContext();
+      }
+    } catch (error) {
+      renderer = 'unknown (' + error.message + ')';
+    }
+    const software = renderer === 'no WebGL' || /swiftshader|llvmpipe|softpipe|basic render|software/i.test(renderer);
+    window.OPENLF2_GRAPHICS = { renderer, software };
+    message('Graphics: ' + renderer + (software ? ' (drawn by the CPU)' : ''));
+    if (!software) return;
+    const note = document.getElementById('gpu-note');
+    note.textContent = (renderer === 'no WebGL'
+      ? 'This browser has no WebGL (hardware acceleration off or a graphics card it does not use): '
+      : 'This browser draws without the graphics card (' + (/swiftshader|llvmpipe|softpipe|basic render driver/i.exec(renderer) || [renderer.slice(0, 60)])[0] + '): ')
+      + 'both games run slowly, and Hero Fighter\'s battles lag on this computer and in its rooms. Turn on '
+      + '"Use graphics acceleration when available" (Settings, System) and restart the browser; if this note stays, '
+      + 'install the graphics card\'s driver. — Trình duyệt đang vẽ bằng CPU, không dùng card đồ họa: bật "Use '
+      + 'graphics acceleration when available" (Settings → System) rồi mở lại trình duyệt; vẫn còn dòng này thì cài '
+      + 'driver card màn hình.';
+    note.hidden = false;
+  })();
   // The game ended (the engine calls this): an error stopped it, which the page says instead of leaving a black
   // canvas (the first line of the engine's message; Diagnostic output, opened, has all of it), or it was closed.
   globalThis.OpenLF2Stopped = error => {
