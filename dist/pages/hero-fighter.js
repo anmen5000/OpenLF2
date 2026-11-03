@@ -213,6 +213,78 @@ window.HeroFighter = (() => {
     return true;
   }
 
+  // ---- No ads, a chat that folds, a minimap that never waits for the graphics card ------------------------
+  // Byte patches of the game's ActionScript, each a method's header and code found once in the uncompressed movie
+  // (patchMovie's copy) and as many bytes put in it; another version of the game (other bytes) keeps that group as
+  // it is. None changes the fight (World.Run's numbers, the random numbers, what the games send): like the drawing
+  // ones, they come after the room's build is reckoned. hftidy=0 in the page's address leaves them all out. Built
+  // and checked (every branch lands on an instruction, none from outside into what changes) with an AVM2 reader
+  // over the decompiled game (Hero Fighter v0.7+).
+  //  - minimap: Ruffle keeps a BitmapData's pixels on the CPU while only CPU operations touch it (fillRect,
+  //    copyPixels, a draw() of a bitmap whose pixels are on the CPU too); anything else is drawn on the GPU, and the
+  //    next CPU operation on that bitmap waits for the GPU to finish all it was given and copies the pixels back: the
+  //    whole page stalls. The minimap did that twice every 10 frames in a fight: World.Run draws its camera frame as a
+  //    vector Shape into it (four fillRects now, from the frame's corners in 4 more local registers, local_count 8 ->
+  //    12), and MapGadget.ClearMap0 draws its background bitmap (bm0, made from vector shapes at the fight's start,
+  //    so on the GPU) into it (copyPixels now, which brings bm0's pixels back once; the same pixels, as each target
+  //    was just cleared to 0; a Rectangle and a Point in 2 more locals, local_count 1 -> 3).
+  //  - ads: BannerGadget.PageChanged (the banners of the title screen and the main menu, and the one sliding in
+  //    during a fight) hides them all and stops there; the premium ad is hidden (AdPremiumGadget.PageChanged) and,
+  //    as the character menu, the character list and the fights' summary show it themselves, see-through and
+  //    click-through from its start (AdPremiumGadget.OnLoad: alpha 0, no mouse); the 300x250 "click away" ad of the
+  //    character menu (Console.InitClickAwayAdLink, __AddClickAwayAd) is never made; the main menu's "more
+  //    games..." link is hidden (TitleScreen.OnLoad).
+  //  - chat: its speech bubble (top left of the chat) and its arrow with nothing typed (ChatGadget.OnClickChatGo's
+  //    else, which did nothing) fold the chat to the bubble alone, the log, the box and the arrow hidden (nothing
+  //    left over the game to click through), and open it again; the bubble calls the arrow's click (OnLoad).
+  const TIDY = {
+    minimap: [
+      ['World.Run locals', 'b63740080405a18902d03020809b16d7240063046003669702', 3,
+        '0c'],
+      ['World.Run minimap frame', 'd0100000005d95024a950200689919d066991966e60124012d0227120a0000240529292929100400004fe30902d066991966e6016019d066d502d0664da1d0665bd0664da1a325a001a2469f01016019d0669103d066f40da32428a2469f010127120a0000240529292929100400004f840b02d066991966e6016019d066bd06d0664da1d0665bd0664da1a325a001a2469f0101100000006019d010000000669103d066f40da32428a2469f010127120a0000240529292929100400004f910702d066991966e601100000006019d066bd06d0664da1d0665bd0664d10000000a1a325a00110000000a2469f0101601910000000d066bb07d066f40da3100000002428a2469f010127120a0000240529292929100400004f910702d066991966e601601910000000d066d502d0664da1d0665b10000000d0664da110000000a325a001a210000000469f01016019d01000000066bb0710000000d01000000066f40da32428a2469f010127120a0000240529292929100400004f910702d066991966e6016019d066d502d010000000664da1d0665bd0664d10000000a1a325a001a2469f0101601910000000d0669103d066f40da32428a2469f010127120a0000240529292929100400004f910702d0668112d06699194fc20101', 0,
+        '6019d066d502d0664da1d0665bd0664da1a325a001a2469f010163086019d066bd06d0664da1d0665bd0664da1a325a001a2469f010163096019d0669103d066f40da32428a2469f0101630a6019d066bb07d066f40da32428a2469f0101630bd06681125d2c6208620a62096208a12401a024014a2c042f194fdb0102d06681125d2c6208620b62096208a12401a024014a2c042f194fdb0102d06681125d2c6208620a2401620b620aa12401a04a2c042f194fdb0102d06681125d2c6209620a2401620b620aa12401a04a2c042f194fdb01021003010002020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202'],
+      ['MapGadget.ClearMap0', 'df2d38010b0c6dd030d06685035d2c24002ad06620d066234a2c04240027120a0000240529292929100400004fdb0102d0668503d066e91d4fc20101d066e91d5d2c24002ad06620d066234a2c0424001000000027120a0000240529292929100400004fdb0102d066e91dd066b81a4fc2010147', 3,
+        '030b0c6dd0305d2c24002ad06620d066234a2c04d55d1e24002a4a1e02d6d0668503d124004fdb0102d0668503d066e91dd1d24fdf0803d066e91dd124004fdb0102d066e91dd066b81ad1d24fdf0803470202020202020202020202020202020202020202020202020202020202020202'],
+    ],
+    ads: [
+      ['BannerGadget.PageChanged', '8c2436040d0ed106d01000000030d027100000006118d0271000000068e40cd066ce43276118d066cf43276118d066d1431000000027100000006118d01000000066cd43276118d066d04310000000276118d0668132276118d0100000006681328038d5d01000000066ae112408a4100000002400ab', 89,
+        '4702020202'],
+      ['AdPremiumGadget.PageChanged', 'd12a34020d0e9f03d0302080ea1e10000000d56013669d022cfb03ab2a110a0000296013669d022cfc03', 10,
+        'd027611847020202'],
+      ['AdPremiumGadget.OnLoad', 'ce2a33010d0e15d030d0271208000024052929100400004f8c020047', 7,
+        'd030d024006143d02761900cd02761ba0647020202'],
+      ['Console.InitClickAwayAdLink', 'a01436030f14f714d030572ad53065012080af036d01d0669105100000002400d0668935', 10,
+        '4702'],
+      ['Console.__AddClickAwayAd', 'b61437010e0f8c02d03060951e1201000047d066b4032013120000d027120800002405292910040000', 10,
+        '02020202020202'],
+      ['TitleScreen.OnLoad', 'f63536010e0f3ad030d05dea01d066d85e242146ea01021000000068bb4ed0271208000024052929100400004f8c0200601366961e12000000d066a71b27611847', 31,
+        'd066e869276118100200000202'],
+    ],
+    chat: [
+      ['ChatGadget.OnClickChatGo', 'a62335010d0eda01d030d066dd0866412c05ab962a121a000029d066dd086641240010000000468203012ceb01ab9610000000121e0000d0271208000024052929100400004fc84c006013d066dd0866414fca6a01d066dd082f056143d066dd0860032cb007100000004639016141601366bf0b1000000020131a0000601366bf0b271208000024052929100400004fbf0400104a0000601366e2062010000000131a0000601366e206271208000024052929100400004fbf040010220000601366b20720131800006013662966e809271208000024052929100400004fbf040047', 8,
+        'd030d066dd0866412c05ab962a1212000029d066dd0866412400468203012ceb01ab9612150000d04fc84c006013d066dd0866414fca6a01101e0000d06683146618962a2ad06683142b6118d066dd082b6118d066eb0e2b6118d066dd082f056143d066dd0860032cb0074639016141601366bf0b20130d0000601366bf0b4fbf0400102c0000601366e20620130d0000601366e2064fbf040010150000601366b20720130b00006013662966e8094fbf0400470202020202020202020202020202020202020202020202020202020202020202020202020202'],
+      ['ChatGadget.OnLoad', 'a22336010d0e40d030d0271208000024052929100400004f8c0200d066dd081000000060032cb0074639016141d0100000005dea0110000000d066b25d246446ea010268b75d47', 7,
+        'd030d04f8c0200d066dd0860032cb0074639016141d05dea01d066b25d246446ea010268b75dd066a2682c14d066e2674f2e0247020202020202020202020202'],
+    ],
+  };
+  const hexBytes = (hex) => Uint8Array.from(hex.match(/../g), (pair) => parseInt(pair, 16));
+
+  // Puts in each group whose every patch it finds once; returns the groups put in.
+  function tidyGame(bytes) {
+    const done = [];
+    for (const [group, patches] of Object.entries(TIDY)) {
+      const places = patches.map(([, find]) => {
+        const needle = hexBytes(find);
+        const at = indexOfBytes(bytes, needle);
+        return at >= 0 && indexOfBytes(bytes, needle, at + 1) < 0 ? at : -1;
+      });
+      if (places.some((at) => at < 0)) continue;
+      patches.forEach(([, , offset, put], k) => bytes.set(hexBytes(put), places[k] + offset));
+      done.push(group);
+    }
+    return done;
+  }
+
   // ---- Ruffle ------------------------------------------------------------------------------------------
   let rufflePromise = null;
   function loadRuffle(folder) {
@@ -382,8 +454,9 @@ window.HeroFighter = (() => {
 
   // ---- Running the game ----------------------------------------------------------------------------
   // options: stage (element), movie (Uint8Array), site (the page's folder URL), relay (wss://… or ''),
-  //          status(text), log(text), net(text): how the room's direct links are ('' for nothing to say).
-  //          Returns the Ruffle player element.
+  //          status(text), log(text), net(text): how the room's direct links are ('' for nothing to say),
+  //          directEnabled(): whether direct links are wanted now (the page's switch; HfDirect.refresh() after
+  //          it changed). Returns the Ruffle player element.
   async function start(options) {
     const { stage, site, status, log } = options;
     // Direct links between the pages of a room (hf-direct.js), when this browser makes them; hfdirect=0 in the
@@ -413,6 +486,7 @@ window.HeroFighter = (() => {
         corner.hidden = false;
       },
       log,
+      enabled: typeof options.directEnabled === 'function' ? options.directEnabled : undefined,
     }));
     status('Starting Ruffle (the Flash player)…');
     // The site's Ruffle (ruffle/: built with OpenLF2's change when that build worked), or with ruffle=stock in the
@@ -446,6 +520,10 @@ window.HeroFighter = (() => {
     // After the build: games that draw fewer frames play the same fights, so they may share a room.
     const skipMode = (/[?&]hfskip=(0|off|all)(&|$)/.exec(location.search) || [])[1];
     const skipping = skipDrawing(bytes, skipMode === 'all' ? 'all' : skipMode ? 'off' : 'auto');
+    if (!/[?&]hftidy=0(&|$)/.test(location.search)) {
+      const tidied = tidyGame(bytes);
+      log('Hero Fighter: ' + (tidied.length ? 'changed for this page: ' + tidied.join(', ') : 'no ads, chat or minimap change (another version of the game?)'));
+    }
     if (skipMode !== '0' && skipMode !== 'off') {
       log('Hero Fighter: ' + (skipping ? (skipMode === 'all' ? 'never draws a fight (hfskip=all)' : 'draws every other frame when this computer falls behind')
         : 'frame loop not found (another version of the game?): it draws every frame'));
@@ -519,5 +597,5 @@ window.HeroFighter = (() => {
     return player;
   }
 
-  return { movieFrom, looksLikeHeroFighter, patchMovie, skipDrawing, start, addTouchControls, KEYS };
+  return { movieFrom, looksLikeHeroFighter, patchMovie, skipDrawing, tidyGame, TIDY, start, addTouchControls, KEYS };
 })();

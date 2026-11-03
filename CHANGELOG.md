@@ -282,6 +282,23 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   change); the picture goes directly between them (STUN only: some networks cannot), shown as soon as it comes.
   The slow computer's choice is remembered: its page waits for a code next time instead of starting the game
   (Start game still plays it there)
+- Hero Fighter: a switch for the direct links in the Online panel ("Direct links between the players' computers"),
+  remembered, for comparing the two ways with a friend on another network (the project owner's wish): off, every frame
+  goes through the relay (which passes every frame anyway) and the ping at the bottom of the game is the relay's; it
+  counts at once, in a fight too (`HfDirect.refresh()`: the links close, or open again). A page switched off answers
+  another page's offer with `{off: true}` and one switched on again asks the page that offers to do so
+  (`{again: true}`), the pages' own signals, which the relay passes on as any (it does not change)
+- Hero Fighter without its ads, with a chat that folds, and with a minimap that never makes the page wait for the
+  graphics card (`TIDY`, `tidyGame` in `dist/pages/hero-fighter.js`; `hftidy=0` in the page's address leaves them
+  out): byte patches of the game's ActionScript, each a method's header and code found once in the movie (another
+  version keeps that group as it is), none of which changes a fight, so that they come after the room's build is
+  reckoned, as the drawing ones do. The banners (title screen, main menu, the one sliding in during a fight), the
+  premium ad and the 300x250 "click away" ad are gone. The chat's speech bubble, and its arrow with nothing typed,
+  fold the chat to the bubble alone and open it again (it covered the character menu's first row, whose clicks it
+  took: the project owner's wish). World.Run drew the minimap's camera frame every 10 frames as a vector Shape into
+  the minimap's BitmapData, which Ruffle draws on the GPU; the minimap's next operation on the CPU then waited for
+  the GPU to finish everything it had been given and copied the pixels back, a stall of the whole page about 3 times
+  a second in a fight: four fillRects draw the same frame on the CPU now
 - Hero Fighter: how fast it runs, in Diagnostic output: every 30 s in which Ruffle's frames took 25 ms or more on
   average, a line with the frames a second, the milliseconds a frame, the part of it spent waiting for the
   graphics card (WebGL's getBufferSubData, readPixels, clientWaitSync, finish) and the slowest frame (`hfspeed=0`

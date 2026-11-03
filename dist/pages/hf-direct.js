@@ -11,7 +11,10 @@
 //   HfDirect.supported(window)          whether this browser can (WebRTC)
 //   HfDirect.install(window, options)   from then on, Ruffle's WebSockets to a Hero Fighter room with direct=1
 //                                       in their address are made here; options.status(text) hears how the
-//                                       links are, options.log(text) what went wrong, options.iceServers
+//                                       links are, options.log(text) what went wrong, options.iceServers,
+//                                       options.enabled() whether links are wanted now (the page's switch: off,
+//                                       the frames go through the relay only, and the ping is the relay's)
+//   HfDirect.refresh()                  after options.enabled() changed: links closed or opened at once
 //
 // The relay's side: tools/relay/hf-room.js, "Direct links". The game's frames: <f><c>computer</c><i>frame</i>
 // then each player's keys; a game reads another's frame k only after its frame k - 1 (frames say "as
@@ -563,15 +566,33 @@
         clearTimeout(this.statusTimer);
         this.statusTimer = setTimeout(() => this.showStatus(), CONNECT_MS + 200);
         for (const [id, link] of this.links) if (!this.peers.has(id) || this.peers.get(id).cid !== link.peer.cid) link.close();
-        for (const peer of this.peers.values()) {
-          if (!this.links.has(peer.id) && this.id < peer.id) this.links.set(peer.id, new Link(this, peer, true));
-        }
+        this.offerLinks();
         this.showStatus();
       } else if (message.t === 'signal') {
         const from = String(message.from || '');
         const peer = this.peers.get(from);
         if (!peer) return;
+        const data = message.data && typeof message.data === 'object' ? message.data : {};
         let link = this.links.get(from);
+        // The other page's switch (the pages' own signals, which the relay passes on as any): off, the link this
+        // page offers it will not be answered; on, the page that offers (the one before, by id) offers again.
+        if (data.off) {
+          if (link && !link.open) link.close();
+          this.showStatus();
+          return;
+        }
+        if (data.again) {
+          if (this.wanted() && this.id < from && !(link && link.open)) {
+            if (link) link.close();
+            this.links.set(from, new Link(this, peer, true));
+            this.showStatus();
+          }
+          return;
+        }
+        if (!this.wanted()) { // switched off here: the other page is told, and plays through the relay
+          if (data.description) this.signal(from, { off: true });
+          return;
+        }
         if (!link && this.id > from) this.links.set(from, link = new Link(this, peer, false));
         if (link) link.signal(message.data);
       } else if (message.t === 'fight') {
@@ -579,11 +600,41 @@
         this.fighting = new Set(ids.filter((id) => id !== this.id));
         this.merger.announce(Number(message.n), this.spoken && ids.includes(this.id));
         // A link that failed before is tried again for each fight.
-        for (const id of this.fighting) {
-          const peer = this.peers.get(id);
-          if (peer && !this.links.has(id) && this.id < id) this.links.set(id, new Link(this, peer, true));
+        if (this.wanted()) {
+          for (const id of this.fighting) {
+            const peer = this.peers.get(id);
+            if (peer && !this.links.has(id) && this.id < id) this.links.set(id, new Link(this, peer, true));
+          }
         }
       }
+    }
+
+    // Links wanted now (the page's switch, options.enabled).
+    wanted() { return typeof this.options.enabled !== 'function' || this.options.enabled() !== false; }
+
+    // The links this page offers (to the pages after it, by id; the others offer theirs).
+    offerLinks() {
+      if (!this.wanted()) return;
+      for (const peer of this.peers.values()) {
+        if (!this.links.has(peer.id) && this.id < peer.id) this.links.set(peer.id, new Link(this, peer, true));
+      }
+    }
+
+    // The switch changed: off, the links close (the frames keep coming through the relay, as they always come too);
+    // on, this page offers its links again and asks the pages that offer theirs to do so.
+    refreshLinks() {
+      if (this.readyState !== 1) return;
+      if (this.wanted()) {
+        for (const peer of this.peers.values()) {
+          this.failed.delete(peer.id);
+          const link = this.links.get(peer.id);
+          if (this.id > peer.id && !(link && link.open)) this.signal(peer.id, { again: true });
+        }
+        this.offerLinks();
+      } else {
+        for (const link of [...this.links.values()]) link.close();
+      }
+      this.showStatus();
     }
 
     say(message) {
@@ -626,13 +677,14 @@
           const ms = link.time();
           const busy = Number.isFinite(link.peerStall) && link.peerStall >= 40 ? `, busy ${Math.round(link.peerStall)} ms` : '';
           parts.push(`${name} ${ms === null ? '' : `${Math.round(ms)} ms`}${busy}`.trim());
-        } else if ((link && !link.closed) || (!link && !this.failed.has(peer.id) && now() - peer.since < CONNECT_MS)) {
+        } else if (this.wanted() && ((link && !link.closed) || (!link && !this.failed.has(peer.id) && now() - peer.since < CONNECT_MS))) {
           parts.push(`${name} connecting…`);
         } else {
           parts.push(`${name} through the relay`);
         }
       }
       let text = parts.length ? `direct links: ${parts.join(', ')}` : '';
+      if (!this.wanted()) text = 'direct links off: every frame through the relay';
       if (counts && counts.direct + counts.relay) {
         text += `${text ? '; ' : ''}last fight: ${Math.round(100 * counts.direct / (counts.direct + counts.relay))}% of frames came directly`;
       }
@@ -728,7 +780,12 @@
     return true;
   }
 
-  const api = { supported, install, fixCommandNumber, elementEnd, Elements, Merger, DirectSocket, sockets: new Set() };
+  // After the page's switch (options.enabled) changed: every room socket closes or opens its links at once.
+  function refresh() {
+    for (const socket of api.sockets) socket.refreshLinks();
+  }
+
+  const api = { supported, install, refresh, fixCommandNumber, elementEnd, Elements, Merger, DirectSocket, sockets: new Set() };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.HfDirect = api;
 })(typeof window !== 'undefined' ? window : globalThis);

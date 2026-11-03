@@ -121,6 +121,7 @@
   .hf-touch[hidden] { display: none; }
   /* The Online panel's (online.js) LF2 room row, hidden for Hero Fighter: its rows are flex boxes, which `hidden` alone loses to. */
   #online .row[hidden] { display: none; }
+  #hf-direct-row .hf-direct-note { opacity: .75; font-size: .82rem; }
   /* Sizes: from the screen, but at most about half the game's height (--hf-height, set by hero-fighter.js). */
   .hf-stick { position: absolute; left: 3%; bottom: 7%; width: min(32vmin, 190px, calc(var(--hf-height, 1000px) * .46)); aspect-ratio: 1;
     border-radius: 50%; background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.35); pointer-events: auto; touch-action: none; }
@@ -328,6 +329,7 @@
   let remoteGuest = null; // this computer plays through another one (HfRemote.guest)
   let remotePad = null; // the guest's touch controls
   let guestPanel = false; // the remote play panel asks for a code
+  let hfDirectOn = storageGet('openlf2-hf-direct') !== '0'; // Hero Fighter's direct links (the Online panel's switch)
   let ready = false;
   let started = false;
   let selectionChanged = false;
@@ -492,13 +494,42 @@
     if (!panel) return;
     const room = panel.querySelector('#online-room');
     if (room && room.closest('.row')) room.closest('.row').hidden = value === 'hf';
+    directSwitch(panel, value);
     const help = panel.querySelector('.help');
     if (!help) return;
     if (lf2Help === null) lf2Help = help.innerHTML;
     help.innerHTML = value === 'hf'
       ? 'Hero Fighter: <b>Login</b> with any e-mail and password (the first login makes the account, the relay keeps it), then '
-        + '<b>Network Game &rarr; Next</b>: the room list shows this relay\'s rooms. Everyone needs the same Hero Fighter file.'
+        + '<b>Network Game &rarr; Next</b>: the room list shows this relay\'s rooms. Everyone needs the same Hero Fighter file. '
+        + 'In a room, the chat\'s speech bubble (top left of the game) folds the chat away and opens it again.'
       : lf2Help;
+  }
+  // Hero Fighter's direct links (hf-direct.js) on or off, a switch in the Online panel: remembered, and at once (a
+  // fight goes on through the relay when they close, which passes every frame anyway). Off, every frame goes
+  // through the relay and the ping at the bottom of the game is the relay's: for comparing the two ways with a
+  // friend on another network. (hfdirect=0 in the page's address leaves the links out altogether.)
+  function directSwitch(panel, value) {
+    let row = panel.querySelector('#hf-direct-row');
+    const usable = window.HfDirect && HfDirect.supported(window) && !/[?&]hfdirect=0(&|$)/.test(location.search);
+    if (!row && usable) {
+      row = document.createElement('div');
+      row.className = 'row';
+      row.id = 'hf-direct-row';
+      row.innerHTML = '<label><input type="checkbox" id="hf-direct"> Direct links between the players\' computers</label>'
+        + '<span class="hf-direct-note">off: every frame through the relay, and the ping at the bottom of the game is the relay\'s '
+        + '(kết nối thẳng: tắt thì mọi khung đi qua relay)</span>';
+      panel.insertBefore(row, panel.querySelector('.help'));
+      const box = row.querySelector('#hf-direct');
+      box.checked = hfDirectOn;
+      box.addEventListener('change', () => {
+        hfDirectOn = box.checked;
+        storageSet('openlf2-hf-direct', hfDirectOn ? null : '0');
+        if (window.HfDirect && typeof HfDirect.refresh === 'function') HfDirect.refresh();
+        message('Hero Fighter: direct links ' + (hfDirectOn ? 'on' : 'off (every frame through the relay)'));
+        if (hfPlayer) hfPlayer.focus({preventScroll: true});
+      });
+    }
+    if (row) row.hidden = value !== 'hf';
   }
   // A page address with the game choice in it: ?pack=<id> for a mod the relay keeps, ?game=hf for Hero Fighter.
   function addressFor(url, value) {
@@ -796,6 +827,7 @@
         stage, movie, site: new URL('.', location.href).href, relay: window.OpenLF2Online ? OpenLF2Online.relay : '',
         status: text => { status.textContent = text; }, log: message,
         net: text => { hfNet.textContent = text ? 'Network: ' + text : ''; hfNet.hidden = !text; },
+        directEnabled: () => hfDirectOn,
       });
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       status.textContent = 'Running Hero Fighter. Log in with any e-mail and password for Network Game; '

@@ -98,7 +98,7 @@ test('merging: each frame once, in order, from whichever way first; none before 
 
 // A page: its DirectSocket (as Ruffle would use it) and a stand-in for the game behind it.
 class Page {
-  constructor(relay, name, RTCPeerConnection, roomNumber = 1) {
+  constructor(relay, name, RTCPeerConnection, roomNumber = 1, extra = {}) {
     this.name = name;
     this.lines = [];
     this.frames = new Map(); // computer -> frames the game got, in order
@@ -106,7 +106,7 @@ class Page {
     this.elements = new direct.Elements();
     const win = { RTCPeerConnection, TextEncoder, TextDecoder, Event, MessageEvent, Blob, EventTarget };
     this.socket = new direct.DirectSocket(`${relay.url}?game=hf&room=${roomNumber}&build=t&direct=1`, win, {
-      NativeWebSocket: WebSocket, status: (text) => { this.status = text; } });
+      NativeWebSocket: WebSocket, status: (text, figures) => { this.status = text; this.figures = figures; }, ...extra });
     this.socket.binaryType = 'arraybuffer';
     this.opened = new Promise((resolve) => this.socket.addEventListener('open', resolve, { once: true }));
     this.closed = new Promise((resolve) => this.socket.addEventListener('close', resolve, { once: true }));
@@ -163,9 +163,10 @@ async function intoFight(a, b) {
   for (const page of [a, b]) await page.waitFor((line) => line === '<allstartedgame></allstartedgame>', 'all started');
 }
 
-// Both games play `count` frames, two a packet, a packet every `every` ms; a's player 2 hires a hero at 51.
-async function play(a, b, count, every = 5) {
-  for (let k = 0; k < count; k += 2) {
+// Both games play frames `from` to `count` - 1, two a packet, a packet every `every` ms; a's player 2 hires a
+// hero at 51.
+async function play(a, b, count, every = 5, from = 0) {
+  for (let k = from; k < count; k += 2) {
     for (const [page, cid] of [[a, 0], [b, 1]]) {
       const keys = (frame) => (cid === 0 && frame === 51 ? '<s1>@</s1><m2>h</m2><n2>2</n2><i2>0</i2>' : `<p1>${frame % 7}</p1><s1></s1>`);
       page.send(`<f><c>${cid}</c><i>${k}</i>${keys(k)}</f>\n<f><c>${cid}</c><i>${k + 1}</i>${keys(k + 1)}</f>\n<pk></pk>`);
@@ -237,6 +238,83 @@ test('two pages in a room pass each other\'s frames directly; the game gets each
     await gotAll(b, 0, 40);
     await gotAll(a, 1, 40);
     assert.equal(a.socket.merger.fight.n, 2);
+  } finally {
+    for (const page of pages) page.socket.close();
+    await relay.close();
+  }
+});
+
+// The next fight of the same two pages (after quitgame), its frames from 0 again.
+async function nextFight(a, b) {
+  a.send('<startcount><action>quitgame</action><page>FIGHTING</page><zero>true</zero></startcount>');
+  for (const page of [a, b]) await page.waitFor((line) => line.includes('<page>CHARMENU</page><prepage>FIGHTING'), 'menus');
+  for (const page of [a, b]) page.send('<page>CHARMENU</page>');
+  await sleep(100);
+  b.send('<startcount><action>clicknext</action><page>CHARMENU</page><zero>false</zero></startcount>');
+  for (const page of [a, b]) await page.waitFor((line) => line.includes('<page>GAMESETTINGMENU</page>'), 'game settings again');
+  for (const page of [a, b]) page.send('<page>GAMESETTINGMENU</page>');
+  await sleep(100);
+  a.send('<startcount><action>clickfight</action><page>GAMESETTINGMENU</page><zero>false</zero></startcount>');
+  for (const page of [a, b]) await page.waitFor((line) => line.includes('<page>FIGHTING</page><prepage>GAMESETTINGMENU'), 'next fight');
+  for (const page of [a, b]) page.send('<page>FIGHTING</page>');
+  for (const page of [a, b]) page.send('<startedgame>FIGHTING</startedgame>');
+  for (const page of [a, b]) await page.waitFor((line) => line === '<allstartedgame></allstartedgame>', 'all started again');
+  for (const page of [a, b]) page.frames.clear();
+}
+
+test('the page\'s switch: off in a fight, the links close and every frame still comes, once, through the relay; on, they open again', { timeout: 60000 }, async () => {
+  const relay = createRelay({ quiet: true });
+  const address = await relay.listen(0, '127.0.0.1');
+  relay.url = `ws://127.0.0.1:${address.port}/relay`;
+  const rtc = fakeWebRtc();
+  const pages = [];
+  let wanted = true;
+  try {
+    const a = new Page(relay, 'anmen', rtc, 1, { enabled: () => wanted });
+    pages.push(a);
+    await a.waitFor((line) => line.startsWith('<chat><c>5</c>'), 'welcome');
+    const b = new Page(relay, 'banbe', rtc);
+    pages.push(b);
+    await b.waitFor((line) => line.startsWith('<chat><c>5</c>'), 'welcome');
+    for (let k = 0; k < 100 && !(/banbe \d+ ms/.test(a.status) && /anmen \d+ ms/.test(b.status)); k += 1) await sleep(20);
+    assert.match(a.status, /^direct links: banbe \d+ ms$/);
+    await intoFight(a, b);
+    await play(a, b, 60);
+    await gotAll(b, 0, 60);
+    // Off, in the middle of the fight.
+    wanted = false;
+    a.socket.refreshLinks();
+    assert.equal(a.socket.links.size, 0);
+    assert.equal(a.status, 'direct links off: every frame through the relay');
+    assert.equal(a.figures.way, 'relay');
+    for (let k = 0; k < 100 && !/anmen through the relay/.test(b.status); k += 1) await sleep(20);
+    assert.match(b.status, /anmen through the relay/);
+    const before = { ...a.socket.merger.counts };
+    await play(a, b, 200, 5, 60);
+    await gotAll(b, 0, 200);
+    await gotAll(a, 1, 200);
+    assert.ok(a.socket.merger.counts.relay > before.relay, JSON.stringify([before, a.socket.merger.counts]));
+    assert.equal(a.socket.links.size, 0, 'no link while switched off');
+    // A fight while off: b's offer goes unanswered, every frame through the relay.
+    await nextFight(a, b);
+    await sleep(200);
+    assert.equal(a.socket.links.size, 0);
+    await play(a, b, 40);
+    await gotAll(b, 0, 40);
+    await gotAll(a, 1, 40);
+    assert.deepEqual(a.socket.merger.counts, { direct: 0, relay: 40 });
+    // On again, in the menus: the links open at once, whichever page offers (the other is asked to).
+    wanted = true;
+    a.socket.refreshLinks();
+    for (let k = 0; k < 150 && !(/banbe \d+ ms/.test(a.status) && /anmen \d+ ms/.test(b.status)); k += 1) await sleep(20);
+    assert.match(a.status, /^direct links: banbe \d+ ms/);
+    assert.match(b.status, /^direct links: anmen \d+ ms/);
+    assert.equal(a.figures.way, 'direct');
+    await nextFight(a, b);
+    await play(a, b, 100);
+    await gotAll(b, 0, 100);
+    await gotAll(a, 1, 100);
+    assert.ok(a.socket.merger.counts.direct > 0, JSON.stringify(a.socket.merger.counts));
   } finally {
     for (const page of pages) page.socket.close();
     await relay.close();
