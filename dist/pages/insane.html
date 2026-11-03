@@ -129,7 +129,8 @@
         from <b>playing each of that fighter's moves itself, in a private copy of the match</b>, before the match begins.
         That is why it can use the moves of mods nobody has ever written an AI for.</p>
       <div class="callout">How to select it: on the character selection screen, cycle the difficulty Easy → Normal → Difficult
-        → CRAZY! → <b>INSANE!</b> (→ <b>XOI</b>, the experimental level after it, <a href="#xoi">below</a>). In a network room
+        → CRAZY! → <b>INSANE!</b> (→ <b>XOI</b>, the strongest level after it: tuned numbers and notes of training,
+        <a href="#xoi">below</a>). In a network room
         the host picks the level; every machine in the room computes exactly the same thing, so the match and its recording
         (replay) always stay in sync.</div>
     </section>
@@ -300,12 +301,25 @@
     </section>
 
     <section id="xoi">
-      <h2>XOI — INSANE! with a memory of training (experimental)</h2>
+      <h2>XOI — INSANE! with tuned numbers and a memory of training</h2>
       <p class="lede">INSANE! starts every match knowing what each move <em>can</em> do, from playing it in a copy of the
         game — but not how it fares against one particular opponent: a combo that lands on a still dummy may be cut short
         by Neji's quick palm nearly every time, while a modest-looking special lands four times in five. <b>XOI</b>, the
-        level after INSANE!, plays as INSANE! does, with notes of training besides, and since version 31 with the numbers
-        tuned by play (<a href="xoi.html#tune">SPSA</a>: version 29's, or the mod's own), INSANE! keeping the ones set by hand.</p>
+        level after INSANE!, plays as INSANE! does, with two things INSANE! has not: the numbers its judgement rests on tuned
+        by play, and notes of training.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th></th><th>INSANE!</th><th>XOI</th></tr></thead>
+        <tbody>
+          <tr><td>The 77 numbers of its judgement</td><td>Set by hand</td><td>Tuned by play (<a href="xoi.html#tune">SPSA</a>, since
+            version 31 XOI's alone): version 29's set, from the original LF2, Naruto 2.4 and One Piece GrandWorld — or the mod's own,
+            <code>xoi/tune.txt</code>, when it has them (the match shows <i>mod tuned</i>)</td></tr>
+          <tr><td>Notes of training</td><td>None</td><td>The mod's <code>xoi/notes.txt</code>, when it has been trained (below)</td></tr>
+          <tr><td>Measured against INSANE!</td><td>—</td><td>The tuned set against the hand-set numbers: 52.0% of 76,286 games won by
+            either. A mod's own numbers against the tuned set (the project owner's two PCs, November 3): HELL 65.4%, KT 54.9%,
+            Naruto 52.0%, One Piece 51.2% (tens of thousands of games each). Notes of training: 54.9% of 640 games (Naruto, below). Each part adds to the
+            others; <code>dau-nhieu.bat</code> measures XOI against INSANE! on a mod as a whole.</td></tr>
+        </tbody>
+      </table></div>
       <ol class="steps">
         <li><b>Training.</b> A bench job plays many games — 100 to 200 — of every pair of the mod's fighters, both played by
           INSANE!, and writes down, for each fighter against each opponent and each move it chose: how often it landed, how
@@ -328,7 +342,7 @@
           clearly better spot within a few steps is — clearly meaning by more than either may be off.</li>
         <li><b>In step.</b> The notes are part of the mod's file, which every machine in a network room has, so what XOI
           decides still depends only on the match and that file: rooms and replays stay in sync. A mod without notes plays
-          XOI as INSANE! with XOI's numbers; the match line shows <code>(XOI v27, N matchups)</code>, or <code>no notes</code>.
+          XOI with its tuned numbers only; the match line shows <code>(XOI v27, N matchups)</code>, or <code>no notes</code>.
           Notes trained before version 27 have no situations or spots: XOI then weighs moves as before.</li>
       </ol>
       <p class="note" id="xoi-results">First measurement, Naruto: The Setting Dawn: 8 pairs of fighters, 100 training games

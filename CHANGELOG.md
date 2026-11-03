@@ -110,7 +110,8 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   XOI with v29's tuned set (`smart.xoi_tune`), and in a mod with numbers of its own (`xoi/tune.txt`, `spsa.bat`'s)
   with those laid over it — INSANE! no longer reads a mod's numbers, and the match shows *mod tuned* beside XOI
   only. Each computer player decides with its level's numbers, also two levels in one bench match. `spsa.bat` and
-  `spsa.lua` tune XOI's numbers: they start from XOI's own and check against them
+  `spsa.lua` tune XOI's numbers: they start from XOI's own and check against them. The site's front page, INSANE!
+  page (a table of the two levels with what each part was measured to add) and XOI page say so
 - Network play in the browser: the corner of the game also shows how busy each computer is (`busy`: the longest
   the page stalled in the last 5 seconds; `host busy` / `player busy` for the other side, which tells it every
   2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,
