@@ -154,16 +154,21 @@ $installed = Get-AiVersion $gameScripts
 $newer = 0
 if ($kitScripts) { $newer = Get-AiVersion $kitScripts }
 $useKit = $newer -gt $installed
-# Locking the hidden fighters needs scripts that read openlf2.txt (base\game\mod_settings.lua, package 48 on); the
-# computer players' version says nothing of that, so with the chosen scripts older, the other ones if they have it.
+# Locking the hidden fighters needs scripts that read openlf2.txt and keep CRAZY!, INSANE! and XOI for a locked mod
+# (unlock.hard_levels in base\game\unlock.lua, package 49 on: package 48's locked the levels too); the computer
+# players' version says nothing of that, so with the chosen scripts older, the other ones if they have it.
+function Test-Lock([string]$scripts) {
+    $file = Under $scripts 'base' 'game' 'unlock.lua'
+    return (Test-File $file) -and [bool](Select-String -LiteralPath $file -Pattern 'function unlock\.hard_levels' -Quiet)
+}
 if ($lock) {
     $chosen = $gameScripts
     $other = $kitScripts
     if ($useKit) { $chosen = $kitScripts; $other = $gameScripts }
-    if (-not (Test-File (Under $chosen 'base' 'game' 'mod_settings.lua'))) {
-        if ($other -and (Test-File (Under $other 'base' 'game' 'mod_settings.lua'))) { $useKit = -not $useKit }
+    if (-not (Test-Lock $chosen)) {
+        if ($other -and (Test-Lock $other)) { $useKit = -not $useKit }
         else {
-            Fail 'Khoa nhan vat an can scripts tu goi 48 tro len (co base\game\mod_settings.lua): ca game da cai lan thu muc scripts canh xuat-ban.bat deu cu hon. Dat thu muc scripts cua goi moi nhat canh xuat-ban.bat (hoac cai OpenLF2 moi), roi chay lai.'
+            Fail 'Khoa nhan vat an can scripts tu goi 49 tro len: ca game da cai lan thu muc scripts canh xuat-ban.bat deu cu hon. Dat thu muc scripts cua goi moi nhat canh xuat-ban.bat (hoac cai OpenLF2 moi), roi chay lai.'
         }
     }
 }
@@ -244,7 +249,7 @@ try {
     if ($tuneEntry) { Write-Host 'Bo so rieng cua ban mod (XOI): co' }
     else { Write-Host 'Bo so rieng cua ban mod (XOI): chua co - XOI dung bo so chung (spsa.bat chinh bo so rieng)' }
 } finally { $archive.Dispose() }
-if ($lock) { Write-Host 'Nhan vat an: KHOA - khong co nut options o man hinh dau, go lf2.net cung khong mo (OpenLF2 tu goi 48)' }
+if ($lock) { Write-Host 'Nhan vat an: KHOA - khong co nut options o man hinh dau, go lf2.net cung khong mo; CRAZY!, INSANE!, XOI van chon duoc' }
 else { Write-Host 'Nhan vat an: nhu thuong - nguoi choi mo khoa duoc (options, lf2.net)' }
 
 # A few words for the players, from xuat-ban-README.txt beside the kit ({TEN}: the name).
@@ -276,16 +281,19 @@ if (Test-Path -LiteralPath $errors) { Remove-Item -LiteralPath $errors -Force }
 if ($output -notmatch 'Game pack game\.zip' -and $output -match 'headless runs need|LF2_v2\.0a\.exe') {
     Fail ('OpenLF2 da cai (' + $game + ') la ban cu: chua tu mo game.zip canh no. Cai ban moi (OpenLF2-Windows-x64.exe o muc Releases, ban 45 tro len) roi chay lai xuat-ban.bat.')
 }
-# A picture the game cannot read is left out, as in its window, and the game plays on ("Picture ...; left out"). An
-# OpenLF2 before package 47 stopped such a run at the first one instead: its last line is that picture's error
-# ("pe/MENU_BACK2: ..." for a picture in the mod's program, or a file's path) - a picture missing, not a mod that
-# does not open (KT-LF2 v3.0's menu pictures, which package 47 reads).
+# A picture, sound or piece of music the game cannot read is left out, as in its window, and the game plays on
+# ("Picture ...; left out", "Music ...", "Sound ..."). An OpenLF2 before package 47 (pictures) or 49 (sounds and
+# music) stopped such a run at the first one instead: its last line is that error - "pe/MENU_BACK2: ..." or a
+# picture's path, "music: no audio stream: Decoder not found" (WMA Pro before package 49), "music bgm/main.wma is
+# shorter than a second", "game pack resource missing: bgm/main.wma" - something missing, not a mod that does not
+# open.
 $lines = @($output -split "`r?`n" | Where-Object { $_ })
 $found = $output -match 'Game pack game\.zip'
-$pictures = @($lines | Where-Object { $_ -match '^Picture .+; left out$' })
+$pictures = @($lines | Where-Object { $_ -match '^(Picture|Music|Sound) .+; left out$' })
 $opened = $found -and $process.ExitCode -eq 0 -and $output -match 'Indexed '
 $older = $false
-if (-not $opened -and $found -and $lines.Count -gt 0 -and $lines[-1] -match '^(pe/[A-Za-z0-9_]+|[^:]+\.(bmp|png)): ') {
+if (-not $opened -and $found -and $lines.Count -gt 0 -and
+    $lines[-1] -match '^(pe/[A-Za-z0-9_]+: |[^:]+\.(bmp|png): |music[: ]|game pack resource missing: )') {
     $opened = $true
     $older = $true
     $pictures += $lines[-1]
@@ -297,10 +305,10 @@ if (-not $opened) {
 }
 Write-Host ('  ' + (@($lines | Where-Object { $_ -match '^Game pack ' }) | Select-Object -First 1))
 if ($pictures.Count -gt 0) {
-    Write-Host '  [CHU Y] Co hinh game khong doc duoc - game bo qua hinh ay va van choi (nhu khi choi bang choi.bat):'
+    Write-Host '  [CHU Y] Co hinh / nhac / tieng game khong doc duoc - game bo qua va van choi (nhu khi choi bang choi.bat):'
     foreach ($line in @($pictures | Select-Object -First 5)) { Write-Host ('    ' + $line) }
-    if ($older) { Write-Host '    OpenLF2 da cai la ban cu: ban moi (goi 47 tro len) doc duoc nhieu kieu hinh hon - cai ban moi roi xuat ban lai.' }
-    else { Write-Host ('    Muon game doc duoc hinh ay: gui file ' + $log + ' cho nguoi lam OpenLF2.') }
+    if ($older) { Write-Host '    OpenLF2 da cai la ban cu: ban moi (goi 49 tro len) doc duoc nhieu kieu hinh va nhac hon (WMA Pro, MP3) - cai ban moi roi xuat ban lai.' }
+    else { Write-Host ('    Muon game doc duoc chung: gui file ' + $log + ' cho nguoi lam OpenLF2.') }
 }
 
 # The folder zipped, its own name at the top (Windows' Extract All, 7-Zip and the like keep it together); game.zip is

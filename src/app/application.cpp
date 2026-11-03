@@ -1053,7 +1053,8 @@ Result<void> run(const Configuration& config) {
         // Runs each traced frame (or one idle frame) and loads every drawn resource once.
         const auto frames = config.input_trace.empty() ? std::vector<std::string>{""} : config.input_trace;
         std::set<std::string, std::less<>> loaded_resources;
-        // A picture that cannot be read is left out, as the window leaves it out (reported once): the game goes on.
+        // A picture, sound or piece of music that cannot be read is left out, as the window leaves it out (reported
+        // once): the game goes on.
         std::set<std::string, std::less<>> left_out;
         std::set<std::string, std::less<>> played_sounds;
         std::size_t sound_count = 0;
@@ -1086,9 +1087,13 @@ Result<void> run(const Configuration& config) {
             }
             for (const auto& sound : frame->sounds) {
                 ++sound_count;
-                if (played_sounds.contains(sound.resource)) continue;
+                if (played_sounds.contains(sound.resource) || left_out.contains(sound.resource)) continue;
                 auto bytes = resources.read(sound.resource);
-                if (!bytes) return std::unexpected(bytes.error());
+                if (!bytes) {
+                    std::cout << "Sound " << sound.resource << ": " << bytes.error().message << "; left out\n";
+                    left_out.insert(sound.resource);
+                    continue;
+                }
                 played_sounds.insert(sound.resource);
             }
             for (const auto& music : frame->music) {
@@ -1100,13 +1105,18 @@ Result<void> run(const Configuration& config) {
                 } else if (music.kind == MusicCommand::Kind::resume) {
                     music_running = !music_track.empty();
                 }
-                if (music.kind != MusicCommand::Kind::play || !music_available || decoded_music.contains(music.resource)) continue;
+                if (music.kind != MusicCommand::Kind::play || !music_available || decoded_music.contains(music.resource)
+                    || left_out.contains(music.resource)) continue;
                 auto checked = check_music(resources, *music_decoder, music.resource);
                 if (!checked && checked.error().code == ErrorCode::dependency) {
                     music_available = false;
                     continue;
                 }
-                if (!checked) return std::unexpected(checked.error());
+                if (!checked) {
+                    std::cout << "Music " << music.resource << ": " << checked.error().message << "; left out\n";
+                    left_out.insert(music.resource);
+                    continue;
+                }
                 decoded_music.insert(music.resource);
             }
             for (const auto& action : frame->actions) {
@@ -1119,13 +1129,13 @@ Result<void> run(const Configuration& config) {
             std::cout << *description << '\n';
         }
         std::cout << "Indexed " << archive_files << " files; " << frames.size()
-                  << " Lua frame(s), " << loaded_resources.size() << " distinct bitmap resources loaded"
-                  << (left_out.empty() ? std::string{} : " (" + std::to_string(left_out.size()) + " left out)") << ", "
+                  << " Lua frame(s), " << loaded_resources.size() << " distinct bitmap resources loaded, "
                   << sound_count << " sound(s) requested from " << played_sounds.size() << " file(s); "
                   << (music_available ? std::to_string(decoded_music.size()) + " music track(s) decoded"
                                       : std::string("music not built"))
                   << "; music=" << (music_track.empty() ? "none" : music_track) << ' '
-                  << (music_running ? "playing" : "stopped") << ".\n";
+                  << (music_running ? "playing" : "stopped")
+                  << (left_out.empty() ? std::string{} : "; " + std::to_string(left_out.size()) + " left out") << ".\n";
         for (const auto& name : recording_directory->written()) std::cout << "Recording saved: " << name << '\n';
         return {};
     }

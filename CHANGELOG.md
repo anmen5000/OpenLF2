@@ -246,9 +246,17 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   `#` notes; `base/game/mod_settings.lua`) is read once from its files, so every computer playing it agrees:
   locked, the option to unlock is gone and does nothing and LF2.NET typed at the title marks nothing (the
   saved option stays as it was, for an installed OpenLF2 sharing the settings file); hidden, the title screen
-  has no options entry (drawn or reached with the keys). Without the file nothing changes
+  has no options entry (drawn or reached with the keys). Without the file nothing changes. CRAZY!, INSANE! and
+  XOI, which come with the unlock as CRAZY! does in the original, can still be chosen in such a mod
+  (`unlock.hard_levels`): the first locked KT-LF2 published stopped at Difficult, without its computer players
 
 ### Fixed
+- Music on a PC: the desktop builds' FFmpeg decoded only WMA version 2, so the music of mods in WMA Pro (Naruto: The
+  Setting Dawn 2.4's and One Piece GrandWorld's main.wma among others) or MP3 (One Piece GrandWorld) was silent
+  ("music: no audio stream: Decoder not found"); it now has the web build's decoders (WMA 1 and 2, WMA Pro, MP3).
+  A run without a window also leaves out a sound or piece of music it cannot read (missing, too short, no decoder),
+  as the window does, and `xuat-ban.bat` publishes such a mod with a note — Sx2's missing `bgm/main.wma`,
+  Convergence's 8 KB tracks and Naruto's and One Piece's WMA Pro stopped it, with the installed OpenLF2 too
 - KT-LF2 v3.0's menu pictures: its program keeps them (MENU_BACK1-13, MENU_CLIP, MENU_WAIT: the backgrounds of the
   menus and the loading screen) as bitmaps with the old 12-byte BITMAPCOREHEADER of OS/2 and Windows 2 (16-bit width
   and height, three-byte colours), which Windows reads: they were left out, and now show (made BITMAPINFOHEADER

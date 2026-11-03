@@ -563,9 +563,9 @@ local function options_menu(state, previous_menu, context)
         context.action("start_match")
     elseif options.row == option_rows.difficulty then
         options.difficulty = options.difficulty - 1
-        local unlocked = require("base/game/unlock").flags.characters
+        local hard_levels = require("base/game/unlock").hard_levels()
         -- CRAZY! and OpenLF2's INSANE! and XOI after it come with the unlock, as CRAZY! does in the original.
-        if (options.difficulty < constants.difficulties.difficult and unlocked == 0)
+        if (options.difficulty < constants.difficulties.difficult and not hard_levels)
            or options.difficulty < constants.difficulties.xoi then
             options.difficulty = constants.difficulties.easy
         end

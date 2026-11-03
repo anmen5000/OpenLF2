@@ -5,7 +5,8 @@
 -- anything after # a note. The XOI kit's xuat-ban.bat writes it into a mod published for its players:
 --   hidden_characters = locked   the hidden fighters stay hidden: the option to unlock them is gone and does
 --                                nothing, and LF2.NET typed at the title does nothing (the saved option is kept
---                                as it is, for an installed OpenLF2 that shares the settings file)
+--                                as it is, for an installed OpenLF2 that shares the settings file); CRAZY!, INSANE!
+--                                and XOI, which otherwise come with the unlock, can be chosen (unlock.hard_levels)
 --   options = hidden             no "options" on the title screen
 -- The original game's installer, and a mod without the file, have no settings. Read once, from the game's files,
 -- so every computer playing the same mod has the same.

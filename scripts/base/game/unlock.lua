@@ -95,6 +95,13 @@ function unlock.apply_recorded(bits)
     return played
 end
 
+-- Whether CRAZY! and OpenLF2's INSANE! and XOI after it can be chosen: they come with the unlock, as CRAZY! does in
+-- the original; a mod that keeps its hidden fighters locked for its players (base/game/mod_settings) has them all
+-- the same, its computer players being what such a published mod is for.
+function unlock.hard_levels()
+    return unlock.flags.characters == 1 or mod_settings.hidden_characters_locked()
+end
+
 local saved
 function unlock.begin_replay(characters, function_keys)
     saved = {characters = unlock.flags.characters, function_keys = unlock.flags.function_keys}

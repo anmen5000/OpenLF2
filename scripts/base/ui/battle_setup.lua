@@ -481,8 +481,8 @@ local function options_keys(state, key, context)
         end
     elseif row == option_rows.difficulty then
         options.difficulty = options.difficulty - 1
-        local unlocked = require("base/game/unlock").flags.characters
-        if (options.difficulty < constants.difficulties.difficult and unlocked == 0)
+        local hard_levels = require("base/game/unlock").hard_levels()
+        if (options.difficulty < constants.difficulties.difficult and not hard_levels)
            or options.difficulty < constants.difficulties.xoi then
             options.difficulty = constants.difficulties.easy
         end

@@ -30,8 +30,12 @@ class OpenLF2Conan(ConanFile):
         "ffmpeg/*:postproc": False,
         "ffmpeg/*:with_asm": False,
         "ffmpeg/*:disable_everything": True,
-        "ffmpeg/*:enable_decoders": "wmav2",
-        "ffmpeg/*:enable_demuxers": "asf",
+        # The original's music is WMA (version 2); mods also have WMA version 1, WMA Pro (Naruto: The Setting Dawn
+        # 2.4's and One Piece GrandWorld's main.wma, among others) and MP3 (One Piece GrandWorld): the web build's
+        # decoders (dist/web/build-inside.sh).
+        "ffmpeg/*:enable_decoders": "wmav1,wmav2,wmapro,mp3float,mp3",
+        "ffmpeg/*:enable_demuxers": "asf,mp3",
+        "ffmpeg/*:enable_parsers": "mpegaudio",
         # SDL3_ttf (translated languages) must be built like SDL; no text shaping or SVG emoji is needed.
         "sdl_ttf/*:shared": True,
         "sdl_ttf/*:with_harfbuzz": False,

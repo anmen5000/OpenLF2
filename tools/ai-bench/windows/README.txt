@@ -41,7 +41,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    beside it by itself; xuat-ban.bat says when the installed one is older). Another name: TEN at the top of
    xuat-ban.bat; your words for the players: edit xuat-ban-README.txt first ({TEN} becomes the name).
    It asks whether to lock the hidden fighters (C = yes): no "options" on the players' title screen, no
-   unlocking, lf2.net does nothing (openlf2.txt in the mod; OpenLF2 from package 48). KHOA_AN at the top of
+   unlocking, lf2.net does nothing; CRAZY!, INSANE! and XOI stay (openlf2.txt in the mod; package 49). KHOA_AN at the top of
    xuat-ban.bat answers it beforehand.
    Publish your own mod, or one whose author allows it; keep the licenses folder in it.
 7. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
@@ -94,7 +94,7 @@ chơi được chính các file của bản mod.
    game.zip nằm cạnh nó; xuat-ban.bat báo nếu bản đã cài cũ hơn). Muốn tên khác: dòng TEN ở đầu xuat-ban.bat;
    lời của bạn cho người chơi: sửa xuat-ban-README.txt trước ({TEN} thành tên bản xuất bản).
    Nó hỏi có khóa nhân vật ẩn không (C = có): màn hình đầu của người chơi không có nút options, không mở
-   khóa được, gõ lf2.net cũng không mở (file openlf2.txt trong bản mod; OpenLF2 từ gói 48). Dòng KHOA_AN
+   khóa được, gõ lf2.net cũng không mở; CRAZY!, INSANE!, XOI vẫn có (file openlf2.txt trong bản mod; gói 49). Dòng KHOA_AN
    ở đầu xuat-ban.bat trả lời sẵn câu này.
    Chỉ xuất bản bản mod của bạn, hoặc khi tác giả cho phép; giữ thư mục licenses trong đó.
 7. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng

@@ -14,7 +14,8 @@ Các mức máy
   riêng bản mod này (chiêu nào hiệu quả với nhân vật nào).
 
 Lưu ý
-- game.zip là bản mod: đừng giải nén, đổi tên hay xóa nó.
+- game.zip là bản mod: đừng giải nén, đổi tên hay xóa nó. File .exe gốc của bản mod nằm trong đó là Little Fighter 2
+  cũ (chỉ tới CRAZY!, không có INSANE! và XOI, và có thể báo lỗi trên Windows mới): hãy chơi bằng {TEN}.exe.
 - Phím và cài đặt lưu ở %APPDATA%\OpenLF2 (dùng chung với OpenLF2 nếu máy có cài).
 - Game không mở được, hoặc cửa sổ chỉ một màu: cập nhật driver card đồ họa.
 - Game chạy bằng OpenLF2 (https://github.com/anmen5000/OpenLF2), mã nguồn mở; giấy phép của OpenLF2 và các
@@ -30,6 +31,7 @@ Lưu ý
 
 - INSANE!: OpenLF2's computer player, which sees blows coming and guards, dodges and strikes back.
 - XOI, the hardest: INSANE! with numbers tuned over thousands of games and notes of training for this mod.
-- game.zip is the mod: leave it as it is. Keys and settings are kept in %APPDATA%\OpenLF2.
+- game.zip is the mod: leave it as it is (the mod's own .exe inside it is the old Little Fighter 2, up to CRAZY!
+  only: play with {TEN}.exe). Keys and settings are kept in %APPDATA%\OpenLF2.
 - OpenLF2 is open source (https://github.com/anmen5000/OpenLF2); its licence and those of the libraries it
   uses are in the licenses folder.
