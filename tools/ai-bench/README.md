@@ -134,7 +134,9 @@ without a window, 15 seconds of a window with each renderer, and Windows' record
 `game.zip` beside it, `xoi/notes.txt` and `xoi/tune.txt` inside (a `*-xoi.zip` as it is; a ZIP or folder takes those
 of `xoi-<mod>\`), a `README.txt` for the players from `xuat-ban-README.txt`, then the folder zipped as
 `xuat-ban\<mod>.zip`. OpenLF2 plays a `game.zip` beside its program when started with neither `--pack` nor
-`--installer` (package 45 on), so the players double-click `<mod>.exe` and play, nothing installed. Its work is in
+`--installer` (package 45 on), so the players double-click `<mod>.exe` and play, nothing installed. Asked (or with
+`KHOA_AN=C`), it locks the hidden fighters for the players: `openlf2.txt` beside the mod's data folder with
+`hidden_characters = locked` and `options = hidden` (`scripts/base/game/mod_settings.lua`; package 48 on). Its work is in
 `windows/xuat-ban.ps1` (settings and dragged files come as `XB_*` environment variables), which starts the folder's
 program once without a window (`--input-trace ""`) and zips it only when the game found `game.zip` by itself (a picture
 the game cannot read is noted, as it is left out in play too, and an older game's stop at one taken as such); it runs

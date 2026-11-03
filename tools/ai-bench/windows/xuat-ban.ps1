@@ -60,6 +60,9 @@ $game = [string]$env:XB_GAME
 $pack = [string]$env:XB_PACK
 $notes = [string]$env:XB_NOTES
 $tune = [string]$env:XB_TUNE
+# Hidden fighters locked for the players (C) or not (K, or not set): openlf2.txt beside the mod's data folder, which
+# OpenLF2 (package 48 on) reads - no options on the title screen, the option to unlock and LF2.NET doing nothing.
+$lock = ([string]$env:XB_KHOA_AN).Trim().ToUpper() -eq 'C'
 
 # The mod: set or dragged; else the first *-xoi.zip beside the kit (with XOI's notes and numbers inside), then the first
 # other .zip (not an older copy kept by spsa.bat, an update package or the kit itself).
@@ -150,12 +153,26 @@ foreach ($place in @((Join-Path $kit 'scripts'), (Under $kit '..' '..' '..' 'scr
 $installed = Get-AiVersion $gameScripts
 $newer = 0
 if ($kitScripts) { $newer = Get-AiVersion $kitScripts }
-if ($newer -gt $installed) {
+$useKit = $newer -gt $installed
+# Locking the hidden fighters needs scripts that read openlf2.txt (base\game\mod_settings.lua, package 48 on); the
+# computer players' version says nothing of that, so with the chosen scripts older, the other ones if they have it.
+if ($lock) {
+    $chosen = $gameScripts
+    $other = $kitScripts
+    if ($useKit) { $chosen = $kitScripts; $other = $gameScripts }
+    if (-not (Test-File (Under $chosen 'base' 'game' 'mod_settings.lua'))) {
+        if ($other -and (Test-File (Under $other 'base' 'game' 'mod_settings.lua'))) { $useKit = -not $useKit }
+        else {
+            Fail 'Khoa nhan vat an can scripts tu goi 48 tro len (co base\game\mod_settings.lua): ca game da cai lan thu muc scripts canh xuat-ban.bat deu cu hon. Dat thu muc scripts cua goi moi nhat canh xuat-ban.bat (hoac cai OpenLF2 moi), roi chay lai.'
+        }
+    }
+}
+if ($useKit) {
     Copy-Tree $kitScripts (Join-Path $out 'scripts')
-    Write-Host ('May INSANE!/XOI ban ' + $newer + ' cua bo XOI (game da cai: ban ' + $installed + ')')
+    Write-Host ('May INSANE!/XOI ban ' + $newer + ', scripts cua bo XOI (game da cai: ban ' + $installed + ')')
 } else {
     Copy-Tree $gameScripts (Join-Path $out 'scripts')
-    Write-Host ('May INSANE!/XOI ban ' + $installed + ' cua game da cai')
+    Write-Host ('May INSANE!/XOI ban ' + $installed + ', scripts cua game da cai')
 }
 $licences = Join-Path $out 'licenses'
 if (Test-Path -LiteralPath (Join-Path $gameDir 'licenses') -PathType Container) { Copy-Tree (Join-Path $gameDir 'licenses') $licences }
@@ -185,13 +202,19 @@ if ($isFolder) {
     [IO.File]::Copy($item.FullName, $gameZip, $true)
 }
 $root = $null
-$mode = 'Read'
-if ($notes -or $tune) { $mode = 'Update' }
-$archive = [IO.Compression.ZipFile]::Open($gameZip, $mode)
+$hadSettings = $false
+$archive = [IO.Compression.ZipFile]::OpenRead($gameZip)
 try {
     $data = @($archive.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length }) | Select-Object -First 1
     if ($data) {
         $root = $data.FullName.Substring(0, $data.FullName.Length - 'data/data.txt'.Length)
+        $hadSettings = [bool](Find-Entry $archive ($root + 'openlf2.txt'))
+    }
+} finally { $archive.Dispose() }
+if ($null -eq $root) { Fail ('"' + $item.FullName + '" khong co data\data.txt: day khong phai ban mod LF2 (hay thu muc / file zip cua no).') }
+if ($notes -or $tune -or $lock -or $hadSettings) {
+    $archive = [IO.Compression.ZipFile]::Open($gameZip, 'Update')
+    try {
         foreach ($pair in @(@($notes, 'xoi/notes.txt'), @($tune, 'xoi/tune.txt'))) {
             if (-not $pair[0]) { continue }
             $entry = $root + $pair[1]
@@ -199,9 +222,19 @@ try {
             [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $pair[0], $entry, 'Optimal')
             Write-Host ('  them ' + $entry + ' <- ' + $pair[0])
         }
-    }
-} finally { $archive.Dispose() }
-if ($null -eq $root) { Fail ('"' + $item.FullName + '" khong co data\data.txt: day khong phai ban mod LF2 (hay thu muc / file zip cua no).') }
+        # The mod's settings for OpenLF2: written when locking, taken away otherwise (the publisher's choice).
+        $entry = $root + 'openlf2.txt'
+        foreach ($old in @($archive.Entries | Where-Object { $_.FullName -ieq $entry -or $_.FullName -ieq $entry.Replace('/', '\') })) { $old.Delete() }
+        if ($lock) {
+            $writer = New-Object IO.StreamWriter(($archive.CreateEntry($entry, 'Optimal')).Open(), (New-Object Text.UTF8Encoding $false))
+            try {
+                $writer.Write("# OpenLF2: cai dat cua ban mod (xuat-ban.bat) / this mod's settings for OpenLF2`r`n" +
+                    "# Nhan vat an bi khoa: khong co nut options, go lf2.net khong mo khoa / hidden fighters stay hidden`r`n" +
+                    "hidden_characters = locked`r`noptions = hidden`r`n")
+            } finally { $writer.Dispose() }
+        }
+    } finally { $archive.Dispose() }
+}
 $archive = [IO.Compression.ZipFile]::OpenRead($gameZip)
 try {
     $notesEntry = Find-Entry $archive ($root + 'xoi/notes.txt')
@@ -211,6 +244,8 @@ try {
     if ($tuneEntry) { Write-Host 'Bo so rieng cua ban mod (XOI): co' }
     else { Write-Host 'Bo so rieng cua ban mod (XOI): chua co - XOI dung bo so chung (spsa.bat chinh bo so rieng)' }
 } finally { $archive.Dispose() }
+if ($lock) { Write-Host 'Nhan vat an: KHOA - khong co nut options o man hinh dau, go lf2.net cung khong mo (OpenLF2 tu goi 48)' }
+else { Write-Host 'Nhan vat an: nhu thuong - nguoi choi mo khoa duoc (options, lf2.net)' }
 
 # A few words for the players, from xuat-ban-README.txt beside the kit ({TEN}: the name).
 $template = Join-Path $kit 'xuat-ban-README.txt'

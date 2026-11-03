@@ -19,6 +19,9 @@ rem Bo nho XOI (notes.txt cua xoi-hoc.bat) va bo so XOI (tune.txt cua spsa.bat).
 rem xoi-<ten ban mod> canh file nay - tru khi ban mod la file *-xoi.zip (da co san ben trong, giu nguyen).
 set "NOTES="
 set "TUNE="
+rem Khoa nhan vat an cho nguoi choi: C = co (an nut options o man hinh dau, khong mo khoa duoc, go lf2.net cung khong
+rem mo - cho ban mod co nhan vat an mat can bang), K = khong (nhu OpenLF2 thuong). De trong thi hoi khi chay.
+set "KHOA_AN="
 rem Loi cho nguoi choi: README.txt trong ban xuat ban lam tu file xuat-ban-README.txt canh file nay ({TEN} doi thanh
 rem ten ban xuat ban). Sua file ay (Notepad) truoc khi chay de them gioi thieu ban mod, ten nguoi lam...
 rem =====================================
@@ -58,6 +61,13 @@ set "XB_GAME=%GAME%"
 set "XB_PACK=%PACK%"
 set "XB_NOTES=%NOTES%"
 set "XB_TUNE=%TUNE%"
+if not defined KHOA_AN (
+  echo.
+  echo Khoa nhan vat an cho nguoi choi? An nut options o man hinh dau, khong mo khoa duoc, go lf2.net cung khong mo.
+  choice /c CK /n /m "Bam C = co, K = khong: "
+  if errorlevel 2 (set "KHOA_AN=K") else (set "KHOA_AN=C")
+)
+set "XB_KHOA_AN=%KHOA_AN%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0xuat-ban.ps1"
 if errorlevel 1 (
   echo.

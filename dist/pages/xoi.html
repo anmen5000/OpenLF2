@@ -673,6 +673,11 @@
           numbers in <code>xoi-&lt;mod&gt;\</code> beside it go in), or drag it onto <code>xuat-ban.bat</code>. The name players see
           is the mod's; another: <code>TEN</code> at the top of the file. Your words for them — what the mod is, who made it — go
           into <code>xuat-ban-README.txt</code> beforehand (<code>{TEN}</code> becomes the name).</li>
+        <li><b>Lock the hidden fighters?</b> <code>xuat-ban.bat</code> asks (C = yes, K = no; or set <code>KHOA_AN</code> at
+          the top). Yes: the players' title screen has no <i>options</i>, the hidden fighters cannot be unlocked and typing
+          <kbd>lf2.net</kbd> does nothing — for a mod whose hidden fighters are out of balance. It is a file in the mod,
+          <code>openlf2.txt</code> (<code>hidden_characters = locked</code>, <code>options = hidden</code>), which OpenLF2 reads
+          from package 48 on.</li>
         <li><b>Double-click <code>xuat-ban.bat</code>.</b> It copies the installed OpenLF2 (the program as
           <code>&lt;mod&gt;.exe</code>, its libraries, its scripts — the kit's when newer, the computer players you trained with — and
           its licences), makes <code>game.zip</code> and <code>README.txt</code>, starts the folder once without a window to see
@@ -688,6 +693,11 @@
           bộ số trong <code>xoi-&lt;tên&gt;\</code> cạnh nó được đóng vào), hoặc kéo thả nó vào <code>xuat-ban.bat</code>. Tên người
           chơi thấy là tên bản mod; muốn tên khác: dòng <code>TEN</code> ở đầu file. Lời của bạn cho người chơi — bản mod là gì, ai
           làm — viết trước vào <code>xuat-ban-README.txt</code> (<code>{TEN}</code> thành tên bản xuất bản).</li>
+        <li><b>Khóa nhân vật ẩn?</b> <code>xuat-ban.bat</code> hỏi (C = có, K = không; hoặc đặt dòng <code>KHOA_AN</code> ở đầu
+          file). Có: màn hình đầu của người chơi không có nút <i>options</i>, nhân vật ẩn không mở khóa được, gõ
+          <kbd>lf2.net</kbd> cũng không mở — cho bản mod có nhân vật ẩn mất cân bằng. Đó là một file trong bản mod,
+          <code>openlf2.txt</code> (<code>hidden_characters = locked</code>, <code>options = hidden</code>), OpenLF2 đọc từ gói
+          48.</li>
         <li><b>Nháy đúp <code>xuat-ban.bat</code>.</b> Nó chép OpenLF2 đã cài (chương trình thành <code>&lt;tên&gt;.exe</code>, các
           thư viện, scripts — của bộ XOI nếu mới hơn, tức các máy bạn đã huấn luyện — và giấy phép), làm <code>game.zip</code> và
           <code>README.txt</code>, mở thử thư mục một lần không cửa sổ để chắc nó tự tìm thấy bản mod, rồi nén lại.</li>

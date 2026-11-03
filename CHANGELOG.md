@@ -240,6 +240,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - The relay server for network rooms and the mod library (`tools/relay/`), with a one-command installer for a
   Linux server
 - Sx2's interface pictures; game packs up to 256 MiB
+- A published mod can keep its hidden fighters locked (the project owner's wish: many mods' hidden fighters are
+  out of balance): `xuat-ban.bat` asks (or `KHOA_AN`), and on yes writes `openlf2.txt` beside the mod's data
+  folder with `hidden_characters = locked` and `options = hidden`. A pack's `openlf2.txt` (key = value lines,
+  `#` notes; `base/game/mod_settings.lua`) is read once from its files, so every computer playing it agrees:
+  locked, the option to unlock is gone and does nothing and LF2.NET typed at the title marks nothing (the
+  saved option stays as it was, for an installed OpenLF2 sharing the settings file); hidden, the title screen
+  has no options entry (drawn or reached with the keys). Without the file nothing changes
 
 ### Fixed
 - KT-LF2 v3.0's menu pictures: its program keeps them (MENU_BACK1-13, MENU_CLIP, MENU_WAIT: the backgrounds of the

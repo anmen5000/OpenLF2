@@ -162,7 +162,9 @@ Useful flags: `--config-dir DIR` (settings/data location), `--mod PATH` (load a 
 `--headless` (no window), `--scripts DIR` (run from source scripts instead of the copy
 beside the executable), `--pack FILE.zip` (play an LF2 mod packed as a ZIP file, its own
 program and data, instead of the installer). A `game.zip` beside the executable is played
-as with `--pack` when neither `--pack` nor `--installer` is given.
+as with `--pack` when neither `--pack` nor `--installer` is given. A pack may carry `openlf2.txt` beside its
+`data` folder, `key = value` lines: `hidden_characters = locked` (no unlocking the hidden fighters, LF2.NET
+included) and `options = hidden` (no options entry on the title screen).
 
 ### Flatpak
 

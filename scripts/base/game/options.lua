@@ -4,6 +4,7 @@
 -- OpenLF2's own settings, which the original game does not have. They
 -- live in config.json's "options" member, next to the original's controls and recording values.
 local unlock = require("base/game/unlock")
+local mod_settings = require("base/game/mod_settings")
 local i18n = require("base/i18n/i18n")
 local options = {}
 
@@ -166,11 +167,16 @@ function options.current()
     return copy(current)
 end
 
+-- (A mod whose hidden fighters are locked keeps them locked whatever the option says; the option itself stays as
+-- saved, as an installed OpenLF2 shares the settings file.)
 local function apply(before, after)
     i18n.use(after.language, after.font_antialiasing)
-    if after.unlock_characters and not (before and before.unlock_characters) then
+    local locked = mod_settings.hidden_characters_locked()
+    local now = after.unlock_characters and not locked
+    local was = before ~= nil and before.unlock_characters and not locked
+    if now and not was then
         unlock.flags.characters = 1
-    elseif before and before.unlock_characters and not after.unlock_characters then
+    elseif was and not now then
         unlock.flags.characters = 0
     end
 end

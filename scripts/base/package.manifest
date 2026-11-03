@@ -39,6 +39,7 @@ module=game/frame_rules|game/frame_rules.lua
 module=game/sounds|game/sounds.lua
 module=game/rumble|game/rumble.lua
 module=game/unlock|game/unlock.lua
+module=game/mod_settings|game/mod_settings.lua
 module=game/merge|game/merge.lua
 module=game/options|game/options.lua
 module=game/stage|game/stage.lua

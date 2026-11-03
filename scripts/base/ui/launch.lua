@@ -6,6 +6,7 @@ local font = require("base/ui/font")
 local i18n = require("base/i18n/i18n")
 local sounds = require("base/game/sounds")
 local options = require("base/game/options")
+local mod_settings = require("base/game/mod_settings")
 local navigation = require("base/ui/navigation")
 local constants = require("base/game/constants")
 local virtual_keys = constants.virtual_keys
@@ -191,7 +192,8 @@ local option_rows = {
         available = function(features) return features.text end},
     {key = "font_antialiasing", label = "Font antialiasing",
         available = function(_, values) return values.language ~= "default" end},
-    {key = "unlock_characters", label = "Unlock hidden characters"},
+    {key = "unlock_characters", label = "Unlock hidden characters",
+        available = function() return not mod_settings.hidden_characters_locked() end},
     {key = "upscaling_filter", label = "Upscaling filter", choices = options.available_filters},
     {key = "battlefield_layout", label = "Battlefield layout", choices = function() return options.battlefield_layouts end},
     {key = "fullscreen", label = "Fullscreen", available = function(features) return features.window end},
@@ -639,12 +641,14 @@ local function navigation_page(state)
         return {page = page, targets = list, default = state.options_focus}
     end
     -- Menu targets: Game Start, Network Game, Controls, Recording, Official Website,
-    -- Options, and Exit.
+    -- Options (not in a mod that hides it: base/game/mod_settings), and Exit.
     local top = 0xca
-    return {page = "menu", remember = true, targets = {target(0x114, top + 0xf, 0x208, top + 0x27), target(0x114, top + 0x2d, 0x208, top + 0x46),
+    local targets = {target(0x114, top + 0xf, 0x208, top + 0x27), target(0x114, top + 0x2d, 0x208, top + 0x46),
         target(0x114, top + 0x4d, 0x208, top + 0x66), target(0x114, top + 0x6b, 0x208, top + 0x84),
-        target(0x114, top + 0x89, 0x208, top + 0xa2),
-        target(0x114, options_row.top, 0x208, options_row.bottom), target(0, 0x202, 0x3e, 0x217)}}
+        target(0x114, top + 0x89, 0x208, top + 0xa2)}
+    if not mod_settings.options_hidden() then targets[#targets + 1] = target(0x114, options_row.top, 0x208, options_row.bottom) end
+    targets[#targets + 1] = target(0, 0x202, 0x3e, 0x217)
+    return {page = "menu", remember = true, targets = targets}
 end
 
 function screen.update(state, flow_input, context)
@@ -668,7 +672,7 @@ function screen.update(state, flow_input, context)
         options_page(state, input)
     else
         menu(state, input, context)
-        options_entry(state, input)
+        if not mod_settings.options_hidden() then options_entry(state, input) end
     end
     if state.page == "network" then state.page = "menu"; context.action("network") end
     if state.message then text(state, state.message, 10, 530) end

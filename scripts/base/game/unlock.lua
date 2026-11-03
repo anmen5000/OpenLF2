@@ -2,6 +2,7 @@
 -- Copyright (c) 2026 OpenLF2 contributors
 
 local sounds = require("base/game/sounds")
+local mod_settings = require("base/game/mod_settings")
 local unlock = {}
 
 unlock.flags = {characters = 0, function_keys = 0}
@@ -19,12 +20,14 @@ local marked = {}
 local previous_keys = {}
 
 -- One key-down: the next letter advances; repeating the previous letter keeps place; anything
--- else restarts. The last letter marks the word and keeps place, so repeating it marks again.
+-- else restarts. The last letter marks the word and keeps place, so repeating it marks again. In a mod whose
+-- hidden fighters are locked (base/game/mod_settings), LF2.NET marks nothing.
 local function key_down(code)
     for index, word in ipairs(words) do
         local place = progress[index]
         if code == word.keys[place + 1] then
-            if place + 1 == #word.keys then marked[word.bit] = true
+            if place + 1 == #word.keys then
+                if not (word.flag == "characters" and mod_settings.hidden_characters_locked()) then marked[word.bit] = true end
             else progress[index] = place + 1 end
         elseif place == 0 or code ~= word.keys[place] then
             progress[index] = 0
