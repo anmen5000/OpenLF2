@@ -136,7 +136,8 @@ of `xoi-<mod>\`), a `README.txt` for the players from `xuat-ban-README.txt`, the
 `xuat-ban\<mod>.zip`. OpenLF2 plays a `game.zip` beside its program when started with neither `--pack` nor
 `--installer` (package 45 on), so the players double-click `<mod>.exe` and play, nothing installed. Its work is in
 `windows/xuat-ban.ps1` (settings and dragged files come as `XB_*` environment variables), which starts the folder's
-program once without a window (`--input-trace ""`) and zips it only when the game found `game.zip` by itself; it runs
+program once without a window (`--input-trace ""`) and zips it only when the game found `game.zip` by itself (a picture
+the game cannot read is noted, as it is left out in play too, and an older game's stop at one taken as such); it runs
 under PowerShell 7 elsewhere too, which is how it was tried, with this repository's Linux build in place of
 `openlf2.exe`.
 `dist/make-xoi-kit.sh` packs the `.bat` files with `scripts` and this folder as `xoi-kit.zip` (one folder,

@@ -4,10 +4,12 @@
 #include "openlf2/resources/bitmap.hpp"
 #include "openlf2/core/binary.hpp"
 #include <optional>
+#include <string>
 
 namespace openlf2::bitmap {
 namespace {
 constexpr std::size_t header_size = 40;
+constexpr std::size_t core_header_size = 12;
 constexpr std::uint32_t uncompressed = 0;
 constexpr std::uint32_t run_length_8 = 1;
 constexpr std::uint32_t bit_fields = 3;
@@ -103,6 +105,56 @@ Bytes convert_16(std::span<const char> dib, std::uint32_t compression, std::opti
     return output;
 }
 
+// BITMAPCOREHEADER (12 bytes: 16-bit width and height, planes, bits; colours as three-byte RGBTRIPLEs, no
+// compression): the bitmap of OS/2 and Windows 2, which Windows still reads. KT-LF2 v3.0's program keeps its menu
+// backgrounds this way (MENU_BACK1-13, MENU_CLIP, MENU_WAIT: 8-bit). Made a BITMAPINFOHEADER bitmap, the colours
+// four-byte RGBQUADs, the rows as they are.
+Bytes convert_core(std::span<const char> dib, std::optional<std::size_t> pixel_offset) {
+    const BinaryView header(dib);
+    const std::uint32_t width = header.u16(4);
+    const std::uint32_t height = header.u16(6);
+    if (header.u16(8) != 1) throw FormatError("only one-plane bitmaps are supported");
+    const auto bits = header.u16(10);
+    if (bits != 1 && bits != 4 && bits != 8 && bits != 24) throw FormatError("unsupported bitmap bit depth");
+    if (width == 0 || width > 8192 || height == 0 || height > 8192) {
+        throw FormatError("bitmap dimensions exceed limits");
+    }
+    const std::size_t colors = bits <= 8 ? (std::size_t{1} << bits) : 0;
+    const std::size_t palette_end = core_header_size + colors * 3;
+    const auto palette = header.slice(core_header_size, colors * 3);
+    const auto stride = static_cast<std::size_t>(((std::uint64_t{width} * bits + 31) / 32) * 4);
+    const auto pixel_bytes = stride * height;
+    const auto start = pixel_offset.value_or(palette_end);
+    if (start < palette_end || start > dib.size()) throw FormatError("bitmap pixels overlap header");
+    const auto stored = header.slice(start, pixel_bytes);
+
+    const auto output_palette_end = header_size + colors * 4;
+    Bytes output{'B', 'M'};
+    append_u32(output, static_cast<std::uint32_t>(14 + output_palette_end + pixel_bytes));
+    append_u32(output, 0);
+    append_u32(output, static_cast<std::uint32_t>(14 + output_palette_end));
+    append_u32(output, header_size);
+    append_u32(output, width);
+    append_u32(output, height);
+    output.push_back(1);
+    output.push_back(0);
+    output.push_back(static_cast<char>(bits));
+    output.push_back(0);
+    append_u32(output, uncompressed);
+    append_u32(output, static_cast<std::uint32_t>(pixel_bytes));
+    append_u32(output, 0);
+    append_u32(output, 0);
+    append_u32(output, static_cast<std::uint32_t>(colors));
+    append_u32(output, 0);
+    for (std::size_t index = 0; index < colors; ++index) {
+        output.insert(output.end(), palette.begin() + static_cast<std::ptrdiff_t>(index * 3),
+                      palette.begin() + static_cast<std::ptrdiff_t>(index * 3 + 3));
+        output.push_back(0);
+    }
+    output.insert(output.end(), stored.begin(), stored.end());
+    return output;
+}
+
 // Expands bottom-up RLE8. Pixels skipped by delta or line escapes stay index 0.
 Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t width,
                   std::size_t height, std::size_t stride) {
@@ -150,9 +202,11 @@ Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t
 Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset) {
     const BinaryView header(dib);
     const auto info_size = header.u32(0);
-    if (!known_header(info_size) || header.u16(12) != 1) {
-        throw FormatError("only BITMAPINFOHEADER bitmaps (or their V2-V5 forms) with one plane are supported");
+    if (info_size == core_header_size) return convert_core(dib, pixel_offset);
+    if (!known_header(info_size)) {
+        throw FormatError("unsupported bitmap header of " + std::to_string(info_size) + " bytes");
     }
+    if (header.u16(12) != 1) throw FormatError("only one-plane bitmaps are supported");
     header.slice(0, info_size);
     const auto bits = header.u16(14);
     auto compression = header.u32(16);

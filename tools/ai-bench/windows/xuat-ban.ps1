@@ -241,12 +241,32 @@ if (Test-Path -LiteralPath $errors) { Remove-Item -LiteralPath $errors -Force }
 if ($output -notmatch 'Game pack game\.zip' -and $output -match 'headless runs need|LF2_v2\.0a\.exe') {
     Fail ('OpenLF2 da cai (' + $game + ') la ban cu: chua tu mo game.zip canh no. Cai ban moi (OpenLF2-Windows-x64.exe o muc Releases, ban 45 tro len) roi chay lai xuat-ban.bat.')
 }
-if ($process.ExitCode -ne 0 -or $output -notmatch 'Game pack game\.zip' -or $output -notmatch 'Indexed ') {
+# A picture the game cannot read is left out, as in its window, and the game plays on ("Picture ...; left out"). An
+# OpenLF2 before package 47 stopped such a run at the first one instead: its last line is that picture's error
+# ("pe/MENU_BACK2: ..." for a picture in the mod's program, or a file's path) - a picture missing, not a mod that
+# does not open (KT-LF2 v3.0's menu pictures, which package 47 reads).
+$lines = @($output -split "`r?`n" | Where-Object { $_ })
+$found = $output -match 'Game pack game\.zip'
+$pictures = @($lines | Where-Object { $_ -match '^Picture .+; left out$' })
+$opened = $found -and $process.ExitCode -eq 0 -and $output -match 'Indexed '
+$older = $false
+if (-not $opened -and $found -and $lines.Count -gt 0 -and $lines[-1] -match '^(pe/[A-Za-z0-9_]+|[^:]+\.(bmp|png)): ') {
+    $opened = $true
+    $older = $true
+    $pictures += $lines[-1]
+}
+if (-not $opened) {
     Write-Host ''
-    foreach ($line in @($output -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 6)) { Write-Host ('  ' + $line) }
+    foreach ($line in @($lines | Select-Object -Last 6)) { Write-Host ('  ' + $line) }
     Fail ('Ban xuat ban khong mo duoc ban mod (cac dong o tren, ca trong ' + $log + '). Ban mod choi duoc bang choi.bat thi gui file ay cho nguoi lam OpenLF2.')
 }
-Write-Host ('  ' + (@($output -split "`r?`n" | Where-Object { $_ -match '^Game pack ' }) | Select-Object -First 1))
+Write-Host ('  ' + (@($lines | Where-Object { $_ -match '^Game pack ' }) | Select-Object -First 1))
+if ($pictures.Count -gt 0) {
+    Write-Host '  [CHU Y] Co hinh game khong doc duoc - game bo qua hinh ay va van choi (nhu khi choi bang choi.bat):'
+    foreach ($line in @($pictures | Select-Object -First 5)) { Write-Host ('    ' + $line) }
+    if ($older) { Write-Host '    OpenLF2 da cai la ban cu: ban moi (goi 47 tro len) doc duoc nhieu kieu hinh hon - cai ban moi roi xuat ban lai.' }
+    else { Write-Host ('    Muon game doc duoc hinh ay: gui file ' + $log + ' cho nguoi lam OpenLF2.') }
+}
 
 # The folder zipped, its own name at the top (Windows' Extract All, 7-Zip and the like keep it together); game.zip is
 # stored as it is.

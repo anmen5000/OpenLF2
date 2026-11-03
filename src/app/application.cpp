@@ -1053,6 +1053,8 @@ Result<void> run(const Configuration& config) {
         // Runs each traced frame (or one idle frame) and loads every drawn resource once.
         const auto frames = config.input_trace.empty() ? std::vector<std::string>{""} : config.input_trace;
         std::set<std::string, std::less<>> loaded_resources;
+        // A picture that cannot be read is left out, as the window leaves it out (reported once): the game goes on.
+        std::set<std::string, std::less<>> left_out;
         std::set<std::string, std::less<>> played_sounds;
         std::size_t sound_count = 0;
         // Music: each requested track is decoded for one second (and again after a rewind); the
@@ -1072,9 +1074,14 @@ Result<void> run(const Configuration& config) {
             }
             for (const auto& command : frame->commands) {
                 const auto* sprite = std::get_if<SpriteCommand>(&command);
-                if (sprite == nullptr || loaded_resources.contains(sprite->resource)) continue;
+                if (sprite == nullptr || loaded_resources.contains(sprite->resource)
+                    || left_out.contains(sprite->resource)) continue;
                 auto bytes = resources.read(sprite->resource);
-                if (!bytes) return std::unexpected(bytes.error());
+                if (!bytes) {
+                    std::cout << "Picture " << sprite->resource << ": " << bytes.error().message << "; left out\n";
+                    left_out.insert(sprite->resource);
+                    continue;
+                }
                 loaded_resources.insert(sprite->resource);
             }
             for (const auto& sound : frame->sounds) {
@@ -1112,7 +1119,8 @@ Result<void> run(const Configuration& config) {
             std::cout << *description << '\n';
         }
         std::cout << "Indexed " << archive_files << " files; " << frames.size()
-                  << " Lua frame(s), " << loaded_resources.size() << " distinct bitmap resources loaded, "
+                  << " Lua frame(s), " << loaded_resources.size() << " distinct bitmap resources loaded"
+                  << (left_out.empty() ? std::string{} : " (" + std::to_string(left_out.size()) + " left out)") << ", "
                   << sound_count << " sound(s) requested from " << played_sounds.size() << " file(s); "
                   << (music_available ? std::to_string(decoded_music.size()) + " music track(s) decoded"
                                       : std::string("music not built"))

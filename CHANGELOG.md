@@ -242,6 +242,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
+- KT-LF2 v3.0's menu pictures: its program keeps them (MENU_BACK1-13, MENU_CLIP, MENU_WAIT: the backgrounds of the
+  menus and the loading screen) as bitmaps with the old 12-byte BITMAPCOREHEADER of OS/2 and Windows 2 (16-bit width
+  and height, three-byte colours), which Windows reads: they were left out, and now show (made BITMAPINFOHEADER
+  bitmaps; all 15 checked pixel for pixel against their colour tables). A run without a window now leaves out a
+  picture it cannot read, as the window does ("Picture ...; left out", counted on the last line), instead of
+  stopping: `xuat-ban.bat` stopped on KT ("pe/MENU_BACK2: only BITMAPINFOHEADER bitmaps...") though `choi.bat` played
+  it. `xuat-ban.bat` publishes such a mod with a note of the pictures left out, also with an installed OpenLF2 from
+  before this change (which stops at the first such picture: its last line says which)
 - Little Fighter Convergence (v0.3, by Leviaiz) played: the screen went black on entering the character selection
   (on the web as on a PC). Its `data.txt` lists the hero Brad as `id: -1`, which the original reads as any other
   whole number, and the object catalog took only digits (`invalid object catalog record: id: -1`); an id may now be
