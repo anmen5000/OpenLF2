@@ -12,6 +12,17 @@ constexpr std::uint32_t uncompressed = 0;
 constexpr std::uint32_t run_length_8 = 1;
 constexpr std::uint32_t bit_fields = 3;
 
+// BITMAPINFOHEADER (40 bytes) and the later headers that extend it, the same in their first 40 bytes: V2 and V3
+// (52, 56: the colour masks inside the header), V4 (108: and a colour space) and V5 (124: and a colour profile).
+// Windows reads them all; GIMP and Photoshop write V4 or V5 (the mod LF2 Convergence has six such pictures: some
+// fighters' faces, a weapon's mirrored sheet). The output always has the 40-byte header.
+bool known_header(std::uint32_t size) { return size == 40 || size == 52 || size == 56 || size == 108 || size == 124; }
+// Where the palette starts: after the header, and after BI_BITFIELDS' three masks when the header is 40 bytes
+// (the later headers hold them, at the same place).
+std::size_t masks_end(std::uint32_t info_size, std::uint32_t compression) {
+    return info_size + (compression == bit_fields && info_size == header_size ? 12 : 0);
+}
+
 void append_u32(Bytes& output, std::uint32_t value) {
     for (int shift = 0; shift < 32; shift += 8) output.push_back(static_cast<char>((value >> shift) & 255));
 }
@@ -37,10 +48,9 @@ std::uint8_t channel(std::uint32_t pixel, std::uint32_t mask) {
 Bytes convert_16(std::span<const char> dib, std::uint32_t compression, std::optional<std::size_t> pixel_offset) {
     const BinaryView header(dib);
     std::uint32_t masks[3] = {0x7c00U, 0x03e0U, 0x001fU};
-    std::size_t palette_end = header_size;
+    std::size_t palette_end = masks_end(header.u32(0), compression);
     if (compression == bit_fields) {
         for (std::size_t index = 0; index < 3; ++index) masks[index] = header.u32(header_size + index * 4);
-        palette_end += 12;
         for (const auto mask : masks) {
             if (mask == 0 || mask > 0xffffU) throw FormatError("unsupported 16-bit bitmap masks");
         }
@@ -72,6 +82,7 @@ Bytes convert_16(std::span<const char> dib, std::uint32_t compression, std::opti
     append_u32(output, static_cast<std::uint32_t>(14 + header_size));
     const auto info = header.slice(0, header_size);
     output.insert(output.end(), info.begin(), info.end());
+    store_u32(output, 14, header_size);
     output[14 + 14] = 24;
     output[14 + 15] = 0;
     store_u32(output, 14 + 16, uncompressed);
@@ -138,21 +149,31 @@ Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t
 
 Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset) {
     const BinaryView header(dib);
-    if (header.u32(0) != header_size || header.u16(12) != 1) {
-        throw FormatError("only BITMAPINFOHEADER bitmaps with one plane are supported");
+    const auto info_size = header.u32(0);
+    if (!known_header(info_size) || header.u16(12) != 1) {
+        throw FormatError("only BITMAPINFOHEADER bitmaps (or their V2-V5 forms) with one plane are supported");
     }
+    header.slice(0, info_size);
     const auto bits = header.u16(14);
-    const auto compression = header.u32(16);
+    auto compression = header.u32(16);
     if (bits == 16) return convert_16(dib, compression, pixel_offset);
     if (bits != 1 && bits != 4 && bits != 8 && bits != 24 && bits != 32) {
         throw FormatError("unsupported bitmap bit depth");
+    }
+    const auto palette_start = masks_end(info_size, compression);
+    // 32-bit pixels with masks (as V4 and V5 headers often have them) that are plain blue-green-red bytes.
+    if (bits == 32 && compression == bit_fields) {
+        if (header.u32(40) != 0x00ff0000U || header.u32(44) != 0x0000ff00U || header.u32(48) != 0x000000ffU) {
+            throw FormatError("unsupported 32-bit bitmap masks");
+        }
+        compression = uncompressed;
     }
     if (compression != uncompressed && !(compression == run_length_8 && bits == 8)) {
         throw FormatError("unsupported bitmap compression");
     }
     const auto colors = header.u32(32) != 0 ? header.u32(32) : (bits <= 8 ? (1U << bits) : 0U);
     if (colors > 256) throw FormatError("oversized bitmap palette");
-    const std::size_t palette_end = header_size + std::size_t{colors} * 4;
+    const std::size_t palette_end = palette_start + std::size_t{colors} * 4;
     header.slice(0, palette_end);
     const auto width = header.u32(4);
     const auto height_bits = header.u32(8);
@@ -177,14 +198,17 @@ Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset
     }
 
     // Legacy images can reference undeclared 8-bit palette entries; fill those with black.
-    const auto output_palette_end = bits == 8 ? header_size + 256 * 4 : palette_end;
+    const auto output_palette_end = bits == 8 ? header_size + 256 * 4 : header_size + std::size_t{colors} * 4;
     Bytes output{'B', 'M'};
     append_u32(output, static_cast<std::uint32_t>(14 + output_palette_end + pixels.size()));
     append_u32(output, 0);
     append_u32(output, static_cast<std::uint32_t>(14 + output_palette_end));
-    const auto info = header.slice(0, palette_end);
+    const auto info = header.slice(0, header_size);
     output.insert(output.end(), info.begin(), info.end());
+    const auto palette = header.slice(palette_start, std::size_t{colors} * 4);
+    output.insert(output.end(), palette.begin(), palette.end());
     output.resize(14 + output_palette_end, '\0');
+    store_u32(output, 14, header_size);
     if (bits == 8 && colors < 256) store_u32(output, 14 + 32, 256);
     store_u32(output, 14 + 16, uncompressed);
     store_u32(output, 14 + 20, static_cast<std::uint32_t>(pixels.size()));

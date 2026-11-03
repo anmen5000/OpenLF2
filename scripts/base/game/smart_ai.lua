@@ -2622,7 +2622,7 @@ function smart.notes_pairs()
     if notes_count then return notes_count end
     local seen, count = {}, 0
     note_lines(text, "XOI G ", function(rest)
-        local pair = rest:match("^(%d+%s+%d+)%s")
+        local pair = rest:match("^(%-?%d+%s+%-?%d+)%s")
         if pair and not seen[pair] then seen[pair], count = true, count + 1 end
     end)
     notes_count = count

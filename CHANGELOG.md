@@ -242,6 +242,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Sx2's interface pictures; game packs up to 256 MiB
 
 ### Fixed
+- Little Fighter Convergence (v0.3, by Leviaiz) played: the screen went black on entering the character selection
+  (on the web as on a PC). Its `data.txt` lists the hero Brad as `id: -1`, which the original reads as any other
+  whole number, and the object catalog took only digits (`invalid object catalog record: id: -1`); an id may now be
+  below zero (Brad below 30: not hidden; XOI's notes count such pairs too). Six of its pictures (Keny's, Caesar's,
+  Pronto's and Stancher's faces, Beltor's small face, the hoe's mirrored sheet) have the larger BITMAPV5HEADER that
+  GIMP and Photoshop write and Windows reads, and were left out: the bitmap reader takes the V2-V5 headers now (their
+  first 40 bytes are BITMAPINFOHEADER's; the palette follows the whole header; 32-bit pixels with plain blue-green-
+  red masks), writing the same 40-byte header as before, so every other picture comes out byte for byte as it did.
+  All 27 fighters against each other both ways (702 games) and Stage mode ran without an error
 - Network play in the browser, direct (the host keeping the beat): the players' games no longer stutter while
   the host's plays smoothly. The beat ran on the host's page's main thread, after whatever the page was busy
   with (the game's own frame, the computer players' thinking, a garbage collection): every stall of the host's

@@ -34,7 +34,9 @@ end
 -- words (the id, the word before the type, the type, the word before the file, the file), whatever the two
 -- words in between say, and every other word passed over. The One Piece mod OPLoS 2.1X (OPLoS2.1X.exe) has
 -- "fileb:" for "file:" in one record and lines of a lone "%", "$", "&" or "*", which the original reads past;
--- a note such as "#meat" after a record is passed over the same way.
+-- a note such as "#meat" after a record is passed over the same way. An id is a whole number, below zero too, as the
+-- original reads it: Little Fighter Convergence (v0.3) has its hero Brad as "id: -1", and its readme lists him among
+-- the fighters to play (here: below 30, so not hidden, and Random may give him).
 local function object_records()
     local source = data_text()
     local section = assert(source:match("<object>(.-)<object_end>"), "missing object catalog")
@@ -45,7 +47,7 @@ local function object_records()
     while position <= #words do
         if words[position] == "id:" then
             local id, kind, path = words[position + 1], words[position + 3], words[position + 5]
-            if not (id and id:match("^%d+$") and kind and kind:match("^%d+$") and path) then
+            if not (id and id:match("^%-?%d+$") and kind and kind:match("^%d+$") and path) then
                 error("invalid object catalog record: id: " .. tostring(id))
             end
             records[#records + 1] = {id = tonumber(id), kind = tonumber(kind), path = path}
