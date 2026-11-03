@@ -129,17 +129,23 @@ quoted pair, `start` hands the line to `cmd /k`, which drops its first and last 
 where the folder has spaces. `windows/kiem-tra.bat` is for a PC where the game does not open: it writes into
 `kiem-tra.txt` the installed game's build (x86, x64 or arm64, from its PE header), the graphics card, a `loadall` run
 without a window, 15 seconds of a window with each renderer, and Windows' record of the game's crashes.
-`windows/xuat-ban.bat` publishes a mod for its players: one folder with the installed OpenLF2 (its program renamed
-`<mod>.exe`, its DLLs, its `scripts` — the kit's when their `smart.version` is higher — and `licenses`) and the mod as
-`game.zip` beside it, `xoi/notes.txt` and `xoi/tune.txt` inside (a `*-xoi.zip` as it is; a ZIP or folder takes those
-of `xoi-<mod>\`), a `README.txt` for the players from `xuat-ban-README.txt`, then the folder zipped as
-`xuat-ban\<mod>.zip`. OpenLF2 plays a `game.zip` beside its program when started with neither `--pack` nor
-`--installer` (package 45 on), so the players double-click `<mod>.exe` and play, nothing installed. Asked (or with
+`windows/xuat-ban.bat` publishes a mod for its players: the mod's own folder as its author shares it (the folder
+holding `data\data.txt` nearest the top of its ZIP file or of the folder dragged, every file and folder of it, empty
+ones and its own `.exe` too) with the installed OpenLF2 put in it — its program as `<mod> - INSANE XOI.exe`, its DLLs,
+its `scripts` (the kit's when their `smart.version` is higher) and `licenses` — and `xoi/notes.txt` and `xoi/tune.txt`
+beside the data folder (a `*-xoi.zip` has its own; a ZIP or folder takes those of `xoi-<mod>\`), a
+`README - INSANE XOI.txt` for the players from `xuat-ban-README.txt` (`{TEN}`, `{EXE}`, `{GOC}`: the name, the program,
+the mod's own `.exe`), then the folder zipped as `xuat-ban\<mod>.zip`. OpenLF2 plays the game folder its program lies
+in when started with neither `--pack` nor `--installer` (package 50 on; the mod's own program, the original LF2 up to
+CRAZY!, is told from OpenLF2's by LF2's pictures in it; a `game.zip` beside the program, as published by packages
+45–49, still plays), so the players double-click `<mod> - INSANE XOI.exe` and play, nothing installed. Asked (or with
 `KHOA_AN=C`), it locks the hidden fighters for the players: `openlf2.txt` beside the mod's data folder with
 `hidden_characters = locked` and `options = hidden` (`scripts/base/game/mod_settings.lua`; package 48 on). Its work is in
 `windows/xuat-ban.ps1` (settings and dragged files come as `XB_*` environment variables), which starts the folder's
-program once without a window (`--input-trace ""`) and zips it only when the game found `game.zip` by itself (a picture
-the game cannot read is noted, as it is left out in play too, and an older game's stop at one taken as such); it runs
+program once without a window (`--input-trace ""`) and zips it only when the game played its own folder ("Game
+folder ...": an OpenLF2 before package 50 asks for the original game instead, and is named too old; a picture, sound or
+piece of music the game cannot read is noted, as it is left out in play too); names in a mod's ZIP file that Windows
+cannot take, or that lead outside the folder, are left out; it runs
 under PowerShell 7 elsewhere too, which is how it was tried, with this repository's Linux build in place of
 `openlf2.exe`.
 `dist/make-xoi-kit.sh` packs the `.bat` files with `scripts` and this folder as `xoi-kit.zip` (one folder,

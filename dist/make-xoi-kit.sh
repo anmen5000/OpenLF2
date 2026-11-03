@@ -4,8 +4,8 @@
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
-# spsa.bat (tune XOI's numbers by play), xuat-ban.bat (publish a mod for its players: one folder with OpenLF2 and the
-# mod, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
+# spsa.bat (tune XOI's numbers by play), xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
+# put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
 # kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
 # they lay over the installed game's scripts.
 set -euo pipefail

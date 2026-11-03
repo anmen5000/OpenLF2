@@ -105,8 +105,9 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   moves on the whole, and set where the opponent's answers to a risky move are expected to start. XOI also plays
   with numbers of its judgement tuned by play (SPSA; a mod's own in `xoi/tune.txt`), INSANE! with its numbers set by
   hand. Everyone in a room has the mod's file, so network games stay in sync; without notes XOI plays as INSANE!
-  with XOI's numbers. On Windows the XOI kit's `xuat-ban.bat` publishes a trained mod for its players: one folder
-  with OpenLF2 as `<mod>.exe` and the mod beside it as `game.zip`, unpacked and played with nothing installed.
+  with XOI's numbers. On Windows the XOI kit's `xuat-ban.bat` publishes a trained mod for its players: the mod's own
+  folder as its author shares it, with OpenLF2 put in it (`<mod> - INSANE XOI.exe`), unpacked and played with
+  nothing installed.
 - `tools/ai-bench` pits two computer players against each other (`brains = {"smart", "smart@ai_alt"}`:
   another version of the AI, or a player of your own started from `ai_template.lua`); its `audit` counts, per
   player, blows started, landed and interrupted, hits taken from a just-risen opponent or at a wall, and trades.
@@ -160,8 +161,9 @@ build/debug/openlf2 --installer path/to/LF2_v2.0a.exe
 
 Useful flags: `--config-dir DIR` (settings/data location), `--mod PATH` (load a mod),
 `--headless` (no window), `--scripts DIR` (run from source scripts instead of the copy
-beside the executable), `--pack FILE.zip` (play an LF2 mod packed as a ZIP file, its own
-program and data, instead of the installer). A `game.zip` beside the executable is played
+beside the executable), `--pack FILE.zip` or `--pack DIR` (play an LF2 mod, its folder or the
+folder packed as a ZIP file, with its own program and data, instead of the installer). The game
+folder the executable lies in (`data/data.txt` beside it), or else a `game.zip` beside it, is played
 as with `--pack` when neither `--pack` nor `--installer` is given. A pack may carry `openlf2.txt` beside its
 `data` folder, `key = value` lines: `hidden_characters = locked` (no unlocking the hidden fighters, LF2.NET
 included) and `options = hidden` (no options entry on the title screen).

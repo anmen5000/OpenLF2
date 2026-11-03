@@ -249,6 +249,17 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   has no options entry (drawn or reached with the keys). Without the file nothing changes. CRAZY!, INSANE! and
   XOI, which come with the unlock as CRAZY! does in the original, can still be chosen in such a mod
   (`unlock.hard_levels`): the first locked KT-LF2 published stopped at Difficult, without its computer players
+- A published mod is the mod's own folder as its author shares it (bg, bgm, data, sprite, recording..., its own
+  .exe too) with OpenLF2 put in it, instead of OpenLF2 with the mod as `game.zip` (the project owner's wish).
+  OpenLF2 plays the game folder its program lies in (`data/data.txt` beside it) when started with neither
+  `--pack` nor `--installer`, and `--pack` takes a folder too (`PackFolder`: the folder holding `data/data.txt`
+  nearest the top, paths matched as in a pack; its program is the `.exe` with LF2's pictures, lf2.exe first then
+  the largest, so OpenLF2's own beside it is passed over); a `game.zip` beside the program, as published before,
+  still plays. `xuat-ban.bat` copies the mod's folder, or the one in its ZIP file (names Windows cannot take, or
+  leading outside the folder, left out), adds the program as `<mod> - INSANE XOI.exe` (beside the mod's own
+  program: the original LF2, up to CRAZY!), its libraries, scripts and licences, XOI's notes and numbers in `xoi\`
+  and `README - INSANE XOI.txt` beside the mod's own readme, keeps empty folders, and needs an installed OpenLF2
+  from package 50 (it says so of an older one)
 
 ### Fixed
 - Music on a PC: the desktop builds' FFmpeg decoded only WMA version 2, so the music of mods in WMA Pro (Naruto: The

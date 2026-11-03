@@ -44,4 +44,25 @@ private:
     mutable std::mutex mutex_;
     mutable std::ifstream file_;
 };
+
+// A game folder (OpenLF2 extension): an LF2 game folder on disk, such as a mod as its author shares it, played like a
+// game pack: from the folder holding data/data.txt nearest the top, paths matching the same way. OpenLF2's own program
+// may lie in it (a mod published with OpenLF2), so its executable is the one with LF2's pictures in it: lf2.exe, else
+// the largest .exe at the top that has them; without one, lf2.exe or the largest other than OpenLF2's (whose missing
+// pictures the caller reports). Files are read on demand.
+class PackFolder final : public ResourceSource {
+public:
+    static Result<std::unique_ptr<PackFolder>> open(const std::filesystem::path& path);
+    Result<Bytes> read(std::string_view path) const override;
+    [[nodiscard]] std::size_t file_count() const { return files_.size(); }
+    // The folder's own name for lf2.exe (for messages).
+    [[nodiscard]] const std::string& executable_name() const { return executable_; }
+private:
+    PackFolder() = default;
+    Result<void> index(const std::filesystem::path& path);
+    std::map<std::string, std::filesystem::path, std::less<>> files_;
+    std::string executable_;
+};
+// Whether `directory` is an LF2 game folder: data/data.txt in it, in any case.
+bool is_game_folder(const std::filesystem::path& directory);
 }

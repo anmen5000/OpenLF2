@@ -272,6 +272,14 @@ Result<std::vector<std::string>> parse_input_trace(std::string_view specificatio
     }
     return frames;
 }
+// The last part of a path, for messages, in UTF-8 (a folder's own path ends with a separator; a Unicode name does not
+// go through the Windows code page).
+std::string shown_name(const std::filesystem::path& path) {
+    auto name = path.lexically_normal();
+    if (!name.has_filename()) name = name.parent_path();
+    const auto text = name.filename().u8string();
+    return {text.begin(), text.end()};
+}
 // Case-insensitive filename match in the configuration directory; identity is confirmed by digest.
 Result<std::optional<std::filesystem::path>> find_installer(const std::filesystem::path& directory) {
     std::error_code error;
@@ -505,11 +513,16 @@ Result<Configuration> configuration(std::span<const std::string> arguments,
     if (config.replay && (!config.network_role.empty() || config.preview_backgrounds || config.preview_ending)) {
         return fail(ErrorCode::format, "a recording cannot be combined with network or preview startup");
     }
-    // A mod published with OpenLF2 (the XOI kit's xuat-ban.bat): its game pack lies beside the program as game.zip and
-    // is played as with --pack, so the mod's players unpack one folder and start the program. --pack or --installer
-    // choose otherwise.
+    // A mod published with OpenLF2 (the XOI kit's xuat-ban.bat), so its players unpack one folder and start the
+    // program: the mod's own folder with the program put in it (package 50 on), played as it is as with --pack DIR,
+    // or, as published before, its game pack beside the program as game.zip. --pack or --installer choose otherwise.
     if (!config.pack && config.installer.empty()) {
         std::error_code error;
+#ifndef __EMSCRIPTEN__
+        if (is_game_folder(directory)) {
+            config.pack = directory;
+        } else
+#endif
         if (auto beside = directory / "game.zip"; std::filesystem::is_regular_file(beside, error)) {
             config.pack = std::move(beside);
         }
@@ -946,10 +959,20 @@ Result<void> run(const Configuration& config) {
                   << (platform->supports(RenderFilter::xbrz) ? " (xBRZ upscaling available)\n" : "\n");
         if (!platform->supports_text()) std::cout << "Translated languages unavailable: this build has no SDL3_ttf\n";
     }
-    if (config.pack) {
+    std::error_code folder_error;
+    if (config.pack && std::filesystem::is_directory(*config.pack, folder_error)) {
+        // A game folder: the mod's own folder (--pack DIR, or the one the program lies in).
+        auto opened = PackFolder::open(*config.pack);
+        if (!opened) return std::unexpected(opened.error());
+        std::cout << "Game folder " << shown_name(*config.pack) << ": " << (*opened)->file_count()
+                  << " files, executable " << (*opened)->executable_name() << '\n';
+        archive_files = (*opened)->file_count();
+        pack_executable = (*opened)->executable_name();
+        archive = std::move(*opened);
+    } else if (config.pack) {
         auto opened = PackArchive::open(*config.pack, *decompressor);
         if (!opened) return std::unexpected(opened.error());
-        std::cout << "Game pack " << config.pack->filename().string() << ": " << (*opened)->file_count()
+        std::cout << "Game pack " << shown_name(*config.pack) << ": " << (*opened)->file_count()
                   << " files, executable " << (*opened)->executable_name() << '\n';
         archive_files = (*opened)->file_count();
         pack_executable = (*opened)->executable_name();
@@ -1488,7 +1511,7 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
             return 1;
         }
         if (config->help) {
-            std::cout << "openlf2 [--installer PATH | --pack FILE.zip] [--scripts DIR] [--mod DIR] [--headless] [--jit|--no-jit]\n"
+            std::cout << "openlf2 [--installer PATH | --pack FILE.zip|DIR] [--scripts DIR] [--mod DIR] [--headless] [--jit|--no-jit]\n"
                          "        [--preview-backgrounds] [--preview-ending] [--input-trace FRAMES] [--seed MS]\n"
                          "        [--config-dir DIR] [--replay FILE] [--renderer NAME] [--mouse-touch] [--default-controller] [FILE.lfr]\n"
                          "--mouse-touch (off by default): a held mouse button stands in for one finger on the\n"
@@ -1508,10 +1531,11 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
                          "        (u d l r a b x y s k), ^x types the character x).\n"
                          "Without --installer, LF2_v2.0a.exe or lf2_v20a_Setup.exe is looked up in the configuration directory; when it is\n"
                          "        missing, a window offers to download it there (headless runs need --installer or --config-dir).\n"
-                         "--pack plays a game folder packed as a ZIP file (an LF2 mod with its own executable, data and pictures)\n"
-                         "        instead of the original installer.\n"
-                         "game.zip beside the program is played as with --pack when neither --pack nor --installer is given: a mod\n"
-                         "        published with OpenLF2 starts from its own folder.\n"
+                         "--pack plays a game folder, or one packed as a ZIP file (an LF2 mod with its own executable, data and\n"
+                         "        pictures), instead of the original installer.\n"
+                         "When neither --pack nor --installer is given, the game folder the program lies in (data/data.txt beside\n"
+                         "        it), or else game.zip beside the program, is played as with --pack: a mod published with OpenLF2\n"
+                         "        starts from its own folder.\n"
                          "Only explicitly selected, trusted local mod packages are supported.\n";
             return 0;
         }

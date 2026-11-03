@@ -656,15 +656,17 @@
     <section id="publish">
       <h2><span class="en">Publish your mod with INSANE! and XOI built in</span><span class="vi">Xuất bản bản mod có sẵn INSANE! và XOI</span></h2>
       <p class="lede en">The kit and OpenLF2's installer are for you, who train. Your mod's players need neither:
-        <code>xuat-ban.bat</code> makes one folder with OpenLF2 under your mod's name and your mod beside it as
-        <code>game.zip</code>, XOI's notes and numbers inside. They extract it and double-click <code>&lt;mod&gt;.exe</code> —
-        every level up to INSANE! and XOI, no OpenLF2 to install, no kit, no original LF2. OpenLF2 plays a <code>game.zip</code>
-        beside it by itself (from package 45; <code>xuat-ban.bat</code> checks the installed one and says when it is older).</p>
+        <code>xuat-ban.bat</code> gives them your mod's own folder as you share it (<code>bg</code>, <code>bgm</code>,
+        <code>data</code>, <code>sprite</code>… and its own <code>.exe</code>) with OpenLF2 put in it, XOI's notes and numbers in
+        <code>xoi\</code>. They extract it and double-click <code>&lt;mod&gt; - INSANE XOI.exe</code> — every level up to INSANE! and
+        XOI, no OpenLF2 to install, no kit, no original LF2. OpenLF2 plays the mod folder it lies in by itself (from package 50;
+        <code>xuat-ban.bat</code> checks the installed one and says when it is older).</p>
       <p class="lede vi">Bộ XOI và bộ cài OpenLF2 là cho bạn, người huấn luyện. Người chơi bản mod của bạn không cần cả hai:
-        <code>xuat-ban.bat</code> làm một thư mục có OpenLF2 mang tên bản mod của bạn và bản mod nằm cạnh nó dưới tên
-        <code>game.zip</code>, có sẵn bộ nhớ và bộ số của XOI bên trong. Họ giải nén rồi nháy đúp <code>&lt;tên&gt;.exe</code> — đủ
-        các mức tới INSANE! và XOI, không cài OpenLF2, không cần bộ XOI, không cần LF2 gốc. OpenLF2 tự chơi file
-        <code>game.zip</code> nằm cạnh nó (từ gói 45; <code>xuat-ban.bat</code> kiểm tra bản đã cài và báo nếu nó cũ hơn).</p>
+        <code>xuat-ban.bat</code> đưa họ nguyên thư mục gốc của bản mod như bạn chia sẻ (<code>bg</code>, <code>bgm</code>,
+        <code>data</code>, <code>sprite</code>… và cả file <code>.exe</code> của nó), thêm OpenLF2 vào, bộ nhớ và bộ số của XOI trong
+        <code>xoi\</code>. Họ giải nén rồi nháy đúp <code>&lt;tên&gt; - INSANE XOI.exe</code> — đủ các mức tới INSANE! và XOI, không
+        cài OpenLF2, không cần bộ XOI, không cần LF2 gốc. OpenLF2 tự chơi thư mục bản mod mà nó nằm trong (từ gói 50;
+        <code>xuat-ban.bat</code> kiểm tra bản đã cài và báo nếu nó cũ hơn).</p>
       <ol class="steps en">
         <li><b>Train and tune first</b> (<a href="#train">train</a>, <a href="#tune">tune</a>): you get
           <code>&lt;mod&gt;-xoi.zip</code>, the mod with <code>xoi\notes.txt</code> and <code>xoi\tune.txt</code> inside. Untrained,
@@ -672,17 +674,19 @@
         <li><b>Put <code>&lt;mod&gt;-xoi.zip</code> next to <code>xuat-ban.bat</code></b> (or the mod's zip or folder: the notes and
           numbers in <code>xoi-&lt;mod&gt;\</code> beside it go in), or drag it onto <code>xuat-ban.bat</code>. The name players see
           is the mod's; another: <code>TEN</code> at the top of the file. Your words for them — what the mod is, who made it — go
-          into <code>xuat-ban-README.txt</code> beforehand (<code>{TEN}</code> becomes the name).</li>
+          into <code>xuat-ban-README.txt</code> beforehand (<code>{TEN}</code> becomes the name, <code>{EXE}</code> the program,
+          <code>{GOC}</code> the mod's own <code>.exe</code>).</li>
         <li><b>Lock the hidden fighters?</b> <code>xuat-ban.bat</code> asks (C = yes, K = no; or set <code>KHOA_AN</code> at
           the top). Yes: the players' title screen has no <i>options</i>, the hidden fighters cannot be unlocked and typing
           <kbd>lf2.net</kbd> does nothing — for a mod whose hidden fighters are out of balance. CRAZY!, INSANE! and XOI
           can still be chosen (from package 49; they otherwise come with the unlock). It is a file in the mod,
           <code>openlf2.txt</code> (<code>hidden_characters = locked</code>, <code>options = hidden</code>), which OpenLF2 reads
           from package 48 on.</li>
-        <li><b>Double-click <code>xuat-ban.bat</code>.</b> It copies the installed OpenLF2 (the program as
-          <code>&lt;mod&gt;.exe</code>, its libraries, its scripts — the kit's when newer, the computer players you trained with — and
-          its licences), makes <code>game.zip</code> and <code>README.txt</code>, starts the folder once without a window to see
-          that it finds the mod by itself, and zips it.</li>
+        <li><b>Double-click <code>xuat-ban.bat</code>.</b> It copies the mod's folder (from its zip, or the folder you gave),
+          puts in the installed OpenLF2 (the program as <code>&lt;mod&gt; - INSANE XOI.exe</code>, its libraries, its scripts — the
+          kit's when newer, the computer players you trained with — and its licences) and
+          <code>README - INSANE XOI.txt</code>, starts the folder once without a window to see that it plays the mod by itself, and
+          zips it.</li>
         <li><b>Share <code>xuat-ban\&lt;mod&gt;.zip</code>.</b> <code>xuat-ban\&lt;mod&gt;\</code> is the same, unzipped: try it
           first.</li>
       </ol>
@@ -693,33 +697,43 @@
         <li><b>Đặt <code>&lt;tên&gt;-xoi.zip</code> cạnh <code>xuat-ban.bat</code></b> (hoặc file zip hay thư mục bản mod: bộ nhớ và
           bộ số trong <code>xoi-&lt;tên&gt;\</code> cạnh nó được đóng vào), hoặc kéo thả nó vào <code>xuat-ban.bat</code>. Tên người
           chơi thấy là tên bản mod; muốn tên khác: dòng <code>TEN</code> ở đầu file. Lời của bạn cho người chơi — bản mod là gì, ai
-          làm — viết trước vào <code>xuat-ban-README.txt</code> (<code>{TEN}</code> thành tên bản xuất bản).</li>
+          làm — viết trước vào <code>xuat-ban-README.txt</code> (<code>{TEN}</code> thành tên bản xuất bản, <code>{EXE}</code>
+          thành file chương trình, <code>{GOC}</code> thành file <code>.exe</code> gốc của bản mod).</li>
         <li><b>Khóa nhân vật ẩn?</b> <code>xuat-ban.bat</code> hỏi (C = có, K = không; hoặc đặt dòng <code>KHOA_AN</code> ở đầu
           file). Có: màn hình đầu của người chơi không có nút <i>options</i>, nhân vật ẩn không mở khóa được, gõ
           <kbd>lf2.net</kbd> cũng không mở — cho bản mod có nhân vật ẩn mất cân bằng. CRAZY!, INSANE! và XOI vẫn chọn được
           (từ gói 49; bình thường chúng đi cùng việc mở khóa). Đó là một file trong bản mod,
           <code>openlf2.txt</code> (<code>hidden_characters = locked</code>, <code>options = hidden</code>), OpenLF2 đọc từ gói
           48.</li>
-        <li><b>Nháy đúp <code>xuat-ban.bat</code>.</b> Nó chép OpenLF2 đã cài (chương trình thành <code>&lt;tên&gt;.exe</code>, các
-          thư viện, scripts — của bộ XOI nếu mới hơn, tức các máy bạn đã huấn luyện — và giấy phép), làm <code>game.zip</code> và
-          <code>README.txt</code>, mở thử thư mục một lần không cửa sổ để chắc nó tự tìm thấy bản mod, rồi nén lại.</li>
+        <li><b>Nháy đúp <code>xuat-ban.bat</code>.</b> Nó chép thư mục bản mod (từ file zip, hoặc thư mục bạn đưa), thêm OpenLF2
+          đã cài (chương trình thành <code>&lt;tên&gt; - INSANE XOI.exe</code>, các thư viện, scripts — của bộ XOI nếu mới hơn, tức
+          các máy bạn đã huấn luyện — và giấy phép) và <code>README - INSANE XOI.txt</code>, mở thử thư mục một lần không cửa sổ
+          để chắc nó tự chơi được bản mod, rồi nén lại.</li>
         <li><b>Chia sẻ <code>xuat-ban\&lt;tên&gt;.zip</code>.</b> <code>xuat-ban\&lt;tên&gt;\</code> là bản đã giải nén: chơi thử
           trước.</li>
       </ol>
-<div class="tree en">&lt;mod&gt;\                 <i>what players get (from &lt;mod&gt;.zip)</i>
-  &lt;mod&gt;.exe            <i>OpenLF2: double-click to play</i>
-  game.zip             <i>the mod, with xoi/notes.txt and xoi/tune.txt beside its data folder</i>
-  README.txt           <i>how to play, in Vietnamese and English (from xuat-ban-README.txt)</i>
-  *.dll                <i>the libraries OpenLF2 uses (SDL, FFmpeg…)</i>
-  scripts\             <i>the game's scripts: menus, fighting, INSANE! and XOI</i>
-  licenses\            <i>OpenLF2's licence and its libraries'</i></div>
-<div class="tree vi">&lt;tên&gt;\                 <i>thứ người chơi nhận (trong &lt;tên&gt;.zip)</i>
-  &lt;tên&gt;.exe            <i>OpenLF2: nháy đúp để chơi</i>
-  game.zip             <i>bản mod, có xoi/notes.txt và xoi/tune.txt cạnh thư mục data</i>
-  README.txt           <i>cách chơi, tiếng Việt và tiếng Anh (từ xuat-ban-README.txt)</i>
-  *.dll                <i>các thư viện OpenLF2 dùng (SDL, FFmpeg…)</i>
-  scripts\             <i>scripts của game: menu, đánh nhau, INSANE! và XOI</i>
-  licenses\            <i>giấy phép của OpenLF2 và của các thư viện</i></div>
+<div class="tree en">&lt;mod&gt;\                     <i>what players get (from &lt;mod&gt;.zip): the mod's own folder…</i>
+  bg\ bgm\ data\ sprite\ …  <i>the mod's files, as its author shares them</i>
+  &lt;the mod's&gt;.exe          <i>the mod's own program: the original LF2, up to CRAZY!</i>
+  readme.txt …             <i>the mod's own notes</i>
+  xoi\                     <i>XOI's notes.txt and tune.txt</i>
+<b>…with OpenLF2 put in it:</b>
+  &lt;mod&gt; - INSANE XOI.exe   <i>OpenLF2: double-click to play</i>
+  README - INSANE XOI.txt  <i>how to play, in Vietnamese and English (from xuat-ban-README.txt)</i>
+  *.dll                    <i>the libraries OpenLF2 uses (SDL, FFmpeg…)</i>
+  scripts\                 <i>the game's scripts: menus, fighting, INSANE! and XOI</i>
+  licenses\                <i>OpenLF2's licence and its libraries'</i></div>
+<div class="tree vi">&lt;tên&gt;\                     <i>thứ người chơi nhận (trong &lt;tên&gt;.zip): thư mục gốc của bản mod…</i>
+  bg\ bgm\ data\ sprite\ …  <i>các file của bản mod, như tác giả chia sẻ</i>
+  &lt;file của mod&gt;.exe       <i>chương trình gốc của bản mod: LF2 cũ, chỉ tới CRAZY!</i>
+  readme.txt …             <i>ghi chú của bản mod</i>
+  xoi\                     <i>notes.txt và tune.txt của XOI</i>
+<b>…thêm OpenLF2:</b>
+  &lt;tên&gt; - INSANE XOI.exe   <i>OpenLF2: nháy đúp để chơi</i>
+  README - INSANE XOI.txt  <i>cách chơi, tiếng Việt và tiếng Anh (từ xuat-ban-README.txt)</i>
+  *.dll                    <i>các thư viện OpenLF2 dùng (SDL, FFmpeg…)</i>
+  scripts\                 <i>scripts của game: menu, đánh nhau, INSANE! và XOI</i>
+  licenses\                <i>giấy phép của OpenLF2 và của các thư viện</i></div>
       <ul class="plain en">
         <li><b>Publish your own mod,</b> or one whose author allows it to be passed on: the folder holds the whole mod.</li>
         <li><b>Keep <code>licenses\</code></b> when you pass the folder on: OpenLF2 is MIT-licensed and its libraries ask for their
@@ -728,8 +742,8 @@
           <i>Windows protected your PC</i> on first start: <i>More info</i>, <i>Run anyway</i> (the program is not signed).</li>
         <li><b>A mod whose <code>.exe</code> is packed or protected</b> (Naruto: The Setting Dawn's <code>NTSD.exe</code>, say) has its
           pictures where OpenLF2 cannot read them: <code>xuat-ban.bat</code> stops with the game's words, nothing made.</li>
-        <li><b>Elsewhere than Windows:</b> OpenLF2 plays a <code>game.zip</code> beside its program whenever it is started without
-          <code>--pack</code> or <code>--installer</code>.</li>
+        <li><b>Elsewhere than Windows:</b> OpenLF2 plays the game folder its program lies in (or a <code>game.zip</code> beside it,
+          as published before package 50) whenever it is started without <code>--pack</code> or <code>--installer</code>.</li>
       </ul>
       <ul class="plain vi">
         <li><b>Xuất bản bản mod của chính bạn,</b> hoặc bản mod mà tác giả cho phát tán lại: thư mục chứa cả bản mod.</li>
@@ -739,8 +753,8 @@
           Lần đầu mở mà Windows báo <i>Windows protected your PC</i>: <i>More info</i>, <i>Run anyway</i> (chương trình chưa ký số).</li>
         <li><b>Bản mod có file <code>.exe</code> bị nén hay khóa</b> (ví dụ <code>NTSD.exe</code> của Naruto: The Setting Dawn) để hình
           ở chỗ OpenLF2 không đọc được: <code>xuat-ban.bat</code> dừng, in lời báo của game, không làm gì.</li>
-        <li><b>Ngoài Windows:</b> OpenLF2 chơi file <code>game.zip</code> nằm cạnh chương trình mỗi khi được mở mà không có
-          <code>--pack</code> hay <code>--installer</code>.</li>
+        <li><b>Ngoài Windows:</b> OpenLF2 chơi thư mục game mà chương trình nằm trong (hoặc file <code>game.zip</code> nằm cạnh
+          nó, như bản xuất bản trước gói 50) mỗi khi được mở mà không có <code>--pack</code> hay <code>--installer</code>.</li>
       </ul>
     </section>
 
@@ -827,7 +841,7 @@
           <tr><td>The game window stays blue or black</td><td data-label="What to do"><code>VE=software</code> at the top of <code>choi.bat</code>. Started some other way, OpenLF2 from version 29 of this build checks by itself that its renderer shows pictures and changes it when not.</td></tr>
           <tr><td><i>Windows protected your PC</i></td><td data-label="What to do"><i>More info</i>, then <i>Run anyway</i>.</td></tr>
           <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="What to do">PowerShell is blocked on this PC. By hand: open the mod's zip (7-Zip), go into the folder that has <code>data</code>, and drag in the folder <code>xoi-&lt;mod&gt;\goi\xoi</code>.</td></tr>
-          <tr><td><code>[LOI] OpenLF2 da cai ... la ban cu</code></td><td data-label="What to do"><code>xuat-ban.bat</code>: the installed OpenLF2 does not yet play a <code>game.zip</code> beside it. Install the latest (<a href="#install">above</a>) and run it again.</td></tr>
+          <tr><td><code>[LOI] OpenLF2 da cai ... la ban cu</code></td><td data-label="What to do"><code>xuat-ban.bat</code>: the installed OpenLF2 does not yet play the mod folder it lies in (package 50 on). Install the latest (<a href="#install">above</a>) and run it again.</td></tr>
           <tr><td><code>[LOI] Ban xuat ban khong mo duoc ban mod</code></td><td data-label="What to do">The game could not open the mod (its words are above, and in <code>xuat-ban\&lt;mod&gt;-kiem-tra.txt</code>). A packed or protected <code>.exe</code> cannot be published; otherwise send that file.</td></tr>
           <tr><td><code>[CHU Y] Co hinh game khong doc duoc</code></td><td data-label="What to do"><code>xuat-ban.bat</code> published the mod, but the game leaves out the pictures listed (as it does with <code>choi.bat</code>). An older OpenLF2: install the latest, which reads more kinds of pictures, and publish again.</td></tr>
           <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="What to do">A training window was closed or failed: the pairs it finished are kept; the lines with <code>ERROR</code> say why.</td></tr>
@@ -847,7 +861,7 @@
           <tr><td>Cửa sổ game chỉ xanh hay đen</td><td data-label="Cách xử lý"><code>VE=software</code> ở đầu <code>choi.bat</code>. Mở game theo cách khác thì OpenLF2 từ bản 29 của bản dựng này tự kiểm tra cách vẽ có hiện hình không và tự đổi khi không.</td></tr>
           <tr><td><i>Windows protected your PC</i></td><td data-label="Cách xử lý"><i>More info</i>, rồi <i>Run anyway</i>.</td></tr>
           <tr><td><code>[LOI] Khong dong goi duoc</code></td><td data-label="Cách xử lý">Máy chặn PowerShell. Làm tay: mở file zip bản mod (7-Zip), vào thư mục có <code>data</code>, kéo thư mục <code>xoi-&lt;tên&gt;\goi\xoi</code> vào đó.</td></tr>
-          <tr><td><code>[LOI] OpenLF2 da cai ... la ban cu</code></td><td data-label="Cách xử lý"><code>xuat-ban.bat</code>: OpenLF2 đã cài chưa tự chơi file <code>game.zip</code> nằm cạnh nó. Cài bản mới nhất (<a href="#install">ở trên</a>) rồi chạy lại.</td></tr>
+          <tr><td><code>[LOI] OpenLF2 da cai ... la ban cu</code></td><td data-label="Cách xử lý"><code>xuat-ban.bat</code>: OpenLF2 đã cài chưa tự chơi thư mục bản mod mà nó nằm trong (cần từ gói 50). Cài bản mới nhất (<a href="#install">ở trên</a>) rồi chạy lại.</td></tr>
           <tr><td><code>[LOI] Ban xuat ban khong mo duoc ban mod</code></td><td data-label="Cách xử lý">Game không mở được bản mod (lời báo của game in ở trên, và trong <code>xuat-ban\&lt;tên&gt;-kiem-tra.txt</code>). File <code>.exe</code> bị nén hay khóa thì không xuất bản được; còn lại thì gửi file ấy.</td></tr>
           <tr><td><code>[CHU Y] Co hinh game khong doc duoc</code></td><td data-label="Cách xử lý"><code>xuat-ban.bat</code> vẫn xuất bản, nhưng game bỏ qua các hình được liệt kê (như khi chơi bằng <code>choi.bat</code>). OpenLF2 bản cũ: cài bản mới nhất (đọc được nhiều kiểu hình hơn) rồi xuất bản lại.</td></tr>
           <tr><td><code>[LOI] ...\pN chua xong hoac co loi</code></td><td data-label="Cách xử lý">Một cửa sổ huấn luyện bị đóng hoặc lỗi: những cặp nó đã xong vẫn được giữ; các dòng có <code>ERROR</code> cho biết lý do.</td></tr>

@@ -4,8 +4,10 @@
 #include "openlf2/resources/pack.hpp"
 #include "openlf2/core/binary.hpp"
 #include "openlf2/core/files.hpp"
+#include "openlf2/resources/installer.hpp"
 #include <algorithm>
 #include <optional>
+#include <system_error>
 #include <vector>
 
 namespace openlf2 {
@@ -36,6 +38,133 @@ std::string lower(std::string text) {
     }
     return text;
 }
+// A game folder: at most as many files as a pack, this deep (a mod's folders are a few levels at most).
+constexpr std::size_t max_folder_files = 100000;
+constexpr int max_folder_depth = 16;
+// A path's UTF-8 text; messages and names never go through the Windows code page, where a folder named in another
+// script cannot be written.
+std::string utf8(const std::filesystem::path& path) {
+    const auto text = path.generic_u8string();
+    return {text.begin(), text.end()};
+}
+// The entry of `directory` named `name` (lowercase ASCII) in any case.
+std::optional<std::filesystem::path> child(const std::filesystem::path& directory, std::string_view name) {
+    std::error_code error;
+    std::filesystem::directory_iterator entries(directory, std::filesystem::directory_options::skip_permission_denied, error);
+    if (error) return std::nullopt;
+    for (const std::filesystem::directory_iterator end{}; entries != end; entries.increment(error)) {
+        if (error) return std::nullopt;
+        if (lower(utf8(entries->path().filename())) == name) return entries->path();
+    }
+    return std::nullopt;
+}
+Result<Bytes> read_whole(const std::filesystem::path& file, const std::string& name) {
+    std::ifstream stream(file, std::ios::binary | std::ios::ate);
+    if (!stream) return fail(ErrorCode::io, "cannot open " + name + " in the game folder");
+    const auto end = stream.tellg();
+    if (end < 0) return fail(ErrorCode::io, "cannot read " + name + " in the game folder");
+    if (static_cast<std::uintmax_t>(end) > max_entry_size) return fail(ErrorCode::limit, name + " exceeds 256 MiB");
+    Bytes bytes(static_cast<std::size_t>(end));
+    stream.seekg(0);
+    if (!stream.read(bytes.data(), static_cast<std::streamsize>(bytes.size()))) {
+        return fail(ErrorCode::io, "short read of " + name + " in the game folder");
+    }
+    return bytes;
+}
+}
+
+bool is_game_folder(const std::filesystem::path& directory) {
+    const auto data = child(directory, "data");
+    std::error_code error;
+    if (!data || !std::filesystem::is_directory(*data, error)) return false;
+    const auto listing = child(*data, "data.txt");
+    return listing && std::filesystem::is_regular_file(*listing, error);
+}
+
+Result<std::unique_ptr<PackFolder>> PackFolder::open(const std::filesystem::path& path) {
+    std::unique_ptr<PackFolder> folder(new PackFolder());
+    auto indexed = folder->index(path);
+    if (!indexed) return std::unexpected(indexed.error());
+    return folder;
+}
+
+Result<void> PackFolder::index(const std::filesystem::path& path) {
+    std::error_code error;
+    if (!std::filesystem::is_directory(path, error)) return fail(ErrorCode::io, "the game folder is not a folder");
+    struct Found {
+        std::string name; // UTF-8, from the folder, '/' between parts
+        std::filesystem::path file;
+    };
+    std::vector<Found> found;
+    std::filesystem::recursive_directory_iterator entries(path, std::filesystem::directory_options::skip_permission_denied, error);
+    if (error) return fail(ErrorCode::io, "cannot list the game folder: " + error.message());
+    for (const std::filesystem::recursive_directory_iterator end{}; entries != end; entries.increment(error)) {
+        if (error) return fail(ErrorCode::io, "cannot list the game folder: " + error.message());
+        std::error_code type;
+        if (entries->is_directory(type)) {
+            if (entries.depth() >= max_folder_depth) entries.disable_recursion_pending();
+            continue;
+        }
+        if (!entries->is_regular_file(type)) continue;
+        if (found.size() == max_folder_files) return fail(ErrorCode::limit, "the game folder has too many files");
+        found.push_back({utf8(entries->path().lexically_relative(path)), entries->path()});
+    }
+    // The game folder is the one holding data/data.txt nearest the top, as in a pack.
+    std::optional<std::string> root;
+    for (const auto& item : found) {
+        const auto name = lower(item.name);
+        constexpr std::string_view marker = "data/data.txt";
+        if (name.size() < marker.size() || name.compare(name.size() - marker.size(), marker.size(), marker) != 0) continue;
+        const auto folder = name.substr(0, name.size() - marker.size());
+        if (!folder.empty() && folder.back() != '/') continue;
+        if (!root || folder.size() < root->size()) root = folder;
+    }
+    if (!root) return fail(ErrorCode::format, "no data/data.txt in the game folder");
+    std::vector<std::pair<std::string, std::uintmax_t>> executables;
+    for (auto& item : found) {
+        // Files outside the game folder and names a game cannot ask for (not printable ASCII) are skipped; the first
+        // of names differing only in case wins.
+        if (item.name.size() <= root->size() || lower(item.name.substr(0, root->size())) != *root) continue;
+        auto normalized = virtual_path(std::string_view(item.name).substr(root->size()));
+        if (!normalized) continue;
+        if (normalized->find('/') == std::string::npos && normalized->ends_with(".exe")) {
+            std::error_code size_error;
+            const auto size = std::filesystem::file_size(item.file, size_error);
+            if (!size_error && !files_.contains(*normalized)) executables.emplace_back(*normalized, size);
+        }
+        files_.emplace(std::move(*normalized), std::move(item.file));
+    }
+    // lf2.exe first, then the largest: the first with LF2's pictures (WORDS0) is the game's. OpenLF2's program, there
+    // when the folder is a published mod, has none and names itself.
+    std::stable_sort(executables.begin(), executables.end(), [](const auto& a, const auto& b) {
+        if ((a.first == "lf2.exe") != (b.first == "lf2.exe")) return a.first == "lf2.exe";
+        return a.second > b.second;
+    });
+    std::string fallback;
+    for (const auto& candidate : executables) {
+        auto bytes = read_whole(files_.at(candidate.first), candidate.first);
+        if (!bytes) continue;
+        if (bitmap_resource(*bytes, "WORDS0")) {
+            executable_ = candidate.first;
+            break;
+        }
+        constexpr std::string_view own_name = "OpenLF2";
+        if (fallback.empty() && std::string_view(bytes->data(), bytes->size()).find(own_name) == std::string_view::npos) {
+            fallback = candidate.first;
+        }
+    }
+    if (executable_.empty()) executable_ = fallback;
+    if (executable_.empty()) return fail(ErrorCode::format, "no game executable (lf2.exe) at the top of the game folder");
+    if (executable_ != "lf2.exe") files_.insert_or_assign("lf2.exe", std::filesystem::path(files_.at(executable_)));
+    return {};
+}
+
+Result<Bytes> PackFolder::read(std::string_view path) const {
+    auto normalized = virtual_path(path);
+    if (!normalized) return std::unexpected(normalized.error());
+    const auto found = files_.find(*normalized);
+    if (found == files_.end()) return fail(ErrorCode::io, "game folder resource missing: " + *normalized);
+    return read_whole(found->second, *normalized);
 }
 
 PackArchive::PackArchive(const std::filesystem::path& path, const Decompressor& decompressor)

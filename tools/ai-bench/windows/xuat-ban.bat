@@ -1,15 +1,17 @@
 @echo off
 setlocal EnableDelayedExpansion
-rem Xuat ban mot ban mod cho nguoi choi binh thuong: mot thu muc (va file zip cua no) co san OpenLF2 va ban mod, du cac
-rem muc may Easy, Normal, Difficult, CRAZY, INSANE, XOI. Nguoi choi chi viec giai nen roi nhay dup <ten>.exe - khong
-rem cai OpenLF2, khong can bo XOI, khong can LF2 goc.
+rem Xuat ban mot ban mod cho nguoi choi binh thuong: thu muc goc cua ban mod nhu tac gia chia se (bg, bgm, data, sprite...,
+rem ca file .exe cua no), them OpenLF2 - du cac muc may Easy, Normal, Difficult, CRAZY, INSANE, XOI. Nguoi choi chi viec
+rem giai nen roi nhay dup "<ten> - INSANE XOI.exe" - khong cai OpenLF2, khong can bo XOI, khong can LF2 goc.
 rem Cach dung: dat file nay canh file zip ban mod roi nhay dup - tot nhat la file <ten>-xoi.zip ma xoi-hoc.bat / spsa.bat
 rem da lam (co san bo nho va bo so cua XOI). Hoac keo tha vao file nay: file zip, thu muc hay file .exe cua ban mod;
 rem kem bo nho (notes.txt) va bo so (tune.txt) cua XOI, hay thu muc xoi-<ten> chua chung, neu muon.
 rem Ket qua: xuat-ban\<ten>.zip canh file nay - gui file nay cho nguoi choi; thu muc xuat-ban\<ten> la ban da giai nen.
-rem Can OpenLF2 da cai tu ban 45 tro len (ban biet tu mo file game.zip canh no) va file xuat-ban.ps1 canh file nay.
+rem Can OpenLF2 da cai tu goi 50 tro len (ban biet tu choi thu muc ban mod ma no nam trong) va file xuat-ban.ps1 canh
+rem file nay.
 rem ============ CHINH O DAY ============
-rem Ten ban xuat ban: ten thu muc, file zip va file .exe nguoi choi nhay dup. De trong thi lay ten ban mod.
+rem Ten ban xuat ban: ten thu muc va file zip; file nguoi choi nhay dup la "<ten> - INSANE XOI.exe". De trong thi lay
+rem ten ban mod.
 set "TEN="
 rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
 set "GAME="
@@ -22,8 +24,9 @@ set "TUNE="
 rem Khoa nhan vat an cho nguoi choi: C = co (an nut options o man hinh dau, khong mo khoa duoc, go lf2.net cung khong
 rem mo - cho ban mod co nhan vat an mat can bang), K = khong (nhu OpenLF2 thuong). De trong thi hoi khi chay.
 set "KHOA_AN="
-rem Loi cho nguoi choi: README.txt trong ban xuat ban lam tu file xuat-ban-README.txt canh file nay ({TEN} doi thanh
-rem ten ban xuat ban). Sua file ay (Notepad) truoc khi chay de them gioi thieu ban mod, ten nguoi lam...
+rem Loi cho nguoi choi: "README - INSANE XOI.txt" trong ban xuat ban lam tu file xuat-ban-README.txt canh file nay
+rem ({TEN}: ten ban xuat ban, {EXE}: file nguoi choi nhay dup, {GOC}: file .exe goc cua ban mod). Sua file ay (Notepad)
+rem truoc khi chay de them gioi thieu ban mod, ten nguoi lam...
 rem =====================================
 
 rem Nhung gi keo tha vao: thu muc co data\data.txt la ban mod, thu muc co notes.txt / tune.txt la bo nho / bo so cua XOI;

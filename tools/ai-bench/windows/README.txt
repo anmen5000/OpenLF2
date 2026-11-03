@@ -35,11 +35,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
    two PCs on the same mod need different HAT_GIONG.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
-   next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: one folder with OpenLF2 as <mod>.exe
-   and the mod beside it as game.zip (XOI's notes and numbers inside). Players extract it and double-click
-   <mod>.exe - nothing to install, no kit, no original LF2. Needs OpenLF2 from package 45 (it plays a game.zip
-   beside it by itself; xuat-ban.bat says when the installed one is older). Another name: TEN at the top of
-   xuat-ban.bat; your words for the players: edit xuat-ban-README.txt first ({TEN} becomes the name).
+   next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
+   shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
+   .dll files, the scripts and licenses folders, XOI's notes and numbers in xoi\. Players extract it and
+   double-click "<mod> - INSANE XOI.exe" - nothing to install, no kit, no original LF2. Needs OpenLF2 from
+   package 50 (it plays the mod folder it lies in by itself; xuat-ban.bat says when the installed one is older).
+   Another name: TEN at the top of xuat-ban.bat; your words for the players: edit xuat-ban-README.txt first
+   ({TEN} becomes the name, {EXE} the program, {GOC} the mod's own .exe); it becomes README - INSANE XOI.txt.
    It asks whether to lock the hidden fighters (C = yes): no "options" on the players' title screen, no
    unlocking, lf2.net does nothing; CRAZY!, INSANE! and XOI stay (openlf2.txt in the mod; package 49). KHOA_AN at the top of
    xuat-ban.bat answers it beforehand.
@@ -88,11 +90,13 @@ chơi được chính các file của bản mod.
    Nhiều máy: mỗi máy lo một hai bản mod riêng (mỗi máy một bản mod thì bản mod nào cũng có bộ số tốt nhất
    cho nó); hai máy cùng một bản mod thì đặt HAT_GIONG khác nhau.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
-   mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip, một thư mục có OpenLF2 mang tên <tên>.exe
-   và bản mod nằm cạnh dưới tên game.zip (có bộ nhớ và bộ số của XOI bên trong). Người chơi giải nén rồi nháy
-   đúp <tên>.exe - không cài gì, không cần bộ XOI, không cần LF2 gốc. Cần OpenLF2 từ gói 45 (tự chơi file
-   game.zip nằm cạnh nó; xuat-ban.bat báo nếu bản đã cài cũ hơn). Muốn tên khác: dòng TEN ở đầu xuat-ban.bat;
-   lời của bạn cho người chơi: sửa xuat-ban-README.txt trước ({TEN} thành tên bản xuất bản).
+   mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
+   giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các
+   file .dll, thư mục scripts và licenses, bộ nhớ và bộ số của XOI trong thư mục xoi. Người chơi giải nén rồi
+   nháy đúp "<tên> - INSANE XOI.exe" - không cài gì, không cần bộ XOI, không cần LF2 gốc. Cần OpenLF2 từ gói 50
+   (tự chơi thư mục bản mod mà nó nằm trong; xuat-ban.bat báo nếu bản đã cài cũ hơn). Muốn tên khác: dòng TEN ở
+   đầu xuat-ban.bat; lời của bạn cho người chơi: sửa xuat-ban-README.txt trước ({TEN} thành tên bản xuất bản,
+   {EXE} thành file chương trình, {GOC} thành file .exe gốc của bản mod); nó thành README - INSANE XOI.txt.
    Nó hỏi có khóa nhân vật ẩn không (C = có): màn hình đầu của người chơi không có nút options, không mở
    khóa được, gõ lf2.net cũng không mở; CRAZY!, INSANE!, XOI vẫn có (file openlf2.txt trong bản mod; gói 49). Dòng KHOA_AN
    ở đầu xuat-ban.bat trả lời sẵn câu này.
