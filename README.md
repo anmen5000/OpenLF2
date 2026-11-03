@@ -102,8 +102,11 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   job (on Windows `xoi-hoc.bat`, one job per processor) plays many games of every pair of a mod's fighters and
   writes what each fighter's moves brought against each opponent; shipped in the mod's ZIP file as
   `xoi/notes.txt`, they weigh each move at XOI by what it brought against this opponent, against the fighter's
-  moves on the whole, and set where the opponent's answers to a risky move are expected to start. Everyone in a
-  room has the mod's file, so network games stay in sync; without notes XOI plays as INSANE!.
+  moves on the whole, and set where the opponent's answers to a risky move are expected to start. XOI also plays
+  with numbers of its judgement tuned by play (SPSA; a mod's own in `xoi/tune.txt`), INSANE! with its numbers set by
+  hand. Everyone in a room has the mod's file, so network games stay in sync; without notes XOI plays as INSANE!
+  with XOI's numbers. On Windows the XOI kit's `xuat-ban.bat` publishes a trained mod for its players: one folder
+  with OpenLF2 as `<mod>.exe` and the mod beside it as `game.zip`, unpacked and played with nothing installed.
 - `tools/ai-bench` pits two computer players against each other (`brains = {"smart", "smart@ai_alt"}`:
   another version of the AI, or a player of your own started from `ai_template.lua`); its `audit` counts, per
   player, blows started, landed and interrupted, hits taken from a just-risen opponent or at a wall, and trades.
@@ -157,7 +160,9 @@ build/debug/openlf2 --installer path/to/LF2_v2.0a.exe
 
 Useful flags: `--config-dir DIR` (settings/data location), `--mod PATH` (load a mod),
 `--headless` (no window), `--scripts DIR` (run from source scripts instead of the copy
-beside the executable).
+beside the executable), `--pack FILE.zip` (play an LF2 mod packed as a ZIP file, its own
+program and data, instead of the installer). A `game.zip` beside the executable is played
+as with `--pack` when neither `--pack` nor `--installer` is given.
 
 ### Flatpak
 

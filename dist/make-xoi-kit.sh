@@ -4,8 +4,10 @@
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
-# spsa.bat (tune XOI's numbers by play) and kiem-tra.bat (find out why the game does not open on a PC), beside
-# this checkout's game scripts and AI bench, which they lay over the installed game's scripts.
+# spsa.bat (tune XOI's numbers by play), xuat-ban.bat (publish a mod for its players: one folder with OpenLF2 and the
+# mod, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
+# kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
+# they lay over the installed game's scripts.
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 out=$(realpath -m "$1")
@@ -30,13 +32,14 @@ def crlf(data):
 
 
 windows = root / "tools/ai-bench/windows"
-for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "kiem-tra.bat"):
+for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xuat-ban.bat", "kiem-tra.bat"):
     data = (windows / name).read_bytes()
     # cmd reads labels wrongly in a batch file without CRLF line ends (.gitattributes keeps them).
     if data.count(b"\n") != data.count(b"\r\n"):
         sys.exit(f"{name} must keep its CRLF line ends")
     files.append((name, data))
-files.append(("README.txt", crlf((windows / "README.txt").read_bytes())))
+for name in ("README.txt", "xuat-ban.ps1", "xuat-ban-README.txt"):
+    files.append((name, crlf((windows / name).read_bytes())))
 files.append(("LICENSE.txt", crlf((root / "LICENSE").read_bytes())))
 smart = (root / "scripts/base/game/smart_ai.lua").read_text(encoding="utf-8")
 version = re.search(r"^smart\.version = (\d+)", smart, re.M).group(1)
@@ -49,7 +52,7 @@ for source, target in ((root / "scripts", "scripts"), (root / "tools/ai-bench", 
             continue
         files.append((f"{target}/{relative.as_posix()}", path.read_bytes()))
 names = {name for name, _ in files}
-for needed in ("scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
+for needed in ("xuat-ban.ps1", "xuat-ban-README.txt", "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
                "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
                "tools/ai-bench/package.manifest"):
     if needed not in names:

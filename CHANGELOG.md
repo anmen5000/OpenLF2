@@ -112,6 +112,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   only. Each computer player decides with its level's numbers, also two levels in one bench match. `spsa.bat` and
   `spsa.lua` tune XOI's numbers: they start from XOI's own and check against them. The site's front page, INSANE!
   page (a table of the two levels with what each part was measured to add) and XOI page say so
+- A mod published for its players with INSANE! and XOI built in: they unpack one folder and double-click the mod's
+  name — no OpenLF2 to install, no XOI kit, no original LF2 (the project owner's wish: the kit and the installer are
+  for whoever trains). OpenLF2 plays a `game.zip` beside its program as with `--pack` when started with neither
+  `--pack` nor `--installer`. The XOI kit's `xuat-ban.bat` (its work in `xuat-ban.ps1`) makes that folder from the
+  installed game — the program as `<mod>.exe`, its libraries, its scripts (the kit's when newer, the computer players
+  trained with) and its licences — with the mod as `game.zip`, XOI's notes and numbers inside (`<mod>-xoi.zip` as it
+  is, a mod's ZIP or folder with those of `xoi-<mod>\`), a `README.txt` for the players in Vietnamese and English
+  from `xuat-ban-README.txt`; it starts the folder's program once without a window, zips the folder only when the
+  game found `game.zip` by itself (and says so when the installed OpenLF2 is too old for it), and takes away what it
+  made when anything fails. The XOI page has a section on it (English and Vietnamese)
 - Network play in the browser: the corner of the game also shows how busy each computer is (`busy`: the longest
   the page stalled in the last 5 seconds; `host busy` / `player busy` for the other side, which tells it every
   2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,

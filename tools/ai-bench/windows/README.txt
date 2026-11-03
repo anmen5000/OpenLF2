@@ -34,10 +34,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    numbers ("mod tuned" in the match). With one mod next to it, the next run goes on from that mod's numbers.
    Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
    two PCs on the same mod need different HAT_GIONG.
-6. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
+6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
+   next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: one folder with OpenLF2 as <mod>.exe
+   and the mod beside it as game.zip (XOI's notes and numbers inside). Players extract it and double-click
+   <mod>.exe - nothing to install, no kit, no original LF2. Needs OpenLF2 from package 45 (it plays a game.zip
+   beside it by itself; xuat-ban.bat says when the installed one is older). Another name: TEN at the top of
+   xuat-ban.bat; your words for the players: edit xuat-ban-README.txt first ({TEN} becomes the name).
+   Publish your own mod, or one whose author allows it; keep the licenses folder in it.
+7. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), kiem-tra.bat (check),
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), xuat-ban.bat (publish;
+its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
 
@@ -76,9 +84,17 @@ chơi được chính các file của bản mod.
    riêng của nó (trong trận ghi "mod tuned"). Chỉ một bản mod cạnh nó thì lần sau chỉnh tiếp từ bộ số ấy.
    Nhiều máy: mỗi máy lo một hai bản mod riêng (mỗi máy một bản mod thì bản mod nào cũng có bộ số tốt nhất
    cho nó); hai máy cùng một bản mod thì đặt HAT_GIONG khác nhau.
-6. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
+6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
+   mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip, một thư mục có OpenLF2 mang tên <tên>.exe
+   và bản mod nằm cạnh dưới tên game.zip (có bộ nhớ và bộ số của XOI bên trong). Người chơi giải nén rồi nháy
+   đúp <tên>.exe - không cài gì, không cần bộ XOI, không cần LF2 gốc. Cần OpenLF2 từ gói 45 (tự chơi file
+   game.zip nằm cạnh nó; xuat-ban.bat báo nếu bản đã cài cũ hơn). Muốn tên khác: dòng TEN ở đầu xuat-ban.bat;
+   lời của bạn cho người chơi: sửa xuat-ban-README.txt trước ({TEN} thành tên bản xuất bản).
+   Chỉ xuất bản bản mod của bạn, hoặc khi tác giả cho phép; giữ thư mục licenses trong đó.
+7. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), kiem-tra.bat (kiểm
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), xuat-ban.bat (xuất
+bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

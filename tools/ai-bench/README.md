@@ -129,6 +129,16 @@ quoted pair, `start` hands the line to `cmd /k`, which drops its first and last 
 where the folder has spaces. `windows/kiem-tra.bat` is for a PC where the game does not open: it writes into
 `kiem-tra.txt` the installed game's build (x86, x64 or arm64, from its PE header), the graphics card, a `loadall` run
 without a window, 15 seconds of a window with each renderer, and Windows' record of the game's crashes.
+`windows/xuat-ban.bat` publishes a mod for its players: one folder with the installed OpenLF2 (its program renamed
+`<mod>.exe`, its DLLs, its `scripts` — the kit's when their `smart.version` is higher — and `licenses`) and the mod as
+`game.zip` beside it, `xoi/notes.txt` and `xoi/tune.txt` inside (a `*-xoi.zip` as it is; a ZIP or folder takes those
+of `xoi-<mod>\`), a `README.txt` for the players from `xuat-ban-README.txt`, then the folder zipped as
+`xuat-ban\<mod>.zip`. OpenLF2 plays a `game.zip` beside its program when started with neither `--pack` nor
+`--installer` (package 45 on), so the players double-click `<mod>.exe` and play, nothing installed. Its work is in
+`windows/xuat-ban.ps1` (settings and dragged files come as `XB_*` environment variables), which starts the folder's
+program once without a window (`--input-trace ""`) and zips it only when the game found `game.zip` by itself; it runs
+under PowerShell 7 elsewhere too, which is how it was tried, with this repository's Linux build in place of
+`openlf2.exe`.
 `dist/make-xoi-kit.sh` packs the `.bat` files with `scripts` and this folder as `xoi-kit.zip` (one folder,
 `LF2-XOI-kit`), which the site publishes with its guide (`dist/pages/xoi.html`, English and Vietnamese) and "Upload
 to latest release" attaches beside the Windows installers.

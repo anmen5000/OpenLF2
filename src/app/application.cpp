@@ -505,6 +505,15 @@ Result<Configuration> configuration(std::span<const std::string> arguments,
     if (config.replay && (!config.network_role.empty() || config.preview_backgrounds || config.preview_ending)) {
         return fail(ErrorCode::format, "a recording cannot be combined with network or preview startup");
     }
+    // A mod published with OpenLF2 (the XOI kit's xuat-ban.bat): its game pack lies beside the program as game.zip and
+    // is played as with --pack, so the mod's players unpack one folder and start the program. --pack or --installer
+    // choose otherwise.
+    if (!config.pack && config.installer.empty()) {
+        std::error_code error;
+        if (auto beside = directory / "game.zip"; std::filesystem::is_regular_file(beside, error)) {
+            config.pack = std::move(beside);
+        }
+    }
     return config;
 }
 class GameResources final : public ResourceSource {
@@ -1483,6 +1492,8 @@ int run_application(std::span<const std::string> arguments, const std::filesyste
                          "        missing, a window offers to download it there (headless runs need --installer or --config-dir).\n"
                          "--pack plays a game folder packed as a ZIP file (an LF2 mod with its own executable, data and pictures)\n"
                          "        instead of the original installer.\n"
+                         "game.zip beside the program is played as with --pack when neither --pack nor --installer is given: a mod\n"
+                         "        published with OpenLF2 starts from its own folder.\n"
                          "Only explicitly selected, trusted local mod packages are supported.\n";
             return 0;
         }
