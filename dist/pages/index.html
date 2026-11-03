@@ -55,6 +55,7 @@
   .btn.secondary { background: transparent; color: var(--text); border-color: var(--card-border); }
   .btn.secondary:hover { background: var(--card); }
   button.btn { font: inherit; cursor: pointer; }
+  .btn[hidden] { display: none; } /* .btn's display would otherwise win over the hidden attribute */
   button.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
   section { padding: 3.2rem 0; }
@@ -75,9 +76,9 @@
   button#start:disabled { background: #4a5079; color: #9aa1c4; }
   button#fullscreen { padding: .65rem 1.2rem; font-size: .92rem; }
   #chosen { flex: 1 1 10rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: .88rem; }
-  .game-choice { display: flex; align-items: center; gap: .5rem; color: var(--text-dim); font-size: .92rem; }
+  .game-choice { display: flex; align-items: center; gap: .5rem; color: var(--text-dim); font-size: .92rem; max-width: 100%; min-width: 0; }
   select#game { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
-    padding: .55rem .9rem; max-width: 22rem; }
+    padding: .55rem .9rem; max-width: 22rem; min-width: 0; flex: 0 1 auto; } /* a phone's width: the list narrows */
   progress#progress { display: block; width: 100%; height: .6rem; margin-top: .9rem; accent-color: var(--accent); }
   progress#progress[hidden] { display: none; }
   @media (max-width: 480px) { .wrap { padding: 0 1rem; } #play { padding: 1.25rem; } }
@@ -130,6 +131,22 @@
     background: rgba(0,0,0,.30); color: #fff; font: 700 1.2rem system-ui, sans-serif; touch-action: none;
     user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   .hf-buttons button.down { background: rgba(255,210,60,.65); color: #3a2900; }
+  /* Remote play (hf-remote.js): the host's code and choices, or the code the guest types; the guest's picture. */
+  #hf-remote { margin: .6rem 0 0; padding: .7rem .9rem; border-radius: 12px; border: 1px solid var(--card-border);
+    background: var(--card); color: var(--text-dim); font-size: .9rem; }
+  #hf-remote[hidden] { display: none; }
+  #hf-remote .row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .8rem; }
+  #hf-remote p { margin: .45rem 0 0; }
+  #hf-remote .code { font-size: 1.3rem; font-weight: 700; letter-spacing: .14em; color: var(--accent-2); }
+  #hf-remote input, #hf-remote select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: .35rem .6rem; }
+  #hf-remote input { width: 7.5rem; letter-spacing: .14em; }
+  #hf-remote .btn { padding: .4rem 1rem; font-size: .88rem; }
+  #hf-remote code { word-break: break-all; color: var(--text); }
+  .stage.hf .hf-remote-video { display: block; width: 100%; height: auto; aspect-ratio: 960 / 540; object-fit: contain;
+    background: #000; touch-action: none; outline: none; }
+  .stage.hf:fullscreen .hf-remote-video { height: 100%; aspect-ratio: auto; }
+  .stage.hf:-webkit-full-screen .hf-remote-video { height: 100%; aspect-ratio: auto; }
   details { margin-top: 1rem; }
   details summary { cursor: pointer; color: var(--text-dim); font-size: .85rem; }
   details pre { max-height: 10rem; overflow: auto; white-space: pre-wrap; font-size: .78rem; background: #000; border-radius: 8px; padding: .6rem .8rem; color: #9fe6ff; }
@@ -226,6 +243,11 @@
         choose it in <b>Game</b>. The online relay keeps the game file when its owner uploaded it, else select your
         <code>HFv0.7.zip</code> (or <code>HFv0.7+.exe</code>). Log in with any e-mail address and password (the relay keeps the
         account; the first login creates it), then <b>Network Game</b> lists the relay's rooms.</p>
+      <p class="lede">A computer too slow for Hero Fighter's crowded fights can play through a faster one (<b>remote play</b>):
+        start the game on the faster computer and press <b>Let another computer play</b>; on the slow one, choose Hero Fighter,
+        press <b>Play through another computer</b> and type the code it shows. The faster computer runs the game and sends its
+        picture and sound; the slow one's keys play one of its players. — Máy yếu chơi nhờ máy mạnh: máy mạnh bấm
+        <b>Let another computer play</b> lấy mã, máy yếu bấm <b>Play through another computer</b> rồi nhập mã.</p>
 
       <div class="play-controls">
         <label class="game-choice">Game <select id="game" aria-label="Game to play">
@@ -238,11 +260,14 @@
         <button id="start" class="btn" disabled>Start game</button>
         <button id="wide" class="btn secondary" type="button" hidden aria-pressed="true">Normal view</button>
         <button id="fullscreen" class="btn secondary" type="button" hidden>Fullscreen</button>
+        <button id="hf-remote-host" class="btn secondary" type="button" hidden>Let another computer play</button>
+        <button id="hf-remote-guest" class="btn secondary" type="button" hidden>Play through another computer</button>
       </div>
       <progress id="progress" hidden></progress>
       <p id="status" role="status">Loading WebAssembly…</p>
       <p id="hf-net" hidden></p>
       <p id="gpu-note" hidden></p>
+      <div id="hf-remote" hidden></div>
       <div class="stage" id="stage">
         <canvas id="canvas" width="794" height="550" tabindex="0" aria-label="OpenLF2 game canvas"></canvas>
       </div>
@@ -286,6 +311,7 @@
 <script>window.OPENLF2_RELAY = 'wss://sybilproxy.com/lf2-relay/relay';</script>
 <script src="online.js"></script>
 <script src="hf-direct.js"></script>
+<script src="hf-remote.js"></script>
 <script src="hero-fighter.js"></script>
 <script>
   const installer = document.getElementById('installer');
@@ -295,6 +321,13 @@
   const log = document.getElementById('log');
   const canvas = document.getElementById('canvas');
   const fullscreenButton = document.getElementById('fullscreen');
+  const remotePanel = document.getElementById('hf-remote'); // remote play (see "Remote play" below)
+  const remoteHostButton = document.getElementById('hf-remote-host');
+  const remoteGuestButton = document.getElementById('hf-remote-guest');
+  let remoteHost = null; // this computer lets another one play (HfRemote.host)
+  let remoteGuest = null; // this computer plays through another one (HfRemote.guest)
+  let remotePad = null; // the guest's touch controls
+  let guestPanel = false; // the remote play panel asks for a code
   let ready = false;
   let started = false;
   let selectionChanged = false;
@@ -413,6 +446,7 @@
     chooseButton.disabled = started || downloading;
     // Another game can be chosen while one runs: the page then reloads into it (see the change handler).
     gameSelect.disabled = downloading;
+    updateRemote();
   }
 
   // The game to play: the original LF2 (""), a mod the relay keeps ("pack:<id>"), a mod's ZIP file from this
@@ -550,6 +584,13 @@
       await packsLoaded;
       const record = await packStore.load('hf').catch(() => null);
       if (started || downloading || gameSelect.value !== 'hf') return;
+      if (remoteWanted() && remoteReady()) {
+        openGuestPanel(pageParams.get('remote') || storageGet('openlf2-hf-remote-code') || '');
+        status.textContent = 'Ready to play through another computer: type the code it shows, then Connect. '
+          + '(Start game plays Hero Fighter on this computer instead.)';
+        update();
+        return;
+      }
       if (record && record.blob && hfCurrent(record)) return launchHf(record);
       status.textContent = hfPack ? 'Ready. Press Start game to download Hero Fighter (' + (hfPack.size / 1e6).toFixed(0) + ' MB, once).'
         : 'Ready. Select Hero Fighter\'s file (HFv0.7.zip) with "Select file manually…", then press Start game.';
@@ -576,10 +617,11 @@
     }
   }
   function running() {
-    (hfPlayer || Module.canvas).focus({preventScroll: true});
+    (remoteGuest ? remoteGuest.video : hfPlayer || Module.canvas).focus({preventScroll: true});
     if (canFullscreen) fullscreenButton.hidden = false;
     wideButton.hidden = false;
     applyWide(true);
+    updateRemote();
   }
   async function launch(file, saveSelection) {
     if (!ready || started) return;
@@ -706,6 +748,7 @@
     return !hfPack || !hfPack.sha256 || record.sha256 === hfPack.sha256;
   }
   async function startHf() {
+    forgetRemote(); // playing on this computer: next time too
     let record = null;
     if (pendingHf) {
       status.textContent = 'Reading ' + pendingHf.name + '…';
@@ -769,6 +812,216 @@
       update();
     }
   }
+
+  // ---- Remote play (hf-remote.js) ----------------------------------------------------------------
+  // A computer too slow for a crowded fight plays Hero Fighter through a faster one. The faster one (the host, "Let
+  // another computer play") runs the game and sends its picture and sound; the slow one (the guest, "Play through
+  // another computer") shows them and sends its keys, clicks and taps back, which play one of the host's players.
+  // The guest's choice is remembered, so that a slow computer does not start the game itself next time (Start game
+  // still plays it here), and ?game=hf&remote=CODE in a link (the host's "Copy link") fills the code in.
+  function storageGet(key) {
+    try { return localStorage.getItem(key); } catch (error) { return null; }
+  }
+  function storageSet(key, value) {
+    try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); }
+    catch (error) { /* storage unavailable */ }
+  }
+  function remoteRelay() { return (window.OpenLF2Online && OpenLF2Online.relay) || ''; }
+  function remoteReady() { return Boolean(window.HfRemote && window.RTCPeerConnection && remoteRelay()); }
+  function remoteWanted() { return pageParams.has('remote') || storageGet('openlf2-hf-remote') === '1'; }
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+  }
+  function updateRemote() {
+    if (guestPanel && gameSelect.value !== 'hf') closeGuestPanel();
+    const can = remoteReady();
+    remoteHostButton.hidden = !(can && runningGame === 'hf' && hfPlayer && !remoteGuest && !remoteHost);
+    remoteGuestButton.hidden = !(can && gameSelect.value === 'hf' && !remoteGuest && !remoteHost && !guestPanel && !downloading);
+  }
+  function closeGuestPanel() {
+    if (!guestPanel) return;
+    guestPanel = false;
+    remotePanel.hidden = true;
+    remotePanel.textContent = '';
+  }
+  // This computer plays the game itself again: no code waited for, next time either (nor in the page's address).
+  function forgetRemote() {
+    storageSet('openlf2-hf-remote', null);
+    closeGuestPanel();
+    pageParams.delete('remote');
+    const address = new URL(location.href);
+    if (address.searchParams.has('remote')) {
+      address.searchParams.delete('remote');
+      history.replaceState(history.state, '', address.href);
+    }
+  }
+  const GUEST_KEYS_TEXT = 'Keys: arrows or W X A D move, S attack, Space jump, F guard, R command (or the number pad as player 1 '
+    + 'has it, or I , J L K . ; P as player 3); the picture takes clicks and taps.';
+
+  // The host: this computer runs Hero Fighter; a code (and a link) for the other one, which plays as player 1, 2 or 3.
+  function hostRemote() {
+    if (remoteHost || !hfPlayer || !remoteReady()) return;
+    let slot = Number(storageGet('openlf2-hf-remote-slot')) || 3;
+    if (![1, 2, 3].includes(slot)) slot = 3;
+    remotePanel.innerHTML = '<div class="row"><span>Remote play: code <span class="code" id="hf-remote-code">……</span></span>'
+      + '<label>it plays as <select id="hf-remote-slot" aria-label="The other computer plays as">'
+      + '<option value="1">player 1 (number pad)</option><option value="2">player 2 (W A S D)</option>'
+      + '<option value="3">player 3 (I J K L)</option></select></label>'
+      + '<button class="btn secondary" type="button" id="hf-remote-copy">Copy link</button>'
+      + '<button class="btn secondary" type="button" id="hf-remote-stop">Stop</button></div>'
+      + '<p id="hf-remote-state"></p>'
+      + '<p class="note">On the slower computer: choose Hero Fighter under Game, press <b>Play through another computer</b> and '
+      + 'type this code (or open the link). Keep this tab in front, with the game clicked: the other computer\'s keys go into '
+      + 'the game only then. Its player uses that player\'s default keys here (Key Setting: Default). — Máy yếu: chọn Hero '
+      + 'Fighter, bấm <b>Play through another computer</b> rồi nhập mã. Giữ tab này ở trước và đã bấm vào game.</p>';
+    remotePanel.hidden = false;
+    const codeLine = remotePanel.querySelector('#hf-remote-code');
+    const stateLine = remotePanel.querySelector('#hf-remote-state');
+    const select = remotePanel.querySelector('#hf-remote-slot');
+    select.value = String(slot);
+    const backToGame = () => { if (hfPlayer) hfPlayer.focus({preventScroll: true}); };
+    remoteHost = HfRemote.host({
+      player: hfPlayer, relay: remoteRelay(), slot, log: message,
+      onState: state => {
+        if (state.phase === 'ended') {
+          remoteHost = null;
+          remotePanel.hidden = true;
+          remotePanel.textContent = '';
+          updateRemote();
+          return;
+        }
+        codeLine.textContent = state.code;
+        stateLine.textContent = state.phase === 'waiting' ? 'Waiting for the other computer…' + (state.note ? ' (' + state.note + ')' : '')
+          : state.phase === 'connecting' ? 'The other computer is connecting…'
+          : state.phase === 'playing' ? 'The other computer plays here, as player ' + state.slot + ' (in a network room, from this computer).'
+          : 'Remote play stopped: ' + state.reason + '. Press Stop, then try again.';
+      },
+    });
+    select.addEventListener('change', () => {
+      remoteHost.setSlot(Number(select.value));
+      storageSet('openlf2-hf-remote-slot', select.value);
+      backToGame();
+    });
+    remotePanel.querySelector('#hf-remote-copy').addEventListener('click', async () => {
+      const link = new URL(location.pathname, location.href);
+      link.searchParams.set('game', 'hf');
+      if (remoteRelay() !== (window.OPENLF2_RELAY || '')) link.searchParams.set('relay', remoteRelay());
+      link.searchParams.set('remote', remoteHost ? remoteHost.code : '');
+      try {
+        await navigator.clipboard.writeText(link.href);
+        stateLine.textContent = 'Link copied: send it to the other computer.';
+      } catch (error) {
+        stateLine.innerHTML = 'The link: <code>' + escapeHtml(link.href) + '</code>';
+      }
+      backToGame();
+    });
+    remotePanel.querySelector('#hf-remote-stop').addEventListener('click', () => { if (remoteHost) remoteHost.stop(); backToGame(); });
+    updateRemote();
+    backToGame();
+  }
+  remoteHostButton.addEventListener('click', hostRemote);
+
+  // The guest: this computer shows the other one's game; it starts nothing itself.
+  function openGuestPanel(code, note) {
+    guestPanel = true;
+    remotePanel.innerHTML = '<div class="row"><label>Code <input id="hf-remote-input" inputmode="numeric" autocomplete="off" '
+      + 'maxlength="6" placeholder="123456" aria-label="The code the faster computer shows"></label>'
+      + '<button class="btn primary" type="button" id="hf-remote-connect">Connect</button>'
+      + '<button class="btn secondary" type="button" id="hf-remote-cancel">Cancel</button></div>'
+      + (note ? '<p>' + escapeHtml(note) + '</p>' : '')
+      + '<p class="note">Remote play: the faster computer runs the game and sends its picture and sound here; your keys, clicks and '
+      + 'taps go back. There, start Hero Fighter and press <b>Let another computer play</b>: it shows the code. Both computers on '
+      + 'the same home network is best; over the Internet, some networks block it. — Chơi nhờ: máy mạnh chạy game, máy này xem hình '
+      + 'và gửi phím. Trên máy mạnh bấm <b>Let another computer play</b> để lấy mã.</p>';
+    remotePanel.hidden = false;
+    const input = remotePanel.querySelector('#hf-remote-input');
+    input.value = String(code || '').replace(/\D/g, '').slice(0, 6);
+    const connect = () => {
+      const value = input.value.replace(/\D/g, '');
+      if (!/^\d{6}$/.test(value)) {
+        status.textContent = 'Type the 6-digit code the other computer shows.';
+        input.focus();
+        return;
+      }
+      connectGuest(value);
+    };
+    remotePanel.querySelector('#hf-remote-connect').addEventListener('click', connect);
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') connect(); });
+    remotePanel.querySelector('#hf-remote-cancel').addEventListener('click', () => {
+      forgetRemote();
+      status.textContent = 'Press Start game to play Hero Fighter on this computer.';
+      update();
+    });
+    updateRemote();
+    if (!input.value) input.focus({preventScroll: true});
+    else remotePanel.querySelector('#hf-remote-connect').focus({preventScroll: true});
+  }
+  function connectGuest(code) {
+    if (remoteGuest || started || !remoteReady()) return;
+    storageSet('openlf2-hf-remote', '1');
+    storageSet('openlf2-hf-remote-code', code);
+    guestPanel = false;
+    started = true;
+    runningGame = 'hf';
+    stage.classList.add('hf');
+    remotePanel.innerHTML = '<div class="row"><span>Remote play: code <span class="code">' + code + '</span></span>'
+      + '<button class="btn secondary" type="button" id="hf-remote-stop">Stop</button></div>';
+    remotePanel.hidden = false;
+    let ended = false;
+    remoteGuest = HfRemote.guest({
+      stage, relay: remoteRelay(), code, log: message,
+      onState: state => {
+        if (ended || state.phase === 'ended') return;
+        if (state.phase === 'error') {
+          ended = true;
+          setTimeout(() => endGuest(code, 'Remote play stopped: ' + state.reason + '.'), 0);
+          return;
+        }
+        status.textContent = state.phase === 'connecting' ? 'Remote play: connecting to the other computer…'
+          : 'Remote play: the other computer\'s game' + (state.ping !== null ? ' · ping ' + Math.round(state.ping) + ' ms' : '')
+            + (state.fps ? ' · ' + Math.round(state.fps) + ' frames/s' : '')
+            + (state.muted ? ' · sound off until you click the picture' : '') + '. ' + GUEST_KEYS_TEXT;
+      },
+    });
+    remotePad = HeroFighter.addTouchControls(stage, remoteGuest.video);
+    remotePanel.querySelector('#hf-remote-stop').addEventListener('click', () => endGuest(code, 'Remote play stopped.'));
+    running();
+    update();
+  }
+  // Back to the code (the same one, for trying again); the stage as before anything ran.
+  function endGuest(code, text) {
+    const guest = remoteGuest;
+    remoteGuest = null;
+    if (guest) guest.stop();
+    if (remotePad) { remotePad.remove(); remotePad = null; }
+    if (fullscreenElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    started = false;
+    runningGame = null;
+    stage.classList.remove('hf');
+    applyWide(false);
+    wideButton.hidden = fullscreenButton.hidden = true;
+    status.textContent = text + ' Connect again, or press Start game to play on this computer.';
+    openGuestPanel(code);
+    update();
+  }
+  remoteGuestButton.addEventListener('click', () => {
+    if (!remoteReady()) return;
+    if (runningGame === 'hf' && hfPlayer) {
+      // Hero Fighter runs here: the page reloads without it, waiting for the code.
+      if (!confirm('Play through another computer? Hero Fighter stops on this computer (the page reloads).')) {
+        hfPlayer.focus({preventScroll: true});
+        return;
+      }
+      storageSet('openlf2-hf-remote', '1');
+      const url = addressFor(new URL(location.href), 'hf');
+      url.searchParams.set('remote', '');
+      location.replace(url.href);
+      return;
+    }
+    if (started) return;
+    openGuestPanel(storageGet('openlf2-hf-remote-code') || '');
+    status.textContent = 'Type the code the other computer shows, then Connect.';
+  });
 
   async function startGame() {
     const game = gameSelect.value;

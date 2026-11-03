@@ -329,6 +329,57 @@ window.HeroFighter = (() => {
     return pad;
   }
 
+  // ---- How fast this computer runs the game -----------------------------------------------------------
+  // For finding out what makes a crowded fight slow on a player's computer: how long Ruffle's frames take (the
+  // page's animation frames, where Ruffle runs the game and draws it) and how much of that is waiting for the
+  // graphics card to hand pictures back (WebGL's getBufferSubData, readPixels, clientWaitSync, finish: Ruffle's
+  // GPU-to-CPU copies of a BitmapData). Every 30 s in which the frames took 25 ms or more on average, a line in
+  // the log (Diagnostic output). Only those rare calls and the animation frames are timed, which costs nothing
+  // a player would notice.
+  function watchSpeed(log) {
+    const totals = { frames: 0, ms: 0, worst: 0, waits: 0, waitMs: 0 };
+    const waiting = ['getBufferSubData', 'readPixels', 'clientWaitSync', 'finish'];
+    for (const Context of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
+      if (!Context) continue;
+      for (const name of waiting) {
+        const original = Context.prototype[name];
+        if (typeof original !== 'function' || original.hfTimed) continue;
+        const timed = function (...args) {
+          const begin = performance.now();
+          try { return original.apply(this, args); } finally { totals.waits += 1; totals.waitMs += performance.now() - begin; }
+        };
+        timed.hfTimed = true;
+        Context.prototype[name] = timed;
+      }
+    }
+    const raf = window.requestAnimationFrame;
+    window.requestAnimationFrame = (callback) => raf.call(window, (time) => {
+      const begin = performance.now();
+      try { callback(time); } finally {
+        const spent = performance.now() - begin;
+        totals.frames += 1;
+        totals.ms += spent;
+        if (spent > totals.worst) totals.worst = spent;
+      }
+    });
+    let last = { ...totals };
+    let lastTime = performance.now();
+    setInterval(() => {
+      const now = performance.now();
+      const frames = totals.frames - last.frames;
+      const seconds = (now - lastTime) / 1000;
+      const each = frames ? (totals.ms - last.ms) / frames : 0;
+      if (frames && each >= 25) {
+        log(`Hero Fighter speed (last ${Math.round(seconds)} s): ${(frames / seconds).toFixed(1)} frames/s, Ruffle ${each.toFixed(1)} ms a frame `
+          + `(of it ${((totals.waitMs - last.waitMs) / frames).toFixed(1)} ms waiting for the graphics card, ${((totals.waits - last.waits) / frames).toFixed(2)} times), `
+          + `slowest ${totals.worst.toFixed(0)} ms`);
+      }
+      totals.worst = 0;
+      last = { ...totals };
+      lastTime = now;
+    }, 30000);
+  }
+
   // ---- Running the game ----------------------------------------------------------------------------
   // options: stage (element), movie (Uint8Array), site (the page's folder URL), relay (wss://… or ''),
   //          status(text), log(text), net(text): how the room's direct links are ('' for nothing to say).
@@ -435,6 +486,10 @@ window.HeroFighter = (() => {
     }
 
     stage.classList.add('hf');
+    // Before Ruffle makes its WebGL context and its AudioContext: the speed log, and the sound for remote play
+    // (hf-remote.js), whose host sends it with the picture.
+    if (!/[?&]hfspeed=0(&|$)/.test(location.search)) watchSpeed(log);
+    if (window.HfRemote) window.HfRemote.tapAudio();
     const player = source.createPlayer();
     player.className = 'hf-player';
     player.tabIndex = 0;
@@ -464,5 +519,5 @@ window.HeroFighter = (() => {
     return player;
   }
 
-  return { movieFrom, looksLikeHeroFighter, patchMovie, skipDrawing, start, KEYS };
+  return { movieFrom, looksLikeHeroFighter, patchMovie, skipDrawing, start, addTouchControls, KEYS };
 })();

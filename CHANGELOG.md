@@ -268,8 +268,31 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   program: the original LF2, up to CRAZY!), its libraries, scripts and licences, XOI's notes and numbers in `xoi\`
   and `README - INSANE XOI.txt` beside the mod's own readme, keeps empty folders, and needs an installed OpenLF2
   from package 50 (it says so of an older one)
+- Hero Fighter remote play ("chơi nhờ", `dist/pages/hf-remote.js`): a computer too slow for a crowded fight plays
+  through a faster one, for the project owner, whose rooms lag in Battles with many soldiers however good the
+  network: every computer of a room runs the whole fight and the slowest sets the pace. On the faster computer,
+  **Let another computer play** shows a 6-digit code (and copies a link, `?game=hf&remote=<code>`); on the slow
+  one, **Play through another computer** takes it. The faster computer runs the game as always and sends its
+  picture (its canvas, at most about 960 pixels wide, 30 frames a second, H.264 first, from 2 Mbit/s: Chrome starts
+  a call at a slow network's bitrate, which left the picture at 320x180) and its sound (Ruffle's Web Audio, also
+  connected to a stream) over WebRTC; the slow one shows them and sends its keys (the arrows or any
+  player's default keys), clicks and taps back, which play player 1, 2 or 3 of the faster computer (its choice,
+  player 3 at first) on that player's default keys, and click where they are on its game. A room then sees one
+  computer, the faster one. The pages find each other through the relay's two-player rooms (the relay does not
+  change); the picture goes directly between them (STUN only: some networks cannot), shown as soon as it comes.
+  The slow computer's choice is remembered: its page waits for a code next time instead of starting the game
+  (Start game still plays it there)
+- Hero Fighter: how fast it runs, in Diagnostic output: every 30 s in which Ruffle's frames took 25 ms or more on
+  average, a line with the frames a second, the milliseconds a frame, the part of it spent waiting for the
+  graphics card (WebGL's getBufferSubData, readPixels, clientWaitSync, finish) and the slowest frame (`hfspeed=0`
+  in the page's address leaves it out). Measured in a crowded Battle (4 Kingdoms, Crazy, ten commanders) drawn by
+  the CPU: 8.5 frames a second, 14-15 without drawing the fight, of which 60% went to reading pictures back
+  (about two a second, the minimap: slow only when the CPU draws), 26% to the game's ActionScript and 7% to the
+  rest of Ruffle; with a graphics card, the game's ActionScript decides, which only a faster computer shortens
 
 ### Fixed
+- The site page: Normal view, Fullscreen and the other buttons that wait for a game no longer show before it runs
+  (the buttons' style won over `hidden`), and the Game list fits a phone's width (the page scrolled sideways)
 - Music on a PC: the desktop builds' FFmpeg decoded only WMA version 2, so the music of mods in WMA Pro (Naruto: The
   Setting Dawn 2.4's and One Piece GrandWorld's main.wma among others) or MP3 (One Piece GrandWorld) was silent
   ("music: no audio stream: Decoder not found"); it now has the web build's decoders (WMA 1 and 2, WMA Pro, MP3).

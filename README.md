@@ -29,7 +29,8 @@ This repository is **LF2 Online**, Xôi's build of OpenLF2, played at
   `window.OPENLF2_RELAY` line in `dist/pages/index.html` and `dist/pages/windows.html` — change it to
   your own relay when you fork;
 - a page that plays mods whose program OpenLF2 cannot read in a Windows emulator in the browser
-  (`dist/pages/windows.html`, `dist/boxedwine/`), and a Hero Fighter page (`dist/pages/hero-fighter.js`);
+  (`dist/pages/windows.html`, `dist/boxedwine/`), and a Hero Fighter page (`dist/pages/hero-fighter.js`),
+  where a slow computer can play through a faster one (`dist/pages/hf-remote.js`);
 - a test bench for the computer players (`tools/ai-bench/`).
 
 Everything here is MIT-licensed like OpenLF2; the games and mods are not part of the repository and

@@ -244,7 +244,9 @@ once on the reliable channel and, with the ones before it, on the datagram chann
 
 Protocol 1, two players (older game pages): `ws(s)://host/relay?role=host|join&room=<code>`. The
 relay answers with JSON text frames `{"t":"waiting","room":"…"}` and then `{"t":"paired"}`; after
-that, binary frames are forwarded to the other player.
+that, binary frames are forwarded to the other player. Hero Fighter's remote play
+(`dist/pages/hf-remote.js`) uses these rooms too, with a 6-digit code, to pass the two pages' WebRTC
+set-up (JSON in binary frames); its picture and keys then go directly between them, not through the relay.
 
 Problems close the socket with a 4xxx code and an ASCII reason that the game shows: 4000 bad
 request, 4001 origin not allowed, 4002 too many connections, 4003 server full, 4004 room taken,
