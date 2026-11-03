@@ -1,17 +1,19 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026 OpenLF2 contributors
--- Tuning the INSANE! player's judgement by play: SPSA (Spall's simultaneous perturbation stochastic approximation,
--- the way chess engines tune their numbers) over smart.tune_ranges in scripts/base/game/smart_ai.lua.
+-- Tuning XOI's judgement by play: SPSA (Spall's simultaneous perturbation stochastic approximation, the way chess
+-- engines tune their numbers) over smart.tune_ranges in scripts/base/game/smart_ai.lua, from XOI's own numbers
+-- (smart.xoi_tune over INSANE!'s; the numbers tuned so are XOI's alone: a mod's xoi/tune.txt, or smart.xoi_tune).
+-- The games are played by the AI without XOI's notes, both sides with the numbers the tuner sets.
 -- Each iteration nudges every number at once by the same share of its range, each up or down at random, and lets
 -- the numbers nudged one way (base/game/smart_ai, "smart") fight those nudged the other way (a copy of the same
 -- file in this package as spsa_alt.lua, "smart@spsa_alt"): two games on one stage, each version playing each
 -- fighter of a random pair; then every number moves toward the side that did better, by how much better.
 -- A run is one chain of iterations; many chains run side by side (windows/spsa.bat) and their numbers are
--- averaged between rounds (step "merge"); step "check" plays tuned numbers against the AI's own.
+-- averaged between rounds (step "merge"); step "check" plays tuned numbers against XOI's own (or a base).
 --
 -- config (command = "spsa"):
 --   step       "chain" (default), "merge" or "check"
---   start      module of this package returning the numbers to start from (name = value); the AI's own when absent
+--   start      module of this package returning the numbers to start from (name = value); XOI's own when absent
 --   names      the numbers to tune (all of smart.tune_ranges by default)
 --   iterations game pairs in this run (at most); first: iterations this chain did before (for the gains); total: all
 --              it will do
@@ -32,7 +34,7 @@
 --              (chains of any length, cut short ones too); first: the round's first k, for "SPSA_K <next first>"
 --   games      (check) game pairs to play (at most, with seconds)
 --   base       (check) module of this package with the numbers to check against (name = value; the run's start,
---              say); the AI's own when absent
+--              say); XOI's own when absent
 -- Output: "SPSA it ..." per iteration and the chain's end numbers as "{n = ..., mod = ..., ...}, --SPSA_END"; the
 -- merge prints the new numbers as "return {...} --SPSA_START", a readable list, "SPSA_PAIRS <pairs>", "SPSA_MODS
 -- <mod>:<pairs>/<chains> ..." and "SPSA_K <k>"; the check prints "SPSA_CHECK <tuned wins> <own wins> <draws> <result>".
@@ -53,7 +55,8 @@ local function generator(seed)
     end
 end
 
--- The numbers to tune: {name, default, low, high, integer} from smart.tune_ranges.
+-- The numbers to tune: {name, default, low, high, integer} from smart.tune_ranges, the default XOI's own (INSANE!'s
+-- where XOI has none of its own; scripts older than version 31 have no smart.xoi_own: theirs).
 local function numbers(names)
     local wanted
     if names then
@@ -61,9 +64,11 @@ local function numbers(names)
         for _, name in ipairs(names) do wanted[name] = true end
     end
     local list = {}
-    for _, entry in ipairs(require("base/game/smart_ai").tune_ranges) do
+    local smart = require("base/game/smart_ai")
+    local own = smart.xoi_own or {}
+    for _, entry in ipairs(smart.tune_ranges) do
         if not wanted or wanted[entry[1]] then
-            list[#list + 1] = {name = entry[1], default = entry[2], low = entry[3], high = entry[4], integer = entry[5]}
+            list[#list + 1] = {name = entry[1], default = own[entry[1]] or entry[2], low = entry[3], high = entry[4], integer = entry[5]}
         end
     end
     return list
@@ -87,8 +92,11 @@ local function players(config)
     assert(alt and alt.set_tune and alt.tune_ranges,
         (config.alt or "spsa_alt") .. ".lua must be a copy of scripts/base/game/smart_ai.lua with smart.tune_ranges")
     assert(smart.set_tune, "scripts/base/game/smart_ai.lua has no smart.tune_ranges: the scripts are older than the tuner")
-    -- (The numbers are the tuner's to set: not the mod's own, xoi/tune.txt, at each game's start.)
+    -- (The numbers are the tuner's to set: not the mod's own, xoi/tune.txt, at each game's start, nor each level's at
+    -- each player's frame. Both sides start from XOI's own; the tuner lays its numbers over them.)
     smart.tune_fixed, alt.tune_fixed = true, true
+    if smart.xoi_own then smart.set_tune(smart.xoi_own) end
+    if alt.xoi_own then alt.set_tune(alt.xoi_own) end
     return smart, alt
 end
 
@@ -264,7 +272,7 @@ local function check(config)
     local start = config.start and require("bench/" .. config.start) or {}
     smart.set_tune(start)
     local defaults = {}
-    for _, entry in ipairs(alt.tune_ranges) do defaults[entry[1]] = entry[2] end
+    for _, entry in ipairs(alt.tune_ranges) do defaults[entry[1]] = (alt.xoi_own or {})[entry[1]] or entry[2] end
     alt.set_tune(defaults)
     if config.base then alt.set_tune(require("bench/" .. config.base)) end
     local fighters, backgrounds = catalog.load(), catalog.backgrounds()

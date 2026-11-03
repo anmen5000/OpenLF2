@@ -133,13 +133,15 @@ without a window, 15 seconds of a window with each renderer, and Windows' record
 `LF2-XOI-kit`), which the site publishes with its guide (`dist/pages/xoi.html`, English and Vietnamese) and "Upload
 to latest release" attaches beside the Windows installers.
 
-## Tuning INSANE!'s numbers (SPSA)
+## Tuning XOI's numbers (SPSA)
 
-The judgement of the INSANE! player — what a hit is worth against what it costs, the score a move needs, how far
+The judgement of the computer player — what a hit is worth against what it costs, the score a move needs, how far
 ahead it answers a blow on its way and when it guards, how bold a standoff makes it, how far to keep from longer arms
 or from a fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — rests on 77 numbers
-gathered in `smart.tune_ranges` at the top of `scripts/base/game/smart_ai.lua` (each with the range a tuning may try;
-`smart.tune` holds the values in use, `smart.set_tune(values)` lays a set over them). `spsa.lua` tunes them by play,
+gathered in `smart.tune_ranges` at the top of `scripts/base/game/smart_ai.lua` (each with INSANE!'s value, set by hand,
+and the range a tuning may try; `smart.xoi_tune` holds XOI's, tuned by play, `smart.tune` the values in use — those of the
+computer player deciding — and `smart.set_tune(values)` lays a set over them). Since version 31 the tuned numbers are
+XOI's alone: INSANE! keeps the hand-set ones, so that the last level is plainly the stronger. `spsa.lua` tunes them by play,
 the way chess engines tune theirs (SPSA: simultaneous perturbation stochastic approximation): each iteration nudges
 every number at once by the same share of its range, each up or down at random, lets the numbers nudged one way
 (`base/game/smart_ai`) fight those nudged the other way (a copy of the same file in this package as `spsa_alt.lua`) —
@@ -147,20 +149,21 @@ two games on one stage, each version playing each fighter of a random pair — a
 side that did better, by how much better (a win counts 1 and the HP left above the other's a share of 500).
 
 ```lua
--- one chain of 40 iterations from the AI's own numbers (spsa_alt.lua: a copy of scripts/base/game/smart_ai.lua)
+-- one chain of 40 iterations from XOI's own numbers (spsa_alt.lua: a copy of scripts/base/game/smart_ai.lua)
 {command = "spsa", step = "chain", iterations = 40, first = 0, total = 480, seed = 1}
 -- the average of the chains' end numbers (spsa_chains.lua: return {{...}, {...}}), printed as "return {...} --SPSA_START"
 {command = "spsa", step = "merge", chains = "spsa_chains", start = "spsa_start"}
--- tuned numbers (spsa_start.lua) against the AI's own: "SPSA_CHECK <tuned wins> <own wins> <draws> <result>"
+-- tuned numbers (spsa_start.lua) against XOI's own: "SPSA_CHECK <tuned wins> <own wins> <draws> <result>"
 {command = "spsa", step = "check", start = "spsa_start", games = 20, seed = 1}
 -- ... or against other numbers (spsa_base.lua: the run's start, say)
 {command = "spsa", step = "check", start = "spsa_start", base = "spsa_base", games = 20, seed = 1}
 ```
 
 A mod may carry its own numbers: `xoi/tune.txt` beside its `data` folder, "name = value" (the merge's `return {...}`
-line will do; numbers it does not name keep the AI's own). `smart.prepare` lays them over the AI's own numbers in every
+line will do; numbers it does not name keep XOI's own). `smart.prepare` lays them over XOI's own numbers in every
 match of that mod — every machine of a network room has the mod's file, so the same numbers — and the match shows
-"mod tuned" beside the level. The tuner sets the numbers itself (`smart.tune_fixed`), whatever the mod carries.
+"mod tuned" beside XOI; INSANE! keeps its own. The tuner sets the numbers itself (`smart.tune_fixed`), whatever the mod
+carries or the level is, both sides starting from XOI's own.
 
 The gains are shares of each number's range: `a` (0.02) for the steps, `c` (0.08) for the nudges, decaying as
 `a / (total / 10 + k)^0.602` and `c / k^0.101`. A chain alone is noisy; many run side by side and their numbers are
@@ -212,7 +215,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
-| `spsa` | Tunes INSANE!'s numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against the AI's own (or `base`). | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit` |
+| `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows
 about a fighter and what it actually uses; a move it never starts has a reason worth finding (too slow for the

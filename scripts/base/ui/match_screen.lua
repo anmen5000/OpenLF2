@@ -167,13 +167,13 @@ mode_line = function(context, current, replaying)
     if base then
         local suffixes = {[0] = "(Difficult)", [1] = "(Normal)", [2] = "(Easy)", [-1] = "(CRAZY!)", [-2] = "(INSANE!)",
             [-3] = "(XOI)"}
-        -- `base` ends with a space; its parts are translated one by one. INSANE! and XOI show the version (smart_ai),
-        -- and "mod tuned" when the mod has numbers of its own (xoi/tune.txt); XOI also how many matchups its notes
-        -- cover in this game, "no notes" without any.
+        -- `base` ends with a space; its parts are translated one by one. INSANE! and XOI show the version (smart_ai);
+        -- XOI also "mod tuned" when the mod has numbers of its own (xoi/tune.txt: XOI's alone), and how many matchups
+        -- its notes cover in this game, "no notes" without any.
         local suffix = i18n.tr(suffixes[current.difficulty] or "")
         if current.difficulty == constants.difficulties.insane then
             local smart = require("base/game/smart_ai")
-            suffix = suffix:gsub("%)$", " v" .. smart.version .. (smart.mod_tuned and ", mod tuned" or "") .. ")")
+            suffix = suffix:gsub("%)$", " v" .. smart.version .. ")")
         elseif current.difficulty == constants.difficulties.xoi then
             local smart = require("base/game/smart_ai")
             local pairs_known = smart.notes_pairs and smart.notes_pairs() or 0

@@ -48,51 +48,50 @@ local mode_stage = constants.modes.stage
 local weapon_none = constants.weapon_holder_codes.none
 
 -- Levels: the reaction delay (frames an enemy's move must have run before it is answered) and how often a
--- chance to attack is taken. XOI plays as INSANE! does, with the notes of training besides (see XOI below).
+-- chance to attack is taken. XOI plays as INSANE! does, with the notes of training besides (see XOI below) and the
+-- numbers tuned by play (smart.xoi_tune, and a mod's own: see use_mod_tune).
 smart.levels = {
     [constants.difficulties.insane] = {reaction = 1, eagerness = 100},
     [constants.difficulties.xoi] = {reaction = 1, eagerness = 100, notes = true},
 }
 -- Numbers of the computer player's judgement gathered in one place, for tuning them by play (SPSA,
--- tools/ai-bench/spsa.lua): name, value, the range a tuning may try, whether it is a whole number. smart.tune holds
--- the values in use (smart.set_tune lays a tuned set over them); each is described where it is used.
+-- tools/ai-bench/spsa.lua): name, INSANE!'s value, the range a tuning may try, whether it is a whole number. INSANE!
+-- plays with these values, set by hand; XOI with those tuned by play (smart.xoi_tune below, and a mod's own over
+-- them). smart.tune holds the values in use, those of the computer player deciding (use_numbers); smart.set_tune
+-- lays a set over them (the bench's tuning, with smart.tune_fixed). Each is described where it is used.
 smart.tune_ranges = {
     -- How a move's hit is weighed (attack_score): the sureness lost per frame the target is free to act, its floor,
     -- the part left when the target's answer could come first, how much a standoff's boldness lowers the expected
     -- guard, the price of MP and HP a move costs, the frames that halve a blow's worth (time_bias b: 14/(t + b) * b/10),
     -- the share of the target's counter counted when the fighter is still busy as it could land, the price per
     -- frame left open after the blow, and the pull of a move not yet tried or the push of one just used.
-    {"sure_decay", 0.0518097, 0.01, 0.1}, {"sure_floor", 0.149675, 0.05, 0.5}, {"danger_sure", 0.651264, 0.3, 1},
-    {"guard_aggression", 0.510426, 0, 1}, {"mp_cost", 0.0728747, 0, 0.15}, {"hp_cost", 0.512323, 0, 1.5},
-    {"time_bias", 8.96876, 4, 25}, {"counter_price", 0.573046, 0.2, 1.5}, {"open_cost", 0.119825, 0, 0.6},
-    {"novelty", 1.0844, 1, 1.4}, {"repeat_factor", 0.884091, 0.5, 1},
+    {"sure_decay", 0.04, 0.01, 0.1}, {"sure_floor", 0.2, 0.05, 0.5}, {"danger_sure", 0.6, 0.3, 1},
+    {"guard_aggression", 0.5, 0, 1}, {"mp_cost", 0.06, 0, 0.15}, {"hp_cost", 0.5, 0, 1.5},
+    {"time_bias", 10, 4, 25}, {"counter_price", 0.7, 0.2, 1.5}, {"open_cost", 0.2, 0, 0.6},
+    {"novelty", 1.1, 1, 1.4}, {"repeat_factor", 0.85, 0.5, 1},
     -- The score a move needs to be started, on the ground or from a jump; frames between jump-ins.
-    {"attack_threshold", 2.38656, 0.5, 6}, {"jump_cooldown", 48, 15, 120, true},
+    {"attack_threshold", 2.5, 0.5, 6}, {"jump_cooldown", 50, 15, 120, true},
     -- Boldness: frames without a blow before a standoff makes the fighter bolder, and over how many more it grows
     -- to the full; how bold it is against an opponent that hardly attacks.
-    {"calm_start", 91.0397, 30, 240}, {"calm_span", 151.314, 50, 400}, {"passive_aggression", 0.583288, 0.2, 1},
+    {"calm_start", 90, 30, 240}, {"calm_span", 150, 50, 400}, {"passive_aggression", 0.6, 0.2, 1},
     -- The answer expected to a risky move: the chance before anything is seen (XOI's notes set their own) and how
     -- many risky moves' worth that guess counts for; the share of the target's strongest blow a strike out of its
     -- guard is reckoned to cost; how much heavier a blow must be to trade with a threat landing as it does.
-    {"risk_prior", 0.246865, 0.05, 0.6}, {"risk_weight", 3.28654, 1, 12}, {"guard_counter", 0.353181, 0.1, 1},
-    {"trade_factor", 1.13503, 0.8, 2.5},
+    {"risk_prior", 0.25, 0.05, 0.6}, {"risk_weight", 4, 1, 12}, {"guard_counter", 0.5, 0.1, 1},
+    {"trade_factor", 1.3, 0.8, 2.5},
     -- Spacing: how much an enemy's quick blows must threaten a spot for it to be left, and how much more as a
     -- standoff drags on; beyond longer arms, how far out to wait, and how far to charge MP from when short of it.
-    {"keep_out_base", 25.5549, 5, 70}, {"keep_out_aggression", 58.2205, 0, 120},
-    {"hold_margin", 13, -10, 60, true}, {"charge_gap", 117, 60, 220, true},
+    {"keep_out_base", 30, 5, 70}, {"keep_out_aggression", 60, 0, 120},
+    {"hold_margin", 15, -10, 60, true}, {"charge_gap", 115, 60, 220, true},
     -- A fallen enemy's wake-up blows: the margins of their zone in depth and in x, the step in depth it can take
     -- once up, and, off its line, how near and how far from the fighter's own range to wait.
-    {"wake_margin_z", 7, 0, 20, true}, {"wake_margin_x", 25, 0, 60, true}, {"wake_step", 6, 0, 14, true},
-    {"off_line_near", 16, -10, 40, true}, {"off_line_far", 8, -10, 40, true},
+    {"wake_margin_z", 8, 0, 20, true}, {"wake_margin_x", 24, 0, 60, true}, {"wake_step", 6, 0, 14, true},
+    {"off_line_near", 15, -10, 40, true}, {"off_line_far", 10, -10, 40, true},
     -- Charging MP: how far beyond the target's quick reach, and how much below full MP.
-    {"charge_room", 76, 30, 180, true}, {"charge_below", 85, 20, 200, true},
-    -- (Version 29: the values above tuned by play, tools/ai-bench/spsa.lua over 40 rounds on 99 threads; the ones
-    -- set by hand before were sure_decay 0.04, sure_floor 0.2, danger_sure 0.6, guard_aggression 0.5, mp_cost 0.06,
-    -- hp_cost 0.5, time_bias 10, counter_price 0.7, open_cost 0.2, novelty 1.1, repeat_factor 0.85, attack_threshold
-    -- 2.5, jump_cooldown 50, calm_start 90, calm_span 150, passive_aggression 0.6, risk_prior 0.25, risk_weight 4,
-    -- guard_counter 0.5, trade_factor 1.3, keep_out_base 30, keep_out_aggression 60, hold_margin 15, charge_gap 115,
-    -- wake_margin_z 8, wake_margin_x 24, wake_step 6, off_line_near 15, off_line_far 10, charge_room 85, charge_below
-    -- 80. The numbers below were written into the code by hand until then; each keeps the value it had there.)
+    {"charge_room", 85, 30, 180, true}, {"charge_below", 80, 20, 200, true},
+    -- (Those above are the values set by hand, INSANE!'s up to version 28 and again from version 31; version 29 and
+    -- 30 played with the ones tuned by play, now XOI's: smart.xoi_tune. The numbers below were written into the code by
+    -- hand until then; each keeps the value it had there, at both levels.)
     -- A free target's guard (attack_score): the share of blows it is expected to guard before any is seen and how
     -- many blows' worth that guess counts for (guard_rate); how quickly it can raise its guard once free: the chance
     -- it has not yet is guard_speed to the power of the frames it is free before the blow, and the chance it has is
@@ -144,26 +143,62 @@ smart.tune_ranges = {
     {"loop_floor", 0.05, 0, 0.5}, {"loop_forget", 150, 30, 600, true}, {"loop_dodges", 4, 1, 16, true},
     {"heavy_room", 40, 0, 200, true},
 }
-local tune = {}
-for _, entry in ipairs(smart.tune_ranges) do tune[entry[1]] = entry[2] end
-smart.tune = tune
--- Lays `values` (name = number) over the numbers in use, each kept within its range and whole numbers rounded.
-function smart.set_tune(values)
+-- XOI's numbers, tuned by play (SPSA, version 29: 40 rounds on the project owner's 99 threads over the original LF2,
+-- Naruto 2.4 and One Piece GrandWorld, about 850,000 pairs of games; INSANE! played with them in versions 29 and 30).
+-- A number not named here is the same at both levels.
+smart.xoi_tune = {
+    sure_decay = 0.0518097, sure_floor = 0.149675, danger_sure = 0.651264, guard_aggression = 0.510426,
+    mp_cost = 0.0728747, hp_cost = 0.512323, time_bias = 8.96876, counter_price = 0.573046, open_cost = 0.119825,
+    novelty = 1.0844, repeat_factor = 0.884091, attack_threshold = 2.38656, jump_cooldown = 48, calm_start = 91.0397,
+    calm_span = 151.314, passive_aggression = 0.583288, risk_prior = 0.246865, risk_weight = 3.28654,
+    guard_counter = 0.353181, trade_factor = 1.13503, keep_out_base = 25.5549, keep_out_aggression = 58.2205,
+    hold_margin = 13, charge_gap = 117, wake_margin_z = 7, wake_margin_x = 25, wake_step = 6, off_line_near = 16,
+    off_line_far = 8, charge_room = 76, charge_below = 85,
+}
+-- `base` (name = number, every number) with `values` laid over it, each kept within its range and whole numbers
+-- rounded: a new table.
+local function laid_over(base, values)
+    local result = {}
     for _, entry in ipairs(smart.tune_ranges) do
         local value = values[entry[1]]
         if type(value) == "number" and value == value then
             value = max(entry[3], min(entry[4], value))
             if entry[5] then value = floor(value + 0.5) end
-            tune[entry[1]] = value
+            result[entry[1]] = value
+        else
+            result[entry[1]] = base[entry[1]]
         end
     end
+    return result
+end
+-- Each level's numbers: INSANE!'s (smart.tune_ranges); XOI's own (smart.xoi_tune over them), and in a mod with
+-- numbers of its own those laid over XOI's in turn (use_mod_tune).
+local insane_numbers = {}
+for _, entry in ipairs(smart.tune_ranges) do insane_numbers[entry[1]] = entry[2] end
+local xoi_own = laid_over(insane_numbers, smart.xoi_tune)
+smart.xoi_own = xoi_own
+local xoi_numbers = xoi_own
+-- The numbers in use: those of the computer player deciding (use_numbers, at the start of its every frame).
+local tune = {}
+for name, value in pairs(insane_numbers) do tune[name] = value end
+smart.tune = tune
+local in_use = insane_numbers
+local function use_numbers(numbers)
+    if smart.tune_fixed or in_use == numbers then return end
+    in_use = numbers
+    for name, value in pairs(numbers) do tune[name] = value end
+end
+-- Lays `values` (name = number) over the numbers in use, each kept within its range and whole numbers rounded (the
+-- bench's tuning sets each side's numbers so, with smart.tune_fixed: the levels' numbers then stay out of it).
+function smart.set_tune(values)
+    for name, value in pairs(laid_over(tune, values)) do tune[name] = value end
+    in_use = nil
 end
 -- A mod's own numbers: xoi/tune.txt beside its data — what spsa.bat found for that mod, "name = value" as in its
--- results (a number it does not name keeps the AI's own) — laid over the AI's own numbers in every match of that mod
--- (smart.prepare); a mod without the file plays with the AI's own. Every computer in a network room has the mod's
--- file, so the same numbers, as with XOI's notes. (The bench's tuning sets the numbers itself: smart.tune_fixed.)
-local own_tune = {}
-for _, entry in ipairs(smart.tune_ranges) do own_tune[entry[1]] = entry[2] end
+-- results (a number it does not name keeps XOI's own) — laid over XOI's own numbers in every match of that mod
+-- (smart.prepare); INSANE! keeps its own, and a mod without the file plays with XOI's own. Every computer in a
+-- network room has the mod's file, so the same numbers, as with XOI's notes. (The bench's tuning sets the numbers
+-- itself: smart.tune_fixed.)
 local mod_tune_text
 local function use_mod_tune()
     if smart.tune_fixed then return end
@@ -171,20 +206,20 @@ local function use_mod_tune()
     local text = ok and type(found) == "string" and found or ""
     if text == mod_tune_text then return end
     mod_tune_text = text
-    for _, entry in ipairs(smart.tune_ranges) do tune[entry[1]] = own_tune[entry[1]] end
     local values, named = {}, false
     for name, value in text:gmatch("([%a_][%w_]*)%s*=%s*([-+]?[%d%.]+[eE]?[-+]?%d*)") do
-        if own_tune[name] and tonumber(value) then values[name], named = tonumber(value), true end
+        if insane_numbers[name] and tonumber(value) then values[name], named = tonumber(value), true end
     end
-    smart.set_tune(values)
-    -- (Shown beside INSANE! and XOI in the match.)
+    xoi_numbers = laid_over(xoi_own, values)
+    -- (Shown beside XOI in the match.)
     smart.mod_tuned = named
 end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 30
+smart.version = 31
 smart.history = {
+    {31, "2026-11-03", "INSANE! and XOI part ways, as the project owner asked, so that the last level is plainly stronger than the one before it: INSANE! plays with its numbers set by hand again (as up to version 28), and the numbers tuned by play are XOI's alone — version 29's (the original LF2, Naruto 2.4, One Piece GrandWorld), and in a mod with numbers of its own (xoi/tune.txt, spsa.bat's) those; INSANE! leaves a mod's numbers to XOI. XOI keeps its notes of training besides"},
     {30, "2026-11-02", "No endless loops. Ten seconds and more with no blow between the two fighters (300 frames free to act) is taken for a loop, and then a move tried again and again since the last blow, all to no avail, is worth less with every try beyond three (its tries counted with those of its family — how it starts, whatever it continues into — one forgotten every five seconds it is not tried), so something else gets its turn; no spot is kept out of the enemy's reach any more, so one of the two comes in; and a thrower that has kept the fighter dodging is jumped toward over its throws, when the jump clears them and lands outside its arms. Before that it plays as version 29. (Itachi's fireballs met Sai's ink birds for good in Naruto: The Setting Dawn, a game played to its five-minute limit without a blow; Gaara jumped Itachi's kunai on the spot for good. Over Itachi's 48 games against every fighter, the frames of standoffs beyond ten seconds fell from 8,890 to 2,058, and no game ran out of time.) A heavy item in hand (a stone, a log) is thrown, landing or not, once the target comes near: holding it the fighter can neither guard, jump nor strike, and Kakashi with a stone and Gaara with a log stood face to face at a wall for good; and a fighter too close to its target at a wall no longer steps back to the wall and turns round again every few frames. 77 numbers of its judgement open to tuning by play (the 39 written into the code by hand until then keep their values), and a mod can carry numbers of its own (xoi/tune.txt beside its data, written by spsa.bat), used in that mod's matches ('mod tuned' beside the level). Against version 29: 299 to 308 over the 640 games of the 8 pairs of Naruto 2.4 and One Piece GrandWorld (as even as that many games can tell)."},
     {29, "2026-11-02", "Its 31 numbers tuned by play (SPSA, as chess engines tune theirs): 40 rounds on the project owner's 99 threads over the original LF2, Naruto 2.4 and One Piece GrandWorld, about 850,000 pairs of games, each pair two INSANE! players with every number nudged opposite ways and the numbers moved toward the better one. The tuned player is a little bolder and surer: it reckons a strike out of the opponent's guard to cost less (guard_counter 0.5 to 0.35), and so a counter while it is still busy (counter_price 0.7 to 0.57) and a frame left open after its blow (open_cost 0.2 to 0.12); it trades blows sooner (trade_factor 1.3 to 1.14), trusts a hit on a target long free to act less (sure_decay 0.04 to 0.052, sure_floor 0.2 to 0.15), holds MP dearer (mp_cost 0.06 to 0.073) and waits a little nearer (keep_out_base 30 to 26). Against version 28: 37,441 to 34,541 over 76,286 games of the tuning's own check (52.0% of the games won by either; the original LF2 52.8%, Naruto 51.2%, One Piece 51.2%); 297 to 311 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either way); against CRAZY! 150 to 9 over four mods, version 28 153 to 6 on the same games"},
     {28, "2026-11-01", "Keeps its distance from a fallen enemy, on shallow stages too. Stepping off the line of an enemy that is down, it counted the room left in depth from where it stood, so the room shrank with every step and on a stage only 60 deep (Hot Springs in Naruto: The Setting Dawn) the side flipped every few steps: the fighter walked to and fro on the fallen enemy's line until it got up. The room is now counted from the enemy's line, and the frames to get there count crossing it. And the step in depth that an enemy can take once up, before it strikes, is reckoned while it is still down: reckoned only once it was up, a fighter that had stepped just off its line was inside its blows again as it rose (Rock Lee waited right beside a fallen Neji, and was struck as he rose more often than before); where the stage has no room for that depth, the fighter backs out of reach instead. Blows taken from enemies just up again, on three shallow stages of Naruto 2.4: 2,485 damage instead of 3,511; against version 27, 312–293 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld. (Waiting out of the enemy's plain arms at any depth was tried: fewer such blows, but the enemy just up had the first move, 136–168 in Naruto 2.4.)"},
@@ -3455,6 +3490,10 @@ function smart.control(state, index)
     local items = state.items
     local self = items[index]
     local level = smart.levels[state.difficulty] or smart.levels[constants.difficulties.insane]
+    -- XOI (the bench's "xoi" players, else the match's level) plays with its notes and its numbers, INSANE! with its.
+    local brain = self.brain
+    local xoi = (brain and brain:sub(1, 3) == "xoi") or (brain == nil and level.notes) or false
+    use_numbers(xoi and xoi_numbers or insane_numbers)
     local memory = self.smart_memory
     if not memory then
         memory = {target = nil, dodge_dz = 0}
@@ -3582,8 +3621,7 @@ function smart.control(state, index)
     -- moment (what the opponent is doing, how far off, the fighter's own HP), with the spots training found better
     -- or worse to stand on. (The bench's "xoi:m" plays with the moves' factors alone, as XOI did up to version 26;
     -- "xoi:c" adds the situations, "xoi:p" the spots.)
-    local brain = self.brain
-    if target and ((brain and brain:sub(1, 3) == "xoi") or (brain == nil and level.notes)) then
+    if target and xoi then
         local notes = rare.pair_notes(self.record.id, target.record.id)
         context.notes = notes
         if notes and brain ~= "xoi:m" and brain ~= "xoi:p" then

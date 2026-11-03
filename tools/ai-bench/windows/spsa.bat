@@ -1,14 +1,15 @@
 @echo off
 setlocal EnableDelayedExpansion
-rem SPSA - may tu chinh cac con so phan doan cua INSANE! (va XOI) bang cach cho no danh voi chinh no
+rem SPSA - may tu chinh cac con so phan doan cua XOI bang cach cho no danh voi chinh no (tu goi 43 chi XOI dung
+rem cac so chinh duoc; INSANE! giu cac so dat bang tay)
 rem (OpenLF2 ban 32 tro len). Cac con so (77 so tu goi 38: diem cua mot chieu, nguong ra chieu, khoang cach, phan
 rem ung, chong lap...) nam trong scripts\base\game\smart_ai.lua (smart.tune_ranges).
-rem Moi vong, moi tien trinh (mot luong CPU) cho hai ban INSANE! danh nhau: ban "cong" co cac so nhich len hoac
+rem Moi vong, moi tien trinh (mot luong CPU) cho hai ban AI danh nhau: ban "cong" co cac so nhich len hoac
 rem xuong ngau nhien, ban "tru" nhich nguoc lai; ban nao danh tot hon thi cac so dich ve phia ban ay. Het vong: gop
 rem cac tien trinh, vong sau bat dau tu do. Het moi vong: cho ban da chinh danh voi ban goc de kiem tra. Ket qua:
 rem spsa\ket-qua.txt (gui file nay cho nguoi lam AI). Bo so cua moi ban mod: xoi-<ten ban mod>\tune.txt, va
-rem <ten ban mod>-xoi.zip = ban mod co bo so ay (va bo nho XOI neu da hoc) - tai len relay thi INSANE! va XOI choi ban
-rem mod ay bang bo so rieng cua no (goi 38 tro len). Chi mot ban mod: lan sau chinh tiep tu bo so cua no.
+rem <ten ban mod>-xoi.zip = ban mod co bo so ay (va bo nho XOI neu da hoc) - tai len relay thi XOI choi ban
+rem mod ay bang bo so rieng cua no (goi 38 tro len; tu goi 43 INSANE! khong dung bo so nay). Chi mot ban mod: lan sau chinh tiep tu bo so cua no.
 rem Tam dung: dong cua so nay va cac cua so SPSA thu nho (hay tat may). Lam tiep: chay lai file nay - cac vong da xong
 rem duoc giu, va ca phan da danh cua vong dang do (tru vai cap cuoi). Muon chinh lai tu dau: xoa thu muc spsa (hoac
 rem doi HAT_GIONG va dat ten khac cho thu muc cu).
@@ -128,7 +129,7 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
 )
 if not exist "%LV%\scripts\base\game\match.lua" (echo [LOI] Khong ghep duoc scripts vao "%LV%\scripts".& pause& exit /b 1)
 set XS=--scripts "%LV%\scripts"
-rem Diem bat dau: cac so cua AI (bat-dau.lua rong), hoac dat san mot bat-dau.lua ^(vi du ket qua lan chinh truoc^).
+rem Diem bat dau: cac so cua XOI (bat-dau.lua rong), hoac dat san mot bat-dau.lua ^(vi du ket qua lan chinh truoc^).
 rem Chi mot ban mod, da co bo so rieng (xoi-<ten>\tune.txt, tu lan chinh truoc): chinh tiep tu bo so ay.
 if %NP% EQU 1 if not exist "%LV%\bat-dau.lua" for %%z in ("!PACK_1!") do if exist "%KIT%xoi-%%~nz\tune.txt" (
   copy /y "%KIT%xoi-%%~nz\tune.txt" "%LV%\bat-dau.lua" >nul
@@ -261,7 +262,7 @@ echo === Kiem tra: ban da chinh danh voi ban goc, %N% tien trinh trong %PHUT_KIE
 if exist "%K%" rmdir /s /q "%K%"
 mkdir "%K%"
 call :chuan_bi "%K%" "%TRUOC%"
-rem Ban goc: cac so luc bat dau - bat-dau.lua, tuc cac so cua AI hay bo so rieng cua ban mod.
+rem Ban goc: cac so luc bat dau - bat-dau.lua, tuc cac so cua XOI hay bo so rieng cua ban mod.
 set /a PI=0
 for /L %%k in (1,1,%N%) do (
   set /a PI+=1
@@ -305,7 +306,7 @@ echo ===== Xong. Ket qua: "%LV%\ket-qua.txt" =====
 type "%LV%\ket-qua.txt"
 echo.
 echo Gui file ket-qua.txt cho nguoi lam AI. Hoac dung ngay: tai file ^<ten ban mod^>-xoi.zip len relay ^(cung id voi ban
-echo mod cu^) - INSANE va XOI choi ban mod ay bang bo so vua chinh ^(trong tran ghi "mod tuned"^). Kiem tra o tren ^<50%%
+echo mod cu^) - XOI choi ban mod ay bang bo so vua chinh ^(trong tran ghi "mod tuned"^), INSANE giu so cua no. Kiem tra o tren ^<50%%
 echo thi dung tai len: bo so moi chua hon bo so cu.
 if "%KHONG_DUNG%"=="" pause
 exit /b 0

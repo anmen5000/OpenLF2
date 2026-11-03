@@ -105,6 +105,12 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   76,286 games of the tuning's own check won by either (±0.4%; the original LF2 52.8%, Naruto 51.2%, One Piece
   51.2%); 297–311 over the standard 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either
   way); against CRAZY! 150–9 over the four mods' benchmark, v28 153–6 on the same games (within chance)
+- INSANE!/XOI v31: the numbers tuned by play are XOI's alone, so that the last level is plainly stronger than the
+  one before it (the project owner's wish). INSANE! plays with its 31 numbers set by hand again, as up to v28;
+  XOI with v29's tuned set (`smart.xoi_tune`), and in a mod with numbers of its own (`xoi/tune.txt`, `spsa.bat`'s)
+  with those laid over it — INSANE! no longer reads a mod's numbers, and the match shows *mod tuned* beside XOI
+  only. Each computer player decides with its level's numbers, also two levels in one bench match. `spsa.bat` and
+  `spsa.lua` tune XOI's numbers: they start from XOI's own and check against them
 - Network play in the browser: the corner of the game also shows how busy each computer is (`busy`: the longest
   the page stalled in the last 5 seconds; `host busy` / `player busy` for the other side, which tells it every
   2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,
