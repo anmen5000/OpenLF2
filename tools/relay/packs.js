@@ -19,6 +19,9 @@
 //   PUT  /admin/api/packs/<id>?title=<title>   upload a ZIP file as the body (X-Admin-Key)
 //   DELETE /admin/api/packs/<id>     remove one (X-Admin-Key)
 //   GET  /admin/api/hf-journal       the Hero Fighter rooms' journal, as text (X-Admin-Key)
+//   GET  /admin/api/hf-accounts      the Hero Fighter accounts (hf.js), with whether each has the premium characters
+//   POST /admin/api/hf-accounts/<id>?premium=1|0   open the premium characters to that account, or lock them again
+//                                    (X-Admin-Key; from the account's next login)
 'use strict';
 
 const crypto = require('node:crypto');
@@ -257,7 +260,7 @@ function sameKey(given, expected) {
   return crypto.timingSafeEqual(a, b);
 }
 
-function createPacks(config, { log, clientAddress, allowOrigin, hfJournal = null }) {
+function createPacks(config, { log, clientAddress, allowOrigin, hfJournal = null, hfAccounts = null }) {
   const directory = config.packsDir;
   const downloads = new Map(); // client address -> { count, until }
   const failures = new Map(); // client address -> { count, until }
@@ -458,6 +461,28 @@ function createPacks(config, { log, clientAddress, allowOrigin, hfJournal = null
       }
       return true;
     }
+    if (pathname === '/admin/api/hf-accounts' && req.method === 'GET') {
+      if (authorized(req, res)) json(res, 200, { accounts: hfAccounts ? hfAccounts.list() : [] });
+      return true;
+    }
+    const hfAccount = pathname.match(/^\/admin\/api\/hf-accounts\/([0-9]{1,12})$/);
+    if (hfAccount) {
+      req.resume();
+      if (req.method !== 'POST') {
+        json(res, 405, { error: 'method not allowed' }, { allow: 'POST' });
+        return true;
+      }
+      if (!authorized(req, res)) return true;
+      const on = new URL(req.url, 'http://relay.invalid').searchParams.get('premium') === '1';
+      const account = hfAccounts ? hfAccounts.setPremium(hfAccount[1], on) : null;
+      if (!account) {
+        json(res, 404, { error: 'Không có tài khoản Hero Fighter này.' });
+        return true;
+      }
+      log(`hf: account ${account.id} "${account.name}": premium characters ${on ? 'open' : 'locked'}`);
+      json(res, 200, { ok: true, account });
+      return true;
+    }
     const managed = pathname.match(/^\/admin\/api\/packs\/([^/]*)$/);
     if (managed) {
       const id = managed[1];
@@ -534,6 +559,16 @@ const ADMIN_PAGE = `<!doctype html>
     <h2 style="font-size:1.15rem;margin:0 0 .5rem">Các bản mod trên relay</h2>
     <p><button id="refresh" class="secondary">Xem danh sách</button></p>
     <table><tbody id="list"></tbody></table>
+  </div>
+  <div class="card">
+    <h2 style="font-size:1.15rem;margin:0 0 .5rem">Quân limit trong Hero Fighter</h2>
+    <p class="note">Leo, Eason, Iczzy, Heater, Raye và Livermore bị khóa với người chơi (máy vẫn dùng được). Mở cho tài khoản nào thì
+      tài khoản ấy chọn được các quân này, ở level 16, kể cả trong phòng chơi mạng — từ lần đăng nhập sau (tải lại trang game rồi
+      đăng nhập). Mẹo: làm một tài khoản riêng để chơi quân limit; tài khoản thường của bạn vẫn như mọi người.</p>
+    <p><button id="hfaccounts" class="secondary">Xem tài khoản</button></p>
+    <input id="hffilter" type="text" placeholder="Tìm theo tên hoặc e-mail" hidden>
+    <p id="hfstatus" role="status" class="note"></p>
+    <table><tbody id="hflist"></tbody></table>
   </div>
   <div class="card">
     <h2 style="font-size:1.15rem;margin:0 0 .5rem">Nhật ký phòng Hero Fighter</h2>
@@ -640,6 +675,67 @@ const ADMIN_PAGE = `<!doctype html>
     $('journaltext').hidden = false;
     $('copyjournal').hidden = false;
   });
+  const hfApi = location.pathname.replace(/\\/?$/, '/') + 'api/hf-accounts';
+  let hfAccounts = [];
+  function hfStatus(text, kind) { $('hfstatus').textContent = text; $('hfstatus').className = kind || 'note'; }
+  function drawAccounts() {
+    const filter = $('hffilter').value.trim().toLowerCase();
+    const shown = hfAccounts.filter((account) => !filter || account.name.toLowerCase().includes(filter) || account.email.includes(filter));
+    const list = $('hflist');
+    list.textContent = '';
+    if (!shown.length) {
+      list.innerHTML = '<tr><td class="note"></td></tr>';
+      list.querySelector('td').textContent = hfAccounts.length ? 'Không có tài khoản nào khớp.' : 'Chưa có tài khoản Hero Fighter nào.';
+    }
+    for (const account of shown.slice(0, 100)) {
+      const row = document.createElement('tr');
+      const info = document.createElement('td');
+      info.innerHTML = '<b></b><br><span class="note"></span>';
+      info.querySelector('b').textContent = account.name;
+      info.querySelector('span').textContent = account.email + ' · mã ' + account.id
+        + (account.seen ? ' · đăng nhập ' + new Date(account.seen).toLocaleString() : '');
+      const state = document.createElement('td');
+      state.textContent = account.premium ? 'Quân limit: mở' : 'Quân limit: khóa';
+      state.className = account.premium ? 'ok' : 'note';
+      const actions = document.createElement('td');
+      const toggle = document.createElement('button');
+      toggle.className = account.premium ? 'secondary' : '';
+      toggle.textContent = account.premium ? 'Khóa lại' : 'Mở quân limit';
+      toggle.onclick = async () => {
+        toggle.disabled = true;
+        const result = await fetch(hfApi + '/' + account.id + '?premium=' + (account.premium ? '0' : '1'),
+          { method: 'POST', headers: { 'x-admin-key': $('key').value } });
+        const body = await result.json().catch(() => ({}));
+        toggle.disabled = false;
+        if (!result.ok) return hfStatus(body.error || ('lỗi ' + result.status), 'bad');
+        account.premium = body.account.premium;
+        hfStatus((account.premium ? 'Đã mở quân limit cho "' : 'Đã khóa quân limit của "') + account.name
+          + '": có tác dụng từ lần đăng nhập sau (tải lại trang game rồi đăng nhập).', 'ok');
+        drawAccounts();
+      };
+      actions.appendChild(toggle);
+      row.append(info, state, actions);
+      list.appendChild(row);
+    }
+    if (shown.length > 100) {
+      const more = document.createElement('tr');
+      more.innerHTML = '<td class="note" colspan="3"></td>';
+      more.querySelector('td').textContent = 'Và ' + (shown.length - 100) + ' tài khoản nữa: gõ tên hay e-mail vào ô tìm.';
+      list.appendChild(more);
+    }
+  }
+  $('hfaccounts').addEventListener('click', async () => {
+    if (!$('key').value) return hfStatus('Nhập mã quản trị (ô trên cùng) để xem tài khoản.', 'bad');
+    remember();
+    const response = await fetch(hfApi, { headers: { 'x-admin-key': $('key').value } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) return hfStatus(body.error || ('lỗi ' + response.status), 'bad');
+    hfStatus('');
+    hfAccounts = body.accounts || [];
+    $('hffilter').hidden = false;
+    drawAccounts();
+  });
+  $('hffilter').addEventListener('input', drawAccounts);
   $('copyjournal').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('journaltext').textContent); status('Đã chép nhật ký vào bộ nhớ tạm.', 'ok'); }
     catch (error) { status('Không chép được: chọn nội dung bằng chuột rồi Ctrl+C.', 'bad'); }

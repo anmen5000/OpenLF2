@@ -138,7 +138,13 @@ the game itself is not changed, except for two regular expressions Ruffle reads 
   start, and every character a player may have is at level 16, the game's highest (accounts made
   before follow this from their next login). The premium characters (Leo, Eason, Iczzy, Heater,
   Raye, Livermore), too strong for players, stay locked for them, and so does Yaga, whom the game
-  keeps for itself; computer players may be any character but Yaga, at level 16. The game's offer to
+  keeps for itself; computer players may be any character but Yaga, at level 16. The relay's owner
+  can open the premium characters to chosen accounts on `/admin` ("Quân limit trong Hero Fighter":
+  the accounts, found by name or e-mail address, each with a switch): such an account is a premium
+  one for the game from its next login, the premium characters at level 16 (Yaga still locked), in
+  network rooms too; locked again, it is an ordinary account from its next login. `GET <relay
+  path>/admin/api/hf-accounts` lists the accounts and `POST …/admin/api/hf-accounts/<id>?premium=1`
+  (or `0`) sets one, with the `X-Admin-Key` header. The game's offer to
   unlock the premium characters opens a page saying there is nothing to buy. Accounts live in
   `<PACKS_DIR>/hf/accounts.json` (or `HF_DIR`), with a scrypt hash of each password. A client
   address may make 20 accounts an hour and get 30 passwords wrong.

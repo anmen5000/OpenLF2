@@ -167,7 +167,8 @@ function createRelay(overrides = {}) {
   // Beside the WebSocket path, as the installer copy: /x/relay -> /x/lf2-packs.json and /x/admin.
   const relayFolder = config.path.replace(/[^/]*$/, '');
   const packs = createPacks(config, { log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req),
-    hfJournal: () => hf.journal() });
+    hfJournal: () => hf.journal(),
+    hfAccounts: { list: () => hf.accounts.list(), setPremium: (id, on) => hf.accounts.setPremium(id, on) } });
   const hf = createHf(config, {
     log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req),
     budget: (ws, bytes) => ws.messageBudget.take(1) && ws.byteBudget.take(bytes),

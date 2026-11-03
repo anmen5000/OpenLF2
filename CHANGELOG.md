@@ -249,6 +249,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   has no options entry (drawn or reached with the keys). Without the file nothing changes. CRAZY!, INSANE! and
   XOI, which come with the unlock as CRAZY! does in the original, can still be chosen in such a mod
   (`unlock.hard_levels`): the first locked KT-LF2 published stopped at Difficult, without its computer players
+- Hero Fighter: the relay's owner can open the premium characters (Leo, Eason, Iczzy, Heater, Raye, Livermore) to
+  chosen accounts on the relay's `/admin` page ("Quân limit trong Hero Fighter": every account, found by name or
+  e-mail address, with a switch; `GET /admin/api/hf-accounts`, `POST /admin/api/hf-accounts/<id>?premium=1|0`
+  with the admin key), for the project owner, who wants to play them at times while they stay locked for everyone
+  else. From its next login such an account is a premium one for the game (its login answer carries the premium
+  sum the game checks, `id % 13 + id % 61 + id % 107`) with those characters at level 16, also in network rooms;
+  Yaga stays locked (the game lets nobody play him). Not by the account's name (one starting with "admin", say):
+  any new e-mail address makes an account, so anyone could. The relay's installer is version 13
 - A published mod is the mod's own folder as its author shares it (bg, bgm, data, sprite, recording..., its own
   .exe too) with OpenLF2 put in it, instead of OpenLF2 with the mod as `game.zip` (the project owner's wish).
   OpenLF2 plays the game folder its program lies in (`data/data.txt` beside it) when started with neither

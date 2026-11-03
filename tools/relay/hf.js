@@ -19,7 +19,9 @@
 // Accounts (name, a hash of the password, each character's level and experience, story progress)
 // are kept in <PACKS_DIR>/hf/accounts.json (or HF_DIR). Every story is open, and every character a player
 // may have is at level 16 from the start; the premium characters (and Yaga, whom the game keeps for
-// itself) stay locked for players. Computer players get any of them (hf-room.js).
+// itself) stay locked for players, but for the accounts the relay's owner opens them to (premium: true,
+// set on the page at /admin, packs.js): those get them at level 16 too. Computer players get any of them
+// (hf-room.js).
 'use strict';
 
 const crypto = require('node:crypto');
@@ -35,12 +37,14 @@ const START_EXPERIENCE = 16000; // level 16: nobody has to play for levels
 // for players, and yaga ("unavailable"). A value of 0 keeps a character locked; a non-premium account
 // (statusCode below) keeps the premium ones locked whatever their value.
 const LOCKED = new Set([5, 7, 8, 14, 15, 16, 18]);
+const YAGA = 8; // locked for every account: the game itself lets nobody play him (its state "f")
 const PLAYABLE = 19; // c1..c19 are characters; c20..c30 are not used
-// The values an account has: the playable characters at level 16 at least, the locked ones at 0.
-function settledValues(values) {
+// The values an account has: the playable characters at level 16 at least, the locked ones at 0 - for an account
+// opened to the premium characters (premium), those at level 16 at least as well, Yaga still at 0.
+function settledValues(values, premium = false) {
   return Array.from({ length: 30 }, (_, k) => {
     if (k >= PLAYABLE) return Number(values && values[k]) || 0;
-    if (LOCKED.has(k)) return 0;
+    if (LOCKED.has(k) && (!premium || k === YAGA)) return 0;
     return Math.min(MAX_EXPERIENCE, Math.max(START_EXPERIENCE, Number(values && values[k]) || 0));
   });
 }
@@ -144,6 +148,24 @@ function createAccounts(file, log) {
       save();
       return account;
     },
+    // For the page at /admin: every account (its e-mail address, name, id, whether it has the premium characters).
+    list() {
+      return Object.entries(accounts).map(([email, account]) => ({
+        id: account.id, name: account.name, email, premium: account.premium === true,
+        created: account.created || '', seen: account.seen || '',
+      })).sort((a, b) => a.name.localeCompare(b.name));
+    },
+    // Opens the premium characters to an account (or locks them again), from its next login.
+    setPremium(id, on) {
+      const found = Object.entries(accounts).find(([, account]) => String(account.id) === String(id));
+      if (!found) return null;
+      const [email, account] = found;
+      if (on) account.premium = true;
+      else delete account.premium;
+      account.values = settledValues(account.values, on);
+      save();
+      return { id: account.id, name: account.name, email, premium: on };
+    },
     checkPassword(account, password) {
       const expected = Buffer.from(account.hash, 'hex');
       const given = Buffer.from(hashPassword(password, account.salt), 'hex');
@@ -196,7 +218,7 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
   function loginXml(account, root = 'login') {
     const values = account.values;
     const fields = values.map((value, index) => `<c${index + 1}>${value}</c${index + 1}>`).join('');
-    const code = statusCode(values, account.id, 0, account.stage, account.session, false);
+    const code = statusCode(values, account.id, 0, account.stage, account.session, account.premium === true);
     return `<${root}>${fields}<i>${account.id}</i><n>${xmlText(account.name)}</n><cc>${xmlText(account.cc)}</cc>`
       + `<s>${account.session}</s><acctype>0</acctype><stage>${account.stage}</stage><v>${code}</v></${root}>`;
   }
@@ -248,12 +270,12 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         failedTry(address);
         return '<login><error>pw</error></login>';
       }
-      // Accounts made before the characters' rules were what they are now follow them from their next login.
-      const settled = settledValues(account.values);
-      if (settled.some((value, k) => value !== account.values[k])) {
-        account.values = settled;
-        accounts.save();
-      }
+      // Accounts made before the characters' rules were what they are now follow them from their next login, as
+      // does an account the relay's owner opened the premium characters to, or locked them again for.
+      const settled = settledValues(account.values, account.premium === true);
+      if (settled.some((value, k) => value !== account.values[k])) account.values = settled;
+      account.seen = new Date().toISOString();
+      accounts.save();
       return loginXml(account);
     }
     if (service === 'v0.7/lu.php') {
@@ -266,7 +288,7 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
         account.values[index - 1] = Math.max(account.values[index - 1], Math.min(MAX_EXPERIENCE, Math.floor(to)));
       }
       // (uli, a character a story unlocks: every character a player may have is unlocked already.)
-      account.values = settledValues(account.values);
+      account.values = settledValues(account.values, account.premium === true);
       const stage = Number(get('stg'));
       if (Number.isInteger(stage)) account.stage = Math.max(account.stage, Math.min(STORIES, stage));
       accounts.save();
@@ -457,4 +479,4 @@ function createHf(config, { log, clientAddress, allowOrigin, budget }) {
 const HOST = 'hf.openlf2';
 const PORT = 8888;
 
-module.exports = { createHf, statusCode, encodeNumber, settledValues, LOCKED, HOST, PORT };
+module.exports = { createHf, statusCode, encodeNumber, settledValues, LOCKED, YAGA, HOST, PORT };

@@ -136,6 +136,59 @@ test('version check, login, experience, registration and the room list', async (
   }
 });
 
+test("the relay's owner opens the premium characters to an account, and locks them again", async () => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-'));
+  const relay = await startRelay({ packsDir: folder, adminKey: 'khoa-quan-tri' });
+  const admin = (pathname, options = {}) => fetch(relay.http + pathname,
+    { ...options, headers: { 'x-admin-key': 'khoa-quan-tri', ...(options.headers || {}) } });
+  const PREMIUM = [5, 7, 14, 15, 16, 18]; // leo, eason, iczzy, heater, raye, livermore (not yaga, 8)
+  try {
+    const first = gameAccepts((await get(relay, '/hf/s/v0.7/login.php?em=xoi%40test.vn&pw=secret1')).text);
+    assert.ok(first.ok && !first.premium);
+    // The list for the page at /admin: only with the key.
+    assert.equal((await fetch(relay.http + '/admin/api/hf-accounts')).status, 401);
+    const listed = await (await admin('/admin/api/hf-accounts')).json();
+    assert.deepEqual(listed.accounts.map((account) => [account.email, account.name, account.id, account.premium]),
+      [['xoi@test.vn', 'xoi', first.id, false]]);
+    assert.ok(listed.accounts[0].seen);
+    assert.equal((await fetch(relay.http + `/admin/api/hf-accounts/${first.id}?premium=1`, { method: 'POST' })).status, 401);
+    assert.equal((await admin(`/admin/api/hf-accounts/${first.id}?premium=1`)).status, 405);
+    assert.equal((await admin('/admin/api/hf-accounts/99999?premium=1', { method: 'POST' })).status, 404);
+
+    // Opened: from the next login the game takes it for a premium account, the premium characters at level 16
+    // (and so playable), Yaga still locked; experience keeps them so.
+    const opened = await admin(`/admin/api/hf-accounts/${first.id}?premium=1`, { method: 'POST' });
+    assert.equal(opened.status, 200);
+    assert.equal((await opened.json()).account.premium, true);
+    const login = await get(relay, '/hf/s/v0.7/login.php?em=xoi%40test.vn&pw=secret1');
+    const premium = gameAccepts(login.text);
+    assert.ok(premium.ok, login.text);
+    assert.ok(premium.premium);
+    for (const k of PREMIUM) assert.equal(premium.c[k], 16000, CHARACTERS[k]);
+    assert.equal(premium.c[8], 0);
+    assert.deepEqual(premium.c.slice(0, 19).filter((value, k) => !LOCKED.has(k)), SETTLED.filter((value, k) => !LOCKED.has(k)));
+    const session = field(parseXml(login.text), 's');
+    const lu = gameAccepts((await get(relay, `/hf/s/v0.7/lu.php?id=${premium.id}&em=xoi%40test.vn&s=${session}&i1=6&i2=0&i3=0`
+      + '&fr1=16000&fr2=0&fr3=0&to1=16400&to2=0&to3=0&uli=0&ulc=0&stg=6&clk=0&cstg=0&v=1')).text);
+    assert.ok(lu.ok && lu.premium);
+    assert.equal(lu.c[5], 16400);
+    assert.equal((await (await admin('/admin/api/hf-accounts')).json()).accounts[0].premium, true);
+
+    // Locked again: an ordinary account from its next login.
+    assert.equal((await admin(`/admin/api/hf-accounts/${first.id}?premium=0`, { method: 'POST' })).status, 200);
+    const locked = gameAccepts((await get(relay, '/hf/s/v0.7/login.php?em=xoi%40test.vn&pw=secret1')).text);
+    assert.ok(locked.ok && !locked.premium);
+    assert.deepEqual(locked.c.slice(0, 19), SETTLED);
+    await admin(`/admin/api/hf-accounts/${first.id}?premium=1`, { method: 'POST' });
+  } finally {
+    await relay.close();
+  }
+  // The choice is kept with the account.
+  const saved = JSON.parse(fs.readFileSync(path.join(folder, 'hf', 'accounts.json'), 'utf8'));
+  assert.equal(saved.accounts['xoi@test.vn'].premium, true);
+  fs.rmSync(folder, { recursive: true, force: true });
+});
+
 test('an account made before the character rules follows them at its next login', async () => {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-'));
   fs.mkdirSync(path.join(folder, 'hf'));
