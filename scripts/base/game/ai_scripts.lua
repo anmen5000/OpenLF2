@@ -223,6 +223,43 @@ function R.array_reverse(array)
         array[index], array[array.n - 1 - index] = array[array.n - 1 - index], array[index]
     end
 end
+-- Arrays of arrays or of a script's class: each element made by make().
+function R.array_new_with(size, make)
+    local array = {n = size}
+    for index = 0, size - 1 do array[index] = make() end
+    return array
+end
+function R.array_resize_with(array, size, make)
+    for index = array.n, size - 1 do array[index] = make() end
+    for index = size, array.n - 1 do array[index] = nil end
+    array.n = size
+end
+-- A copy of an array, its elements copied by copy (nil: as they are).
+function R.array_copy(array, copy)
+    local result = {n = array.n}
+    for index = 0, array.n - 1 do
+        local value = array[index]
+        if copy then value = copy(value) end
+        result[index] = value
+    end
+    return result
+end
+-- sort(less, startAt, count): an insertion sort (equal elements keep their order).
+function R.less(a, b) return a < b end
+function R.greater(a, b) return a > b end
+function R.array_sort(array, less, start, count)
+    start = start or 0
+    local stop = count and math.min(start + count, array.n) or array.n
+    for index = start + 1, stop - 1 do
+        local value = array[index]
+        local at = index - 1
+        while at >= start and less(value, array[at]) do
+            array[at + 1] = array[at]
+            at = at - 1
+        end
+        array[at + 1] = value
+    end
+end
 
 -- What the scripts see, for the compiler (base/game/angelscript): types and Lua templates.
 local function fields(list)
@@ -279,6 +316,7 @@ game_object_fields.hp_lost = {"int", "$.o.hp_spent"}
 game_object_fields.mp_usage = {"int", "$.o.mp_spent"}
 game_object_fields.enemy = {"int", "$.o.last_target"}
 game_object_fields.armour_multiplier = {"int", "$.o.armor"}
+game_object_fields.vrest = {"int", "R.vrest($.o)"}
 
 local movement = {}
 for _, name in ipairs({"walking_speed", "walking_speedz", "running_speed", "running_speedz", "heavy_walking_speed",
@@ -382,6 +420,12 @@ for _, name in ipairs({"sqrt", "cos", "sin", "tan", "acos", "asin", "atan", "cos
     "ceil", "floor", "fraction", "exp"}) do
     api.functions[name] = {result = "double", params = {"double"}, code = "R." .. name .. "($1)"}
 end
+-- An #include's text (the compiler asks for it by its path in the game's files), or nil.
+function api.read(path)
+    local found, text = pcall(engine.read_resource, path)
+    if found then return text end
+    return nil
+end
 ai_scripts.api = api
 ai_scripts.runtime = R
 
@@ -400,7 +444,7 @@ local function compile(path)
     if not found then
         cached = {}
     else
-        local ok, result = pcall(angelscript.compile, source, path, api)
+        local ok, result, sources = pcall(angelscript.compile, source, path, api)
         if not ok then
             cached = {problem = angelscript.error_message(result) or tostring(result)}
         else
@@ -409,9 +453,13 @@ local function compile(path)
             else
                 local made, factory = pcall(chunk)
                 if made then
-                    -- How much the script says, without comments and spacing (see ai_scripts.has).
-                    local code = source:gsub("/%*.-%*/", ""):gsub("//[^\n]*", ""):gsub("%s+", "")
-                    cached = {factory = factory, size = #code}
+                    -- How much the script says, without comments and spacing (see ai_scripts.has), with what it
+                    -- includes (Sauce's AI for the original fighters: each one's few lines call the shared moves).
+                    local size = 0
+                    for _, text in ipairs(sources or {source}) do
+                        size = size + #(text:gsub("/%*.-%*/", ""):gsub("//[^\n]*", ""):gsub("%s+", ""))
+                    end
+                    cached = {factory = factory, size = size}
                 else
                     cached = {problem = path .. ": " .. tostring(factory)}
                 end

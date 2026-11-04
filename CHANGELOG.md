@@ -149,6 +149,27 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   frame). Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games, v32's Crimson 551 (48.5%
   against 46.1%); as XOI with the mod's own numbers 313 of 587, v32's 303 of 588 (53.3% against 51.5%). The bench's
   `"xoi@<module>"` brain plays another version of the AI as XOI
+- INSANE!/XOI v34: a blow seen coming a frame sooner, and lessons from the blows taken in the match (the project
+  owner's question: does the AI learn within a match — hit again and again by the same move, does it learn to dodge
+  it, guard it or answer it otherwise, rather than let one move be spammed from start to end?). The forecast of a
+  move under way took the step just taken for one still to come: its blow was foreseen a frame late, a slide's 12
+  pixels short (Brad's slip kick in mode Convergence), a step ending at the edge of its depth was taken for safe and
+  Crimson walked back into the kick; things flying were seen against where the fighter stood a frame before
+  (`move_hits`, `earliest_threat`). Each blow taken now counts against what dealt it — the enemy's move by its family
+  (how it starts), or the kind of thing thrown — and against the answer given to it just before (`lesson_kit` in
+  `smart_ai.lua`): a move that keeps landing while the fighter was free to act is foreseen 3 pixels wider in every
+  direction for each such blow after the first (up to 9), an answer that has failed against it twice and in half the
+  times it was given (a step aside, a jump, a step back, the guard, striking first, a move out of the way) is no
+  longer given to it while the others still are, and a heavy blow whose ways out have all failed is guarded. The
+  lessons are the fighter's own and last the match; they follow from the match alone, so replays and network play
+  stay in step (the same frame for frame under LuaJIT and Lua 5.2). Against version 33 over five mods (Convergence,
+  Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, 4 games, two seeds): the
+  forecast alone 1,307–897 (59.3%; every mod better, Convergence 314–130); the lessons on top of it 451–428 against
+  the same without them (51.3%, as even as that many games can tell: computer players do not change their habits),
+  and as even against a player made to spam the moves it started most and one that steers its moves in depth after
+  its opponent. Against Sauce's AI on the ten original fighters, each against every other both ways (360 games):
+  68 won (the forecast alone 57), version 33 27; as XOI 75. INSANE! against CRAZY! on the four mods'
+  benchmark: 153–7 (One Piece GrandWorld 40–0, Naruto 40–0, KT-LF2 34–6, Sx2 39–1)
 - A mod published for its players with INSANE! and XOI built in: they unpack one folder and double-click the mod's
   name — no OpenLF2 to install, no XOI kit, no original LF2 (the project owner's wish: the kit and the installer are
   for whoever trains). OpenLF2 plays a `game.zip` beside its program as with `--pack` when started with neither
@@ -353,6 +374,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   the CPU: 8.5 frames a second, 14-15 without drawing the fight, of which 60% went to reading pictures back
   (about two a second, the minimap: slow only when the CPU draws), 26% to the game's ActionScript and 7% to the
   rest of Ruffle; with a graphics card, the game's ActionScript decides, which only a faster computer shortens
+- Mods' AI scripts: the AngelScript of Sauce's "lf2-AI VS and Stage Challenge" (a community AI for every original
+  fighter, the minions, bosses and five fighters of its own, 28 scripts for the AI script engine's `ai.dll`; the
+  project owner's wish: to pit it against INSANE!) compiles and runs — `#include "file"` (beside the including
+  file, each once, as the script builder does), classes of fields with their initial values, arrays and instances
+  copied where AngelScript copies them (a declaration, an assignment, an argument by value, an array's insert or a
+  global's return; a handle `@` shares), `sort` with an anonymous comparison (an insertion sort: equal elements keep
+  their order), `sortAsc`/`sortDesc`, a script function overloading one of the API's (Sauce's `print` of five
+  arrays), `game.objects[i].vrest`, and `array<array<int>>` no longer moves the places of the functions after it
+  (the `>>` was split into a token of its own); a script's size, which decides whether INSANE! leaves the fighter
+  to it, counts what it includes. The AI scripts of Dragon Ball Super Edition, KT-LF2 and One Piece newest compile
+  to exactly the same Lua as before. A mod whose program has none of LF2's pictures, moved to the pack's `UI/`
+  folder (the community's reworked lf2.exe, Sauce's among them), plays, its pictures read from there (OpenLF2
+  built from this package on; with an older one, an lf2.exe of LF2 2.0a beside it does). `dau-nhieu.bat` and
+  `xem.bat` pit INSANE!/XOI against it with `NAO2=classic` and `MUC=-1` (the kit's README, item 9). Sauce's AI is
+  far stronger than CRAZY!: on the ten original fighters, each against every other both ways, INSANE! v33 won 27 of
+  360 games against it (only its Deep holds its own)
 
 ### Fixed
 - `--no-jit` used the JIT all the same: opening LuaJIT's libraries switches the compiler on whatever mode was set

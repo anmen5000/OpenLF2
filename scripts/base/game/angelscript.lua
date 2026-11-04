@@ -7,8 +7,12 @@
 -- the API's handle types), if/else, for, while, do/while, switch, break, continue, return, and C's
 -- expressions with ?:, ++/--, compound assignment and casts such as int(x). Integer division and %
 -- truncate toward zero and raise AngelScript's "Divide by zero" exception; a double stored in an
--- int is truncated. Anything else is a compile error that names the file and line; the caller then
--- leaves that character to the built-in AI.
+-- int is truncated. Also #include "file" (beside the including file, each file once, as the script
+-- builder does), classes of fields (each with its initial value; instances are values: a declaration,
+-- an assignment, an argument or an array's insert copies them, as it copies arrays, unless the
+-- variable is a handle, @), and an anonymous function as an array's sort comparison
+-- (arr.sort(function(a, b) { return a < b; })). Anything else is a compile error that names the file
+-- and line; the caller then leaves that character to the built-in AI.
 --
 -- api describes what the scripts see (base/game/ai_scripts): api.globals[name] = {type, code},
 -- api.functions[name] = {result, params = {type...}, defaults = {...}, code}, api.classes[type] =
@@ -31,14 +35,21 @@ local function failure(file, line, message)
     error({angelscript = true, message = file .. "(" .. line .. "): " .. message}, 0)
 end
 
--- Tokens: {kind = "name"|"number"|"string"|"op"|"eof", value, line, float}.
-local function tokenize(source, file)
-    local tokens, position, line = {}, 1, 1
+-- Tokens: {kind = "name"|"number"|"string"|"op"|"eof", value, line, float, file}. `read(path)` gives an
+-- included file's text (nil when there is none).
+local function tokenize(source, file, read)
+    local tokens = {}
+    -- The script builder's preprocessor: #if/#elif/#else/#endif on defined words (none here), #define, and
+    -- #include, each file once (a file included again, or the script itself, adds nothing).
+    local defined, included = {}, {[file:gsub("\\", "/"):lower()] = true}
+    local sources = {source}
+    local scan
+    function scan(source, file)
+    local position, line = 1, 1
     local length = #source
-    -- The script builder's preprocessor: #if/#elif/#else/#endif on defined words (none here) and #define.
-    local defined, skipping, stack = {}, false, {}
+    local skipping, stack = false, {}
     local function add(kind, value, extra)
-        if not skipping then tokens[#tokens + 1] = {kind = kind, value = value, line = line, float = extra} end
+        if not skipping then tokens[#tokens + 1] = {kind = kind, value = value, line = line, float = extra, file = file} end
     end
     while position <= length do
         local c = source:sub(position, position)
@@ -63,6 +74,20 @@ local function tokenize(source, file)
                 skipping = table.remove(stack)
             elseif word == "define" then
                 if not skipping then defined[rest] = true end
+            elseif word == "include" then
+                if not skipping then
+                    local wanted = rest:match('^"(.-)"') or rest:match("^<(.-)>")
+                    if not wanted then failure(file, line, "#include needs a file name in quotes") end
+                    local path = ((file:match("^(.*[/\\])") or "") .. wanted):gsub("\\", "/")
+                    local key = path:lower()
+                    if not included[key] then
+                        included[key] = true
+                        local text = read and read(path)
+                        if not text then failure(file, line, "cannot include " .. path) end
+                        sources[#sources + 1] = text
+                        scan(text, path)
+                    end
+                end
             elseif not skipping then
                 failure(file, line, "unsupported directive #" .. tostring(word))
             end
@@ -137,19 +162,27 @@ local function tokenize(source, file)
         end
     end
     if #stack > 0 then failure(file, line, "#if without #endif") end
-    tokens[#tokens + 1] = {kind = "eof", value = "<end of file>", line = line}
-    return tokens
+    return line
+    end
+    local last = scan(source, file)
+    tokens[#tokens + 1] = {kind = "eof", value = "<end of file>", line = last, file = file}
+    return tokens, sources
 end
 
 -- The compiler state: tokens, position, output, scopes, names.
 local function new_compiler(source, file, api)
-    return {file = file, api = api, tokens = tokenize(source, file), at = 1, scopes = {},
-        functions = {}, globals = {}, labels = 0, loops = {}, lines = {}, indent = 1}
+    local tokens, sources = tokenize(source, file, api.read)
+    return {file = file, api = api, tokens = tokens, sources = sources, at = 1, scopes = {},
+        functions = {}, globals = {}, labels = 0, loops = {}, lines = {}, indent = 1,
+        classes = {}, copiers = {}, copier_text = {}}
 end
 
 local function peek(c, offset) return c.tokens[c.at + (offset or 0)] end
 local function line_of(c) return peek(c).line end
-local function fail(c, message) failure(c.file, line_of(c), message) end
+local function fail(c, message)
+    local token = peek(c)
+    failure(token.file or c.file, token.line, message)
+end
 local function check(c, value, offset)
     local token = peek(c, offset)
     return token.kind ~= "string" and token.kind ~= "number" and token.value == value
@@ -173,9 +206,12 @@ local function label(c, prefix)
     return prefix .. c.labels
 end
 
--- Types: "int", "double", "bool", "string", "void", "array:<element>", or an API class name.
+-- Types: "int", "double", "bool", "string", "void", "array:<element>", "class:<name>" (the script's own
+-- classes), or an API class name.
 local function is_number(t) return t == "int" or t == "double" end
-local function known_class(c, t) return c.api.classes[t] ~= nil end
+local function known_class(c, t) return c.api.classes[t] ~= nil or c.classes[t] ~= nil end
+-- Arrays and the script's own classes are values: copied where AngelScript copies them (copy_of).
+local function is_value_object(t) return t:sub(1, 6) == "array:" or t:sub(1, 6) == "class:" end
 local function type_start(c, offset)
     offset = offset or 0
     local token = peek(c, offset)
@@ -184,6 +220,20 @@ local function type_start(c, offset)
     if word == "const" then return true end
     return integer_types[word] or float_types[word] or word == "bool" or word == "string" or word == "void"
         or word == "auto" or word == "array" or known_class(c, word)
+end
+-- The ">" closing a template's type, as array<array<int>> writes it: a ">>" (or ">>>") closes this and the
+-- templates around it. (Counted, not split into tokens of its own: a token put in would move every later one,
+-- and the places of the functions found in the first pass with them.)
+local function close_angle(c)
+    if (c.closing or 0) > 0 then
+        c.closing = c.closing - 1
+    elseif check(c, ">>") then
+        c.at, c.closing = c.at + 1, 1
+    elseif check(c, ">>>") then
+        c.at, c.closing = c.at + 1, 2
+    else
+        expect(c, ">")
+    end
 end
 -- type := ['const'] base ['<' type '>'] {'[' ']'} ['@'] ['&' ['in'|'out'|'inout']]
 local function parse_type(c)
@@ -196,25 +246,23 @@ local function parse_type(c)
     elseif word == "array" then
         expect(c, "<")
         local element = parse_type(c)
-        if check(c, ">>") then
-            -- array<array<int>>: split the token.
-            c.tokens[c.at].value = ">"
-            table.insert(c.tokens, c.at + 1, {kind = "op", value = ">", line = line_of(c)})
-        end
-        expect(c, ">")
+        close_angle(c)
         t = "array:" .. element
+    elseif c.classes[word] then t = "class:" .. word
     elseif known_class(c, word) then t = word
     else fail(c, "unknown type '" .. word .. "'") end
     while check(c, "[") and check(c, "]", 1) do
         c.at = c.at + 2
         t = "array:" .. t
     end
-    accept(c, "@")
+    -- (A handle, @, or a reference, &, shares the object; the second result says so.)
+    local shared = accept(c, "@")
     if accept(c, "&") then
+        shared = true
         if check(c, "in") or check(c, "out") or check(c, "inout") then c.at = c.at + 1 end
     end
     accept(c, "const")
-    return t
+    return t, shared
 end
 
 local function default_value(t)
@@ -222,14 +270,51 @@ local function default_value(t)
     if t == "bool" then return "false" end
     if t == "string" then return '""' end
     if t:sub(1, 6) == "array:" then return "R.array_new(0)" end
+    if t:sub(1, 6) == "class:" then return "c_new_" .. t:sub(7) .. "()" end
     return "nil"
+end
+-- A Lua function making a fresh default value of type t (an array's elements each get their own).
+local function maker(t)
+    if t:sub(1, 6) == "class:" then return "c_new_" .. t:sub(7) end
+    return "function() return " .. default_value(t) .. " end"
+end
+-- The name of a Lua function copying a value of type t (arrays and the script's classes, deeply as AngelScript
+-- copies them), or nil for a type that is not copied.
+local function copier(c, t)
+    if not is_value_object(t) then return nil end
+    local found = c.copiers[t]
+    if found then return found end
+    local lua = "cp_" .. (#c.copier_text + 1)
+    c.copiers[t] = lua
+    c.copier_text[#c.copier_text + 1] = false -- (its place, so that what it copies inside comes first)
+    local index = #c.copier_text
+    local text
+    if t:sub(1, 6) == "array:" then
+        text = lua .. " = function(v) return R.array_copy(v, " .. (copier(c, t:sub(7)) or "nil") .. ") end"
+    else
+        local class = c.classes[t:sub(7)]
+        local parts = {}
+        for _, field in ipairs(class.order) do
+            local inner = copier(c, field.type)
+            parts[#parts + 1] = field.lua .. " = " .. (inner and (inner .. "(v." .. field.lua .. ")") or ("v." .. field.lua))
+        end
+        text = lua .. " = function(v) return {" .. table.concat(parts, ", ") .. "} end"
+    end
+    c.copier_text[index] = text
+    return lua
+end
+-- An expression's value as a fresh copy where AngelScript copies it: an array or a script class's instance
+-- read from a variable, an array's element or a field (a function's result is fresh already).
+local function copy_of(c, code, t, lvalue)
+    if not lvalue or not is_value_object(t) then return code end
+    return copier(c, t) .. "(" .. code .. ")"
 end
 
 -- Variables: scopes hold {name = {lua, type, const}}.
-local function declare(c, script_name, t, const)
+local function declare(c, script_name, t, const, shared)
     local scope = c.scopes[#c.scopes]
     local lua = "v_" .. script_name .. "_" .. #c.scopes
-    scope[script_name] = {lua = lua, type = t, const = const}
+    scope[script_name] = {lua = lua, type = t, const = const, shared = shared}
     return lua
 end
 local function lookup(c, script_name)
@@ -273,6 +358,7 @@ end
 
 local expression
 local assignment
+local block
 
 local function arguments(c)
     local list = {}
@@ -296,10 +382,18 @@ local function call(c, script_name, args)
             end
             if #args >= required and #args <= #candidate.params then chosen = candidate break end
         end
-        if not chosen then fail(c, "no '" .. script_name .. "' takes " .. #args .. " arguments") end
+        if not chosen and not c.api.functions[script_name] then fail(c, "no '" .. script_name .. "' takes " .. #args .. " arguments") end
+        -- (None of the script's takes these: the API's of that name, which the script's overloads.)
+        user = chosen
+    end
+    if user then
+        local chosen = user
         local codes = {}
         for index, param in ipairs(chosen.params) do
-            if args[index] then codes[index] = convert(c, args[index][1], args[index][2], param.type)
+            if args[index] then
+                codes[index] = convert(c, args[index][1], args[index][2], param.type)
+                -- (An array or an instance passed by value is the function's own copy.)
+                if not param.shared then codes[index] = copy_of(c, codes[index], param.type, args[index][3]) end
             else codes[index] = param.default end
         end
         return chosen.lua .. "(" .. table.concat(codes, ", ") .. ")", chosen.result
@@ -335,10 +429,16 @@ local function member(c, object, t, field)
     local class = c.api.classes[t]
     if t:sub(1, 6) == "array:" then
         if field == "length" or field == "size" or field == "insertLast" or field == "resize" or field == "removeAt"
-           or field == "removeLast" or field == "insertAt" or field == "isEmpty" or field == "find" or field == "reverse" then
+           or field == "removeLast" or field == "insertAt" or field == "isEmpty" or field == "find" or field == "reverse"
+           or field == "sort" or field == "sortAsc" or field == "sortDesc" then
             return object, t, field
         end
         fail(c, "arrays have no '" .. field .. "' here")
+    end
+    if t:sub(1, 6) == "class:" then
+        local entry = c.classes[t:sub(7)].fields[field]
+        if not entry then fail(c, t:sub(7) .. " has no member '" .. field .. "'") end
+        return object .. "." .. entry.lua, entry.type, nil, {object = object, field = entry.lua}
     end
     if not class then fail(c, t .. " has no members") end
     local entry = class.fields and class.fields[field]
@@ -355,11 +455,29 @@ local function array_method(c, object, t, method, args)
     end
     if method == "length" or method == "size" then return "R.array_length(" .. object .. ")", "int" end
     if method == "isEmpty" then return "(R.array_length(" .. object .. ") == 0)", "bool" end
-    if method == "insertLast" then return "R.array_insert(" .. object .. ", nil, " .. arg(1, element) .. ")", "void" end
-    if method == "insertAt" then return "R.array_insert(" .. object .. ", " .. arg(1, "int") .. ", " .. arg(2, element) .. ")", "void" end
+    -- (An array or an instance put into an array is copied there.)
+    local function value(index) return copy_of(c, arg(index, element), element, args[index][3]) end
+    if method == "insertLast" then return "R.array_insert(" .. object .. ", nil, " .. value(1) .. ")", "void" end
+    if method == "insertAt" then return "R.array_insert(" .. object .. ", " .. arg(1, "int") .. ", " .. value(2) .. ")", "void" end
     if method == "removeAt" then return "R.array_remove(" .. object .. ", " .. arg(1, "int") .. ")", "void" end
     if method == "removeLast" then return "R.array_remove(" .. object .. ", nil)", "void" end
-    if method == "resize" then return "R.array_resize(" .. object .. ", " .. arg(1, "int") .. ", " .. default_value(element) .. ")", "void" end
+    if method == "resize" then
+        if is_value_object(element) then return "R.array_resize_with(" .. object .. ", " .. arg(1, "int") .. ", " .. maker(element) .. ")", "void" end
+        return "R.array_resize(" .. object .. ", " .. arg(1, "int") .. ", " .. default_value(element) .. ")", "void"
+    end
+    if method == "sort" then
+        -- sort(less[, startAt[, count]]): less is the anonymous function (or a script function's name).
+        if not args[1] or args[1][2] ~= "function" then fail(c, "sort needs a comparison function") end
+        local start = args[2] and convert(c, args[2][1], args[2][2], "int") or "0"
+        local count = args[3] and convert(c, args[3][1], args[3][2], "int") or "nil"
+        return "R.array_sort(" .. object .. ", " .. args[1][1] .. ", " .. start .. ", " .. count .. ")", "void"
+    end
+    if method == "sortAsc" or method == "sortDesc" then
+        if not (is_number(element) or element == "string" or element == "bool") then fail(c, method .. " needs an array of numbers or strings") end
+        local start = args[1] and convert(c, args[1][1], args[1][2], "int") or "0"
+        local count = args[2] and convert(c, args[2][1], args[2][2], "int") or "nil"
+        return "R.array_sort(" .. object .. ", " .. (method == "sortAsc" and "R.less" or "R.greater") .. ", " .. start .. ", " .. count .. ")", "void"
+    end
     if method == "find" then return "R.array_find(" .. object .. ", " .. arg(1, element) .. ")", "int" end
     if method == "reverse" then return "R.array_reverse(" .. object .. ")", "void" end
     fail(c, "arrays have no method '" .. method .. "'")
@@ -389,7 +507,7 @@ local function primary(c)
     elseif accept(c, "cast") then
         expect(c, "<")
         local t = parse_type(c)
-        expect(c, ">")
+        close_angle(c)
         expect(c, "(")
         local code, from = expression(c)
         expect(c, ")")
@@ -405,6 +523,33 @@ local function primary(c)
         if t == "bool" then return condition(c, code, from), "bool" end
         if not is_number(from) then fail(c, "cannot convert " .. from .. " to " .. t) end
         return code, t
+    elseif token.kind == "name" and token.value == "function" and check(c, "(", 1) then
+        -- An anonymous function (sort's comparison): its parameters take the types the call gives them, or their
+        -- own; it is compiled where it stands, as a Lua function.
+        local wanted = c.lambda or fail(c, "an anonymous function is supported only as sort's comparison")
+        c.at = c.at + 2
+        local params = {}
+        if not accept(c, ")") then
+            repeat
+                local t
+                if type_start(c) and (peek(c, 1).kind == "name" or check(c, "@", 1) or check(c, "&", 1) or check(c, "<", 1)) then
+                    t = parse_type(c)
+                end
+                params[#params + 1] = {name = name(c), type = t or wanted.params[#params + 1] or "int"}
+            until not accept(c, ",")
+            expect(c, ")")
+        end
+        local saved_lines, saved_indent, saved_current, saved_loops, saved_lambda = c.lines, c.indent, c.current, c.loops, c.lambda
+        c.lines, c.indent, c.current, c.loops, c.lambda = {}, saved_indent + 1, {result = wanted.result}, {}, nil
+        c.scopes[#c.scopes + 1] = {}
+        local names = {}
+        for _, param in ipairs(params) do names[#names + 1] = declare(c, param.name, param.type, false) end
+        block(c)
+        if wanted.result ~= "void" then emit(c, "do return " .. default_value(wanted.result) .. " end") end
+        c.scopes[#c.scopes] = nil
+        local text = "function(" .. table.concat(names, ", ") .. ")\n" .. table.concat(c.lines, "\n") .. "\n" .. string.rep("  ", saved_indent) .. "end"
+        c.lines, c.indent, c.current, c.loops, c.lambda = saved_lines, saved_indent, saved_current, saved_loops, saved_lambda
+        return text, "function"
     elseif token.kind == "name" then
         local script_name = name(c)
         if check(c, "(") then
@@ -417,6 +562,9 @@ local function primary(c)
         end
         local global = c.api.globals[script_name]
         if global then return global[2], global[1], {api = script_name, const = global.const} end
+        -- A script function named as a value (sort's comparison).
+        local functions = c.functions[script_name]
+        if functions then return functions[1].lua, "function" end
         fail(c, "unknown name '" .. script_name .. "'")
     end
     fail(c, "unexpected '" .. tostring(token.value) .. "'")
@@ -428,11 +576,16 @@ local function postfix(c)
         if accept(c, ".") then
             local field = name(c)
             local object = code
-            local method
-            code, t, method = member(c, object, t, field)
-            lvalue = nil
+            local method, field_lvalue
+            code, t, method, field_lvalue = member(c, object, t, field)
+            lvalue = field_lvalue
             if method then
+                lvalue = nil
+                -- (sort's anonymous function compares two elements.)
+                local saved = c.lambda
+                if method == "sort" then c.lambda = {params = {t:sub(7), t:sub(7)}, result = "bool"} end
                 local args = arguments(c)
+                c.lambda = saved
                 if t:sub(1, 6) == "array:" then
                     code, t = array_method(c, object, t, method, args)
                 else
@@ -470,6 +623,8 @@ local function store(c, lvalue, code)
         return lvalue.variable.lua .. " = " .. code
     elseif lvalue.array then
         return "R.array_set(" .. lvalue.array .. ", " .. lvalue.index .. ", " .. code .. ")"
+    elseif lvalue.object then
+        return lvalue.object .. "." .. lvalue.field .. " = " .. code
     end
     fail(c, "cannot assign to this")
 end
@@ -616,7 +771,7 @@ local function statement_expression(c)
     local token = peek(c)
     if token.kind == "op" and (token.value == "=" or compound[token.value]) then
         c.at = c.at + 1
-        local value, vt = assignment(c)
+        local value, vt, value_lvalue = assignment(c)
         if c.api.classes[t] and c.api.classes[t].assign then
             -- Info: target = 5 loads object 5; target += 1 the next one.
             local class = c.api.classes[t]
@@ -633,7 +788,10 @@ local function statement_expression(c)
         end
         if not lvalue then fail(c, "cannot assign to this") end
         if token.value == "=" then
-            return store(c, lvalue, convert(c, value, vt, t))
+            -- (An array or an instance assigned is copied, unless into a handle.)
+            local stored = convert(c, value, vt, t)
+            if not (lvalue.variable and lvalue.variable.shared) then stored = copy_of(c, stored, t, value_lvalue) end
+            return store(c, lvalue, stored)
         end
         local result, rt = binary_numeric(c, compound[token.value], code, t, value, vt)
         return store(c, lvalue, convert(c, result, rt, t))
@@ -662,7 +820,7 @@ end
 
 local statement
 
-local function block(c)
+function block(c)
     expect(c, "{")
     c.scopes[#c.scopes + 1] = {}
     while not accept(c, "}") do
@@ -682,7 +840,7 @@ local function body(c)
     emit(c, "end")
 end
 
-local function declaration(c, t)
+local function declaration(c, t, shared)
     repeat
         local script_name = name(c)
         local init
@@ -694,14 +852,15 @@ local function declaration(c, t)
                 local element = t:sub(1, 6) == "array:" and t:sub(7) or fail(c, "{...} needs an array")
                 if not accept(c, "}") then
                     repeat
-                        local code, vt = assignment(c)
-                        values[#values + 1] = convert(c, code, vt, element)
+                        -- (An array or an instance in the list is copied into the new array.)
+                        local code, vt, lvalue = assignment(c)
+                        values[#values + 1] = copy_of(c, convert(c, code, vt, element), element, lvalue)
                     until not accept(c, ",")
                     expect(c, "}")
                 end
                 init = "R.array_of({" .. table.concat(values, ", ") .. "}, " .. #values .. ")"
             else
-                local code, vt = assignment(c)
+                local code, vt, lvalue = assignment(c)
                 if t == "auto" then t = vt end
                 local class = c.api.classes[t]
                 if class and class.new then
@@ -709,6 +868,7 @@ local function declaration(c, t)
                     init = template(class.new, "", {code})
                 else
                     init = convert(c, code, vt, t)
+                    if not shared then init = copy_of(c, init, t, lvalue) end
                 end
             end
         elseif check(c, "(") then
@@ -719,17 +879,27 @@ local function declaration(c, t)
             elseif t:sub(1, 6) == "array:" then
                 local element = t:sub(7)
                 local size = args[1] and convert(c, args[1][1], args[1][2], "int") or "0"
-                local fill = args[2] and convert(c, args[2][1], args[2][2], element) or default_value(element)
-                init = "R.array_new(" .. size .. ", " .. fill .. ")"
+                if is_value_object(element) then
+                    -- (Each element its own: a fresh one, or a copy of the value given.)
+                    local make = maker(element)
+                    if args[2] then make = "function() return " .. copier(c, element) .. "(" .. convert(c, args[2][1], args[2][2], element) .. ") end" end
+                    init = "R.array_new_with(" .. size .. ", " .. make .. ")"
+                else
+                    local fill = args[2] and convert(c, args[2][1], args[2][2], element) or default_value(element)
+                    init = "R.array_new(" .. size .. ", " .. fill .. ")"
+                end
+            elseif t:sub(1, 6) == "class:" then
+                if #args > 0 then fail(c, "constructors with arguments are not supported") end
+                init = default_value(t)
             else
                 fail(c, "cannot construct " .. t)
             end
         else
             local class = c.api.classes[t]
-            init = class and class.new and template(class.new, "", {"-1"}) or default_value(t)
+            init = class and class.new and template(class.new, "", {"-1"}) or ((shared and is_value_object(t)) and "nil" or default_value(t))
         end
         if t == "auto" then fail(c, "auto needs a value") end
-        local lua = declare(c, script_name, t, false)
+        local lua = declare(c, script_name, t, false, shared)
         emit(c, "local " .. lua .. " = " .. init)
     until not accept(c, ",")
     expect(c, ";")
@@ -915,10 +1085,13 @@ function statement(c)
             if result ~= "void" then emit(c, "do return " .. default_value(result) .. " end") else emit(c, "do return end") end
             return
         end
-        local code, t = expression(c)
+        local code, t, lvalue = expression(c)
         expect(c, ";")
         if result == "void" then fail(c, "a void function returns no value") end
-        emit(c, "do return " .. convert(c, code, t, result) .. " end")
+        code = convert(c, code, t, result)
+        -- (A global's array or instance, an element or a field is returned as a copy; a local's is the function's own.)
+        if lvalue and not (lvalue.variable and lvalue.variable.lua:sub(1, 2) == "v_") then code = copy_of(c, code, result, lvalue) end
+        emit(c, "do return " .. code .. " end")
         return
     end
     if type_start(c) and (peek(c, 1).kind == "name" and not keywords[peek(c, 1).value] or check(c, "<", 1)
@@ -942,14 +1115,14 @@ local function signature(c)
     if check(c, "void") and check(c, ")", 1) then c.at = c.at + 1 end
     if not accept(c, ")") then
         repeat
-            local t = parse_type(c)
+            local t, shared = parse_type(c)
             local param_name = peek(c).kind == "name" and name(c) or ("_" .. #params)
             local default
             if accept(c, "=") then
                 local code, dt = assignment(c)
                 default = convert(c, code, dt, t)
             end
-            params[#params + 1] = {name = param_name, type = t, default = default}
+            params[#params + 1] = {name = param_name, type = t, default = default, shared = shared}
         until not accept(c, ",")
         expect(c, ")")
     end
@@ -970,15 +1143,29 @@ local function skip_block(c)
 end
 
 -- Returns the Lua text of a chunk that, run with the runtime R as its environment's R, returns a
--- function making one instance of the script: {ego = function or nil, id = function or nil}.
+-- function making one instance of the script: {ego = function or nil, id = function or nil}; and the texts
+-- it was made from (the script's, then those it included).
 function angelscript.compile(source, file, api)
     local c = new_compiler(source, file, api)
-    -- Pass 1: function signatures.
+    -- The script's classes by name first (a function's signature may name one declared after it).
+    for index = 1, #c.tokens - 1 do
+        local token, after = c.tokens[index], c.tokens[index + 1]
+        if token.kind == "name" and token.value == "class" and after.kind == "name" then
+            c.classes[after.value] = {name = after.value, fields = {}, order = {}}
+        end
+    end
+    -- Pass 1: function signatures (and where each class's members are).
     local definitions = {}
+    local class_bodies = {}
     while peek(c).kind ~= "eof" do
         if accept(c, ";") then
+        elseif accept(c, "class") then
+            local class = c.classes[name(c)]
+            if check(c, ":") then fail(c, "a class that derives from another is not supported") end
+            class_bodies[#class_bodies + 1] = {class = class, at = c.at}
+            skip_block(c)
         else
-            if check(c, "shared") or check(c, "funcdef") or check(c, "class") or check(c, "interface")
+            if check(c, "shared") or check(c, "funcdef") or check(c, "interface")
                or check(c, "enum") or check(c, "namespace") or check(c, "import") or check(c, "mixin") then
                 fail(c, "'" .. peek(c).value .. "' is not supported")
             end
@@ -1004,6 +1191,37 @@ function angelscript.compile(source, file, api)
             end
         end
     end
+    -- The classes' fields: their types, Lua names and initial values (as a global's, when an instance is made).
+    local class_text = {}
+    for _, body in ipairs(class_bodies) do
+        local class = body.class
+        c.at = body.at
+        c.lines, c.indent, c.scopes, c.current = {}, 1, {{}}, {result = "void"}
+        expect(c, "{")
+        local parts = {}
+        while not accept(c, "}") do
+            if peek(c).kind == "eof" then fail(c, "missing '}'") end
+            if accept(c, ";") then
+            else
+                local t = parse_type(c)
+                repeat
+                    local field = name(c)
+                    if check(c, "(") then fail(c, "class methods and constructors are not supported") end
+                    local init = default_value(t)
+                    if accept(c, "=") then
+                        local code, vt = assignment(c)
+                        init = convert(c, code, vt, t)
+                    end
+                    local entry = {name = field, lua = "f_" .. field, type = t}
+                    class.fields[field] = entry
+                    class.order[#class.order + 1] = entry
+                    parts[#parts + 1] = entry.lua .. " = " .. init
+                until not accept(c, ",")
+                expect(c, ";")
+            end
+        end
+        class_text[#class_text + 1] = "c_new_" .. class.name .. " = function() return {" .. table.concat(parts, ", ") .. "} end"
+    end
     -- Pass 2: globals (declared first, initialized after the functions), then function bodies.
     c.scopes = {}
     local globals_text, function_text = {}, {}
@@ -1014,8 +1232,7 @@ function angelscript.compile(source, file, api)
             c.lines, c.indent = {}, 1
             c.scopes = {{}}
             c.current = {result = "void"}
-            local t = parse_type(c)
-            declaration(c, t)
+            declaration(c, parse_type(c))
             for script_name, variable in pairs(c.scopes[1]) do
                 variable.lua = "g_" .. script_name
                 c.globals[script_name] = variable
@@ -1037,7 +1254,7 @@ function angelscript.compile(source, file, api)
             c.current = definition
             local params = {}
             for _, param in ipairs(definition.params) do
-                params[#params + 1] = declare(c, param.name, param.type, false)
+                params[#params + 1] = declare(c, param.name, param.type, false, param.shared)
             end
             block(c)
             if definition.result ~= "void" then emit(c, "do return " .. default_value(definition.result) .. " end") end
@@ -1053,6 +1270,13 @@ function angelscript.compile(source, file, api)
     local out = {"local R = R", "return function()"}
     if #global_names > 0 then out[#out + 1] = "local " .. table.concat(global_names, ", ") end
     if #function_names > 0 then out[#out + 1] = "local " .. table.concat(function_names, ", ") end
+    -- The classes' makers and the copiers of arrays and instances come first.
+    local helper_names = {}
+    for _, body in ipairs(class_bodies) do helper_names[#helper_names + 1] = "c_new_" .. body.class.name end
+    for index = 1, #c.copier_text do helper_names[#helper_names + 1] = "cp_" .. index end
+    if #helper_names > 0 then out[#out + 1] = "local " .. table.concat(helper_names, ", ") end
+    for _, text in ipairs(class_text) do out[#out + 1] = text end
+    for _, text in ipairs(c.copier_text) do out[#out + 1] = text end
     for _, text in ipairs(function_text) do out[#out + 1] = text end
     for _, text in ipairs(globals_text) do out[#out + 1] = text end
     local exports = {}
@@ -1066,7 +1290,7 @@ function angelscript.compile(source, file, api)
     end
     out[#out + 1] = "return {" .. table.concat(exports, ", ") .. "}"
     out[#out + 1] = "end"
-    return table.concat(out, "\n")
+    return table.concat(out, "\n"), c.sources
 end
 
 -- A compile error's message, or nil for other errors.

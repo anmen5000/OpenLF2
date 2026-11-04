@@ -217,8 +217,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 33
+smart.version = 34
 smart.history = {
+    {34, "2026-11-04", "Sees a blow coming a frame sooner, and learns from the blows it takes in the match. A move under way was foreseen from the step it had just taken as if that step were still to come: its blow a frame late, a slide's 12 pixels short (Brad's slip kick in mode Convergence), so that a step ending at the edge of its depth was taken for safe and Crimson walked back into the kick; things flying were seen against where the fighter stood a frame before. Each blow taken now counts against what dealt it (the enemy's move by how it starts, or the kind of thing thrown) and against the answer given to it just before: a move that keeps landing while the fighter was free is foreseen a few pixels wider each time, an answer that has failed against it twice, and in half the times it was given (a step aside, a jump, a step back, the guard, striking first, a move out of the way), is no longer given to it while the others still are, and a heavy blow whose ways out have all failed is guarded. Against version 33 over five mods (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, two seeds): the forecast alone 1,307 to 897 (59.3%); the lessons on top of it 451 to 428 against the same without them, as even as that many games can tell (computer players do not change habits). Against Sauce's AI (his 'lf2-AI VS and Stage Challenge', the ten original fighters each against every other both ways): 68 of 360 games, version 33 27."},
     {33, "2026-11-04", "Set-ups: a move that strikes nothing itself but leaves objects of the fighter's making standing, which strike with its next moves, is learned as such and used. Crimson's DvJ in mode Convergence leaves a shadow (with J pressed on, three or five) that copies her D>A, D^A or DvA from where it stands, told which by a body of hers far above the stage, and stands again where its slash ends; weighed one move at a time, DvJ did nothing for its MP and was never used, as the project owner saw. In the copy each set-up is played, then each of the fighter's D-moves once it is free, and once without one: what a standing object strikes only after the D-move, having left its own frames, is its answer to it, from where it stood (no other fighter of seven mods has such a move: an object that strikes by itself, or what a D-move throws itself, is no answer). In a match a D-move is weighed with the blows of the objects standing then (as sure as its own blow while that one holds the target, a quarter of that otherwise, half in all when only theirs land), and taken at half the usual score while they stand; the set-up is laid when none of its objects stands, the target is within 420 and nothing can reach the fighter first: the one that adds most to a D-move where the D-move lands (DvJ with J once, 225 MP: 50 HP), or DvJ alone when MP or time is short. Crimson laid one about three times a game and the shadows struck about 45 HP a game. Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games where version 32's won 551 of 1,196 (48.5% against 46.1%), as XOI with the mod's own numbers 313 of 587 where version 32's won 303 of 588 (53.3% against 51.5%); Crimson against version 32's Crimson 23 to 30 in those games (too few to tell). Every other fighter plays exactly as before"},
     {32, "2026-11-04", "A move whose summons strike a moment after the fighter is free is known by what they do. A move was followed in the private copy until three quiet frames after the fighter was free again, and Crimson's D^J in mode Convergence (five shadows fly out, turn and slash back from frame 29, Crimson free from 25) was learned as doing nothing for 400 MP, so it was never used, as the project owner saw after tuning XOI for the mod. A move none of whose objects has struck yet is now followed on while one of them, by its own frames, comes to a blow of 10 HP or more: D^J is 150 damage around Crimson, and so are the few other moves learned as nothing the same way (Stancher's D^J and DvJ, Darius's D>J; Pein's, Sai's, Ten Ten's and Yamato's in Naruto 2.4; Nami's and Robin's in One Piece; Rudolf's DvJ in KT-LF2; Firzen's D^A). Two fighters pressed against the same wall at the same x no longer stand there for good: one of them takes the other to be on the wall's side, so its step back for room leads into the stage. Against version 31, on those fighters and their opponents in six mods: 636 to 657 over 1,293 decided games (as even as that many games can tell; Crimson against Crimson 14 to 4, Pein against Pein 27 to 3 — in a game against the old version the new one also steers clear of moves the old one never uses); against CRAZY! 166 to 10 where version 31 won 163 to 14 on the same games."},
     {31, "2026-11-03", "INSANE! and XOI part ways, as the project owner asked, so that the last level is plainly stronger than the one before it: INSANE! plays with its numbers set by hand again (as up to version 28), and the numbers tuned by play are XOI's alone — version 29's (the original LF2, Naruto 2.4, One Piece GrandWorld), and in a mod with numbers of its own (xoi/tune.txt, spsa.bat's) those; INSANE! leaves a mod's numbers to XOI. XOI keeps its notes of training besides"},
@@ -1974,15 +1975,23 @@ end
 -- the frame `vframe`, or vframe(k) when that is a function (a busy victim's frames to come).
 -- Attacks of things the move spawned before now are left to the flying-attack check.
 -- (`moving`: the victim is on its way somewhere, victim_at(k) says where: no quick reject by where it stands.)
-local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at, horizon, moving)
+local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at, horizon, moving, margin)
     local boxes = move.boxes
+    margin = margin or 0 -- (pixels more in each direction: a threat foreseen wider, lesson_kit)
     local frame_at = type(vframe) == "function" and vframe or nil
     if #boxes == 0 or (not frame_at and #vframe.bodies == 0) then return nil end
     local traj_x, traj_y, traj_z = move.traj_x, move.traj_y, move.traj_z
     local ax, ay, az = attacker.x_int, attacker.y_int, attacker.z_int
-    local nx, ny, nz = traj_x[from_t] or 0, traj_y[from_t] or 0, traj_z[from_t] or 0
-    local dvx = attacker.vx * face - (move.vel_x[from_t] or 0)
-    local dvy = attacker.vy - (move.vel_y[from_t] or 0)
+    -- (A move in progress: this frame's step is its step from_t — k = 0 below — and the attacker stands where the
+    -- step before left it; it and the victim both move once more before this frame's blows land, as they do once
+    -- before a move started now lands its first, at k = 1. Up to version 33 the step from_t was taken for done: a
+    -- slide's blow was foreseen a frame late, 12 pixels short at Brad's slip kick in mode Convergence, and a step into
+    -- a blow ending at the edge of the victim's depth was taken for safe — Crimson walked back into Brad's kick.)
+    local lag = from_t > 0 and 1 or 0
+    local base_t = from_t - lag
+    local nx, ny, nz = traj_x[base_t] or 0, traj_y[base_t] or 0, traj_z[base_t] or 0
+    local dvx = attacker.vx * face - (move.vel_x[base_t] or 0)
+    local dvy = attacker.vy - (move.vel_y[base_t] or 0)
     local airborne = attacker.y_int < 0
     -- A move that teleports to the enemy (state 400) goes on from beside the victim, at its depth, on the ground,
     -- still (base/game/frame_rules; 120 in front of it, or behind when the move turned the fighter round first:
@@ -1990,7 +1999,7 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
     local tp = move.teleport
     local tp_dx, tp_dy, tp_dz
     if tp and tp > from_t then
-        local px, _, pz = victim_at(tp - from_t)
+        local px, _, pz = victim_at(tp - base_t)
         tp_dx = (px + (move.teleport_dx or -120) * face - ax) * face - ((traj_x[tp] or 0) - nx)
         tp_dy = -ay - ((traj_y[tp] or 0) - ny)
         tp_dz = (pz + (move.teleport_dz or 1) - az) - ((traj_z[tp] or 0) - nz)
@@ -2001,7 +2010,7 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
         if dx < move.reach_x1 - 150 or dx > move.reach_x2 + 150 then return nil end
         if abs(victim.z_int - az) > move.reach_z + 60 then return nil end
     end
-    local last_k, px, py, pz = -1, 0, 0, 0
+    local last_n, px, py, pz = -1, 0, 0, 0
     for index = 1, #boxes do
         local box = boxes[index]
         local t = box.t
@@ -2011,17 +2020,19 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
         -- (What the move spawns counts from its record until it is in the world — it spawns after the frame's
         -- control, so at the spawning step itself too; from the next, its own frames are followed instead.)
         if k >= (from_t > 0 and 0 or 1) and (box.own or box.spawn >= from_t) then
+            -- (n: the steps both take from now until this blow.)
+            local n = k + lag
             local ox, oy, oz
             if box.own then
                 if tp_dx and t >= tp then
                     ox, oy, oz = traj_x[t] - nx + tp_dx, traj_y[t] - ny + tp_dy, traj_z[t] - nz + tp_dz
                 else
-                    ox = traj_x[t] - nx + drift(dvx, k, airborne)
-                    oy = traj_y[t] - ny + (airborne and dvy * k or 0)
+                    ox = traj_x[t] - nx + drift(dvx, n, airborne)
+                    oy = traj_y[t] - ny + (airborne and dvy * n or 0)
                     oz = traj_z[t] - nz
                 end
             else
-                local ks = box.spawn - from_t
+                local ks = box.spawn - base_t
                 if tp_dx and box.spawn >= tp then
                     ox, oy, oz = -nx + tp_dx, -ny + tp_dy, -nz + tp_dz
                 else
@@ -2030,16 +2041,17 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
                     oz = -nz
                 end
             end
-            if k ~= last_k then
-                px, py, pz = victim_at(k)
-                last_k = k
+            if n ~= last_n then
+                px, py, pz = victim_at(n)
+                last_n = n
             end
             local depth = az + oz + box.z - pz
-            if depth < box.zw and depth > -box.zw then
+            local zw = box.zw + margin
+            if depth < zw and depth > -zw then
                 local bx1, bx2
-                if face == 1 then bx1, bx2 = ax + ox + box.x1, ax + ox + box.x2
-                else bx1, bx2 = ax - ox - box.x2, ax - ox - box.x1 end
-                local vf = frame_at and frame_at(k) or vframe
+                if face == 1 then bx1, bx2 = ax + ox + box.x1 - margin, ax + ox + box.x2 + margin
+                else bx1, bx2 = ax - ox - box.x2 - margin, ax - ox - box.x1 + margin end
+                local vf = frame_at and frame_at(n) or vframe
                 if touches(victim, vf, px, py, bx1, bx2, ay + oy + box.y1, ay + oy + box.y2) then return k, box end
             end
         end
@@ -2050,6 +2062,10 @@ end
 ---------------------------------------------------------------------------------------------------------------
 -- Threats.
 ---------------------------------------------------------------------------------------------------------------
+
+-- In-match lessons (version 34): what the fighter has learned in this match from the blows it took (its functions
+-- are with the move families below, lesson_kit.find and after).
+local lesson_kit = {margin_step = 3, margin_cap = 9, fails = 2, fail_share = 0.5, min_damage = 5, window = 24}
 
 -- The earliest hit on `self` within `horizon` frames, when it stays where it is or moves by plan(k) -> dx, dy, dz
 -- (in its present frame, or in frame_at(k) when given): frames, box, source. Enemies' moves in progress (answered
@@ -2080,7 +2096,9 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                         local now = where.t + value.wait_counter
                         if now >= reaction then
                             local face = value.facing == facing_right and 1 or -1
-                            local k, box = move_hits(value, face, where.move, now, self, frame_at or self_frame, self_at, best_t and best_t - 1 or horizon)
+                            -- (A move that has kept landing on us is foreseen wider: lesson_kit.)
+                            local margin = lesson_kit.margin(context, self, value, value.frame)
+                            local k, box = move_hits(value, face, where.move, now, self, frame_at or self_frame, self_at, best_t and best_t - 1 or horizon, nil, margin)
                             if k then best_t, best_box, best_source = k, box, value end
                         end
                     end
@@ -2094,6 +2112,7 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                 local frame = record.frame(frame_id)
                 local left = frame.wait + 1 - value.wait_counter
                 local airborne = value.y_int < 0 or record.kind == record_kinds.ball
+                local margin = lesson_kit.margin(context, self, value, frame_id)
                 -- Step k = 1 is this frame's combat (after it moves); threats count frames from it.
                 local limit = (best_t and best_t - 1 or horizon) + 1
                 for k = 1, limit do
@@ -2112,17 +2131,18 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                     if #interactions > 0 then
                         local mx = trunc(airborne and value.vx * k or drift(value.vx, k, false))
                         local mz = trunc(value.vz * k)
-                        local px, py, pz = self_at(k - 1)
-                        local own_frame = frame_at and frame_at(k - 1) or self_frame
+                        -- (We, too, have moved k steps by then: up to version 33 one fewer was counted.)
+                        local px, py, pz = self_at(k)
+                        local own_frame = frame_at and frame_at(k) or self_frame
                         local hit
                         for _, area in ipairs(interactions) do
                             if damaging(area) then
-                                local zw = area.zwidth ~= 0 and area.zwidth or default_zwidth
+                                local zw = (area.zwidth ~= 0 and area.zwidth or default_zwidth) + margin
                                 local depth = value.z_int + mz - pz
                                 if depth < zw and depth > -zw then
                                     local x0 = area_x(value, frame, area)
                                     local y0 = area.y + value.y_int - frame.center_y
-                                    if touches(self, own_frame, px, py, x0 + mx, x0 + mx + area.width, y0, y0 + area.height) then
+                                    if touches(self, own_frame, px, py, x0 + mx - margin, x0 + mx + area.width + margin, y0, y0 + area.height) then
                                         hit = {injury = area.injury, fall = area.fall, bdefend = area.bdefend, dvx = area.dvx,
                                             kind = area.kind, effect = area.effect, zw = zw}
                                         break
@@ -2983,6 +3003,113 @@ local function move_family(move)
     return family
 end
 
+---------------------------------------------------------------------------------------------------------------
+-- In-match lessons (version 34). A blow taken is counted against what dealt it — the enemy's move, by its family
+-- (how it starts: a chain's every key alike), or the kind of thing thrown — together with the answer given to it
+-- just before, if it was answered. A move that keeps landing on the fighter while it was free to act (not the blows
+-- of a combo it is held in, nor those into its own move's end) is foreseen wider from the second such blow on
+-- (earliest_threat: margin_step pixels more in each direction for every one after the first, up to margin_cap), so
+-- it steps out of it further and keeps off its edge; an answer that has failed against it at least `fails` times
+-- and in `fail_share` of the times it was given — a step aside, a jump, a step back, the guard, striking first, a
+-- move out of the way — is given to it no more, the others are, and a heavy blow whose ways out have failed is
+-- guarded (answer). Against a fighter who spams one move it answers that move otherwise once its answer keeps
+-- failing, instead of the same way for good. The lessons last the match and are the fighter's own (smart_memory);
+-- they follow from the match alone, so replays and network play stay in step. (min_damage: the HP a blow must take
+-- to count; window: the frames after an answer that a blow counts against it.)
+---------------------------------------------------------------------------------------------------------------
+-- The lesson of `self` about what `value` strikes with in its frame `frame_id`, or nil; made when `create`.
+function lesson_kit.find(context, self, value, frame_id, create)
+    local memory = self.smart_memory
+    if not memory or lesson_kit.off then return nil end
+    local family = "thrown"
+    if value.record.kind == record_kinds.character then
+        local known = context.analysis_of(value).frames[frame_id]
+        if not known then return nil end
+        family = move_family(known.move)
+    end
+    local lessons = memory.lessons
+    if not lessons then
+        if not create then return nil end
+        lessons = {}
+        memory.lessons = lessons
+    end
+    local own = lessons[value.record.data]
+    if not own then
+        if not create then return nil end
+        own = {}
+        lessons[value.record.data] = own
+    end
+    local lesson = own[family]
+    if not lesson and create then
+        lesson = {hits = 0, free_hits = 0, damage = 0, fails = {}, uses = {}}
+        own[family] = lesson
+    end
+    return lesson
+end
+
+-- Whether `self`'s answer `kind` has failed against what `lesson` is about often enough to be given it no more.
+function lesson_kit.failed(lesson, kind)
+    if not lesson then return false end
+    local fails = lesson.fails[kind] or 0
+    return fails >= lesson_kit.fails and fails >= (lesson.uses[kind] or 0) * lesson_kit.fail_share
+end
+
+-- An answer `kind` given to what `lesson` is about: counted once however many frames it goes on.
+function lesson_kit.answered(state, memory, lesson, kind)
+    if not lesson then return end
+    local last = memory.answered
+    if not (last and last.lesson == lesson and last.kind == kind and state.frame_number - last.at <= 3) then
+        lesson.uses[kind] = (lesson.uses[kind] or 0) + 1
+        memory.answered = {lesson = lesson, kind = kind, at = state.frame_number}
+    else
+        last.at = state.frame_number
+    end
+end
+
+-- The pixels more a threat of `value` in its frame `frame_id` is foreseen with, by `self`'s lessons.
+function lesson_kit.margin(context, self, value, frame_id)
+    local memory = self.smart_memory
+    if not (memory and memory.lessons) then return 0 end
+    local lesson = lesson_kit.find(context, self, value, frame_id, false)
+    if not lesson or lesson.free_hits < 2 then return 0 end
+    return min(lesson_kit.margin_step * (lesson.free_hits - 1), lesson_kit.margin_cap)
+end
+
+-- Once a frame: HP lost since the last frame is a blow taken, counted against the nearest hostile thing that struck
+-- in the last frame's combat (its frame then), and against the answer given to it, if that came just before.
+function lesson_kit.note(state, index, self, memory, context)
+    if lesson_kit.off then return end
+    local before, was_free = memory.lesson_hp, memory.lesson_free
+    memory.lesson_hp = self.hp
+    memory.lesson_free = is_free(self) or self.record.frame(self.frame).state == states.defending
+    if not before or self.hp > before - lesson_kit.min_damage then return end
+    local culprit, culprit_frame, best_gap
+    for other = 0, constants.item_slots - 1 do
+        local value = state.items[other]
+        if value and other ~= index and hostile(state, self, value) then
+            local frame_id = value.frame_at_pass or value.frame
+            for _, area in ipairs(value.record.frame(frame_id).interactions) do
+                if damaging(area) then
+                    local gap = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int)
+                    if not best_gap or gap < best_gap then culprit, culprit_frame, best_gap = value, frame_id, gap end
+                    break
+                end
+            end
+        end
+    end
+    if not culprit then return end
+    local lesson = lesson_kit.find(context, self, culprit, culprit_frame, true)
+    if not lesson then return end
+    lesson.hits = lesson.hits + 1
+    if was_free then lesson.free_hits = lesson.free_hits + 1 end
+    lesson.damage = lesson.damage + before - self.hp
+    local answered = memory.answered
+    if answered and answered.lesson == lesson and state.frame_number - answered.at <= lesson_kit.window then
+        lesson.fails[answered.kind] = (lesson.fails[answered.kind] or 0) + 1
+        memory.answered = nil
+    end
+end
+
 -- The notes' lines (the same line twice counts twice: training runs simply add up):
 --   XOI G <fighter id> <opponent id> <games> <wins> <draws>
 --   XOI R <fighter id> <opponent id> <moves started at a risk> <struck first>
@@ -3778,6 +3905,11 @@ end
 -- Answers a threat in `threat_t` frames: true when it did something.
 local function answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, source, target)
     local analysis = context.analysis_of(self)
+    -- What answering this threat has cost so far (lesson_kit): an answer that has failed against it twice is not given
+    -- to it again; the one given is noted, for the blow that may still come.
+    local lesson = lesson_kit.find(context, self, source, source.frame, true)
+    local function failed(kind) return lesson_kit.failed(lesson, kind) end
+    local function answered(kind) lesson_kit.answered(state, memory, lesson, kind) end
     local can_defend = (fstate == states.standing or fstate == states.walking) and self.defend_lock == 0
         and self.weapon ~= record_kinds.heavy_item and analysis.guard ~= false
     -- A guard takes a tenth of the damage; it holds unless the defence points reach the break threshold.
@@ -3788,7 +3920,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- Strike first when a move lands before the threat does (landing together is a trade: taken only when our
     -- blow is clearly the heavier).
     -- (A move started now strikes t - 1 frames from now; the threat, threat_t frames from now.)
-    if source.record.kind == record_kinds.character and threat_t >= 1 then
+    if source.record.kind == record_kinds.character and threat_t >= 1 and not failed("strike") then
         local move, t, score = best_attack(context, self, frame, fstate, source, threat_t, nil)
         if not move then
             move, t, score = best_attack(context, self, frame, fstate, source, threat_t + 1, nil)
@@ -3797,22 +3929,27 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         if move then
             start(self, move, source, t, score)
             tried(memory, move, state.frame_number)
+            answered("strike")
             memory.note = "strike first"
             return true
         end
     end
     local guard = defend_ticks(self.record, analysis)
-    if blockable and fstate == states.defending then
+    if blockable and fstate == states.defending and not failed("guard") then
         face_against(self, source)
+        answered("guard")
         memory.note = "keep guard"
         return true
     end
     -- A heavy blow is better dodged than guarded when there is time (a guard broken by the next one lets a
-    -- worse one in); a light one is simply guarded.
-    local heavy = threat_box.injury >= tune.heavy_injury or threat_box.bdefend >= 16 or catch
-    if blockable and can_defend and threat_t <= guard and threat_t <= tune.defend_window and not (heavy and threat_t >= 2) then
+    -- worse one in); a light one is simply guarded — and a heavy one too, once the ways out of it have failed.
+    local heavy = (threat_box.injury >= tune.heavy_injury or threat_box.bdefend >= 16 or catch)
+        and not (failed("dodge") or failed("jump") or failed("back"))
+    if blockable and can_defend and threat_t <= guard and threat_t <= tune.defend_window and not (heavy and threat_t >= 2)
+       and not failed("guard") then
         face_against(self, source)
         fresh(self, "defend")
+        answered("guard")
         memory.note = "defend " .. threat_t
         return true
     end
@@ -3835,7 +3972,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- to be a loop) is closed in on — its throw jumped over toward it, when that jump clears it and lands outside the
     -- thrower's arms, rather than on the spot again (Gaara jumped Itachi's kunai where he stood, for good, in
     -- Naruto: The Setting Dawn).
-    if fstate ~= states.running and source.record.kind ~= record_kinds.character and target
+    if fstate ~= states.running and source.record.kind ~= record_kinds.character and target and not failed("jump")
        and (memory.dodges or 0) >= tune.loop_dodges and (memory.calm or 0) >= tune.loop_calm then
         local height, step = movement.jump_height or -16, movement.jump_distance or 0
         local dir = target.x_int >= self.x_int and 1 or -1
@@ -3857,23 +3994,25 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
                 memory.jump_dir = dir
                 memory.jump_hold = state.frame_number + (first and first.wait + 1 or 1) + (second and second.wait + 1 or 1) + 2
                 dodged(memory, state)
+                answered("jump")
                 memory.note = "jump dodge toward"
                 return true
             end
         end
     end
-    for _, side in ipairs(sides) do
+    for _, side in ipairs(failed("dodge") and {} or sides) do
         local plan = function(k) return 0, 0, trunc(side * speedz * k) end
         if not earliest_threat(state, index, self, threat_t + tune.dodge_margin, plan, reaction, context) then
             memory.dodge_dz = side
             press(self, side > 0 and "down" or "up")
             dodged(memory, state)
+            answered("dodge")
             memory.note = "dodge z"
             return true
         end
     end
     -- Jumping clears thrown attacks (fighters' blows reach too high to trust it).
-    if fstate ~= states.running and source.record.kind ~= record_kinds.character then
+    if fstate ~= states.running and source.record.kind ~= record_kinds.character and not failed("jump") then
         local height = movement.jump_height or -16
         local plan = function(k)
             if k < 3 then return 0, 0, 0 end
@@ -3885,6 +4024,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         if not earliest_threat(state, index, self, threat_t + tune.back_margin, plan, reaction, context) then
             fresh(self, "jump")
             dodged(memory, state)
+            answered("jump")
             memory.note = "jump dodge"
             return true
         end
@@ -3893,9 +4033,10 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
     local cornered = (away < 0 and self.x_int < 60) or (away > 0 and self.x_int > width - 60)
     local plan = function(k) return trunc(away * speed * k), 0, 0 end
-    if not cornered and not earliest_threat(state, index, self, threat_t + tune.back_margin, plan, reaction, context) then
+    if not cornered and not failed("back") and not earliest_threat(state, index, self, threat_t + tune.back_margin, plan, reaction, context) then
         press(self, away > 0 and "right" or "left")
         dodged(memory, state)
+        answered("back")
         memory.note = "back off"
         return true
     end
@@ -3904,9 +4045,10 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- Otherwise the guard, in time (not a move that cannot come out before the blow lands).
     if fstate ~= states.running then
         local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
-        if escape and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))) then
+        if escape and not failed("escape") and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))) then
             start(self, escape, source)
             dodged(memory, state)
+            answered("escape")
             memory.note = strikes and "escape and strike" or "escape"
             return true
         end
@@ -3915,18 +4057,21 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- super punch that follows, unguarded: the blow itself, taken, costs less in the end.
     if blockable and fstate == states.defending then
         face_against(self, source)
+        answered("guard")
         memory.note = "keep broken guard"
         return true
     end
     if blockable and can_defend and threat_t <= guard and threat_t <= tune.defend_window then
         face_against(self, source)
         fresh(self, "defend")
+        answered("guard")
         memory.note = "defend late " .. threat_t
         return true
     end
     -- Nothing avoids it: at least out of its way as far as possible.
     if not cornered and threat_t > 1 then
         press(self, away > 0 and "right" or "left")
+        answered("back")
         memory.note = "flee"
         return true
     end
@@ -4036,6 +4181,8 @@ function smart.control(state, index)
         state.smart_context = context
     end
     context.notes, context.notes_situation, context.notes_spots, context.tries = nil, nil, nil, nil
+    -- (A blow taken since the last frame: counted against what dealt it, see lesson_kit.)
+    lesson_kit.note(state, index, self, memory, context)
     clear_keys(self)
     -- (When the fighter last turned round: positioning does not turn it round again at once, see there; and when
     -- a walk to a weapon last ended, see the weapons below.)

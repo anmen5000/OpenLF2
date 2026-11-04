@@ -551,11 +551,13 @@ public:
             auto resource = bitmap_resource(executable_, name);
             if (resource) return resource;
             // A mod whose own program keeps such a picture in a file instead of the executable (Sx2 ~ The
-            // power of emancipation: sprite/BARS.png, sprite/menu/<n>.png for the menu's MENU_BACK<n>): the
-            // file from the pack, PNG or BMP.
+            // power of emancipation: sprite/BARS.png, sprite/menu/<n>.png for the menu's MENU_BACK<n>; a
+            // program whose pictures all moved to UI/, as the community's reworked lf2.exe has them — Sauce's
+            // "lf2-AI VS and Stage Challenge": UI/WORDS0.bmp): the file from the pack, PNG or BMP.
             const auto lower = normalized->substr(3);
             std::vector<std::string> candidates = {"sprite/" + lower + ".png", "sprite/sys/" + lower + ".png",
-                                                   "sprite/" + lower + ".bmp", "sprite/sys/" + lower + ".bmp"};
+                                                   "sprite/" + lower + ".bmp", "sprite/sys/" + lower + ".bmp",
+                                                   "ui/" + lower + ".bmp", "ui/" + lower + ".png"};
             if (lower.starts_with("menu_back") && lower.size() > 9) {
                 candidates.insert(candidates.begin(), "sprite/menu/" + lower.substr(9) + ".png");
             }
@@ -993,8 +995,9 @@ Result<void> run(const Configuration& config) {
     if (!executable) return std::unexpected(executable.error());
     // Some mods ship their executable packed or protected, with LF2's pictures and the mod's own files compressed
     // or encrypted inside it (Naruto: The Setting Dawn's NTSD.exe). Nothing in it can be read, so say so rather
-    // than stop at the first picture.
-    if (config.pack && !bitmap_resource(*executable, "WORDS0")) {
+    // than stop at the first picture. (A program whose pictures were moved out to the pack's UI/ folder plays,
+    // its pictures read from there: see GameResources.)
+    if (config.pack && !bitmap_resource(*executable, "WORDS0") && !archive->read("ui/words0.bmp")) {
         return fail(ErrorCode::unsupported, "this mod's " + pack_executable + " has none of LF2's pictures: it is "
             "packed or protected, with the game's files inside it, where OpenLF2 cannot read them");
     }

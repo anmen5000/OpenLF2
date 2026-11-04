@@ -58,6 +58,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    It takes the mod as the other files do (a *-xoi.zip first, or drag a zip, a mod folder or a published
    mod's .exe onto it). Record with OBS Studio or Xbox Game Bar (Win+Alt+R). dau-nhieu.bat takes names in
    IDS too ("Crimson Deep").
+9. INSANE! or XOI against another computer player made for LF2 - a mod's ai\<id>.as scripts, which LF2 runs
+   with the AI script engine's ai.dll or ddraw.dll (Sauce's "lf2-AI VS and Stage Challenge"; package 56): in
+   dau-nhieu.bat (or xem.bat) set NAO1=smart (or xoi), NAO2=classic - the original computer player, which plays
+   the mod's script for each fighter that has one - and MUC=-1 (CRAZY!, the scripts' best level); IDS the
+   fighters (Sauce's ten original ones: 1 2 4 5 6 7 8 9 10 11). A mod whose own .exe has none of LF2's pictures
+   (moved to its UI folder, as Sauce's) needs OpenLF2 built from package 56 on; with an older one, copy LF2
+   2.0a's lf2.exe (or a mod's lf2_2.0a.exe, mode Convergence has one) into the mod's folder as lf2.exe first.
 
 Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), xem.bat (watch), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
@@ -122,6 +129,13 @@ chơi được chính các file của bản mod.
    và màn nền của bản mod ra danh-sach.txt. Bản mod lấy như các file khác (ưu tiên *-xoi.zip; hoặc kéo thả file
    zip, thư mục bản mod hay file .exe của bản đã xuất bản vào nó). Quay bằng OBS Studio hoặc Xbox Game Bar
    (Win+Alt+R). dau-nhieu.bat cũng nhận tên ở dòng IDS ("Crimson Deep").
+9. INSANE! hay XOI đấu với một AI khác làm cho LF2 - các script ai\<id>.as của bản mod, LF2 chạy bằng ai.dll
+   hay ddraw.dll của AI script engine (bản "lf2-AI VS and Stage Challenge" của Sauce; gói 56): trong
+   dau-nhieu.bat (hay xem.bat) đặt NAO1=smart (hay xoi), NAO2=classic - máy gốc, nhân vật nào có script của bản
+   mod thì máy gốc chơi bằng script đó - và MUC=-1 (CRAZY!, mức mạnh nhất của script); IDS là các nhân vật (10
+   nhân vật gốc của Sauce: 1 2 4 5 6 7 8 9 10 11). Bản mod mà file .exe không còn hình của LF2 (dời ra thư mục
+   UI, như bản của Sauce) cần OpenLF2 dựng từ gói 56 trở đi; với bản cũ hơn, chép lf2.exe của LF2 2.0a (hay
+   lf2_2.0a.exe của một bản mod, mode Convergence có) vào thư mục bản mod, đặt tên lf2.exe, trước đã.
 
 Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), xem.bat (xem), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
