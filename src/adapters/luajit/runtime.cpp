@@ -893,6 +893,14 @@ Result<std::unique_ptr<ScriptRuntime>> make_script_runtime(bool enable_jit, cons
         return fail(ErrorCode::script, std::string("cannot initialize LuaJIT libraries: ") +
             (detail == nullptr ? "unknown Lua error" : detail));
     }
+#ifndef __EMSCRIPTEN__
+    // Opening the jit library (luaL_openlibs) switches the compiler back on whatever the mode was (lib_jit.c,
+    // jit_init): the mode is applied again, or --no-jit would still compile.
+    if (luaJIT_setmode(state.get(), 0, LUAJIT_MODE_ENGINE |
+            (enable_jit ? LUAJIT_MODE_ON : LUAJIT_MODE_OFF)) == 0) {
+        return fail(ErrorCode::script, "cannot set LuaJIT engine mode");
+    }
+#endif
     return std::unique_ptr<ScriptRuntime>(std::make_unique<LuaRuntime>(std::move(state), std::move(bridge)));
 }
 }

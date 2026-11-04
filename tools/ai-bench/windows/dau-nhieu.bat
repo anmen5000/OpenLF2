@@ -13,7 +13,8 @@ set "NAO1=xoi"
 set "NAO2=smart"
 rem Muc kho cua tran: -2 (INSANE!/XOI); -1 khi co classic (may goc danh o muc CRAZY!)
 set "MUC=-2"
-rem Nhan vat: all = moi quan danh voi moi quan khac; hoac danh sach id, vi du "7 18 1 4".
+rem Nhan vat: all = moi quan danh voi moi quan khac; hoac danh sach id hay ten, vi du "7 18 1 4" hay "Crimson Deep 4"
+rem (ten nhu trong game, hoa thuong deu duoc; xem.bat de trong QUAN1 thi in danh sach id va ten).
 rem De trong (set "IDS=") thi dung config.lua cua tools\ai-bench: moi tien trinh chay cung config do, hat giong khac.
 set "IDS=all"
 rem So tran moi cap moi chieu (a danh b VAN tran va b danh a VAN tran, doi ben moi tran)
@@ -91,7 +92,11 @@ for /L %%k in (1,1,%N%) do if exist "%KQ%\b%%k" rmdir /s /q "%KQ%\b%%k"
 rem Tu dong: moi tien trinh mot ban sao cua tools\ai-bench voi config rieng (phan viec thu k cua vong dau).
 set "IDS_LUA="
 if defined IDS if /i "%IDS%"=="all" set "IDS_LUA="all""
-if defined IDS if not defined IDS_LUA set "IDS_LUA={%IDS: =, %}"
+rem (Moi id hay ten trong [==[ ]==]: tools\ai-bench\names.lua doi ten ra id.)
+if defined IDS if not defined IDS_LUA (
+  for %%i in (%IDS%) do if defined IDS_LUA (set "IDS_LUA=!IDS_LUA!, [==[%%i]==]") else (set "IDS_LUA=[==[%%i]==]")
+  set "IDS_LUA={!IDS_LUA!}"
+)
 if defined IDS (
   for /L %%k in (1,1,%N%) do (
     mkdir "%KQ%\b%%k"

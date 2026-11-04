@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: MIT
 -- Copyright (c) 2026 OpenLF2 contributors
--- AI against AI: config.pairs of fighter ids (or config.ids, every one against every other), config.brains =
--- {"smart", "classic"}, config.games per pair.
+-- AI against AI: config.pairs of fighter ids (or config.ids, every one against every other; a fighter may be
+-- named instead, bench/names), config.brains = {"smart", "classic"}, config.games per pair.
 -- A brain "smart@<module>" is another version of the INSANE! player: that version's smart_ai.lua copied into this
 -- package as <module>.lua and listed in package.manifest (`module=<module>|<module>.lua`), so that two versions of
 -- the AI fight each other (brains = {"smart", "smart@ai_alt"}).
@@ -10,9 +10,11 @@ local match = require("base/game/match")
 local constants = require("base/game/constants")
 local duel = {}
 local state_last
+local names = require("bench/names")
 local function find(fighters, id)
-    for index, fighter in ipairs(fighters) do if fighter.id == id then return index end end
-    error("no fighter " .. tostring(id))
+    local index, problem = names.find(fighters, id)
+    if not index then error(problem, 0) end
+    return index
 end
 local brains = require("bench/brains")
 local other_brain, label = brains.load, brains.label
@@ -78,10 +80,16 @@ function duel.run(config)
     -- fighter against every other, each way round (brains[1] plays each of the two); config.part of config.parts
     -- takes a share of those matchups, so that jobs side by side split a round of all against all
     -- (dau-nhieu.bat).
+    -- (A fighter may be named instead of its id: bench/names.)
     local list = {}
-    for _, pair in ipairs(config.pairs or {}) do list[#list + 1] = pair end
+    for _, pair in ipairs(config.pairs or {}) do list[#list + 1] = {names.id(fighters, pair[1]), names.id(fighters, pair[2])} end
     if config.ids then
         local ids = config.ids
+        if ids ~= "all" then
+            local named = {}
+            for index, id in ipairs(ids) do named[index] = names.id(fighters, id) end
+            ids = named
+        end
         if ids == "all" then
             -- (A mod may list an id twice: once is enough.)
             ids = {}

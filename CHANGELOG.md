@@ -112,6 +112,26 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   only. Each computer player decides with its level's numbers, also two levels in one bench match. `spsa.bat` and
   `spsa.lua` tune XOI's numbers: they start from XOI's own and check against them. The site's front page, INSANE!
   page (a table of the two levels with what each part was measured to add) and XOI page say so
+- INSANE!/XOI v32: a move whose objects strike a moment after the fighter is free is known by what they do (the
+  project owner's question: Crimson of mode Convergence never used D^J, "scatter", 400 MP). The copy in which a
+  move is learned stopped following it three quiet ticks after the fighter was free again; D^J's five shadows fly
+  out, turn and slash back from tick 29, Crimson free from 25: the move was learned as doing nothing for 400 MP, and
+  never chosen. A move none of whose objects has struck yet is now followed on while one of them, by its own frames,
+  comes to a blow of 10 HP and more within the time a move is followed (`strikes_later`): D^J is learned as 150
+  damage from tick 29 around Crimson, and so are the few other moves learned as nothing for the same reason —
+  Stancher's D^J and DvJ, Darius's D>J (Convergence), Pein's D^A and D^J, Sai's D^A, Ten Ten's and Yamato's
+  (Naruto 2.4), Nami's D^J and Robin's D>J (One Piece newest), Rudolf's DvJ (KT-LF2), Firzen's D^A (Hell, KT-LF2).
+  (A move whose objects have struck is not followed further: a wave that goes on striking further and later,
+  Jinbei's in One Piece GrandWorld, was weighed worse with its late blows counted, 13 to 27 in 40 games; nor are
+  a mod's 1-HP markers and grabs.) Both fighters pressed against the same wall at the same x (the stage's edge
+  holds them there) no longer stand for good: one of the two (by slot) takes the other to be on the wall's side,
+  so its step back for room leads into the stage (two Crimsons stood so 5,000 ticks). DvJ ("copy", 75 MP: a
+  shadow stays where Crimson stood and slashes with him when he next does D>A, D^A or DvA, for two seconds) is
+  still not used: by itself it does nothing, and its worth is the next move's, which the AI does not plan ahead.
+  Against v31 on those fighters and their opponents (Convergence, Naruto 2.4, One Piece GrandWorld and newest,
+  KT-LF2, Hell; 10 games a pair, three seeds): 636–657 over 1,293 decided games, as even as that many can tell
+  (Crimson's mirror 14–4, Pein's 27–3; against the old version the new one also steers clear of moves the old one
+  never uses); against CRAZY! 166–10, v31 163–14 on the same games
 - A mod published for its players with INSANE! and XOI built in: they unpack one folder and double-click the mod's
   name — no OpenLF2 to install, no XOI kit, no original LF2 (the project owner's wish: the kit and the installer are
   for whoever trains). OpenLF2 plays a `game.zip` beside its program as with `--pack` when started with neither
@@ -299,6 +319,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   the minimap's BitmapData, which Ruffle draws on the GPU; the minimap's next operation on the CPU then waited for
   the GPU to finish everything it had been given and copied the pixels back, a stall of the whole page about 3 times
   a second in a fight: four fillRects draw the same frame on the CPU now
+- `windows/xem.bat`, to watch two computer players fight in the game's window and record a clip (the project owner's
+  wish): fighters named as the game shows them (`QUAN1=Crimson`; capitals or not, the first letters are enough, or
+  an id), brains (`xoi`, `smart`, `classic`), games, background by name or number, a limit after which a game is a
+  draw (9000 ticks), the seed (the same seed plays the same games again); with a fighter left out it lists the
+  mod's fighters and backgrounds into `danh-sach.txt`. The bench's jobs take names: `show` and `duel` (`ids`,
+  `pairs`) resolve a fighter by id, by the name of its `.dat` file or its `name:` line, or by the start of one of
+  them (`tools/ai-bench/names.lua`), `show` takes `background` and `limit` too, and names a fighter or background
+  that matches nothing in the window, with the mod's list; `{command = "list"}` prints the fighters and backgrounds;
+  F4 in a `show` ends the game under way (the F-keys count as held when the next begins) and closes the window
+  after the last; `dau-nhieu.bat` takes names in `IDS`
 - Hero Fighter: how fast it runs, in Diagnostic output: every 30 s in which Ruffle's frames took 25 ms or more on
   average, a line with the frames a second, the milliseconds a frame, the part of it spent waiting for the
   graphics card (WebGL's getBufferSubData, readPixels, clientWaitSync, finish) and the slowest frame (`hfspeed=0`
@@ -308,6 +338,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   rest of Ruffle; with a graphics card, the game's ActionScript decides, which only a faster computer shortens
 
 ### Fixed
+- `--no-jit` used the JIT all the same: opening LuaJIT's libraries switches the compiler on whatever mode was set
+  before (lib_jit.c's `jit_init`), so the mode is set again after them. Found chasing a crash of the native test
+  build (LuaJIT's rolling branch at 8ca76297, 2026-10-29): in compiled code, a store through a tagged value, within
+  20,000 frames of a watched match in 2 to 5 of 6 to 8 runs; with the interpreter, or the releases' LuaJIT
+  (c6ffc141, 2026-09-08, `conan/luajit`), none in 8 — the pin is not to move without such a run
+- A published mod zipped up (`xuat-ban.bat`'s folder in a ZIP file) plays as a pack: with several programs beside
+  `data/data.txt` and no `lf2.exe`, the pack takes the largest with LF2's pictures, as a game folder does, not the
+  largest — OpenLF2's own program, larger than the game, gave "has none of LF2's pictures: it is packed or protected"
 - The site page: Normal view, Fullscreen and the other buttons that wait for a game no longer show before it runs
   (the buttons' style won over `hidden`), and the Game list fits a phone's width (the page scrolled sideways)
 - Music on a PC: the desktop builds' FFmpeg decoded only WMA version 2, so the music of mods in WMA Pro (Naruto: The

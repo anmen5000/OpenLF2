@@ -217,8 +217,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 31
+smart.version = 32
 smart.history = {
+    {32, "2026-11-04", "A move whose summons strike a moment after the fighter is free is known by what they do. A move was followed in the private copy until three quiet frames after the fighter was free again, and Crimson's D^J in mode Convergence (five shadows fly out, turn and slash back from frame 29, Crimson free from 25) was learned as doing nothing for 400 MP, so it was never used, as the project owner saw after tuning XOI for the mod. A move none of whose objects has struck yet is now followed on while one of them, by its own frames, comes to a blow of 10 HP or more: D^J is 150 damage around Crimson, and so are the few other moves learned as nothing the same way (Stancher's D^J and DvJ, Darius's D>J; Pein's, Sai's, Ten Ten's and Yamato's in Naruto 2.4; Nami's and Robin's in One Piece; Rudolf's DvJ in KT-LF2; Firzen's D^A). Two fighters pressed against the same wall at the same x no longer stand there for good: one of them takes the other to be on the wall's side, so its step back for room leads into the stage. Against version 31, on those fighters and their opponents in six mods: 636 to 657 over 1,293 decided games (as even as that many games can tell; Crimson against Crimson 14 to 4, Pein against Pein 27 to 3 — in a game against the old version the new one also steers clear of moves the old one never uses); against CRAZY! 166 to 10 where version 31 won 163 to 14 on the same games."},
     {31, "2026-11-03", "INSANE! and XOI part ways, as the project owner asked, so that the last level is plainly stronger than the one before it: INSANE! plays with its numbers set by hand again (as up to version 28), and the numbers tuned by play are XOI's alone — version 29's (the original LF2, Naruto 2.4, One Piece GrandWorld), and in a mod with numbers of its own (xoi/tune.txt, spsa.bat's) those; INSANE! leaves a mod's numbers to XOI. XOI keeps its notes of training besides"},
     {30, "2026-11-02", "No endless loops. Ten seconds and more with no blow between the two fighters (300 frames free to act) is taken for a loop, and then a move tried again and again since the last blow, all to no avail, is worth less with every try beyond three (its tries counted with those of its family — how it starts, whatever it continues into — one forgotten every five seconds it is not tried), so something else gets its turn; no spot is kept out of the enemy's reach any more, so one of the two comes in; and a thrower that has kept the fighter dodging is jumped toward over its throws, when the jump clears them and lands outside its arms. Before that it plays as version 29. (Itachi's fireballs met Sai's ink birds for good in Naruto: The Setting Dawn, a game played to its five-minute limit without a blow; Gaara jumped Itachi's kunai on the spot for good. Over Itachi's 48 games against every fighter, the frames of standoffs beyond ten seconds fell from 8,890 to 2,058, and no game ran out of time.) A heavy item in hand (a stone, a log) is thrown, landing or not, once the target comes near: holding it the fighter can neither guard, jump nor strike, and Kakashi with a stone and Gaara with a log stood face to face at a wall for good; and a fighter too close to its target at a wall no longer steps back to the wall and turns round again every few frames. 77 numbers of its judgement open to tuning by play (the 39 written into the code by hand until then keep their values), and a mod can carry numbers of its own (xoi/tune.txt beside its data, written by spsa.bat), used in that mod's matches ('mod tuned' beside the level). Against version 29: 299 to 308 over the 640 games of the 8 pairs of Naruto 2.4 and One Piece GrandWorld (as even as that many games can tell)."},
     {29, "2026-11-02", "Its 31 numbers tuned by play (SPSA, as chess engines tune theirs): 40 rounds on the project owner's 99 threads over the original LF2, Naruto 2.4 and One Piece GrandWorld, about 850,000 pairs of games, each pair two INSANE! players with every number nudged opposite ways and the numbers moved toward the better one. The tuned player is a little bolder and surer: it reckons a strike out of the opponent's guard to cost less (guard_counter 0.5 to 0.35), and so a counter while it is still busy (counter_price 0.7 to 0.57) and a frame left open after its blow (open_cost 0.2 to 0.12); it trades blows sooner (trade_factor 1.3 to 1.14), trusts a hit on a target long free to act less (sure_decay 0.04 to 0.052, sure_floor 0.2 to 0.15), holds MP dearer (mp_cost 0.06 to 0.073) and waits a little nearer (keep_out_base 30 to 26). Against version 28: 37,441 to 34,541 over 76,286 games of the tuning's own check (52.0% of the games won by either; the original LF2 52.8%, Naruto 51.2%, One Piece 51.2%); 297 to 311 over the 8 pairs of Naruto 2.4 and One Piece GrandWorld (640 games, too few to tell 2% either way); against CRAZY! 150 to 9 over four mods, version 28 153 to 6 on the same games"},
@@ -633,6 +634,27 @@ local function mode_drain(record, mode)
     return drain, fastest
 end
 
+-- Whether an object in `frame_id` strikes by itself within `ticks` ticks: a frame of the ones it goes on to by
+-- next and wait (no key, no hit) has an attack that hurts (10 HP and more: not a mod's marker of 1 HP, nor a grab).
+-- A frame it only reaches when hit (hit_d), or a loop without one, is not followed.
+local function strikes_later(record, frame_id, ticks)
+    local current, total = frame_id, 0
+    for _ = 1, 40 do
+        local frame = record.frames[current]
+        if not frame then return false end
+        for _, area in ipairs(frame.interactions) do
+            if damaging(area) and (area.injury or 0) >= 10 then return true end
+        end
+        total = total + frame.wait + 1
+        if total > ticks then return false end
+        local next_id = frame.next
+        if next_id < 0 then next_id = -next_id end
+        if next_id == 0 or next_id == 999 or next_id >= 1000 or next_id == current then return false end
+        current = next_id
+    end
+    return false
+end
+
 local function play(record, entry, mp, weapon_record, hp)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
@@ -672,6 +694,7 @@ local function play(record, entry, mp, weapon_record, hp)
     local started = false
     local quiet = 0
     local spawned = {}
+    local struck = {} -- the objects of its making that have struck in the move already
     local armed_item = weapon_record and state.items[me.held_item] or nil
     for t = 1, horizon_ticks do
         step()
@@ -711,11 +734,21 @@ local function play(record, entry, mp, weapon_record, hp)
         for _, area in ipairs(frame.interactions) do
             if damaging(area) then add_box(move.boxes, t, me, frame, area, origin, true, me) end
         end
-        local objects_active = false
+        local objects_active, objects_coming = false, false
         for index = 2, constants.item_slots - 1 do
             local value = state.items[index]
             if value and value.owner == me.owner and value ~= armed_item then
                 spawned[value] = spawned[value] or t
+                -- Once the fighter is free, a move none of whose objects has struck yet is followed on while one of
+                -- them strikes a little later by itself, in the time a move is followed: shadows that fly out, turn
+                -- and slash (Crimson's D^J in mode Convergence strikes 3 ticks after Crimson is free, which the quiet
+                -- ticks alone cut off, and the move was learned as doing nothing). (Not a move whose objects have
+                -- struck: a wave that goes on striking further and later, Jinbei's in One Piece GrandWorld, was
+                -- weighed worse with its late blows counted, 13 to 27 in 40 games.)
+                if move.ready < horizon_ticks and not objects_coming and next(struck) == nil
+                   and strikes_later(value.record, value.frame, move.ready + 45 - t) then
+                    objects_coming = true
+                end
                 if weapon_kinds[value.record.kind] and not move.spawned_weapon then move.spawned_weapon = value.record end
                 -- (An object born this frame strikes from the next one on; its pass frame is not yet its own.)
                 if value.frame_at_pass and spawned[value] < t then
@@ -725,6 +758,7 @@ local function play(record, entry, mp, weapon_record, hp)
                             add_box(move.boxes, t, value, object_frame, area, origin, false, me)
                             move.boxes[#move.boxes].spawn = spawned[value]
                             objects_active = true
+                            struck[value] = true
                         elseif area.kind == attack_kinds.held_item and value.holder == me.slot and me.held_item == index then
                             -- A weapon in the hand strikes with the holder's strength entry (base/game/combat
                             -- weapon_strike); it moves with the holder, so its box is the holder's own.
@@ -745,7 +779,7 @@ local function play(record, entry, mp, weapon_record, hp)
         if me.record.frame(me.frame).state == states.teleport_to_enemy and not move.teleport then move.teleport = t end
         if move.ready == horizon_ticks and t > 1 and is_free(me) and not pending_link then move.ready = t end
         if move.ready < horizon_ticks then
-            quiet = objects_active and 0 or quiet + 1
+            quiet = (objects_active or objects_coming) and 0 or quiet + 1
             if quiet > 2 or t > move.ready + 45 then break end
         end
     end
@@ -4075,6 +4109,15 @@ function smart.control(state, index)
     -- to come in.)
     if (memory.calm or 0) >= tune.loop_calm then keep_out = math.huge end
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+    -- Both pressed against the same wall at the same x (the stage's edge holds them both there): dx 0 reads as the
+    -- target to the left, so at the right wall a step back for room is a step into the wall, and two such fighters
+    -- stood there for good, nothing reaching the other (Crimson against Crimson in mode Convergence, 5,000 ticks).
+    -- One of the two (by slot) takes the target to be on the wall's side: its step back leads into the stage, the
+    -- other stays, and they part.
+    if dx == 0 and (self.x_int < 80 or self.x_int > width - 80) then
+        local wall_side = self.x_int < 80 and -1 or 1
+        dx = index % 2 == 1 and wall_side or -wall_side
+    end
     local near_z, far_z = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     local coming = target.y_int < 0 and tframe.state ~= states.caught and abs(dz) < 32 and abs(dx) < 420
         and (target.vx == 0 or (target.vx > 0) == (dx < 0))

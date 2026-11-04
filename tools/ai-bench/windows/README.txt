@@ -48,8 +48,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    Publish your own mod, or one whose author allows it; keep the licenses folder in it.
 7. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
    about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
+8. Watch two computer players fight in the game's window (to record a clip): open xem.bat in Notepad, set QUAN1
+   and QUAN2 to two fighters - by name as the game shows it (Crimson, Deep; capitals or not; the first letters
+   are enough) or by id - and NAO1, NAO2 (xoi, smart = INSANE!, classic), then double-click it. VAN games, sides
+   swapped every game; NEN a background by name or number (empty: random); a game still on after GIOI_HAN
+   ticks (9000 = 5 minutes) is a draw; the same HAT_GIONG plays the same games again. F1 pauses, F5 runs fast,
+   F4 ends the game under way (after the last, it closes the window). QUAN1 left empty: it lists the mod's
+   fighters (id, name) and backgrounds into danh-sach.txt.
+   It takes the mod as the other files do (a *-xoi.zip first, or drag a zip, a mod folder or a published
+   mod's .exe onto it). Record with OBS Studio or Xbox Game Bar (Win+Alt+R). dau-nhieu.bat takes names in
+   IDS too ("Crimson Deep").
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), xuat-ban.bat (publish;
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), xem.bat (watch), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -103,8 +113,17 @@ chơi được chính các file của bản mod.
    Chỉ xuất bản bản mod của bạn, hoặc khi tác giả cho phép; giữ thư mục licenses trong đó.
 7. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
    2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
+8. Xem hai máy đánh nhau trong cửa sổ game (để quay clip): mở xem.bat bằng Notepad, sửa QUAN1 và QUAN2 thành
+   hai nhân vật - gõ tên như trong game (Crimson, Deep; hoa thường đều được; vài chữ đầu cũng được) hoặc id -
+   và NAO1, NAO2 (xoi, smart = INSANE!, classic), lưu lại rồi nháy đúp. VAN trận, mỗi trận đổi bên; NEN là màn
+   nền theo tên hay số (để trống: ngẫu nhiên); trận quá GIOI_HAN tick (9000 = 5 phút) tính hòa; cùng HAT_GIONG
+   thì ra đúng các trận cũ. F1 dừng, F5 chạy nhanh, F4 bỏ trận đang xem (hết trận thì F4 đóng cửa sổ). Để trống
+   QUAN1: in danh sách nhân vật (id, tên)
+   và màn nền của bản mod ra danh-sach.txt. Bản mod lấy như các file khác (ưu tiên *-xoi.zip; hoặc kéo thả file
+   zip, thư mục bản mod hay file .exe của bản đã xuất bản vào nó). Quay bằng OBS Studio hoặc Xbox Game Bar
+   (Win+Alt+R). dau-nhieu.bat cũng nhận tên ở dòng IDS ("Crimson Deep").
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), xuat-ban.bat (xuất
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), xem.bat (xem), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

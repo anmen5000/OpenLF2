@@ -4,7 +4,8 @@
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
-# spsa.bat (tune XOI's numbers by play), xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
+# spsa.bat (tune XOI's numbers by play), xem.bat (watch two computer players in the window, fighters by name),
+# xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
 # put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
 # kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
 # they lay over the installed game's scripts.
@@ -32,7 +33,7 @@ def crlf(data):
 
 
 windows = root / "tools/ai-bench/windows"
-for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xuat-ban.bat", "kiem-tra.bat"):
+for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xem.bat", "xuat-ban.bat", "kiem-tra.bat"):
     data = (windows / name).read_bytes()
     # cmd reads labels wrongly in a batch file without CRLF line ends (.gitattributes keeps them).
     if data.count(b"\n") != data.count(b"\r\n"):
@@ -53,6 +54,7 @@ for source, target in ((root / "scripts", "scripts"), (root / "tools/ai-bench", 
         files.append((f"{target}/{relative.as_posix()}", path.read_bytes()))
 names = {name for name, _ in files}
 for needed in ("xuat-ban.ps1", "xuat-ban-README.txt", "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
+               "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/list.lua",
                "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
                "tools/ai-bench/package.manifest"):
     if needed not in names:

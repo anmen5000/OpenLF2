@@ -276,10 +276,29 @@ Result<void> PackArchive::index() {
         }
         if (entries_.contains("lf2.exe")) {
             executable_ = "lf2.exe";
+        } else if (executables.size() == 1) {
+            executable_ = executables.front().first;
+            entries_.emplace("lf2.exe", entries_.at(executable_));
         } else if (!executables.empty()) {
-            const auto largest = std::max_element(executables.begin(), executables.end(),
-                [](const auto& a, const auto& b) { return a.second < b.second; });
-            executable_ = largest->first;
+            // Several: the largest with LF2's pictures (WORDS0) is the game's, as in a game folder (PackFolder). A
+            // published mod zipped up holds OpenLF2's program too, larger than the game and naming itself; with no
+            // pictures anywhere, the largest that is not OpenLF2's (the error about a packed game comes later).
+            std::stable_sort(executables.begin(), executables.end(),
+                [](const auto& a, const auto& b) { return a.second > b.second; });
+            std::string fallback;
+            for (const auto& candidate : executables) {
+                auto bytes = read(candidate.first);
+                if (!bytes) continue;
+                if (bitmap_resource(*bytes, "WORDS0")) {
+                    executable_ = candidate.first;
+                    break;
+                }
+                constexpr std::string_view own_name = "OpenLF2";
+                if (fallback.empty() && std::string_view(bytes->data(), bytes->size()).find(own_name) == std::string_view::npos) {
+                    fallback = candidate.first;
+                }
+            }
+            if (executable_.empty()) executable_ = fallback.empty() ? executables.front().first : fallback;
             entries_.emplace("lf2.exe", entries_.at(executable_));
         } else {
             throw FormatError("no game executable (lf2.exe) at the top of the pack");

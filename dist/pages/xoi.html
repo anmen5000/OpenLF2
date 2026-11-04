@@ -174,6 +174,7 @@
       <a href="#play"><span class="en">Play</span><span class="vi">Chơi</span></a>
       <a href="#train"><span class="en">Train XOI</span><span class="vi">Huấn luyện XOI</span></a>
       <a href="#measure"><span class="en">Measure</span><span class="vi">Đo</span></a>
+      <a href="#watch"><span class="en">Watch</span><span class="vi">Xem</span></a>
       <a href="#tune"><span class="en">Tune XOI</span><span class="vi">Chỉnh XOI</span></a>
       <a href="#share"><span class="en">Share</span><span class="vi">Chia sẻ</span></a>
       <a href="#publish"><span class="en">Publish</span><span class="vi">Xuất bản</span></a>
@@ -224,7 +225,7 @@
             <code>OpenLF2-Windows-x86.exe</code> for 32-bit Windows, <code>OpenLF2-Windows-arm64.exe</code> for ARM PCs.</td>
             <td data-label="Where to get it"><a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> of this project on GitHub</td></tr>
           <tr><td><code>xoi-kit.zip</code></td><td data-label="What it is"><code>choi.bat</code> (play), <code>xoi-hoc.bat</code> (train),
-            <code>dau-nhieu.bat</code> (measure), <code>spsa.bat</code> (tune), <code>kiem-tra.bat</code> (check), the newest game
+            <code>dau-nhieu.bat</code> (measure), <code>spsa.bat</code> (tune), <code>xem.bat</code> (watch), <code>kiem-tra.bat</code> (check), the newest game
             scripts with INSANE! and XOI, and the training bench (about 3 MB).</td>
             <td data-label="Where to get it"><a href="xoi-kit.zip">This site</a>, or the release</td></tr>
           <tr><td>Your mod</td><td data-label="What it is">The mod as a <code>.zip</code> of its game folder — the folder that has <code>data\data.txt</code>
@@ -242,7 +243,7 @@
             <code>OpenLF2-Windows-x86.exe</code> cho Windows 32-bit, <code>OpenLF2-Windows-arm64.exe</code> cho máy chip ARM.</td>
             <td data-label="Lấy ở đâu">Mục <a href="https://github.com/anmen5000/OpenLF2/releases/latest">Releases</a> của dự án trên GitHub</td></tr>
           <tr><td><code>xoi-kit.zip</code></td><td data-label="Là gì"><code>choi.bat</code> (chơi), <code>xoi-hoc.bat</code> (huấn luyện),
-            <code>dau-nhieu.bat</code> (đo), <code>spsa.bat</code> (chỉnh số), <code>kiem-tra.bat</code> (kiểm tra), scripts mới
+            <code>dau-nhieu.bat</code> (đo), <code>spsa.bat</code> (chỉnh số), <code>xem.bat</code> (xem), <code>kiem-tra.bat</code> (kiểm tra), scripts mới
             nhất của game có INSANE! và XOI, và bộ công cụ huấn luyện (khoảng 3 MB).</td>
             <td data-label="Lấy ở đâu"><a href="xoi-kit.zip">Trang này</a>, hoặc trong bản release</td></tr>
           <tr><td>Bản mod của bạn</td><td data-label="Là gì">Bản mod dạng file <code>.zip</code> của thư mục game — thư mục có <code>data\data.txt</code>
@@ -510,6 +511,53 @@
       </ul>
     </section>
 
+    <section id="watch">
+      <h2><span class="en">Watch two computer players (for a clip)</span><span class="vi">Xem hai máy đánh nhau (để quay clip)</span></h2>
+      <p class="lede en"><code>xem.bat</code> plays two computer players against each other in the game's window, fighters
+        named as the game shows them — no ids to look up.</p>
+      <p class="lede vi"><code>xem.bat</code> cho hai máy đánh nhau trong cửa sổ game, nhân vật gõ theo tên như trong game — không
+        cần tra id.</p>
+      <ol class="steps en">
+        <li><b>Open <code>xem.bat</code> in Notepad</b> (right-click, Edit) and set <code>QUAN1</code>, <code>QUAN2</code>: two
+          fighters by name (<code>Crimson</code>, <code>Deep</code>; capitals or not, the first letters are enough:
+          <code>crim</code>) or by id; <code>NAO1</code>, <code>NAO2</code>: <code>xoi</code> (XOI), <code>smart</code> (INSANE!) or
+          <code>classic</code> (with <code>MUC=-1</code>, the original game's AI at CRAZY!).</li>
+        <li><b>Double-click it.</b> <code>VAN</code> games, sides swapped every game. In the window F1 pauses, F5 runs fast, F4
+          ends the game under way (after the last one, it closes the window); the score of each game is printed when the window
+          closes.</li>
+        <li><b>Record</b> the window with OBS Studio or the Xbox Game Bar (Win+Alt+R). The same <code>HAT_GIONG</code> plays the
+          same games again — to record once more; another number, other games.</li>
+        <li><b>Not sure of a name?</b> Leave <code>QUAN1</code> empty: it lists the mod's fighters (id and name) and backgrounds
+          into <code>danh-sach.txt</code>. A name that matches nobody: the window lists them too.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Mở <code>xem.bat</code> bằng Notepad</b> (chuột phải, Edit), sửa <code>QUAN1</code>, <code>QUAN2</code>: hai nhân vật
+          theo tên (<code>Crimson</code>, <code>Deep</code>; hoa thường đều được, vài chữ đầu cũng được: <code>crim</code>) hoặc theo id;
+          <code>NAO1</code>, <code>NAO2</code>: <code>xoi</code> (XOI), <code>smart</code> (INSANE!) hoặc <code>classic</code> (với
+          <code>MUC=-1</code>, máy của game gốc ở mức CRAZY!).</li>
+        <li><b>Nháy đúp.</b> <code>VAN</code> trận, mỗi trận đổi bên. Trong cửa sổ: F1 dừng, F5 chạy nhanh, F4 bỏ trận đang xem (hết
+          trận thì F4 đóng cửa sổ); đóng cửa sổ là file in tỉ số từng trận.</li>
+        <li><b>Quay</b> cửa sổ bằng OBS Studio hoặc Xbox Game Bar (Win+Alt+R). Cùng <code>HAT_GIONG</code> thì ra đúng các trận cũ —
+          quay lại được; đổi số là trận khác.</li>
+        <li><b>Không nhớ tên?</b> Để trống <code>QUAN1</code>: file in danh sách nhân vật (id và tên) và màn nền của bản mod ra
+          <code>danh-sach.txt</code>. Gõ tên không khớp ai: cửa sổ game cũng hiện danh sách ấy.</li>
+      </ol>
+      <ul class="plain en">
+        <li><b><code>NEN</code>:</b> the background, by name (<code>HK Coliseum</code>, <code>hk</code>) or number; empty: a random one.
+          <b><code>GIOI_HAN</code>:</b> a game still on after that many ticks (30 a second; 9000 = 5 minutes) is a draw, and the next begins.</li>
+        <li><b>The mod:</b> as with the other files — a <code>*-xoi.zip</code> beside it first (XOI's notes and numbers inside), or drag a zip,
+          a mod folder or a published mod's <code>.exe</code> onto it.</li>
+        <li><b><code>dau-nhieu.bat</code></b> takes names too: <code>IDS=Crimson Deep 4</code>. It plays without a window, for the numbers.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b><code>NEN</code>:</b> màn nền, theo tên (<code>HK Coliseum</code>, <code>hk</code>) hay số; để trống: ngẫu nhiên.
+          <b><code>GIOI_HAN</code>:</b> trận quá số tick ấy (30 tick một giây; 9000 = 5 phút) tính hòa, sang trận sau.</li>
+        <li><b>Bản mod:</b> như các file khác — ưu tiên <code>*-xoi.zip</code> cạnh nó (có bộ nhớ và bộ số của XOI), hoặc kéo thả file zip,
+          thư mục bản mod hay file <code>.exe</code> của bản đã xuất bản vào nó.</li>
+        <li><b><code>dau-nhieu.bat</code></b> cũng nhận tên: <code>IDS=Crimson Deep 4</code>. Nó chạy không cửa sổ, để lấy số liệu.</li>
+      </ul>
+    </section>
+
     <section id="tune">
       <h2><span class="en">Tune XOI's numbers (SPSA)</span><span class="vi">Chỉnh các con số của XOI (SPSA)</span></h2>
       <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 77 numbers
@@ -765,6 +813,7 @@
   xoi-hoc.bat           <i>train XOI for a mod</i>
   dau-nhieu.bat         <i>measure: two computer players on every pair</i>
   spsa.bat              <i>tune XOI's numbers by play</i>
+  xem.bat               <i>watch two computer players in the window, fighters by name (for a clip)</i>
   xuat-ban.bat          <i>publish a mod for its players (its work: xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>the README published mods get: edit it to add your words</i>
   kiem-tra.bat          <i>the game does not open: find out why (kiem-tra.txt)</i>
@@ -777,6 +826,8 @@
   &lt;mod&gt;-xoi.zip         <i>the mod with xoi\notes.txt inside (xoi-hoc.bat, or choi.bat with notes)</i>
   &lt;mod&gt;-xoi-truoc.zip   <i>the previous packing, to compare</i>
   scripts-choi\         <i>installed scripts with the kit's laid over (choi.bat)</i>
+  xem\                  <i>xem.bat's copy of the bench (config.lua, xem.txt: each game's score)</i>
+  danh-sach.txt         <i>a mod's fighters and backgrounds (xem.bat with QUAN1 empty)</i>
   xoi-&lt;mod&gt;\
     notes.txt           <i>the notes of every round, merged: what you share</i>
     ban-mod.txt         <i>which mod zip was trained</i>
@@ -790,6 +841,7 @@
   xoi-hoc.bat           <i>huấn luyện XOI cho bản mod</i>
   dau-nhieu.bat         <i>đo: hai loại máy đấu mọi cặp</i>
   spsa.bat              <i>chỉnh các con số của XOI bằng cách cho máy đánh</i>
+  xem.bat               <i>xem hai máy đánh nhau trong cửa sổ, chọn nhân vật theo tên (để quay clip)</i>
   xuat-ban.bat          <i>xuất bản bản mod cho người chơi (phần việc nằm trong xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>README của bản xuất bản: sửa để thêm lời của bạn</i>
   kiem-tra.bat          <i>game không mở được: tìm lý do (kiem-tra.txt)</i>
@@ -802,6 +854,8 @@
   &lt;tên&gt;-xoi.zip         <i>bản mod có xoi\notes.txt bên trong (xoi-hoc.bat, hoặc choi.bat kèm bộ nhớ)</i>
   &lt;tên&gt;-xoi-truoc.zip   <i>bản đóng gói lần trước, để so</i>
   scripts-choi\         <i>scripts đã cài ghép scripts của bộ XOI (choi.bat)</i>
+  xem\                  <i>bản sao bộ công cụ của xem.bat (config.lua, xem.txt: tỉ số từng trận)</i>
+  danh-sach.txt         <i>nhân vật và màn nền của bản mod (xem.bat để trống QUAN1)</i>
   xoi-&lt;tên&gt;\
     notes.txt           <i>bộ nhớ mọi đợt, đã gộp: thứ để chia sẻ</i>
     ban-mod.txt         <i>file zip bản mod đã được học</i>

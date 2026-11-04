@@ -40,6 +40,19 @@ installed `openlf2.exe` (`%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe` after "In
 Any other `command` runs without drawing — the window stays blank while the job runs and its lines go to the
 console — so `show` is the one to watch.
 
+A fighter in `ids` (and in `duel`'s `ids` and `pairs`) may be named instead of numbered (`names.lua`): its name in the
+mod (the `name:` line of its `.dat`, `"Crimson"`), the name of its file (`"crimson"` for `sprite\crimson\crimson.dat`),
+or the start of either when only one fighter's starts so (`"crim"`), capitals and small letters alike; a number in a
+string is an id. `background` picks the stage the same way, by its row or its name (`"HK Coliseum"`, `"hk"`); without
+it a random one, as in LF2. `limit` (ticks, default 9000: five minutes) ends a game still undecided as a draw — two
+computer players can stand off for good. A name that is nobody's puts the problem and the mod's fighters (or
+backgrounds) in the window; F4 ends the game under way (the match's own F4 in versus mode), and closes the window once
+the games are over. `{command = "list"}` prints the
+mod's fighters (`fighter <id> <name> <file>`, `hidden` for those LF2 hides) and backgrounds (`background <row>
+<name> <file>`). `windows/xem.bat` writes such a `show` job from its settings at the top (fighters by name, brains,
+games, background, limit, seed) and runs it in the window, for recording a clip; with a fighter left out it runs
+`list` instead and writes `danh-sach.txt`.
+
 ## Two computer players against each other
 
 A brain in `duel`'s `brains` is `"smart"` (INSANE! as in `scripts/`), `"xoi"` (XOI: INSANE! with the notes of
@@ -109,7 +122,7 @@ its own habits rather than an opponent's. It plays with the installed game's scr
 holds only the files that changed), so the installed game need not be the latest. A `duel` with `brains = {"xoi",
 "smart"}` and `difficulty = -2` on that ZIP file shows what the notes are worth (`notes = "<module>"` hands a
 `duel` or `learn` job notes of its own instead: a module of this package returning `{text = "..."}`).
-`windows/dau-nhieu.bat` runs a `duel` the same way: by default every fighter against every other (`ids = "all"`,
+`windows/dau-nhieu.bat` runs a `duel` the same way (`IDS` takes ids or names): by default every fighter against every other (`ids = "all"`,
 `brains = {"xoi", "smart"}`, each fighter played by each brain), the matchups split over the processors, then for
 each fighter (with its name) its win rate when the first brain plays it, when the second does, and the difference —
 a weak fighter is low in both, so the difference is what tells how the brains play it — and every pair's score in
