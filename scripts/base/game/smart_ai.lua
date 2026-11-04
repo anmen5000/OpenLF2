@@ -217,8 +217,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 32
+smart.version = 33
 smart.history = {
+    {33, "2026-11-04", "Set-ups: a move that strikes nothing itself but leaves objects of the fighter's making standing, which strike with its next moves, is learned as such and used. Crimson's DvJ in mode Convergence leaves a shadow (with J pressed on, three or five) that copies her D>A, D^A or DvA from where it stands, told which by a body of hers far above the stage, and stands again where its slash ends; weighed one move at a time, DvJ did nothing for its MP and was never used, as the project owner saw. In the copy each set-up is played, then each of the fighter's D-moves once it is free, and once without one: what a standing object strikes only after the D-move, having left its own frames, is its answer to it, from where it stood (no other fighter of seven mods has such a move: an object that strikes by itself, or what a D-move throws itself, is no answer). In a match a D-move is weighed with the blows of the objects standing then (as sure as its own blow while that one holds the target, a quarter of that otherwise, half in all when only theirs land), and taken at half the usual score while they stand; the set-up is laid when none of its objects stands, the target is within 420 and nothing can reach the fighter first: the one that adds most to a D-move where the D-move lands (DvJ with J once, 225 MP: 50 HP), or DvJ alone when MP or time is short. Crimson laid one about three times a game and the shadows struck about 45 HP a game. Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games where version 32's won 551 of 1,196 (48.5% against 46.1%), as XOI with the mod's own numbers 313 of 587 where version 32's won 303 of 588 (53.3% against 51.5%); Crimson against version 32's Crimson 23 to 30 in those games (too few to tell). Every other fighter plays exactly as before"},
     {32, "2026-11-04", "A move whose summons strike a moment after the fighter is free is known by what they do. A move was followed in the private copy until three quiet frames after the fighter was free again, and Crimson's D^J in mode Convergence (five shadows fly out, turn and slash back from frame 29, Crimson free from 25) was learned as doing nothing for 400 MP, so it was never used, as the project owner saw after tuning XOI for the mod. A move none of whose objects has struck yet is now followed on while one of them, by its own frames, comes to a blow of 10 HP or more: D^J is 150 damage around Crimson, and so are the few other moves learned as nothing the same way (Stancher's D^J and DvJ, Darius's D>J; Pein's, Sai's, Ten Ten's and Yamato's in Naruto 2.4; Nami's and Robin's in One Piece; Rudolf's DvJ in KT-LF2; Firzen's D^A). Two fighters pressed against the same wall at the same x no longer stand there for good: one of them takes the other to be on the wall's side, so its step back for room leads into the stage. Against version 31, on those fighters and their opponents in six mods: 636 to 657 over 1,293 decided games (as even as that many games can tell; Crimson against Crimson 14 to 4, Pein against Pein 27 to 3 — in a game against the old version the new one also steers clear of moves the old one never uses); against CRAZY! 166 to 10 where version 31 won 163 to 14 on the same games."},
     {31, "2026-11-03", "INSANE! and XOI part ways, as the project owner asked, so that the last level is plainly stronger than the one before it: INSANE! plays with its numbers set by hand again (as up to version 28), and the numbers tuned by play are XOI's alone — version 29's (the original LF2, Naruto 2.4, One Piece GrandWorld), and in a mod with numbers of its own (xoi/tune.txt, spsa.bat's) those; INSANE! leaves a mod's numbers to XOI. XOI keeps its notes of training besides"},
     {30, "2026-11-02", "No endless loops. Ten seconds and more with no blow between the two fighters (300 frames free to act) is taken for a loop, and then a move tried again and again since the last blow, all to no avail, is worth less with every try beyond three (its tries counted with those of its family — how it starts, whatever it continues into — one forgotten every five seconds it is not tried), so something else gets its turn; no spot is kept out of the enemy's reach any more, so one of the two comes in; and a thrower that has kept the fighter dodging is jumped toward over its throws, when the jump clears them and lands outside its arms. Before that it plays as version 29. (Itachi's fireballs met Sai's ink birds for good in Naruto: The Setting Dawn, a game played to its five-minute limit without a blow; Gaara jumped Itachi's kunai on the spot for good. Over Itachi's 48 games against every fighter, the frames of standoffs beyond ten seconds fell from 8,890 to 2,058, and no game ran out of time.) A heavy item in hand (a stone, a log) is thrown, landing or not, once the target comes near: holding it the fighter can neither guard, jump nor strike, and Kakashi with a stone and Gaara with a log stood face to face at a wall for good; and a fighter too close to its target at a wall no longer steps back to the wall and turns round again every few frames. 77 numbers of its judgement open to tuning by play (the 39 written into the code by hand until then keep their values), and a mod can carry numbers of its own (xoi/tune.txt beside its data, written by spsa.bat), used in that mod's matches ('mod tuned' beside the level). Against version 29: 299 to 308 over the 640 games of the 8 pairs of Naruto 2.4 and One Piece GrandWorld (as even as that many games can tell)."},
@@ -789,6 +790,16 @@ local function play(record, entry, mp, weapon_record, hp)
     move.mp = start_mp - me.mp
     move.hp = start_hp - me.hp
     move.length = #move.traj_x
+    -- What it leaves standing: objects of its making still there at its end that have not struck (not an item, nor a
+    -- fighter), by slot: what may strike with the fighter's later moves (setup_kit.learn: Crimson's shadows).
+    for index = 2, constants.item_slots - 1 do
+        local value = state.items[index]
+        if value and spawned[value] and not struck[value] and value ~= armed_item and not weapon_kinds[value.record.kind]
+           and value.record.kind ~= record_kinds.character then
+            move.left_standing = move.left_standing or {}
+            move.left_standing[#move.left_standing + 1] = {data = value.record.data, frame = value.frame}
+        end
+    end
     -- A teleport to the enemy (state 400) lands beside it: in front, or behind when the move turns the fighter
     -- round first (Kuma). Where, against the enemy (the copy's dummy), in the direction the fighter set off in.
     if move.teleport then
@@ -1152,6 +1163,372 @@ local function explore(record, analysis, mode, first_index)
     analysis.entries = (analysis.entries or 0) + #entries
 end
 
+---------------------------------------------------------------------------------------------------------------
+-- Set-ups (version 33). A move that strikes nothing itself but leaves objects of the fighter's making standing,
+-- which strike when the fighter strikes next: Crimson's shadows in mode Convergence (DvJ leaves one, with J pressed
+-- on three or five; each copies her D>A, D^A or DvA from where it stands, told which by a body of hers far above the
+-- stage, and stands again where its slash ends, for two seconds more). Weighed one by one, such a move did nothing
+-- for its MP and was never used. Learned in the copy: the set-up, then each of the fighter's D-moves once it is
+-- free; what the standing objects strike then, where and when from where each stood, is that kind of object's
+-- answer to the D-move. In a match a D-move is weighed with the answers of the objects standing then (best_attack),
+-- and the set-up is laid when it is safe and a D-move could soon follow (smart.control).
+---------------------------------------------------------------------------------------------------------------
+-- (settle: frames the set-up's objects are left to settle in the copy before the D-move; share: the part of an
+-- answer's worth that counts when it lands on its own, see setup_kit.worth; alone: the part of a move's worth that
+-- counts when only the answers land, not its own blow — each object hears the word on its own beat, up to a few
+-- frames apart; eager: the part of the attack threshold a D-move they answer needs while they stand; min_net: what
+-- the best set-up must bring beyond the price of its MP for the fighter to lay any; any: the others are laid too,
+-- when MP or time is short for the best — Crimson's one shadow as often as MP allows did better than her three
+-- alone, see the version's notes.)
+local setup_kit = {settle = 8, share = 0.25, alone = 0.5, eager = 0.5, min_net = 10, any = true, zero = {[0] = 0}}
+
+-- The frames an object of `record` goes through from `first` by their next and wait (no key, no hit), with the
+-- frames each lasts; and whether it goes round them for good.
+function setup_kit.chain(record, first)
+    local list, seen = {}, {}
+    local current = first
+    for _ = 1, 400 do
+        local frame = record.frames[current]
+        if not frame then break end
+        if seen[current] then return list, true end
+        seen[current] = true
+        list[#list + 1] = {id = current, ticks = frame.wait + 1}
+        local next_id = frame.next
+        if next_id < 0 then next_id = -next_id end
+        -- (Next 0 keeps it in that frame for good.)
+        if next_id == 0 then return list, true end
+        if next_id == 999 or next_id >= 1000 then break end
+        current = next_id
+    end
+    return list, false
+end
+
+-- What an object's frame is by itself: its bodies and the kinds of its interactions.
+function setup_kit.signature(frame)
+    local parts = {#frame.bodies}
+    for _, area in ipairs(frame.interactions) do parts[#parts + 1] = area.kind end
+    return table.concat(parts, ",")
+end
+
+-- When an object of `record` can answer, from each frame on its way from `first` (its frame as the set-up ended):
+-- from the frames like `waiting` (the one it answered from in the copy) around it on that way, and from the frames
+-- before them once there. [frame] = {start, finish}: the frames from entering it until the object can answer, and
+-- until it no longer can.
+function setup_kit.windows(record, first, waiting)
+    local list, loops = setup_kit.chain(record, first)
+    local at
+    for position, step in ipairs(list) do
+        if step.id == waiting then at = position; break end
+    end
+    if not at then
+        list, loops = setup_kit.chain(record, waiting)
+        at = 1
+    end
+    if #list == 0 then return {} end
+    local signature = setup_kit.signature(record.frames[waiting])
+    local from, to = at, at
+    while from > 1 and setup_kit.signature(record.frames[list[from - 1].id]) == signature do from = from - 1 end
+    while to < #list and setup_kit.signature(record.frames[list[to + 1].id]) == signature do to = to + 1 end
+    local forever = loops and to == #list
+    local windows, finish = {}, 0
+    for position = to, from, -1 do
+        finish = finish + list[position].ticks
+        windows[list[position].id] = {start = 0, finish = forever and 9999 or finish}
+    end
+    local start = 0
+    for position = from - 1, 1, -1 do
+        start = start + list[position].ticks
+        if not windows[list[position].id] then
+            windows[list[position].id] = {start = start, finish = forever and 9999 or start + finish}
+        end
+    end
+    return windows
+end
+
+-- Plays `setup`, then once the fighter is free and what it laid has settled, `follow` (or nothing: the control), in a
+-- fresh copy whose every frame works out all interactions (an object may answer through any of them). The objects
+-- standing then, in slot order, each with what it struck afterwards (or what was born where it stood struck: not near
+-- the fighter, when the D-move throws things of its own), from where it stood and from the key's frame, and the frame
+-- it left its own way in (what next and wait lead to), if it did.
+function setup_kit.probe(record, setup, follow)
+    local state, me = new_sandbox(record)
+    state.dummy_hittable = true -- (the dummy itself blinks still: nothing touches it)
+    local function step() sandbox_step(state) end
+    if not enter_context(state, me, "ground", step) then return nil end
+    set_keys(me, nil)
+    me.sequences[setup.entry.sequence] = complete
+    local chain, chain_step, ready = setup.entry.chain, 1, nil
+    local first_frames, known = {}, {}
+    for t = 1, horizon_ticks do
+        step()
+        set_keys(me, nil)
+        local link = chain and chain[chain_step]
+        if link and me.record.frame(me.frame).hits[link.key] == link.target then
+            set_keys(me, {[link.button] = true})
+            me.previous_keys[link.button] = false
+            chain_step = chain_step + 1
+        end
+        for index = 2, constants.item_slots - 1 do
+            local value = state.items[index]
+            if value and not first_frames[value] then first_frames[value] = value.frame end
+        end
+        if not ready and t > 1 and is_free(me) and not (chain and chain_step <= #chain) then ready = t end
+        if ready and t >= ready + setup_kit.settle then break end
+    end
+    if not ready then return nil end
+    local standing, root_of = {}, {}
+    for index = 2, constants.item_slots - 1 do
+        local value = state.items[index]
+        if value then
+            known[value] = true
+            if value.owner == me.owner and value.record.kind ~= record_kinds.character and not weapon_kinds[value.record.kind] then
+                local entry = {value = value, record = value.record, x = value.x_int, y = value.y_int, z = value.z_int,
+                    first = first_frames[value] or value.frame, frame = value.frame, at_x = value.x_int, at_z = value.z_int, boxes = {}}
+                standing[#standing + 1] = entry
+                root_of[value] = entry
+            end
+        end
+    end
+    if #standing == 0 then return nil end
+    set_keys(me, nil)
+    local throws = false
+    if follow then
+        me.sequences[follow.entry.sequence] = complete
+        for _, box in ipairs(follow.boxes) do
+            if not box.own then throws = true end
+        end
+    end
+    local born = {}
+    for t = 1, horizon_ticks do
+        step()
+        set_keys(me, nil)
+        local present = {}
+        for index = 2, constants.item_slots - 1 do
+            local value = state.items[index]
+            if value then present[value] = true end
+        end
+        -- Each standing object: where it is, and the frame it leaves its own way in (told to answer).
+        for _, entry in ipairs(standing) do
+            local value = entry.value
+            if present[value] then
+                if not entry.left and value.frame ~= entry.frame then
+                    local frame = entry.record.frames[entry.frame]
+                    local natural = frame and frame.next or 0
+                    if natural < 0 then natural = -natural end
+                    if value.frame ~= natural then
+                        entry.left, entry.from = t, entry.frame
+                    end
+                    entry.frame = value.frame
+                end
+                entry.at_x, entry.at_z = value.x_int, value.z_int
+            end
+        end
+        for index = 2, constants.item_slots - 1 do
+            local value = state.items[index]
+            if value then
+                -- Something new of the fighter's: an answer where it starts at a standing object.
+                if not known[value] then
+                    known[value] = true
+                    born[value] = t
+                    if value.owner == me.owner then
+                        local best, best_gap
+                        for _, entry in ipairs(standing) do
+                            local gap = abs(value.x_int - entry.at_x) + abs(value.z_int - entry.at_z)
+                            local beside = abs(entry.at_x - me.x_int) <= 24 and abs(entry.at_z - me.z_int) <= 8
+                            if abs(value.x_int - entry.at_x) <= 12 and abs(value.z_int - entry.at_z) <= 6 and not (throws and beside)
+                               and (not best_gap or gap < best_gap) then
+                                best, best_gap = entry, gap
+                            end
+                        end
+                        root_of[value] = best
+                    end
+                end
+                local root = root_of[value]
+                -- (A thing born this frame strikes from the next one on.)
+                if root and value.frame_at_pass and (born[value] or 0) < t then
+                    local frame = value.record.frame(value.frame_at_pass)
+                    for _, area in ipairs(frame.interactions) do
+                        if damaging(area) then
+                            add_box(root.boxes, t, value, frame, area, {x = root.x, y = root.y, z = root.z}, false, me)
+                            root.boxes[#root.boxes].spawn = 0
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return standing
+end
+
+-- How much `follow` takes from a fighter standing where its own first blow lands (dx, dz from the fighter as it is
+-- keyed), with `setup` laid before it (or not), in a copy as setup_kit.probe's: the set-up's gain is the difference.
+function setup_kit.measure(record, setup, follow, dx, dz)
+    local state, me = new_sandbox(record)
+    state.dummy_hittable = true
+    local dummy = state.items[1]
+    local function step() sandbox_step(state) end
+    if not enter_context(state, me, "ground", step) then return 0 end
+    set_keys(me, nil)
+    local ready
+    if setup then
+        me.sequences[setup.entry.sequence] = complete
+        local chain, chain_step = setup.entry.chain, 1
+        for t = 1, horizon_ticks do
+            step()
+            set_keys(me, nil)
+            local link = chain and chain[chain_step]
+            if link and me.record.frame(me.frame).hits[link.key] == link.target then
+                set_keys(me, {[link.button] = true})
+                me.previous_keys[link.button] = false
+                chain_step = chain_step + 1
+            end
+            if not ready and t > 1 and is_free(me) and not (chain and chain_step <= #chain) then ready = t end
+            if ready and t >= ready + setup_kit.settle then break end
+        end
+        if not ready then return 0 end
+    else
+        for _ = 1, setup_kit.settle do step() end
+    end
+    dummy.x_int, dummy.y_int, dummy.z_int = me.x_int + dx, 0, me.z_int + dz
+    dummy.x, dummy.y, dummy.z = dummy.x_int, 0.0, dummy.z_int
+    dummy.blink, dummy.frame, dummy.facing = 0, 0, facing_left
+    dummy.hp, dummy.dark_hp, dummy.max_hp = 5000, 5000, 5000
+    set_keys(me, nil)
+    me.sequences[follow.entry.sequence] = complete
+    for _ = 1, horizon_ticks do
+        step()
+        set_keys(me, nil)
+    end
+    local loss = 5000 - dummy.hp
+    if dummy.armor > 0 then loss = floor(loss * dummy.armor / 100) end
+    return max(loss, 0)
+end
+
+-- The answer of the object `entry` of a probe, when it gave one: it left its own way after the D-move's key, and
+-- struck (10 HP or more) only after that, while in the control (no D-move) it neither left its way nor struck.
+function setup_kit.answer(entry, control)
+    if not (entry.left and control and #control.boxes == 0 and not control.left) then return nil end
+    local boxes, strong = {}, false
+    for _, box in ipairs(entry.boxes) do
+        if box.t >= entry.left then
+            boxes[#boxes + 1] = box
+            if box.injury >= 10 then strong = true end
+        end
+    end
+    if not strong then return nil end
+    table.sort(boxes, function(a, b)
+        if a.t ~= b.t then return a.t < b.t end
+        return a.injury > b.injury
+    end)
+    return {data = entry.record.data, record = entry.record, boxes = boxes, left = entry.left,
+        windows = setup_kit.windows(entry.record, entry.first, entry.from)}
+end
+
+-- The fighter's set-ups and their objects' answers (see above): analysis.setups (the one that adds most first, each
+-- with setup = {count, gain}), each D-move's answers by the kind of object ([record.data]), and
+-- analysis.standing_kinds, when each kind can answer. Each kind's answers are learned after the set-up that leaves
+-- fewest of it (one alone answers for itself).
+function setup_kit.learn(record, analysis)
+    local setups, follows = {}, {}
+    for _, move in ipairs(analysis.moves) do
+        local entry = move.entry
+        if entry.context == "ground" and entry.sequence and not entry.parent and not entry.mode and not entry.held and not entry.walking then
+            if not move.first and move.left_standing then setups[#setups + 1] = move
+            elseif move.first and not entry.chain then follows[#follows + 1] = move end
+        end
+    end
+    if #setups == 0 or #follows == 0 then return end
+    table.sort(setups, function(a, b)
+        if #a.left_standing ~= #b.left_standing then return #a.left_standing < #b.left_standing end
+        return a.index < b.index
+    end)
+    local saved_table, saved_index, saved_sequence = engine.random_state()
+    local runtime = require("base/game/ai_scripts").runtime
+    local saved_self_o, saved_self_n = runtime.self.o, runtime.self.n
+    local saved_target_o, saved_target_n = runtime.target.o, runtime.target.n
+    local kinds, tried = {}, {}
+    for _, setup in ipairs(setups) do
+        local fresh_kind = false
+        for _, left in ipairs(setup.left_standing) do
+            if not tried[left.data] then fresh_kind = true end
+        end
+        if fresh_kind then
+            engine.set_random_state(random_table(), 0, 0)
+            local control_ok, control = pcall(setup_kit.probe, record, setup, nil)
+            if control_ok and control then
+                for _, follow in ipairs(follows) do
+                    engine.set_random_state(random_table(), 0, 0)
+                    local ok, standing = pcall(setup_kit.probe, record, setup, follow)
+                    if ok and standing then
+                        for position, entry in ipairs(standing) do
+                            local answer = not tried[entry.record.data] and setup_kit.answer(entry, control[position])
+                            if answer then
+                                follow.answers = follow.answers or {}
+                                if not follow.answers[answer.data] then follow.answers[answer.data] = answer end
+                                if not kinds[answer.data] then kinds[answer.data] = {record = answer.record, windows = answer.windows} end
+                            end
+                        end
+                    end
+                end
+            end
+            for _, left in ipairs(setup.left_standing) do tried[left.data] = true end
+        end
+    end
+    -- What each set-up brings: the most it adds to a D-move its objects answer, on a fighter standing where the
+    -- D-move's own blows land (its first, middle and last: the mean of the three), as they stand when it is laid.
+    local alone = {}
+    for _, setup in ipairs(setups) do
+        local count = 0
+        for _, left in ipairs(setup.left_standing) do
+            if kinds[left.data] then count = count + 1 end
+        end
+        if count > 0 then
+            local gain = 0
+            for _, follow in ipairs(follows) do
+                local answers = false
+                for _, left in ipairs(setup.left_standing) do
+                    if follow.answers and follow.answers[left.data] then answers = true end
+                end
+                local own = {}
+                for _, box in ipairs(follow.boxes) do
+                    if box.own then own[#own + 1] = box end
+                end
+                if answers and #own > 0 then
+                    local total = 0
+                    local spots = {own[1], own[floor((#own + 1) / 2)], own[#own]}
+                    for position, box in ipairs(spots) do
+                        local dx = floor((box.x1 + box.x2) / 2) + (follow.traj_x[box.t] or 0)
+                        local dz = box.z + (follow.traj_z[box.t] or 0)
+                        local key = follow.index * 3 + position
+                        if not alone[key] then
+                            engine.set_random_state(random_table(), 0, 0)
+                            local ok, damage = pcall(setup_kit.measure, record, nil, follow, dx, dz)
+                            alone[key] = ok and damage or 0
+                        end
+                        engine.set_random_state(random_table(), 0, 0)
+                        local ok, damage = pcall(setup_kit.measure, record, setup, follow, dx, dz)
+                        total = total + (ok and damage or 0) - alone[key]
+                    end
+                    gain = max(gain, total / #spots)
+                end
+            end
+            setup.setup = {count = count, gain = gain}
+            analysis.setups = analysis.setups or {}
+            analysis.setups[#analysis.setups + 1] = setup
+        end
+    end
+    engine.set_random_state(saved_table, saved_index, saved_sequence)
+    runtime.self.o, runtime.self.n = saved_self_o, saved_self_n
+    runtime.target.o, runtime.target.n = saved_target_o, saved_target_n
+    if analysis.setups then
+        table.sort(analysis.setups, function(a, b)
+            if a.setup.gain ~= b.setup.gain then return a.setup.gain > b.setup.gain end
+            return a.index < b.index
+        end)
+        analysis.standing_kinds = kinds
+    end
+end
+
 local function analyze(record)
     local data = record.data
     local found = analyses[data]
@@ -1160,6 +1537,7 @@ local function analyze(record)
     analyses[data] = analysis
     if record.kind ~= record_kinds.character then return analysis end
     explore(record, analysis, nil, 1)
+    setup_kit.learn(record, analysis)
     -- Moves by how they start; attack starts one of the two punches at random.
     analysis.by_sequence, analysis.chains = {}, {}
     for _, move in ipairs(analysis.moves) do
@@ -2888,6 +3266,91 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
     return score
 end
 
+-- The objects of set-up kinds that `self` has standing now (setup_kit.learn), each with the frames until it can
+-- answer and until it no longer can; nil for a fighter without set-ups. (Worked out once a frame.)
+function setup_kit.standing(context, self, analysis)
+    local kinds = analysis.standing_kinds
+    if not kinds then return nil end
+    local state = context.state
+    local cache = context.standing
+    if cache and cache.frame == state.frame_number and cache.self == self then return cache.list end
+    local list = {}
+    for index = 2, constants.item_slots - 1 do
+        local value = state.items[index]
+        if value and value ~= self and value.owner == self.owner then
+            local kind = kinds[value.record.data]
+            local window = kind and kind.windows[value.frame]
+            if window then
+                local spent = value.wait_counter or 0
+                list[#list + 1] = {value = value, start = max(0, window.start - spent), finish = window.finish - spent}
+            end
+        end
+    end
+    context.standing = {frame = state.frame_number, self = self, list = list}
+    return list
+end
+
+-- An answer of `standing` (one standing object) to a D-move started now facing `face`: its boxes as a move of
+-- `self`'s, from where the object stands.
+function setup_kit.answer_move(self, face, answer, standing)
+    local value = standing.value
+    local fx, dy, dz = (value.x_int - self.x_int) * face, value.y_int - self.y_int, value.z_int - self.z_int
+    local boxes = {}
+    for _, box in ipairs(answer.boxes) do
+        boxes[#boxes + 1] = {t = box.t, x1 = box.x1 + fx, x2 = box.x2 + fx, y1 = box.y1 + dy, y2 = box.y2 + dy,
+            z = box.z + dz, zw = box.zw, injury = box.injury, fall = box.fall, bdefend = box.bdefend, dvx = box.dvx,
+            kind = box.kind, effect = box.effect, own = false, spawn = 0, source = box.source}
+    end
+    local zero = setup_kit.zero
+    return {boxes = boxes, traj_x = zero, traj_y = zero, traj_z = zero, vel_x = zero, vel_y = zero}
+end
+
+-- The blows of standing objects that answer `move` started now facing `face` and land on `target` (after it stops
+-- blinking): a list of {t, box}, or nil.
+function setup_kit.answers(self, face, move, standing, target, target_frame, target_at, horizon, untouchable)
+    local found
+    for _, object in ipairs(standing) do
+        local answer = move.answers[object.value.record.data]
+        -- (It answers when it can by the time the key's word reaches it, and still can then.)
+        if answer and object.start < answer.left and answer.left <= object.finish + 1 then
+            local t, box = move_hits(self, face, setup_kit.answer_move(self, face, answer, object), 0, target, target_frame, target_at, horizon, true)
+            if t and t > untouchable then
+                found = found or {}
+                found[#found + 1] = {t = t, box = box}
+            end
+        end
+    end
+    return found
+end
+
+-- What the answers add to a move whose blow lands at `t` (its own, or the first answer's): each blow of theirs that
+-- lands while the target is still held by that one is worth what any blow is, as sure as that one (the same chance
+-- of its landing unguarded, the same guess); one coming later, on its own, a share of that (all of them come
+-- together, guarded or stepped out of together). Later blows count less, as in attack_score.
+function setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger)
+    local facing = face == 1 and facing_right or facing_left
+    local sure = 1.0
+    if t > stunned then sure = max(tune.sure_floor, 1.0 - (t - stunned) * tune.sure_decay) end
+    local blocked = would_block(target, target_state_at(context, target, t - 1), facing, box)
+    if not blocked and t > stunned and box.bdefend < 61 and (tstate == states.standing or tstate == states.walking)
+       and target.facing ~= facing then
+        sure = sure * (1 - guard_rate(model_of(context, target)) * min(1, (1 - tune.guard_speed ^ (t - stunned)) * tune.guard_scale)
+            * (1 - tune.guard_aggression * (context.aggression or 0)))
+    end
+    local held = blocked and t or t + ((box.fall >= 60 or target.timer_b0 + max(box.fall, 20) > 60) and 30 or stagger)
+    local total = 0
+    for _, extra in ipairs(extras) do
+        local at, blow = extra.t, extra.box
+        local chance = sure
+        if at < t or at > held then
+            chance = at > stunned and max(tune.sure_floor, 1.0 - (at - stunned) * tune.sure_decay) * setup_kit.share or setup_kit.share
+        end
+        local guarded = would_block(target, target_state_at(context, target, at - 1), facing, blow)
+        total = total + worth(target, blow, guarded, nil) * chance * 14 / (at + tune.time_bias) * (tune.time_bias / 10)
+    end
+    return total
+end
+
 -- The best move to start now against `target`: move, frames until it hits, score. Moves that would land only
 -- after the target could have hit back (`danger` frames) are left out.
 local function best_attack(context, self, frame, fstate, target, horizon, danger, excluded)
@@ -2901,6 +3364,9 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local target_at = path_position_fn(context, target) or function(k) return predict(target, k, tstate) end
     local target_frame = target_frame_at_fn(context, target, tframe, stunned)
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
+    -- (Objects of a set-up standing: they strike with the D-moves they answer, see setup_kit.)
+    local standing = setup_kit.standing(context, self, analysis)
+    if standing and #standing == 0 then standing = nil end
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
@@ -2915,9 +3381,29 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
             end
             -- Nothing lands while the target blinks (and, down, it gets up blinking).
             if t and t <= untouchable then t = nil end
+            -- The blows of standing objects that answer the move, besides its own (or instead, where its own miss:
+            -- the first of theirs is its blow then).
+            local extras = standing and move.answers and setup_kit.answers(self, face, move, standing, target, target_frame, target_at, horizon, untouchable)
+            local alone = false
+            if extras and not t then
+                -- (Not at a target that is down: it gets up blinking, and away.)
+                if tstate == states.lying or tstate == states.falling then
+                    extras = nil
+                else
+                    table.sort(extras, function(a, b)
+                        if a.t ~= b.t then return a.t < b.t end
+                        return a.box.injury > b.box.injury
+                    end)
+                    t, box = extras[1].t, extras[1].box
+                    table.remove(extras, 1)
+                    alone = true
+                end
+            end
             -- Landing together with the target's quickest answer is a trade at worst: it has not started it yet.
             if t and (not danger or t < danger or (t == danger and stunned == 0)) then
                 local score = attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, 0)
+                if extras and #extras > 0 then score = score + setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger) end
+                if alone then score = score * setup_kit.alone end
                 if score > best_score then best, best_t, best_score = move, t, score end
             end
         end
@@ -3870,7 +4356,47 @@ function smart.control(state, index)
         end
     end
 
+    -- Laying a set-up (Crimson's shadows, see setup_kit), when one of the fighter's pays for its MP (what it adds to
+    -- the D-moves its objects answer, less the price of its MP), none of their objects stands, the target is near
+    -- enough for those D-moves to follow while they stand, and nothing can reach us before it is laid — the target held
+    -- that long and a D-move's time more, or too far off to come within its quick blows by then, and nothing on its
+    -- way; facing the target (they strike the way the fighter does). The one that adds most, of those MP allows and
+    -- there is time for (setup_kit.any; else that one alone, MP waited for).
+    local own_setups = context.analysis_of(self).setups
+    if own_setups and not threat_t and self.y_int == 0 and (fstate == states.standing or fstate == states.walking)
+       and self.weapon == weapon_none and state.frame_number > 4 and state.frame_number - (memory.setup_tried or -999) > 60
+       and (target.x_int >= self.x_int) == (self.facing == facing_right) then
+        local chosen, chosen_net
+        for _, candidate in ipairs(own_setups) do
+            local net = candidate.setup.gain - candidate.mp * tune.mp_cost
+            if net >= setup_kit.min_net and (not chosen_net or net > chosen_net) then chosen, chosen_net = candidate, net end
+        end
+        local candidates = setup_kit.any and own_setups or {chosen}
+        local dx, dz = abs(target.x_int - self.x_int), abs(target.z_int - self.z_int)
+        if chosen and dx < 420 and dz < 100 and #setup_kit.standing(context, self, context.analysis_of(self)) == 0 then
+            local run = (target.record.movement or {}).running_speed or 10
+            local reach_in = (dx - melee_reach(target_analysis)) / max(run, 1) + 4
+            for _, candidate in ipairs(candidates) do
+                local busy = candidate.ready + 4
+                if can_start(self, frame, fstate, candidate) and (target_lock > busy + 12 or (not danger and reach_in > busy))
+                   and not earliest_threat(state, index, self, busy, nil, level.reaction, context) then
+                    start(self, candidate, target)
+                    memory.setup_tried = state.frame_number
+                    memory.note = "set up " .. candidate.setup.count
+                    return
+                end
+            end
+        end
+    end
+
     -- Attacking (a slow move too, when the target is held long enough for it).
+    -- (With objects of a set-up standing, a D-move they answer is taken at a lower score: they will not stand long,
+    -- and what they would bring is lost if it waits.)
+    local standing_now = own_setups and setup_kit.standing(context, self, context.analysis_of(self)) or nil
+    local function threshold(chosen)
+        if chosen and chosen.answers and standing_now and #standing_now > 0 then return tune.attack_threshold * setup_kit.eager end
+        return tune.attack_threshold
+    end
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
     -- Not into a blow already on its way: a move whose path meets an enemy's attack in progress before it lands is
     -- left alone (the next best is tried). Against the target's quickest answer along that path (a rush ends
@@ -3882,14 +4408,14 @@ function smart.control(state, index)
     local excluded, checked, at_risk
     for _ = 1, 4 do
         checked, at_risk = false, false
-        if not (move and score > tune.attack_threshold) then break end
+        if not (move and score > threshold(move)) then break end
         local plan, frames_at = move_path(self, move, target)
         local into = earliest_threat(state, index, self, t - 1, plan, level.reaction, context, frames_at)
         local reason = into and "into" or nil
         if not into and not (target_pressure and target_pressure < tune.passive_pressure) and t >= tune.risk_min_t then
             local along, along_damage = counter_along(context, target, self, target_lock, plan, frames_at)
             if along and (along < t or (along == t and target_lock > 0)) then
-                if worth_the_risk(memory, score, t, along_damage) > tune.attack_threshold then at_risk = true
+                if worth_the_risk(memory, score, t, along_damage) > threshold(move) then at_risk = true
                 else into = true; reason = "along" end
             end
         end
@@ -3905,7 +4431,7 @@ function smart.control(state, index)
             untouchable_for(context, target, tframe.state, target_lock), tostring(danger),
             move and (move.entry.field or move.entry.basic or "chain") or "-", tostring(t), score or 0))
     end
-    if move and score > tune.attack_threshold then
+    if move and score > threshold(move) then
         start(self, move, target, t, score)
         memory.last_use[move.index] = state.frame_number
         rare.tried(memory, move, state.frame_number)
@@ -4571,5 +5097,5 @@ smart.internals = {earliest_threat = earliest_threat, where_of = where_of, analy
     danger_at = danger_at, danger_zones = danger_zones, melee_reach = melee_reach, best_attack = best_attack,
     enemy_reach = enemy_reach, defend_ticks = defend_ticks, target_lock_of = target_lock_of, armed_analysis = armed_analysis,
     stance_exit = stance_exit, lock_of = lock_of, new_sandbox = new_sandbox, sandbox_step = sandbox_step, arm = arm,
-    set_keys = set_keys}
+    set_keys = set_keys, setup_kit = setup_kit}
 return smart

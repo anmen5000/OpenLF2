@@ -62,7 +62,8 @@ shape of `smart_ai.lua`, loaded from this package as
 `<module>.lua` (listed in `package.manifest` as `module=<module>|<module>.lua`). To pit a version of INSANE!
 against an older one, copy the older `smart_ai.lua` in as `ai_alt.lua` and use `brains = {"smart", "smart@ai_alt"}`;
 the log's first line names both versions (`brains: smart v22 against smart@ai_alt v21`; a version before 20 has
-no number and is named so). Each player keeps its own context — how it reads the fighters' moves, its model of the
+no number and is named so). `"xoi@<module>"` plays that version as XOI (its tuned numbers, the mod's own and the
+notes): `brains = {"xoi", "xoi@ai_alt"}` pits two versions of XOI. Each player keeps its own context — how it reads the fighters' moves, its model of the
 opponent — as it would in a match of its own (before 1 November 2026 the two shared one, which skewed matches
 between versions that read moves differently, such as 23 against 16). `ai_template.lua` is a
 computer player of your own in that shape — `prepare(state)` once before the match, `control(state, index)`

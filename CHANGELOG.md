@@ -126,12 +126,29 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   a mod's 1-HP markers and grabs.) Both fighters pressed against the same wall at the same x (the stage's edge
   holds them there) no longer stand for good: one of the two (by slot) takes the other to be on the wall's side,
   so its step back for room leads into the stage (two Crimsons stood so 5,000 ticks). DvJ ("copy", 75 MP: a
-  shadow stays where Crimson stood and slashes with him when he next does D>A, D^A or DvA, for two seconds) is
+  shadow stays where Crimson stood and slashes with her when she next does D>A, D^A or DvA, for two seconds) is
   still not used: by itself it does nothing, and its worth is the next move's, which the AI does not plan ahead.
   Against v31 on those fighters and their opponents (Convergence, Naruto 2.4, One Piece GrandWorld and newest,
   KT-LF2, Hell; 10 games a pair, three seeds): 636–657 over 1,293 decided games, as even as that many can tell
   (Crimson's mirror 14–4, Pein's 27–3; against the old version the new one also steers clear of moves the old one
   never uses); against CRAZY! 166–10, v31 163–14 on the same games
+- INSANE!/XOI v33: set-ups (the project owner's question again: Crimson of mode Convergence never laid her
+  shadows). DvJ ("copy", 75 MP; 225 with J pressed once, 375 twice) leaves one, three or five shadows that copy her
+  D>A, D^A or DvA from where they stand — a body of hers far above the stage tells them which — and stand again where
+  the slash ends, for two seconds more; weighed one move at a time, DvJ did nothing for its MP. A move that strikes
+  nothing itself but leaves objects of the fighter's making standing is now played in the copy with each of the
+  fighter's D-moves after it, and once without: what a standing object strikes only after the D-move, having left
+  its own frames, is its answer to that D-move, from where it stood (`setup_kit` in `smart_ai.lua`). In a match a
+  D-move is weighed with the blows of the objects standing then (as sure as its own blow while that one holds the
+  target, a quarter of that otherwise, half in all when only theirs land) and taken at half the usual score while
+  they stand; the set-up is laid when none of its objects stands, the target is within 420 and nothing can reach the
+  fighter first — the one that adds most where the D-move lands (DvJ with J once: 50 HP on the mean, measured on a
+  dummy in the copy), or DvJ alone when MP or time is short. Crimson lays one about three times a game; the shadows
+  strike about 45 HP a game. No other fighter of seven mods has such a move (an object that strikes by itself, or what
+  the D-move throws itself, is no answer), and every other fighter plays exactly as before (the same games, frame by
+  frame). Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games, v32's Crimson 551 (48.5%
+  against 46.1%); as XOI with the mod's own numbers 313 of 587, v32's 303 of 588 (53.3% against 51.5%). The bench's
+  `"xoi@<module>"` brain plays another version of the AI as XOI
 - A mod published for its players with INSANE! and XOI built in: they unpack one folder and double-click the mod's
   name — no OpenLF2 to install, no XOI kit, no original LF2 (the project owner's wish: the kit and the installer are
   for whoever trains). OpenLF2 plays a `game.zip` beside its program as with `--pack` when started with neither

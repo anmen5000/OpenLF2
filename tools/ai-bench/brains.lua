@@ -4,7 +4,8 @@
 -- training, the mod's xoi/notes.txt or those a job hands over; "xoi:m" weighs moves by the notes alone as XOI did up
 -- to version 26, "xoi:c" by the situation too, "xoi:p" adds only the spots), "classic" (the original computer player), or
 -- "smart@<module>" — another computer player in the shape of smart_ai.lua, loaded from this package as
--- <module>.lua (listed in package.manifest), so that two versions of the AI, or a player of your own, fight.
+-- <module>.lua (listed in package.manifest), so that two versions of the AI, or a player of your own, fight; and
+-- "xoi@<module>", that version playing as XOI (its numbers tuned by play, the mod's own, and the notes).
 -- The match still calls base/game/smart_ai for every "smart…" fighter; it hands the others' fighters over.
 local brains = {}
 local others = {}
@@ -14,12 +15,12 @@ local function install()
     smart.routed = true
     local control, prepare, enabled = smart.control, smart.prepare, smart.enabled
     smart.enabled = function(state, value, index)
-        if value.brain and value.brain:match("^smart@") then return true end
+        if value.brain and (value.brain:match("^smart@") or value.brain:match("^xoi@")) then return true end
         return enabled(state, value, index)
     end
     smart.control = function(state, index)
         local value = state.items[index]
-        local name = value and value.brain and value.brain:match("^smart@(.+)$")
+        local name = value and value.brain and (value.brain:match("^smart@(.+)$") or value.brain:match("^xoi@(.+)$"))
         local other = name and others[name]
         if not other then return control(state, index) end
         -- Each player keeps its own context (state.smart_context: how it reads the fighters' moves, its model of
@@ -41,7 +42,7 @@ local function install()
 end
 -- Loads the module a "smart@<module>" brain names (once) and returns it; nil for the other brains.
 function brains.load(name)
-    local file = name and name:match("^smart@(.+)$")
+    local file = name and (name:match("^smart@(.+)$") or name:match("^xoi@(.+)$"))
     if not file then return nil end
     if others[file] then return others[file] end
     local module = require("bench/" .. file)
@@ -52,8 +53,8 @@ end
 -- The brain's name with the version it runs ("smart v22", "smart@ai_alt v21", "classic").
 function brains.label(name)
     if name and name:sub(1, 3) == "xoi" then
-        local smart = require("base/game/smart_ai")
-        return string.format("%s v%d (notes of %d pairs)", name, smart.version, smart.notes_pairs())
+        local smart = brains.load(name) or require("base/game/smart_ai")
+        return string.format("%s v%d (notes of %d pairs)", name, smart.version, smart.notes_pairs and smart.notes_pairs() or 0)
     end
     local module = name == "smart" and require("base/game/smart_ai") or brains.load(name)
     if not module then return name end
