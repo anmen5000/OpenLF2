@@ -904,7 +904,7 @@ private:
     // to <prefix>-<number>.bmp (for looking at the game where no one can: a test on a machine without a display,
     // SDL's offscreen video driver). Nothing without the variable.
     void dump_frame() {
-        static const char* setting = std::getenv("OPENLF2_FRAME_DUMP");
+        static const char* setting = SDL_getenv("OPENLF2_FRAME_DUMP");
         if (setting == nullptr) return;
         ++presented_frames_;
         const std::string value(setting);
