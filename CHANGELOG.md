@@ -170,6 +170,40 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   its opponent. Against Sauce's AI on the ten original fighters, each against every other both ways (360 games):
   68 won (the forecast alone 57), version 33 27; as XOI 75. INSANE! against CRAZY! on the four mods'
   benchmark: 153–7 (One Piece GrandWorld 40–0, Naruto 40–0, KT-LF2 34–6, Sx2 39–1)
+- INSANE!/XOI v35: follows a knock-up into the air, rolls out of a run, grabs a dizzy opponent and steers its moves
+  in depth — what the project owner saw Sauce's AI do and asked for, worked out in a form that holds for every mod.
+  An opponent knocked into the air is foreseen along its flight (`falling_path`: the blow's impulse once its hit lag
+  has passed, gravity, the falling frame by its speed, the landing and the lying after it) and only blows that touch
+  a falling fighter count (fall 41 and more, whirlwinds), so a knock-up is followed into the air — Woody's D^A then
+  D>J, the owner's example: the D-sequences a move's frames take are learned as chains of that move (where they lead
+  elsewhere than the standing frame's), and the fighter's own D-moves are started out of a move's recovery when they
+  land before the opponent could answer; a blow landing once the opponent may flip up (frame 182/188 on) is worth
+  less by how often this one flips. Up to v34 a knocked-up opponent was taken for about to strike back and walked
+  away from: knock-ups followed 0 of 26 times in Woody's games against Sauce's Davis, now about 4 in 10. The roll
+  (defend out of a run, and out of the landing crouch, frame 215) is a way out of a blow that no step clears. A dizzy
+  opponent is grabbed (`grab_kit`): walked into with the direction key held so that the walking frames' catch takes
+  it, when the hold is worth more than the best blow at it (the hold's worth from the fighter's data: the punch's
+  injury and what a punch costs the hold's 300-frame timer, the throw's injury), there is time and nothing else
+  reaches us on the way; held, it is punched while the timer has room for a punch and the throw (a punch's real cost
+  measured on the first) and thrown then, toward the nearer wall. In 60 games against Sauce's AI the opponent went
+  dizzy 17 times: 11 grabs (v34 none), each hold about 55 HP. A direction key steers in depth: in a frame a key
+  steers (its `dvz`) the fighter bends onto the opponent's line, and a ball, a thrown thing or a missile leaves with
+  the depth the key gives it (base/game/objects), so a move whose object would miss straight and land steered is
+  chosen and steered (the forecast knows the bend, `move_hits`' `steer`). The forecast also learned the attacker's
+  speed in depth (a dash kick flown onto the line from off it), a running enemy's dash kick from the dash's first
+  frame on (its depth steered toward us at worst), that an opponent which hardly attacks but punishes — lands a blow
+  on us in a move of our own — is not passive (Sauce's AI was taken for passive after a while and its counters no
+  longer expected), and a step as the game walks it (`positioning.walk_plan`). Against v34 over five mods (8 fighters
+  each, every pair both ways, 4 games, two seeds): 1,197–1,005 (54.4%; Hell 264–181, KT-LF2 249–180, Naruto 231–210, Convergence 227–216, One Piece GrandWorld 226–218). Against Sauce's AI on the ten original fighters (360
+  games): 117 won (v34 68, v33 27); as XOI 122 (v34 75). The bench's tuner (`tools/ai-bench/spsa.lua`) takes an
+  `opponent` ("classic", or a fixed version of the AI): both nudged sets then play that opponent instead of each
+  other, and the check plays the tuned numbers and the base against it in turn (`SPSA_CHECK`, `SPSA_CHECK_BASE`)
+- The XOI kit in English (`xoi-kit-en.zip`, on the XOI page and in the release beside `xoi-kit.zip`), for players
+  abroad: the same tools under English names — `play.bat`, `train.bat`, `measure.bat`, `spsa.bat`, `watch.bat`,
+  `publish.bat` (with `publish.ps1`, `publish-README.txt`), `check.bat` — their settings (`ROUNDS`, `ROUND_MINUTES`,
+  `FIGHTER1`, `BRAIN1`, `RENDERER`…), messages and README in English, their logic the Vietnamese files' line for line
+  (`tools/ai-bench/windows/en`, `dist/make-xoi-kit.sh --en`); results in `results.txt`, the earlier notes as
+  `<mod>-xoi-previous.zip`, the check's report `check.txt`. The site thanks Sauce for his open AI
 - A mod published for its players with INSANE! and XOI built in: they unpack one folder and double-click the mod's
   name — no OpenLF2 to install, no XOI kit, no original LF2 (the project owner's wish: the kit and the installer are
   for whoever trains). OpenLF2 plays a `game.zip` beside its program as with `--pack` when started with neither

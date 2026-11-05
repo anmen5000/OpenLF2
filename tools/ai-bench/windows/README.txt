@@ -34,6 +34,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    numbers ("mod tuned" in the match). With one mod next to it, the next run goes on from that mod's numbers.
    Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
    two PCs on the same mod need different HAT_GIONG.
+   DOI_THU=classic (package 58): both nudged sets play the original computer player instead of each other - the
+   mod's ai\<id>.as scripts where a fighter has them (Sauce's AI, item 9) - so the numbers move toward what beats
+   that opponent; a round costs twice the games, and the check reports the tuned numbers and the original ones
+   against it. For tuning against one particular player; the numbers it finds suit that player first.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -106,6 +110,10 @@ chơi được chính các file của bản mod.
    riêng của nó (trong trận ghi "mod tuned"). Chỉ một bản mod cạnh nó thì lần sau chỉnh tiếp từ bộ số ấy.
    Nhiều máy: mỗi máy lo một hai bản mod riêng (mỗi máy một bản mod thì bản mod nào cũng có bộ số tốt nhất
    cho nó); hai máy cùng một bản mod thì đặt HAT_GIONG khác nhau.
+   DOI_THU=classic (gói 58): hai bản nhích số cùng đánh với máy gốc của game thay vì đánh nhau - nhân vật nào có script
+   ai\<id>.as của bản mod (AI của Sauce, mục 9) thì máy gốc chơi bằng script đó - nên các số dịch về phía thắng được
+   đối thủ ấy; mỗi vòng tốn gấp đôi số trận, và phần kiểm tra ghi kết quả của bản đã chỉnh và bản gốc cùng đánh đối thủ
+   ấy. Dùng để chỉnh số cho một đối thủ cụ thể; bộ số tìm được hợp với đối thủ ấy trước hết.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

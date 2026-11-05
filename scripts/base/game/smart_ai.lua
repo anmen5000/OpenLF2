@@ -217,8 +217,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 34
+smart.version = 35
 smart.history = {
+    {35, "2026-11-05", "Follows a knock-up into the air, rolls out of a run, grabs a dizzy opponent and steers its moves in depth — what the project owner saw Sauce's AI do and asked for, worked out in a form that holds for every mod. An opponent knocked into the air is foreseen along its flight (the blow's impulse, applied once its hit lag has passed; gravity 1.7 a frame; the falling frame by its speed, 180 to 183 and 186 to 189; the landing, the lying after it), and only blows that touch a falling fighter count (fall 41 and more, whirlwinds), so a knock-up can be followed into the air — Woody's D^A then D>J, the owner's example: the D-sequences a move's frames take (hit_Fa, hit_Fj and the rest, where they lead elsewhere than the standing frame's do: Woody's D>J out of his turning kick's end and his flip kick's landing crouch) are learned as chains of that move, and the fighter's own D-moves are started out of a move's recovery when they land before the opponent could answer; a blow landing once the opponent may flip up (from its frame of descent, 182 or 188) is worth less by how often this opponent flips, and no such follow-up is thrown at one that flips every time. Up to version 34 a knocked-up opponent was taken for about to strike back and the fighter walked away from it: knock-ups followed up 0 of 26 times in Woody's games against Sauce's Davis, now about 4 in 10. The roll (defend out of a run, and out of the landing crouch, frame 215, where a jump or an air move comes down) is a way out of a blow that no step clears — a run has no guard, and the crouch no feet yet. A dizzy opponent (one blow too many: state 16) is grabbed as a person grabs it: walked into with the direction key held so that the walking frames' catch takes it, when the hold is worth more than the best blow at it (the hold's worth read from the fighter's data: its punch's injury and what a punch costs the hold's timer, 300 to start, and its throw's), there is time to get there and nothing else reaches us on the way; held, it is punched while the timer has room for a punch and the throw (the cost of a punch measured on the first), and thrown then, toward the nearer wall when one is near. In 60 games against Sauce's AI the opponent went dizzy 17 times: 11 grabs (version 34 none), each hold about 55 HP. A direction key steers in depth: in a frame of a move that a key steers (its dvz, as the game reads it) the fighter bends onto the opponent's line, and a ball, a thrown thing or a missile leaves with the depth the key gives it, so a move whose object would miss an opponent off the line straight and land steered is chosen and steered (the forecast knows the bend; the key is held as the thing leaves — not for one that would pass an opponent on the line). The forecast also learned: a blow coming in at an angle (its maker's speed in depth: a dash kick flown onto the line from 15 pixels off it); a running enemy's dash kick, flown in from the dash's first frame on, its depth steered toward us at worst (Woody, running at Davis from 150 pixels, dashed and kicked him out of the move he had started on seeing no danger); an opponent that hardly ever attacks but punishes — lands a blow on us in a move of our own — is not passive, whatever its rate of attack (Sauce's AI was taken for passive after a while and its counters no longer expected); a step is foreseen as the game walks it (the walking speed set each frame, a 1.4th of it along x while a depth key is held, the speed left running down afterwards). Against version 34 over five mods (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, 4 games, two seeds): 1,197 to 1,005 (54.4%; Hell 264 to 181, KT-LF2 249 to 180, Naruto 231 to 210, Convergence 227 to 216, One Piece 226 to 218 — the rolls alone worth about 20 of One Piece's 448 games, the juggling as much). Against Sauce's AI on the ten original fighters, each against every other both ways (360 games): 117 of 360 games won (version 34 68, version 33 27); as XOI 122 (version 34 75)."},
     {34, "2026-11-04", "Sees a blow coming a frame sooner, and learns from the blows it takes in the match. A move under way was foreseen from the step it had just taken as if that step were still to come: its blow a frame late, a slide's 12 pixels short (Brad's slip kick in mode Convergence), so that a step ending at the edge of its depth was taken for safe and Crimson walked back into the kick; things flying were seen against where the fighter stood a frame before. Each blow taken now counts against what dealt it (the enemy's move by how it starts, or the kind of thing thrown) and against the answer given to it just before: a move that keeps landing while the fighter was free is foreseen a few pixels wider each time, an answer that has failed against it twice, and in half the times it was given (a step aside, a jump, a step back, the guard, striking first, a move out of the way), is no longer given to it while the others still are, and a heavy blow whose ways out have all failed is guarded. Against version 33 over five mods (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, two seeds): the forecast alone 1,307 to 897 (59.3%); the lessons on top of it 451 to 428 against the same without them, as even as that many games can tell (computer players do not change habits). Against Sauce's AI (his 'lf2-AI VS and Stage Challenge', the ten original fighters each against every other both ways): 68 of 360 games, version 33 27."},
     {33, "2026-11-04", "Set-ups: a move that strikes nothing itself but leaves objects of the fighter's making standing, which strike with its next moves, is learned as such and used. Crimson's DvJ in mode Convergence leaves a shadow (with J pressed on, three or five) that copies her D>A, D^A or DvA from where it stands, told which by a body of hers far above the stage, and stands again where its slash ends; weighed one move at a time, DvJ did nothing for its MP and was never used, as the project owner saw. In the copy each set-up is played, then each of the fighter's D-moves once it is free, and once without one: what a standing object strikes only after the D-move, having left its own frames, is its answer to it, from where it stood (no other fighter of seven mods has such a move: an object that strikes by itself, or what a D-move throws itself, is no answer). In a match a D-move is weighed with the blows of the objects standing then (as sure as its own blow while that one holds the target, a quarter of that otherwise, half in all when only theirs land), and taken at half the usual score while they stand; the set-up is laid when none of its objects stands, the target is within 420 and nothing can reach the fighter first: the one that adds most to a D-move where the D-move lands (DvJ with J once, 225 MP: 50 HP), or DvJ alone when MP or time is short. Crimson laid one about three times a game and the shadows struck about 45 HP a game. Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games where version 32's won 551 of 1,196 (48.5% against 46.1%), as XOI with the mod's own numbers 313 of 587 where version 32's won 303 of 588 (53.3% against 51.5%); Crimson against version 32's Crimson 23 to 30 in those games (too few to tell). Every other fighter plays exactly as before"},
     {32, "2026-11-04", "A move whose summons strike a moment after the fighter is free is known by what they do. A move was followed in the private copy until three quiet frames after the fighter was free again, and Crimson's D^J in mode Convergence (five shadows fly out, turn and slash back from frame 29, Crimson free from 25) was learned as doing nothing for 400 MP, so it was never used, as the project owner saw after tuning XOI for the mod. A move none of whose objects has struck yet is now followed on while one of them, by its own frames, comes to a blow of 10 HP or more: D^J is 150 damage around Crimson, and so are the few other moves learned as nothing the same way (Stancher's D^J and DvJ, Darius's D>J; Pein's, Sai's, Ten Ten's and Yamato's in Naruto 2.4; Nami's and Robin's in One Piece; Rudolf's DvJ in KT-LF2; Firzen's D^A). Two fighters pressed against the same wall at the same x no longer stand there for good: one of them takes the other to be on the wall's side, so its step back for room leads into the stage. Against version 31, on those fighters and their opponents in six mods: 636 to 657 over 1,293 decided games (as even as that many games can tell; Crimson against Crimson 14 to 4, Pein against Pein 27 to 3 — in a game against the old version the new one also steers clear of moves the old one never uses); against CRAZY! 166 to 10 where version 31 won 163 to 14 on the same games."},
@@ -344,6 +345,17 @@ local function set_keys(value, held)
     end
 end
 
+-- A chain's link pressed in the copy: its key (attack, jump, defend), or its D-sequence (D>J out of a move's frame:
+-- the fighter in the copy faces right, so the right-hand one).
+local function press_link(me, link)
+    if link.sequence then
+        me.sequences[link.sequence] = complete
+    else
+        set_keys(me, {[link.button] = true})
+        me.previous_keys[link.button] = false
+    end
+end
+
 -- Puts the fighter of a fresh copy where a move of this context starts. Returns false when it cannot.
 -- A fighter whose frame 0 only leads to its standing frames (Blackbeard of One Piece GrandWorld: 0 to 329 to
 -- 1-4) gets there first.
@@ -382,6 +394,17 @@ local function enter_context(state, me, context, step, heavy)
     return me.record.frame(me.frame).state == states.dashing
 end
 
+-- How fast an object its maker's up or down key sends off in depth goes that way (base/game/objects: a flying ball,
+-- a thrown thing or a missile leaves at 2.5 a frame, Firen's flame at a quarter of that; Firzen's and the bat's
+-- balls not at all); nil for one that cannot be steered.
+local steer_kinds = {[states.flying_ball] = true, [states.thrown_item] = true, [states.flying_missile] = true}
+local function steer_speed_of(record, frame_id)
+    local frame = record.frames[frame_id]
+    if not frame or not steer_kinds[frame.state] then return nil end
+    if record.id == constants.object_ids.firzen_ball or record.id == constants.object_ids.bat_ball then return nil end
+    if record.id == constants.object_ids.firen_flame then return 2.5 * 0.25 end
+    return 2.5
+end
 local function add_box(list, t, value, frame, area, origin, own, me)
     local x = area_x(value, frame, area)
     local y = area.y + value.y_int - frame.center_y
@@ -531,8 +554,7 @@ local function measure_hit(record, entry, dx, dz, ticks)
         set_keys(me, nil)
         local link = entry.chain and entry.chain[chain_step]
         if link and me.record.frame(me.frame).hits[link.key] == link.target then
-            set_keys(me, {[link.button] = true})
-            me.previous_keys[link.button] = false
+            press_link(me, link)
             chain_step = chain_step + 1
         end
     end
@@ -695,7 +717,7 @@ local function play(record, entry, mp, weapon_record, hp)
     local chain_step = 1
     local started = false
     local quiet = 0
-    local spawned = {}
+    local spawned, steerable = {}, {}
     local struck = {} -- the objects of its making that have struck in the move already
     local armed_item = weapon_record and state.items[me.held_item] or nil
     for t = 1, horizon_ticks do
@@ -717,8 +739,7 @@ local function play(record, entry, mp, weapon_record, hp)
                 me.previous_keys.attack = false
             end
         elseif link and me.record.frame(me.frame).hits[link.key] == link.target then
-            set_keys(me, {[link.button] = true})
-            me.previous_keys[link.button] = false
+            press_link(me, link)
             chain_step = chain_step + 1
             move.link_tick = t
         end
@@ -740,7 +761,12 @@ local function play(record, entry, mp, weapon_record, hp)
         for index = 2, constants.item_slots - 1 do
             local value = state.items[index]
             if value and value.owner == me.owner and value ~= armed_item then
-                spawned[value] = spawned[value] or t
+                if not spawned[value] then
+                    spawned[value] = t
+                    -- (A ball, a thrown thing or a missile leaves with the depth its maker's up or down key gives
+                    -- it, base/game/objects: steerable, as a person steers a ball onto an enemy off the line.)
+                    steerable[value] = steer_speed_of(value.record, value.frame)
+                end
                 -- Once the fighter is free, a move none of whose objects has struck yet is followed on while one of
                 -- them strikes a little later by itself, in the time a move is followed: shadows that fly out, turn
                 -- and slash (Crimson's D^J in mode Convergence strikes 3 ticks after Crimson is free, which the quiet
@@ -759,6 +785,7 @@ local function play(record, entry, mp, weapon_record, hp)
                         if damaging(area) then
                             add_box(move.boxes, t, value, object_frame, area, origin, false, me)
                             move.boxes[#move.boxes].spawn = spawned[value]
+                            move.boxes[#move.boxes].steer = steerable[value]
                             objects_active = true
                             struck[value] = true
                         elseif area.kind == attack_kinds.held_item and value.holder == me.slot and me.held_item == index then
@@ -848,7 +875,7 @@ local function continuation(data, move)
     local cost = data.frames[link.target] and data.frames[link.target].mp or 0
     local mp_cost = cost % 1000
     local part = {entry = {context = entry.context, frame = link.target, parent = true, from = link.from, key = link.key,
-            button = link.button},
+            button = link.button, link_sequence = link.sequence},
         boxes = {}, traj_x = {[0] = 0}, traj_y = {[0] = 0}, traj_z = {[0] = 0},
         vel_x = {[0] = move.vel_x[from]}, vel_y = {[0] = move.vel_y[from]}, frames = {},
         ready = max(move.ready - from, 1), mp = cost >= 0 and mp_cost or 0, hp = cost >= 0 and floor(cost / 1000) * 10 or 0}
@@ -989,11 +1016,21 @@ local function explore(record, analysis, mode, first_index)
         if data.frames[frames.rowing + 2] then want({context = "run", press = "defend", basic = "roll"}) end
         -- A mod's move out of the jump's own frames (Kuma of One Piece GrandWorld vanishes and comes down behind
         -- the enemy with defend pressed as he jumps): the jump is explored as a move for the keys they take.
-        for frame_id = frames.jump, frames.jump + 4 do
+        -- (And the jump's landing crouch, frame 215, with a D-sequence of its own: Woody's D>J from it.)
+        for _, frame_id in ipairs({frames.jump, frames.jump + 1, frames.jump + 2, frames.jump + 3, frames.jump + 4, frames.crouch}) do
             local frame = data.frames[frame_id]
-            if frame and (frame.hits.a > 0 or frame.hits.j > 0 or frame.hits.d > 0) then
-                want({context = "ground", press = "jump", basic = "jump"})
-                break
+            if frame then
+                local any = frame.hits.a > 0 or frame.hits.j > 0 or frame.hits.d > 0
+                if frame_id == frames.crouch then
+                    for _, spec in ipairs(sequence_fields) do
+                        local target = frame.hits[spec.field]
+                        if target > 0 and target ~= 999 and target ~= (data.frames[0] and data.frames[0].hits[spec.field]) then any = true end
+                    end
+                end
+                if any then
+                    want({context = "ground", press = "jump", basic = "jump"})
+                    break
+                end
             end
         end
     end
@@ -1131,6 +1168,31 @@ local function explore(record, analysis, mode, first_index)
                                     basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
                             end
                         end
+                        -- A D-sequence a frame of the move takes (version 35): Woody's D>J out of the end of his turning
+                        -- kick, of his flip kick's landing crouch and of his teleport in mode Convergence and Sauce's data
+                        -- (frames 271, 215, 288: hit_Fj 252, the dash kick begun in the air) — a combo's follow-up, and
+                        -- the way to juggle an opponent the move knocked up. The same frame's own key goes first.
+                        -- (Not from a frame the fighter is free in — standing, walking, running, guarding, the jump's and
+                        -- the dash's own frames — whose D-sequences are the moves of their contexts; nor a D-sequence that
+                        -- leads where the standing frame's leads: that move starts from this frame as it is, see the
+                        -- follow-ups in smart.control.)
+                        if not entry.mode and not free_states[frame.state] and frame.state ~= states.jumping and frame.state ~= states.dashing
+                           and frame.state ~= states.defending then
+                            local standing = data.frames[0]
+                            for _, spec in ipairs(sequence_fields) do
+                                local target = frame.hits[spec.field]
+                                local link_key = spec.field .. target
+                                if target > 0 and target ~= 999 and data.frames[target] and not listed[target] and not listed[link_key]
+                                   and not (standing and standing.hits[spec.field] == target) then
+                                    listed[link_key] = true
+                                    local chain = {}
+                                    for position, link in ipairs(entry.chain or {}) do chain[position] = link end
+                                    chain[#chain + 1] = {from = frame_id, button = spec.field, key = spec.field, target = target, sequence = spec.sequence}
+                                    want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
+                                        basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
+                                end
+                            end
+                        end
                         if explored.spawned_weapon and not explored.mode and not listed["pick"] then
                             local picks = false
                             for _, area in ipairs(frame.interactions) do
@@ -1265,8 +1327,7 @@ function setup_kit.probe(record, setup, follow)
         set_keys(me, nil)
         local link = chain and chain[chain_step]
         if link and me.record.frame(me.frame).hits[link.key] == link.target then
-            set_keys(me, {[link.button] = true})
-            me.previous_keys[link.button] = false
+            press_link(me, link)
             chain_step = chain_step + 1
         end
         for index = 2, constants.item_slots - 1 do
@@ -1379,8 +1440,7 @@ function setup_kit.measure(record, setup, follow, dx, dz)
             set_keys(me, nil)
             local link = chain and chain[chain_step]
             if link and me.record.frame(me.frame).hits[link.key] == link.target then
-                set_keys(me, {[link.button] = true})
-                me.previous_keys[link.button] = false
+                press_link(me, link)
                 chain_step = chain_step + 1
             end
             if not ready and t > 1 and is_free(me) and not (chain and chain_step <= #chain) then ready = t end
@@ -1970,14 +2030,22 @@ local function touches(value, frame, x, y, bx1, bx2, by1, by2)
     return false
 end
 
+-- Whether a blow touches a victim that is in the air after a knock-down (its falling frames): fall 41 and more, or
+-- a whirlwind (base/game/combat); a lesser blow passes through it.
+local whirlwinds = {[attack_kinds.whirlwind] = true, [attack_kinds.conditional_whirlwind] = true}
+local function juggles(box)
+    return box.fall >= 41 or whirlwinds[box.kind] == true
+end
+
 -- The first frame from now (1..horizon) at which `move` of `attacker` (facing `face`: 1 right, -1 left), which is
 -- `from_t` frames into it, hits `victim`, and the box. The victim is where victim_at(k) puts it (x, y, z), in
 -- the frame `vframe`, or vframe(k) when that is a function (a busy victim's frames to come).
 -- Attacks of things the move spawned before now are left to the flying-attack check.
 -- (`moving`: the victim is on its way somewhere, victim_at(k) says where: no quick reject by where it stands.)
-local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at, horizon, moving, margin)
+local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at, horizon, moving, margin, steer)
     local boxes = move.boxes
     margin = margin or 0 -- (pixels more in each direction: a threat foreseen wider, lesson_kit)
+    -- (`steer`: the attacker is this fighter, which steers what it sends off toward the victim's depth, see below.)
     local frame_at = type(vframe) == "function" and vframe or nil
     if #boxes == 0 or (not frame_at and #vframe.bodies == 0) then return nil end
     local traj_x, traj_y, traj_z = move.traj_x, move.traj_y, move.traj_z
@@ -1992,6 +2060,10 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
     local nx, ny, nz = traj_x[base_t] or 0, traj_y[base_t] or 0, traj_z[base_t] or 0
     local dvx = attacker.vx * face - (move.vel_x[base_t] or 0)
     local dvy = attacker.vy - (move.vel_y[base_t] or 0)
+    -- (Its speed in depth too — the move was learned on a straight line: a dash kick flown in from off the line, a
+    -- fighter still sliding in depth. Up to version 34 a blow coming in at an angle was foreseen beside its victim:
+    -- Woody's dash kick, flown onto Davis's line from 15 pixels off it, landed on him as he started his own move.)
+    local dvz = attacker.vz or 0
     local airborne = attacker.y_int < 0
     -- A move that teleports to the enemy (state 400) goes on from beside the victim, at its depth, on the ground,
     -- still (base/game/frame_rules; 120 in front of it, or behind when the move turned the fighter round first:
@@ -2029,7 +2101,7 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
                 else
                     ox = traj_x[t] - nx + drift(dvx, n, airborne)
                     oy = traj_y[t] - ny + (airborne and dvy * n or 0)
-                    oz = traj_z[t] - nz
+                    oz = traj_z[t] - nz + drift(dvz, n, airborne)
                 end
             else
                 local ks = box.spawn - base_t
@@ -2047,12 +2119,21 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
             end
             local depth = az + oz + box.z - pz
             local zw = box.zw + margin
+            -- (An object steerable in depth, not yet sent off: steered toward the victim's depth as it leaves, it
+            -- has closed on it by its depth speed a frame since — the fighter holds the key, see smart.control.)
+            if steer and box.steer and box.spawn >= from_t and (depth >= zw or depth <= -zw) then
+                local bend = box.steer * (t - box.spawn)
+                depth = depth > 0 and depth - bend or depth + bend
+            end
             if depth < zw and depth > -zw then
                 local bx1, bx2
                 if face == 1 then bx1, bx2 = ax + ox + box.x1 - margin, ax + ox + box.x2 + margin
                 else bx1, bx2 = ax - ox - box.x2 - margin, ax - ox - box.x1 + margin end
                 local vf = frame_at and frame_at(n) or vframe
-                if touches(victim, vf, px, py, bx1, bx2, ay + oy + box.y1, ay + oy + box.y2) then return k, box end
+                -- (A victim knocked into the air is only touched by blows of fall 41 and more, and by whirlwinds:
+                -- base/game/combat. Those keep it in the air — a juggle.)
+                if (vf.state ~= states.falling or juggles(box))
+                   and touches(victim, vf, px, py, bx1, bx2, ay + oy + box.y1, ay + oy + box.y2) then return k, box end
             end
         end
     end
@@ -2138,6 +2219,9 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                         for _, area in ipairs(interactions) do
                             if damaging(area) then
                                 local zw = (area.zwidth ~= 0 and area.zwidth or default_zwidth) + margin
+                                -- (In the air after a knock-down only blows of fall 41 and more touch us: see juggles.)
+                                local self_frame_then = frame_at and frame_at(k) or self_frame
+                                if self_frame_then.state == states.falling and area.fall < 41 and not whirlwinds[area.kind] then zw = 0 end
                                 local depth = value.z_int + mz - pz
                                 if depth < zw and depth > -zw then
                                     local x0 = area_x(value, frame, area)
@@ -2356,7 +2440,8 @@ local function can_start(self, frame, fstate, move)
     if basic == "run_attack" then return fstate == states.running end
     if basic == "dash_attack" then return fstate == states.dashing end
     if basic == "jump" then return (fstate == states.standing or fstate == states.walking) and self.y_int == 0 end
-    if basic == "roll" then return fstate == states.running and self.y_int == 0 end
+    -- (Defend rolls out of a run, and out of the landing crouch, frame 215: base/game/control.)
+    if basic == "roll" then return self.y_int == 0 and (fstate == states.running or self.frame == frames.crouch) end
     return false
 end
 
@@ -2365,6 +2450,7 @@ local function turns(move)
     local entry = move.entry
     return entry.sequence == combo.right_attack or entry.sequence == combo.right_jump or entry.basic == "attack"
         or entry.basic == "weapon_attack" or entry.direction == true
+        or entry.link_sequence == combo.right_attack or entry.link_sequence == combo.right_jump
 end
 
 -- (`t`, `score`: when the move should land and what it is expected to bring, for a move chosen as an attack; `t`
@@ -2373,7 +2459,14 @@ local function start(self, move, target, t, score)
     if smart.on_start then smart.on_start(self, move, t, score) end
     local entry = move.entry
     if entry.parent then
-        fresh(self, entry.button)
+        if entry.link_sequence then
+            local sequence = entry.link_sequence
+            if sequence == combo.right_attack and target and target.x_int < self.x_int then sequence = combo.left_attack end
+            if sequence == combo.right_jump and target and target.x_int < self.x_int then sequence = combo.left_jump end
+            self.sequences[sequence] = complete
+        else
+            fresh(self, entry.button)
+        end
         return
     end
     if entry.press and not entry.chain then
@@ -2540,6 +2633,48 @@ local function enemy_reach(context, other, self, horizon, lock, plan, frames_at)
         end
     end
     offset = 0
+    -- A running enemy may dash (jump out of its run, the dash's speed and height from its data) and strike from
+    -- the air a frame or a few into the flight, as the fighter's own dash-ins are flown (approach_attack): its dash
+    -- moves, a frame to leave the ground and `s` frames of flight in. (Up to version 34 only a running enemy's
+    -- moves on the ground counted: Woody, running at Davis from 150 pixels, dashed and kicked him out of the move he
+    -- had started on seeing no danger.)
+    -- (Or in the dash's first frame, its feet still on the ground and its run's speed still on it: the flight is
+    -- all to come, at the dash's speed.)
+    local leaving = ostate == states.dashing and other.y_int == 0
+    if lock == 0 and (ostate == states.running or leaving) then
+        local movement = other.record.movement or {}
+        local speed, height = movement.dash_distance or 0, movement.dash_height or 0
+        local dir = other.facing == facing_right and 1 or -1
+        if leaving and other.vx ~= 0 then dir = other.vx > 0 and 1 or -1 end
+        if speed > 0 and height < 0 and dir == face then
+            local dash_frame = other.record.frame(frames.dash)
+            -- (The dash goes off in depth too when a key is held as it starts, by the data's dash_distancez — toward
+            -- us, at worst, until it is in the air with the depth it has: Woody's dash kick, flown in from 20 pixels
+            -- off Davis's line, landed on him so.)
+            local vz, dz, steer = other.vz or 0, self.z_int - other.z_int, movement.dash_distancez or 0
+            if not (leaving and abs(vz) >= 1) and steer > 0 and abs(dz) > 4 then vz = dz > 0 and steer or -steer end
+            local virtual = {x_int = 0, y_int = 0, z_int = other.z_int, vx = 0, vy = 0, vz = vz, facing = other.facing}
+            local y, vy, flown = 0, height, 0
+            for _, s in ipairs({1, 4, 7}) do
+                while flown < s do y = y + vy; vy = vy + 1.7; flown = flown + 1 end
+                if y >= -8 then break end
+                local lead = (leaving and 0 or 1) + s
+                if best and lead >= best then break end
+                virtual.x_int, virtual.y_int, virtual.vx, virtual.vy = other.x_int + trunc(dir * speed * s), trunc(y), dir * speed, vy
+                offset = lead
+                for _, move in ipairs(analysis.moves) do
+                    local entry = move.entry
+                    if entry.context == "dash" and move.first and not entry.parent and not entry.mode and not entry.held
+                       and other.mp >= move.mp and other.weapon == weapon_none and (not best or lead + move.first < best)
+                       and (entry.basic == "dash_attack" or (entry.sequence and dash_frame.hits[entry.field] == entry.frame)) then
+                        local k, box = move_hits(virtual, dir, move, 0, self, vframe, self_at, (best or horizon + 1) - lead - 1, plan ~= nil)
+                        if k then best, damage = lead + k, box.injury end
+                    end
+                end
+                offset = 0
+            end
+        end
+    end
     local from_standing = best
     if best then best = best + lock end
     if lock > 0 and where and where.value == other then
@@ -2747,6 +2882,62 @@ local function untouchable_for(context, target, tstate, lock)
         frames_left = max(frames_left, lock + blink)
     end
     return frames_left
+end
+
+-- A fighter knocked into the air (the falling state, off the ground or on its way up): the frames it will be in,
+-- k = 1.. steps from now, as base/game/physics picks them by its vertical speed (180-183 or 186-189: going up fast,
+-- hanging, coming down, coming down fast), until it lands — on the ground nothing touches it (the bounce frame and
+-- lying have no body) until it is up again and its blink is over. Returns the frame function (no_body_frame once
+-- landed), the steps until it lands, where it will be k steps from now (x, y, z: its flight, then the spot it lands
+-- on) and the step from which it may flip back onto its feet (its frame of descent, 182 or 188: base/game/control);
+-- nil for a fighter on the ground. (Juggles: a blow of fall 41 and more lands on it in the air, see juggles.)
+local gravity = constants.gravity.default
+local falling_horizon = 40
+local function falling_path(target, tframe)
+    if tframe.state ~= states.falling then return nil end
+    -- (Just struck: its speed is still an impulse, applied once its hit lag has passed; frozen meanwhile.)
+    local lag = abs(target.hit_lag)
+    local vx, vy, vz = target.vx, target.vy, target.vz
+    if target.hit_count ~= 0 then
+        local share = 2 / (target.hit_count + 1)
+        vx, vy, vz = target.impulse_x * share, target.impulse_y * share, target.impulse_z * share
+    end
+    if target.y_int >= 0 and vy >= 0 then return nil end
+    local record = target.record
+    local base = target.frame >= 186 and 186 or 180
+    local list, xs, ys, zs, land, descent = {}, {}, {}, {}, nil, nil
+    local x, y, z = target.x, target.y, target.z
+    local x0, y0, z0 = target.x_int, target.y_int, target.z_int
+    if target.frame == base + 2 or target.frame == base + 8 then descent = 0 end
+    for k = 1, falling_horizon do
+        if k <= lag then
+            list[k] = tframe
+        else
+            x, z = x + vx, z + vz
+            y = y + vy
+            if y > 0.0001 and vy > 0.0001 then land = k break end
+            if y < -0.0001 then vy = vy + gravity end
+            local id
+            if vy >= -8 then
+                if vy >= 1 then id = vy >= 8 and base + 3 or base + 2 else id = base + 1 end
+            else id = base end
+            -- (From the frame of its descent on, 182 or 188, it may flip back onto its feet: base/game/control.)
+            if id == base + 2 and not descent then descent = k end
+            list[k] = record.frames[id] or no_body_frame
+        end
+        xs[k], ys[k], zs[k] = trunc(x) - x0, trunc(y) - y0, trunc(z) - z0
+    end
+    land = land or falling_horizon
+    -- (Once landed it lies where it fell, give or take a slide: nothing touches it there.)
+    local lx, ly, lz = xs[land - 1] or 0, 0, zs[land - 1] or 0
+    return function(k)
+        if k <= 0 then return tframe end
+        return list[k] or no_body_frame
+    end, land, function(k)
+        if k <= 0 then return x0, y0, z0 end
+        if k >= land then return x0 + lx, ly, z0 + lz end
+        return x0 + xs[k], y0 + ys[k], z0 + zs[k]
+    end, descent or land
 end
 
 -- The standing frame a fighter can be hit in (frame 0, or the first of its standing frames with a body: some
@@ -2961,6 +3152,11 @@ end
 -- not), once seen a couple of times.
 local function flips_up(model)
     return model.falls >= 2 and model.flips * 2 >= model.falls
+end
+-- How often it flips, of its falls (half, before it has been seen fall twice).
+local function flip_rate(model)
+    if not model or model.falls < 2 then return 0.5 end
+    return min(1, model.flips / model.falls)
 end
 
 ---------------------------------------------------------------------------------------------------------------
@@ -3490,6 +3686,16 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local toward = target.x_int >= self.x_int and 1 or -1
     local target_at = path_position_fn(context, target) or function(k) return predict(target, k, tstate) end
     local target_frame = target_frame_at_fn(context, target, tframe, stunned)
+    -- A target knocked into the air is there to be juggled until it lands (falling_path; weak blows pass through it,
+    -- see juggles): Woody's D^A sends the opponent up and D>J catches it in the air (the project owner's example).
+    local flying, land, flying_at, descent = falling_path(target, tframe)
+    -- (From its descent on it may flip back onto its feet, out of the blow's way, as this one is in the habit of
+    -- doing: a blow landing then is worth that much less — half, before it has been seen fall twice.)
+    local flip_risk = 0
+    if flying and not (context.target_path and context.target_path.value == target) then
+        target_frame, target_at, untouchable = flying, flying_at, 0
+        flip_risk = flip_rate(model_of(context, target))
+    end
     local stagger = lock_of(target.record, context.analysis_of(target), frames.injured)
     -- (Objects of a set-up standing: they strike with the D-moves they answer, see setup_kit.)
     local standing = setup_kit.standing(context, self, analysis)
@@ -3499,10 +3705,10 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
            and not (excluded and excluded[move]) and can_start(self, frame, fstate, move) then
             local face = turns(move) and toward or (self.facing == facing_right and 1 or -1)
-            local t, box = move_hits(self, face, move, 0, target, target_frame, target_at, horizon)
+            local t, box = move_hits(self, face, move, 0, target, target_frame, target_at, horizon, nil, nil, true)
             -- Attack picks one of two punches: both must land, the later counts.
             if t and entry.basic == "attack" and not entry.chain and analysis.punch2 then
-                local t2, box2 = move_hits(self, face, analysis.punch2, 0, target, target_frame, target_at, horizon)
+                local t2, box2 = move_hits(self, face, analysis.punch2, 0, target, target_frame, target_at, horizon, nil, nil, true)
                 if not t2 then t = nil
                 elseif t2 > t then t, box = t2, box2 end
             end
@@ -3531,6 +3737,7 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 local score = attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, 0)
                 if extras and #extras > 0 then score = score + setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger) end
                 if alone then score = score * setup_kit.alone end
+                if flip_risk > 0 and t >= descent then score = score * (1 - flip_risk) end
                 if score > best_score then best, best_t, best_score = move, t, score end
             end
         end
@@ -3633,7 +3840,7 @@ local function approach_attack(context, self, fstate, target, danger)
         if type(target_frame) == "function" then frame_at = function(k) return target_frame(offset + k) end end
         for _, move in ipairs(analysis.moves) do
             if move.entry.context == want and starts_airborne(self, move, air_frame) then
-                local t, box = move_hits(virtual, dir, move, 0, target, frame_at, target_at, 30)
+                local t, box = move_hits(virtual, dir, move, 0, target, frame_at, target_at, 30, nil, nil, true)
                 if t then
                     local total = offset + t
                     if total > untouchable and (not danger or total < danger) then
@@ -3675,6 +3882,39 @@ function positioning.keep_distance(self, dx, distance, near, far, back)
     end
     if distance > far then return 1 end
     return 0
+end
+
+-- Where a fighter on its feet walks with direction keys held — `kx` along x, `kz` in depth (-1, 0 or 1; the x key
+-- for the first `x_frames` frames only, when given: a turn round) — as a plan for earliest_threat (k -> dx, dy, dz
+-- from where it stands), as base/game/control and base/game/physics move it: a key held sets the walking speed each
+-- frame, along x a 1.4th of it while a depth key is held too; without one the speed left goes on, one less each frame;
+-- the place is the game's, kept to a fraction. (Up to version 34 a step was foreseen at the whole walking speed along
+-- x, in depth too, and from the pixel stood on: Crimson stepping in depth onto the line of Brad's slip kick in mode
+-- Convergence, turning round to him as he slid past, was taken to be a step clear behind it — the kick caught her
+-- a pixel inside its depth.)
+function positioning.walk_plan(self, kx, kz, x_frames)
+    local movement = self.record.movement or {}
+    local speed, speedz = movement.walking_speed or 4, movement.walking_speedz or 2
+    local x, z, vx, vz = self.x, self.z, self.vx, self.vz
+    local xi, zi = self.x_int, self.z_int
+    local xs, zs, done = {}, {}, 0
+    local function slow(v)
+        if v > 0.0001 then v = v - 1; if v < 0.0001 then v = 0 end
+        elseif v < -0.0001 then v = v + 1; if v > -0.0001 then v = 0 end end
+        return v
+    end
+    return function(k)
+        if k <= 0 then return 0, 0, 0 end
+        while done < k do
+            done = done + 1
+            if kx ~= 0 and (not x_frames or done <= x_frames) then vx = kx * speed end
+            if kz ~= 0 then vz, vx = kz * speedz, vx / 1.4 end
+            x, z = x + vx, z + vz
+            vx, vz = slow(vx), slow(vz)
+            xs[done], zs[done] = trunc(x) - xi, trunc(z) - zi
+        end
+        return xs[k], 0, zs[k]
+    end
 end
 
 -- XOI's spots (pair_notes): how good training found it to stand free at (dx, dz) from the opponent, it free on its
@@ -3723,6 +3963,15 @@ local function target_analysis_of(context, target) return context.analysis_of(ta
 local function target_lock_of(context, target, tframe)
     local tstate = tframe.state
     local analysis = context.analysis_of(target)
+    if tstate == states.falling then
+        -- Knocked down: in the air until it lands, then lying until it gets up (the fall's own frames say little:
+        -- they go round by its speed). Up to version 34 only the falling frame's few ticks counted, and a knocked-up
+        -- opponent was taken for about to strike back.
+        local _, land = falling_path(target, tframe)
+        local lying_id = target.frame >= 186 and frames.lying + 1 or frames.lying
+        local lying = target.record.frames[lying_id] and lock_of(target.record, analysis, lying_id) or 34
+        return (land or 0) + lying
+    end
     if exposed_states[tstate] or tstate == states.lying then
         return max(lock_of(target.record, analysis, target.frame) - target.wait_counter, 0)
     end
@@ -3871,7 +4120,7 @@ local function escape_move(state, index, self, frame, fstate, context, level, th
                 if move.first and source.record.kind == record_kinds.character then
                     local face = turns(move) and (source.x_int >= self.x_int and 1 or -1) or (self.facing == facing_right and 1 or -1)
                     local sframe = source.record.frame(source.frame)
-                    local t = move_hits(self, face, move, 0, source, sframe, function(k) return predict(source, k, sframe.state) end, 40)
+                    local t = move_hits(self, face, move, 0, source, sframe, function(k) return predict(source, k, sframe.state) end, 40, nil, nil, true)
                     if t then strikes = true; value = value + 60 - t end
                 end
                 if not best_value or value > best_value then best, best_value, best_strikes = move, value, strikes end
@@ -3953,6 +4202,23 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         memory.note = "defend " .. threat_t
         return true
     end
+    -- The landing crouch (frame 215, where a jump or an air move comes down) has one way out before the feet are
+    -- free: the roll (defend), taken when the blow comes before the fighter stands and may guard, or cannot be
+    -- guarded — along with whatever else the crouch's frame starts (escape_move: the roll of every fighter, and a
+    -- mod's own moves out of it).
+    if self.frame == frames.crouch and self.y_int == 0 then
+        if not failed("escape") and (not blockable or heavy or threat_t <= frame.wait + 1 + guard) then
+            local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
+            if escape then
+                start(self, escape, source)
+                dodged(memory, state)
+                answered("escape")
+                memory.note = escape.entry.basic == "roll" and "roll out" or (strikes and "escape and strike" or "escape")
+                return true
+            end
+        end
+        return false
+    end
     if self.y_int < 0 or not (fstate == states.standing or fstate == states.walking or fstate == states.running) then
         return false
     end
@@ -4001,7 +4267,8 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         end
     end
     for _, side in ipairs(failed("dodge") and {} or sides) do
-        local plan = function(k) return 0, 0, trunc(side * speedz * k) end
+        local plan = fstate == states.running and function(k) return 0, 0, trunc(side * speedz * k) end
+            or positioning.walk_plan(self, 0, side)
         if not earliest_threat(state, index, self, threat_t + tune.dodge_margin, plan, reaction, context) then
             memory.dodge_dz = side
             press(self, side > 0 and "down" or "up")
@@ -4032,7 +4299,8 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     local away = source.x_int > self.x_int and -1 or 1
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
     local cornered = (away < 0 and self.x_int < 60) or (away > 0 and self.x_int > width - 60)
-    local plan = function(k) return trunc(away * speed * k), 0, 0 end
+    local plan = fstate == states.running and function(k) return trunc(away * speed * k), 0, 0 end
+        or positioning.walk_plan(self, away, 0)
     if not cornered and not failed("back") and not earliest_threat(state, index, self, threat_t + tune.back_margin, plan, reaction, context) then
         press(self, away > 0 and "right" or "left")
         dodged(memory, state)
@@ -4042,14 +4310,16 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     end
     -- No step gets out of its way: a move may (escape_move), when the guard cannot hold the blow, or it is a
     -- heavy one and the move keeps MP for a strong move of the fighter's own after it, or the move strikes back.
-    -- Otherwise the guard, in time (not a move that cannot come out before the blow lands).
-    if fstate ~= states.running then
+    -- Otherwise the guard, in time (not a move that cannot come out before the blow lands). A run has no guard:
+    -- out of it the roll (defend, free of MP) is the way past a blow that running on or stopping would not clear.
+    do
         local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
-        if escape and not failed("escape") and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))) then
+        if escape and not failed("escape") and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))
+           or (fstate == states.running and escape.mp == 0)) then
             start(self, escape, source)
             dodged(memory, state)
             answered("escape")
-            memory.note = strikes and "escape and strike" or "escape"
+            memory.note = escape.entry.basic == "roll" and "roll out" or (strikes and "escape and strike" or "escape")
             return true
         end
     end
@@ -4144,12 +4414,216 @@ local function mate_on_side(state, index, self, target)
     return false
 end
 
+---------------------------------------------------------------------------------------------------------------
+-- Grabbing. A dizzy opponent (state 16: planted for a moment after one blow too many) is there to be grabbed: walked
+-- into with the direction key held, the catch of the walking frames (a kind-1 interaction, base/game/combat) takes
+-- it. Held, it is punched while the hold's timer (300 to start, run down by every frame of the hold: base/game/grab)
+-- has room for a punch and the throw after it, and thrown then — the hold's worth is read from the fighter's data
+-- (its punch's injury and what a punch costs the timer, its throw's injury), and the real cost of a punch is
+-- measured on the first one. Sauce's AI grabs the original ten this way; up to version 34 a dizzy opponent was only
+-- struck, and a held one punched at every third frame until the hold timed out.
+local grab_kit = {}
+local cpoint_kinds = constants.cpoint_kinds
+local function next_of(record, id)
+    local frame = record.frames[id]
+    if not frame then return nil end
+    local following = frame.next
+    if following < 0 then following = -following end
+    if following == 0 or following == 999 or following == id then return nil end
+    return following
+end
+-- The hold's worth from the fighter's data: `hold_id` is the frame the catch leads to (the interaction's catching
+-- action), followed to the frame whose cpoint takes the keys (aaction: the punch; taction: the throw).
+function grab_kit.worth(record, hold_id)
+    local id, hold = hold_id, nil
+    for _ = 1, 6 do
+        local frame = id and record.frames[id]
+        if not frame then break end
+        local c = frame.cpoint
+        if c and c.kind == cpoint_kinds.holder and (c.aaction ~= 0 or c.taction ~= 0) then hold = frame; break end
+        id = next_of(record, id)
+    end
+    if not hold then return 0, 0, 0, 0 end
+    local c = hold.cpoint
+    local tick = abs(c.decrease)
+    -- A punch: the frames its key leads through until the hold's frame again, each costing the timer its own
+    -- decrease a frame (two frames more where the blow lands: the holder's hit lag), and what it deals.
+    local punch, cycle = 0, 0
+    if c.aaction ~= 0 then
+        local pid = abs(c.aaction)
+        for _ = 1, 8 do
+            local frame = pid and record.frames[pid]
+            if not frame or frame == hold then break end
+            local pc = frame.cpoint
+            local injury = pc and pc.injury or 0
+            cycle = cycle + (frame.wait + 1 + (injury > 0 and 2 or 0)) * abs(pc and pc.decrease or 0)
+            if injury > 0 then punch = punch + injury end
+            pid = next_of(record, pid)
+        end
+    end
+    -- The throw: the first of its frames that sends the victim off says what the landing costs it.
+    local throw = 0
+    if c.taction ~= 0 then
+        local tid = abs(c.taction)
+        for _ = 1, 8 do
+            local frame = tid and record.frames[tid]
+            if not frame then break end
+            local tc = frame.cpoint
+            if tc and tc.throwvx ~= 0 then
+                local injury = tc.throwinjury or 0
+                if injury > 0 and injury < 1000 then throw = injury end
+                break
+            end
+            tid = next_of(record, tid)
+        end
+    end
+    local punches = 0
+    if punch > 0 and cycle > 0 then punches = min(floor((300 - (c.taction ~= 0 and tick * 2 or 0)) / cycle), 8) end
+    return punches * punch + throw, punches, cycle, tick
+end
+-- What the fighter's walking frames catch with (the area in front of it, as it faces right) and what its hold is
+-- worth; false when it has no catch, or one worth nothing.
+function grab_kit.catcher(record, analysis)
+    if analysis.catcher ~= nil then return analysis.catcher end
+    local found = false
+    for id = frames.walking, frames.walking + 3 do
+        local frame = record.frames[id]
+        for _, area in ipairs(frame and frame.interactions or {}) do
+            if area.kind == attack_kinds.catch_nearest and area.catching_actions and (area.catching_actions[1] or 0) > 0 then
+                local x1, y1 = area.x - frame.center_x, area.y - frame.center_y
+                if not found then
+                    found = {x1 = x1, x2 = x1 + area.width, y1 = y1, y2 = y1 + area.height,
+                        zw = area.zwidth ~= 0 and area.zwidth or default_zwidth, hold = area.catching_actions[1]}
+                else
+                    found.x1, found.x2 = min(found.x1, x1), max(found.x2, x1 + area.width)
+                end
+            end
+        end
+    end
+    if found then
+        found.worth, found.punches, found.cycle, found.tick = grab_kit.worth(record, found.hold)
+        if found.worth <= 0 then found = false end
+    end
+    analysis.catcher = found
+    return found
+end
+-- The walk into a dizzy target, or nil: its worth (the hold's), how many frames until the catch, and the keys.
+function grab_kit.plan(state, index, self, target, tframe, lock, context, reaction)
+    local catcher = grab_kit.catcher(self.record, context.analysis_of(self))
+    if not catcher then return nil end
+    local tcenter = tframe.center_x
+    local bx1, bx2
+    for _, body in ipairs(tframe.bodies) do
+        local left
+        if target.facing == facing_right then left = body.x - tcenter else left = tcenter - body.width - body.x end
+        bx1, bx2 = min(bx1 or left, left), max(bx2 or (left + body.width), left + body.width)
+    end
+    if not bx1 then return nil end
+    local movement = self.record.movement or {}
+    local speed, speedz = movement.walking_speed or 4, movement.walking_speedz or 2
+    local side = target.x_int > self.x_int and 1 or -1
+    local need, past
+    if side == 1 then
+        need = (target.x_int + bx1) - (self.x_int + catcher.x2)
+        past = self.x_int + catcher.x1 >= target.x_int + bx2
+    else
+        need = (self.x_int - catcher.x2) - (target.x_int + bx2)
+        past = self.x_int - catcher.x1 <= target.x_int + bx1
+    end
+    if past then return nil end
+    local dz = target.z_int - self.z_int
+    local steps_x = need > 0 and floor((need + speed - 1) / speed) or 0
+    local steps_z = abs(dz) >= catcher.zw - 2 and floor((abs(dz) - catcher.zw + 3 + speedz - 1) / speedz) or 0
+    local t = max(steps_x, steps_z) + 2
+    if t + 1 > lock then return nil end
+    local plan = function(k) return trunc(side * speed * min(k, steps_x)), 0, trunc((dz > 0 and 1 or -1) * speedz * min(k, steps_z)) end
+    if earliest_threat(state, index, self, t + 2, plan, reaction, context) then return nil end
+    return {worth = catcher.worth, t = t, side = side, dz = dz, zw = catcher.zw}
+end
+function grab_kit.walk(self, plan)
+    press(self, plan.side > 0 and "right" or "left")
+    if plan.dz >= plan.zw - 2 then press(self, "down") elseif plan.dz <= -(plan.zw - 2) then press(self, "up") end
+end
+-- Holding: the punch while the timer has room for it and the throw, the throw then (toward the nearer wall when one
+-- is within reach of the throw: the victim lands cornered; else ahead). The frames on the way (a punch's, the
+-- throw's) only keep the throw's direction, for the frame of the throw that turns with it.
+function grab_kit.hold(state, self, frame, memory, analysis)
+    local c = frame.cpoint
+    local hold = memory.hold
+    if not hold or hold.victim ~= self.catching or hold.since > state.frame_number or state.frame_number - hold.seen > 2 then
+        local catcher = grab_kit.catcher(self.record, analysis)
+        hold = {victim = self.catching, since = state.frame_number, cycle = catcher and catcher.cycle or 60, left = false}
+        memory.hold = hold
+    end
+    hold.seen = state.frame_number
+    if not (c and c.kind == cpoint_kinds.holder) or (c.aaction == 0 and c.taction == 0) then
+        hold.left = true
+        if hold.throw_dir then press(self, hold.throw_dir > 0 and "right" or "left") end
+        memory.note = hold.throw_dir and "hold: throwing" or "hold: punching"
+        return
+    end
+    if hold.left and hold.pressed_at then
+        local drop = hold.pressed_at - self.catch_timer
+        if drop >= 7 then hold.cycle = drop end
+        hold.pressed_at = nil
+    end
+    hold.left = false
+    local reserve = abs(c.decrease) * 2 + 1
+    if c.aaction ~= 0 and (c.taction == 0 or self.catch_timer - hold.cycle >= reserve) then
+        fresh(self, "attack")
+        hold.pressed_at = self.catch_timer
+        memory.note = "hold: punch"
+    elseif c.taction ~= 0 then
+        local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+        local dir = self.x_int < width / 2 and -1 or 1
+        if min(self.x_int, width - self.x_int) > 300 then dir = self.facing == facing_right and 1 or -1 end
+        hold.throw_dir = dir
+        fresh(self, "attack")
+        press(self, dir > 0 and "right" or "left")
+        memory.note = "hold: throw"
+    else
+        memory.note = "hold"
+    end
+end
+
+-- Steering in depth, as a person does with the up and down keys during a move: in a frame that a direction key
+-- steers (its dvz, read by base/game/control every frame: held toward the target's depth, the fighter bends onto
+-- its line — a slip kick onto a fighter that stepped aside), and in the frame about to send off a ball, a thrown
+-- thing or a missile (which leave with the depth the key held then gives them, base/game/objects): held toward the
+-- target when the forecast says the thing misses straight and lands steered (move_hits' `steer`), not otherwise —
+-- steered, it keeps going in depth and would pass a target on the line.
+local function steer_keys(state, self, frame, target, context)
+    local dz = target.z_int - self.z_int
+    local dvz = frame.dvz
+    if dvz > 0 and dvz <= 500 then
+        if dz > 2 then press(self, "down") elseif dz < -2 then press(self, "up") end
+        return
+    end
+    if abs(dz) < 6 then return end
+    local analysis = context.analysis_of(self)
+    local where = where_of(self.record, analysis, self)
+    if not where then return end
+    local from_t = where.t + self.wait_counter
+    local pending = false
+    for _, box in ipairs(where.move.boxes) do
+        if box.steer and (box.spawn == from_t or box.spawn == from_t + 1) then pending = true; break end
+    end
+    if not pending then return end
+    local tframe = target.record.frame(target.frame)
+    local function target_at(k) return predict(target, k, tframe.state) end
+    local face = self.facing == facing_right and 1 or -1
+    local straight = move_hits(self, face, where.move, from_t, target, tframe, target_at, 40)
+    local bent = move_hits(self, face, where.move, from_t, target, tframe, target_at, 40, nil, nil, true)
+    if bent and not straight then press(self, dz > 0 and "down" or "up") end
+end
+
 -- (Helpers that the control below reaches through one table: LuaJIT allows a function no more than 60 upvalues,
 -- and smart.control had come to them.)
 local rare = {tried = tried, recovery_paths = recovery_paths, path_plan = path_plan, path_frames = path_frames,
     recovery_horizon = recovery_horizon, flips_up = flips_up, stance_exit = stance_exit, key_names = key_names,
     over_weapon = over_weapon, weapon_to_take = weapon_to_take, mate_on_side = mate_on_side, pair_notes = pair_notes,
-    armed_analysis = armed_analysis, analyze = analyze, special_mp = special_mp, view_of = view_of}
+    armed_analysis = armed_analysis, analyze = analyze, special_mp = special_mp, view_of = view_of, grab = grab_kit,
+    steer = steer_keys}
 -- One frame of control for the computer player at `index`.
 function smart.control(state, index)
     local items = state.items
@@ -4190,6 +4664,11 @@ function smart.control(state, index)
     if memory.to_weapon == state.frame_number - 2 then memory.weapon_left = state.frame_number - 1 end
     local frame = self.record.frame(self.frame)
     local fstate = frame.state
+    -- (A blow taken while in a move of our own, in the frame before: the opponent punishes, see `passive` below.)
+    if memory.hp_last and self.hp < memory.hp_last - 2 and memory.busy_last then memory.punished = (memory.punished or 0) + 1 end
+    memory.hp_last = self.hp
+    memory.busy_last = not (free_states[fstate] or exposed_states[fstate] or fstate == states.lying or fstate == states.caught
+        or fstate == states.catching or fstate == states.jumping or fstate == states.dashing or fstate == states.defending)
     -- What is in the hand (a weapon, or the item of a mode of the fighter's own making).
     local held_now = self.held_item and items[self.held_item]
     memory.held_record = (held_now and self.weapon ~= weapon_none and self.weapon > 0 and items[held_now.holder] == self) and held_now.record or nil
@@ -4235,8 +4714,9 @@ function smart.control(state, index)
         end
         return
     end
+    -- Holding an opponent: punched while the hold has room for a punch and the throw, thrown then (grab_kit).
     if fstate == states.catching then
-        if state.frame_number % 3 == 0 then fresh(self, "attack") end
+        rare.grab.hold(state, self, frame, memory, context.analysis_of(self))
         return
     end
 
@@ -4274,7 +4754,21 @@ function smart.control(state, index)
                 if memory.chain_step == 1 then memory.mode_tried = nil end
             end
         elseif frame.hits[link.key] == link.target then
-            fresh(self, link.button)
+            if link.sequence then
+                -- (A D-sequence link: D>A and D>J toward the target of the moment.)
+                local sequence = link.sequence
+                local aim = memory.target and items[memory.target]
+                if aim and aim.x_int < self.x_int then
+                    if sequence == combo.right_attack then sequence = combo.left_attack end
+                    if sequence == combo.right_jump then sequence = combo.left_jump end
+                elseif not aim and self.facing == facing_left then
+                    if sequence == combo.right_attack then sequence = combo.left_attack end
+                    if sequence == combo.right_jump then sequence = combo.left_jump end
+                end
+                self.sequences[sequence] = complete
+            else
+                fresh(self, link.button)
+            end
             memory.chain_step = memory.chain_step + 1
             return
         elseif not free then
@@ -4306,11 +4800,42 @@ function smart.control(state, index)
             and abs(target.z_int - self.z_int) < 40)
     end
 
-    -- A move in progress: continue it into a follow-up that lands before the target can hit back.
+    -- A move in progress: continue it into a follow-up that lands before the target can hit back — a key this frame
+    -- takes on into another move (analysis.chains: a D-sequence of the frame's own too, Woody's D>J out of his turning
+    -- kick's end), or one of the fighter's D-moves the frame takes as the standing frame does (Woody's D^A there).
     if not free then
         local analysis = context.analysis_of(self)
+        -- (Up or down held to steer the move, or what it is about to send off, onto the target's depth: steer_keys.)
+        if target and self.y_int <= 0 and fstate ~= states.catching then rare.steer(state, self, frame, target, context) end
         if target then
             local chains = analysis.chains[self.frame]
+            -- (The fighter's own D-moves the frame takes: once the move under way has no blow left to land — in its
+            -- recovery, which the D-move cuts short; not in place of blows still to come.)
+            local spent = true
+            if fstate ~= states.jumping and fstate ~= states.dashing then
+                local where = where_of(self.record, analysis, self)
+                if where then
+                    local now_t = where.t + self.wait_counter
+                    for _, box in ipairs(where.move.boxes) do
+                        if box.t > now_t then spent = false; break end
+                    end
+                end
+            end
+            if fstate ~= states.jumping and fstate ~= states.dashing and spent then
+                local list = nil
+                for _, move in ipairs(analysis.moves) do
+                    local entry = move.entry
+                    if entry.sequence and not entry.parent and not entry.chain and not entry.mode and not entry.held
+                       and frame.hits[entry.field] == entry.frame and self.mp >= move.mp then
+                        if not list then
+                            list = {}
+                            for position, part in ipairs(chains or {}) do list[position] = part end
+                        end
+                        list[#list + 1] = move
+                    end
+                end
+                if list then chains = list end
+            end
             if chains then
                 local tframe = target.record.frame(target.frame)
                 local lock = target_lock_of(context, target, tframe)
@@ -4323,10 +4848,20 @@ function smart.control(state, index)
                     if twhere then context.target_where = {value = target, move = twhere.move, now = twhere.t + target.wait_counter} end
                 end
                 local target_frame = target_frame_at_fn(context, target, tframe, lock)
+                local untouchable = untouchable_for(context, target, tframe.state, lock)
+                -- (A target knocked into the air: the chain's blow may juggle it, see falling_path.)
+                local flying, _, flying_at, descent = falling_path(target, tframe)
+                local flips = false
+                if flying and not (context.target_path and context.target_path.value == target) then
+                    target_frame, target_at, untouchable = flying, flying_at, 0
+                    flips = model ~= nil and rare.flips_up(model)
+                end
                 for _, move in ipairs(chains) do
                     if can_start(self, frame, fstate, move) then
-                        local t = move_hits(self, own_face, move, 0, target, target_frame, target_at, 20)
-                        if t and t <= untouchable_for(context, target, tframe.state, lock) then t = nil end
+                        local t = move_hits(self, own_face, move, 0, target, target_frame, target_at, 20, nil, nil, true)
+                        if t and t <= untouchable then t = nil end
+                        -- (A blow landing once it may flip up, on one that does: not worth the follow-up.)
+                        if t and flips and t >= descent then t = nil end
                         if t and (not counter or t < counter) then
                             start(self, move, target, t)
                             memory.last_use = memory.last_use or {}
@@ -4336,6 +4871,15 @@ function smart.control(state, index)
                         end
                     end
                 end
+            end
+        end
+        -- The landing crouch (frame 215, where a jump or an air move comes down): a blow coming before the feet are
+        -- free is rolled out of (answer: the roll, or a mod's own move out of the crouch).
+        if self.frame == frames.crouch and self.y_int == 0 then
+            local threat_t, threat_box, threat_source = earliest_threat(state, index, self, tune.threat_horizon, nil, level.reaction, context)
+            if threat_t and threat_t >= abs(self.blink)
+               and answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, threat_source, target) then
+                return
             end
         end
         -- A stance that goes on until a key ends it: kept while it serves (a charge fills MP while nothing can
@@ -4368,7 +4912,7 @@ function smart.control(state, index)
                     local tframe = target.record.frame(target.frame)
                     local function target_at(k) return predict(target, k, tframe.state) end
                     local own_face = self.facing == facing_right and 1 or -1
-                    stay = move_hits(self, own_face, where.move, where.t + self.wait_counter, target, tframe, target_at, 8) ~= nil
+                    stay = move_hits(self, own_face, where.move, where.t + self.wait_counter, target, tframe, target_at, 8, nil, nil, true) ~= nil
                 else
                     stay = false
                 end
@@ -4401,6 +4945,8 @@ function smart.control(state, index)
     if target_down then memory.target_down_at = state.frame_number end
     local target_waking = target_down
         or (target.blink ~= 0 and memory.target_down_at ~= nil and state.frame_number - memory.target_down_at < 90)
+    -- (Still in the air after a knock-down: to be juggled, not kept away from yet; it lies a while once down.)
+    if target_waking and falling_path(target, tframe) then target_waking = false end
     -- Frames since the last blow between the two: a standoff makes it bolder; so does an opponent that hardly
     -- ever attacks when it could (nothing to bait, everything to walk up to).
     -- (A guarded blow's tenth does not count: a guard that only soaks up jabs is a standoff too.)
@@ -4413,7 +4959,12 @@ function smart.control(state, index)
     context.tries = looping and memory.tries or nil
     context.aggression = min(1, max(0, (memory.calm - tune.calm_start) / tune.calm_span))
     local target_pressure = pressure(model)
-    if target_pressure and target_pressure < tune.passive_pressure then context.aggression = max(context.aggression, tune.passive_aggression) end
+    -- Passive: it hardly ever attacks when it could — and has not punished us either (a blow landed on us in a move
+    -- of our own, memory.punished): an opponent that waits for us to commit and then strikes is anything but passive,
+    -- however seldom it attacks otherwise. (Sauce's AI attacks little and punishes much; up to version 34 it was
+    -- taken for passive after a while, its counters no longer expected, and INSANE! started slow moves into them.)
+    local passive = target_pressure ~= nil and target_pressure < tune.passive_pressure and (memory.punished or 0) < 2
+    if passive then context.aggression = max(context.aggression, tune.passive_aggression) end
     -- A target that flips up out of its falls as soon as it may: where its roll takes it is where to strike.
     context.target_path = nil
     if (target.frame == 182 or target.frame == 188) and rare.flips_up(model) then
@@ -4448,7 +4999,7 @@ function smart.control(state, index)
     if danger and blinking > 0 then danger = max(danger, blinking) end
     -- An opponent that hardly ever attacks when it could is not expected to answer this blow either (the model
     -- changes its mind as soon as it does attack).
-    if target_pressure and target_pressure < tune.passive_pressure then danger = nil end
+    if passive then danger = nil end
 
     -- Entering a mode of the fighter's own making (Gear Second, Diable Jambe: an item it lays down and picks up)
     -- when the mode's blows or speed beat its own, MP allows for it and what it burns, and nothing can reach us
@@ -4545,6 +5096,20 @@ function smart.control(state, index)
         return tune.attack_threshold
     end
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
+    -- A dizzy target is grabbed (grab_kit: walked into, held, punched and thrown) when the hold is worth more than
+    -- the best blow at it, there is time to walk up before it comes round, and nothing else reaches us on the way.
+    if tframe.state == states.dizzy and self.y_int == 0 and self.weapon == weapon_none
+       and (fstate == states.standing or fstate == states.walking) then
+        local plan = rare.grab.plan(state, index, self, target, tframe, target_lock, context, level.reaction)
+        if plan then
+            local value = plan.worth * 14 / (plan.t + tune.time_bias) * (tune.time_bias / 10)
+            if not move or value >= score then
+                rare.grab.walk(self, plan)
+                memory.note = string.format("grab w%d t%d", plan.worth, plan.t)
+                return
+            end
+        end
+    end
     -- Not into a blow already on its way: a move whose path meets an enemy's attack in progress before it lands is
     -- left alone (the next best is tried). Against the target's quickest answer along that path (a rush ends
     -- inside the arms of a target whose blows do not reach where it started, and a blow it starts as we set off
@@ -4559,7 +5124,7 @@ function smart.control(state, index)
         local plan, frames_at = move_path(self, move, target)
         local into = earliest_threat(state, index, self, t - 1, plan, level.reaction, context, frames_at)
         local reason = into and "into" or nil
-        if not into and not (target_pressure and target_pressure < tune.passive_pressure) and t >= tune.risk_min_t then
+        if not into and not passive and t >= tune.risk_min_t then
             local along, along_damage = counter_along(context, target, self, target_lock, plan, frames_at)
             if along and (along < t or (along == t and target_lock > 0)) then
                 if worth_the_risk(memory, score, t, along_damage) > threshold(move) then at_risk = true
@@ -4574,8 +5139,9 @@ function smart.control(state, index)
     end
     if move and not checked then move = nil end
     if smart.trace then
-        smart.trace(state, index, string.format("lock %d untouchable %d danger %s best %s t%s s%.1f", target_lock,
+        smart.trace(state, index, string.format("lock %d untouchable %d danger %s%s best %s t%s s%.1f", target_lock,
             untouchable_for(context, target, tframe.state, target_lock), tostring(danger),
+            passive and string.format(" (passive: pressure %.2f, punished %d)", target_pressure, memory.punished or 0) or "",
             move and (move.entry.field or move.entry.basic or "chain") or "-", tostring(t), score or 0))
     end
     if move and score > threshold(move) then
@@ -4647,7 +5213,7 @@ function smart.control(state, index)
                 -- (The target, free or free in time, may strike the fighter out of the air before its own blow
                 -- lands: weighed as for the moves on the ground.)
                 local met, jump_risk = false, false
-                if not (target_pressure and target_pressure < tune.passive_pressure) then
+                if not passive then
                     local along, along_damage = counter_along(context, target, self, target_lock, flight, flight_frames)
                     if along ~= nil and along <= jump_t then
                         if worth_the_risk(memory, jump_score, jump_t, along_damage) > tune.attack_threshold then jump_risk = true else met = true end
@@ -4801,7 +5367,7 @@ function smart.control(state, index)
         if want_dz > 0 and far_z - self.z_int < 12 then want_dz = -1 end
         keep_facing = true
         memory.note = "leave air line"
-    elseif target_lock == 0 and not (target_pressure and target_pressure < tune.passive_pressure) and not shielded
+    elseif target_lock == 0 and not passive and not shielded
            and danger_at(target, context.analysis_of(target), self.x_int, self.z_int) >= keep_out - (memory.leaving == state.frame_number - 1 and tune.keep_out_leaving or 0) then
         -- Where the free enemy's quick, strong moves land: step to the nearest spot they do not reach (and on
         -- out of them for a while once started, rather than stepping in and out at their edge). An opponent
@@ -4841,7 +5407,7 @@ function smart.control(state, index)
         -- into our blow; a long standoff ends the patience.
         local hold = shielded and max(positioning.mode_reach(context.analysis_of(self), mode_now) - 15, 30) or range
         local their_reach = melee_reach(context.analysis_of(target)) + 25
-        if their_reach > range - 10 and target_lock == 0 and context.aggression < tune.hold_patience and (target_pressure or 1) >= tune.passive_pressure and not shielded then
+        if their_reach > range - 10 and target_lock == 0 and context.aggression < tune.hold_patience and not passive and not shielded then
             hold = max(range, their_reach + tune.hold_margin)
             -- Short of MP for the fighter's strong moves, with a charge of its own: far enough off to charge (see
             -- there: beyond the target's quick reach and 85 more), rather than waiting at the edge of its arms with
@@ -4857,7 +5423,7 @@ function smart.control(state, index)
         -- off its line, we may close in x and wait there. (Not against one that hardly ever attacks.)
         local untouchable = untouchable_for(context, target, tframe.state, target_lock)
         local waking, edge_note = false, nil
-        if untouchable > 0 and target_waking and not (target_pressure and target_pressure < tune.passive_pressure) and not shielded then
+        if untouchable > 0 and target_waking and not passive and not shielded then
             local zone_z, zone_x = wake_zone(target, target_analysis, distance)
             if zone_z > 0 then
                 waking = true
@@ -4929,7 +5495,7 @@ function smart.control(state, index)
             -- Nor a step back into where the blows of a target getting up strike (just stepped out of: they reach
             -- further as we near it): we wait at their edge, turned toward it (turning round, a step toward it,
             -- only once a step further out leaves room for it).
-            if untouchable > 0 and target_waking and not (target_pressure and target_pressure < tune.passive_pressure) and not shielded then
+            if untouchable > 0 and target_waking and not passive and not shielded then
                 local toward = dx > 0 and 1 or -1
                 local facing_away = (dx > 0) == (self.facing == facing_left)
                 if want_dx == toward or (want_dx == 0 and facing_away and distance >= 6) then
@@ -4955,7 +5521,7 @@ function smart.control(state, index)
         -- (Also when it is busy for now but free again before we could be there, and with its MP counted as it will
         -- be by then: a wave it cannot afford yet comes once it can — charging, Neji in NTSD 2.4 soon can.)
         local line_z
-        if target_lock * 10 < distance - range and distance > range + 40 and not (target_pressure and target_pressure < tune.passive_pressure) and not shielded then
+        if target_lock * 10 < distance - range and distance > range + 40 and not passive and not shielded then
             for _, zone in ipairs(positioning.long_zones(target_analysis)) do
                 if target.mp + 150 >= zone.mp and zone.x2 >= distance - 40 and zone.x1 <= distance + 40 then
                     line_z = max(line_z or 0, zone.z + 10)
@@ -5066,7 +5632,7 @@ function smart.control(state, index)
         -- out of them every few frames, turning round each time.
         local closer_x = want_dx ~= 0 and (want_dx > 0) == (dx > 0)
         local closer_z = want_dz ~= 0 and (want_dz > 0) == (dz > 0)
-        if (closer_x or closer_z) and target_lock == 0 and not waking and not (target_pressure and target_pressure < tune.passive_pressure)
+        if (closer_x or closer_z) and target_lock == 0 and not waking and not passive
            and not shielded and state.frame_number - (memory.leaving or -999) < tune.hold_off then
             local movement = self.record.movement or {}
             local x = self.x_int + want_dx * (movement.walking_speed or 4) * 3
@@ -5098,10 +5664,9 @@ function smart.control(state, index)
         memory.note = tostring(memory.note) .. " (wait to turn)"
     end
     if (want_dx ~= 0 or want_dz ~= 0 or turn) and fstate ~= states.running and not threat_t then
-        local movement = self.record.movement or {}
-        local speed, speedz = movement.walking_speed or 4, movement.walking_speedz or 2
-        local step_x = want_dx ~= 0 and want_dx or (dx > 0 and 1 or -1)
-        local plan = function(k) return trunc(step_x * speed * k), 0, trunc(want_dz * speedz * k) end
+        -- (A turn round is a step toward the target, in its first frame: positioning.walk_plan.)
+        local plan = positioning.walk_plan(self, want_dx ~= 0 and want_dx or (turn and (dx > 0 and 1 or -1) or 0), want_dz,
+            want_dx == 0 and 1 or nil)
         if earliest_threat(state, index, self, tune.step_horizon, plan, level.reaction, context) then
             want_dx, want_dz, turn = 0, 0, false
             memory.note = "hold still"
@@ -5244,5 +5809,5 @@ smart.internals = {earliest_threat = earliest_threat, where_of = where_of, analy
     danger_at = danger_at, danger_zones = danger_zones, melee_reach = melee_reach, best_attack = best_attack,
     enemy_reach = enemy_reach, defend_ticks = defend_ticks, target_lock_of = target_lock_of, armed_analysis = armed_analysis,
     stance_exit = stance_exit, lock_of = lock_of, new_sandbox = new_sandbox, sandbox_step = sandbox_step, arm = arm,
-    set_keys = set_keys, setup_kit = setup_kit}
+    set_keys = set_keys, setup_kit = setup_kit, falling_path = falling_path, no_body_frame = no_body_frame}
 return smart

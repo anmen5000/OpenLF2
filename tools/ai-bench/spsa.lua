@@ -35,6 +35,11 @@
 --   games      (check) game pairs to play (at most, with seconds)
 --   base       (check) module of this package with the numbers to check against (name = value; the run's start,
 --              say); XOI's own when absent
+--   opponent   a brain both nudged sets play instead of each other: "classic" (the original computer player — a
+--              mod's own AI scripts, Sauce's lf2-AI, where it has them) or "smart@<module>" (a fixed version of the
+--              AI, its numbers untouched). An iteration is then two game pairs, one for each nudge, and the numbers
+--              move toward the nudge that did better against that opponent; the check plays the tuned numbers and
+--              the base against it in turn (SPSA_CHECK for the tuned, SPSA_CHECK_BASE for the base)
 -- Output: "SPSA it ..." per iteration and the chain's end numbers as "{n = ..., mod = ..., ...}, --SPSA_END"; the
 -- merge prints the new numbers as "return {...} --SPSA_START", a readable list, "SPSA_PAIRS <pairs>", "SPSA_MODS
 -- <mod>:<pairs>/<chains> ..." and "SPSA_K <k>"; the check prints "SPSA_CHECK <tuned wins> <own wins> <draws> <result>".
@@ -88,14 +93,24 @@ end
 
 local function players(config)
     local smart = require("base/game/smart_ai")
-    local alt = brains.load("smart@" .. (config.alt or "spsa_alt"))
-    assert(alt and alt.set_tune and alt.tune_ranges,
-        (config.alt or "spsa_alt") .. ".lua must be a copy of scripts/base/game/smart_ai.lua with smart.tune_ranges")
     assert(smart.set_tune, "scripts/base/game/smart_ai.lua has no smart.tune_ranges: the scripts are older than the tuner")
     -- (The numbers are the tuner's to set: not the mod's own, xoi/tune.txt, at each game's start, nor each level's at
     -- each player's frame. Both sides start from XOI's own; the tuner lays its numbers over them.)
-    smart.tune_fixed, alt.tune_fixed = true, true
+    smart.tune_fixed = true
     if smart.xoi_own then smart.set_tune(smart.xoi_own) end
+    if config.opponent then
+        -- A fixed opponent: the original player, or a version of the AI playing with its own numbers as they are.
+        local other = brains.load(config.opponent)
+        if other and other.set_tune then
+            other.tune_fixed = true
+            if other.xoi_own then other.set_tune(other.xoi_own) end
+        end
+        return smart, nil
+    end
+    local alt = brains.load("smart@" .. (config.alt or "spsa_alt"))
+    assert(alt and alt.set_tune and alt.tune_ranges,
+        (config.alt or "spsa_alt") .. ".lua must be a copy of scripts/base/game/smart_ai.lua with smart.tune_ranges")
+    alt.tune_fixed = true
     if alt.xoi_own then alt.set_tune(alt.xoi_own) end
     return smart, alt
 end
@@ -118,9 +133,10 @@ local function choices(config, fighters)
     return list
 end
 
--- One game: "smart" plays fighters[first] (slot 0) against "smart@<alt>" with fighters[second] (slot 1), or the
--- other way round with `swap`. Its result for "smart": +1 a win, -1 a loss, 0 a draw, plus the HP it was left with
--- above the other's, as a share of 500 (within -1 and 1). Nil when the game could not be set up.
+-- One game: "smart" plays fighters[first] (slot 0) against "smart@<alt>" — or config.opponent — with
+-- fighters[second] (slot 1), or the other way round with `swap`. Its result for "smart": +1 a win, -1 a loss, 0 a
+-- draw, plus the HP it was left with above the other's, as a share of 500 (within -1 and 1). Nil when the game
+-- could not be set up.
 local function play(config, fighters, backgrounds, row, first, second, swap)
     local ok, result = pcall(function()
         local smart_slot = swap and 1 or 0
@@ -128,7 +144,7 @@ local function play(config, fighters, backgrounds, row, first, second, swap)
         local state = match.create({mode = constants.modes.versus, difficulty = config.difficulty or -2, background = row,
             fighters = fighters, backgrounds = backgrounds, slots = slots})
         local own, other = state.items[10 + smart_slot], state.items[11 - smart_slot]
-        own.brain, other.brain = "smart", "smart@" .. (config.alt or "spsa_alt")
+        own.brain, other.brain = "smart", config.opponent or ("smart@" .. (config.alt or "spsa_alt"))
         local held = {functions = "", function_presses = "", keys = {}}
         local stall, quiet, own_hp, other_hp = config.stall or 1800, 0, own.hp, other.hp
         for _ = 1, config.limit or 9000 do
@@ -187,10 +203,22 @@ local function chain(config)
         end
         local first_fighter, second_fighter = pool[random(#pool)], pool[random(#pool)]
         local row = random(#backgrounds) - 1
-        smart.set_tune(plus)
-        alt.set_tune(minus)
-        local one = play(config, fighters, backgrounds, row, first_fighter, second_fighter, false)
-        local two = play(config, fighters, backgrounds, row, first_fighter, second_fighter, true)
+        local one, two
+        if alt then
+            smart.set_tune(plus)
+            alt.set_tune(minus)
+            one = play(config, fighters, backgrounds, row, first_fighter, second_fighter, false)
+            two = play(config, fighters, backgrounds, row, first_fighter, second_fighter, true)
+        else
+            -- Against a fixed opponent: each nudge plays the pair; what the one did better is the result.
+            smart.set_tune(plus)
+            local p1 = play(config, fighters, backgrounds, row, first_fighter, second_fighter, false)
+            local p2 = play(config, fighters, backgrounds, row, first_fighter, second_fighter, true)
+            smart.set_tune(minus)
+            local m1 = play(config, fighters, backgrounds, row, first_fighter, second_fighter, false)
+            local m2 = play(config, fighters, backgrounds, row, first_fighter, second_fighter, true)
+            if p1 and p2 and m1 and m2 then one, two = (p1 - m1) / 2, (p2 - m2) / 2 end
+        end
         if one and two then
             local y = one + two
             for index = 1, #list do u[index] = min(1, max(0, u[index] + step * y / (2 * nudge) * signs[index])) end
@@ -270,31 +298,42 @@ end
 local function check(config)
     local smart, alt = players(config)
     local start = config.start and require("bench/" .. config.start) or {}
-    smart.set_tune(start)
     local defaults = {}
-    for _, entry in ipairs(alt.tune_ranges) do defaults[entry[1]] = (alt.xoi_own or {})[entry[1]] or entry[2] end
-    alt.set_tune(defaults)
-    if config.base then alt.set_tune(require("bench/" .. config.base)) end
+    for _, entry in ipairs(smart.tune_ranges) do defaults[entry[1]] = (smart.xoi_own or {})[entry[1]] or entry[2] end
+    local base = config.base and require("bench/" .. config.base) or defaults
     local fighters, backgrounds = catalog.load(), catalog.backgrounds()
     local pool = choices(config, fighters)
-    local random = generator(config.seed or 1)
-    local wins, losses, draws, sum = 0, 0, 0, 0
-    local seconds = config.seconds
-    local began = seconds and clock_seconds()
-    for _ = 1, config.games or 20 do
-        if began and clock_seconds() - began >= seconds then break end
-        local first_fighter, second_fighter = pool[random(#pool)], pool[random(#pool)]
-        local row = random(#backgrounds) - 1
-        for _, swap in ipairs({false, true}) do
-            local result = play(config, fighters, backgrounds, row, first_fighter, second_fighter, swap)
-            if result then
-                -- (A win leaves HP above the loser's: more than 1; a loss less than -1; a draw in between.)
-                sum = sum + result
-                if result > 1 then wins = wins + 1 elseif result < -1 then losses = losses + 1 else draws = draws + 1 end
+    -- The tuned numbers against the base (alt); or, against a fixed opponent, the tuned numbers and then the base,
+    -- on the same pairs, each reported.
+    local function run(label, seed)
+        local random = generator(seed)
+        local wins, losses, draws, sum = 0, 0, 0, 0
+        local seconds = config.seconds
+        local began = seconds and clock_seconds()
+        for _ = 1, config.games or 20 do
+            if began and clock_seconds() - began >= seconds then break end
+            local first_fighter, second_fighter = pool[random(#pool)], pool[random(#pool)]
+            local row = random(#backgrounds) - 1
+            for _, swap in ipairs({false, true}) do
+                local result = play(config, fighters, backgrounds, row, first_fighter, second_fighter, swap)
+                if result then
+                    -- (A win leaves HP above the loser's: more than 1; a loss less than -1; a draw in between.)
+                    sum = sum + result
+                    if result > 1 then wins = wins + 1 elseif result < -1 then losses = losses + 1 else draws = draws + 1 end
+                end
             end
         end
+        engine.log(string.format("%s %d %d %d %.3f", label, wins, losses, draws, sum))
     end
-    engine.log(string.format("SPSA_CHECK %d %d %d %.3f", wins, losses, draws, sum))
+    smart.set_tune(start)
+    if alt then
+        alt.set_tune(base)
+        run("SPSA_CHECK", config.seed or 1)
+    else
+        run("SPSA_CHECK", config.seed or 1)
+        smart.set_tune(base)
+        run("SPSA_CHECK_BASE", config.seed or 1)
+    end
 end
 
 function spsa.run(config)

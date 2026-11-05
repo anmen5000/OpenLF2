@@ -34,6 +34,12 @@ rem Muc uu tien cua cac tien trinh: BELOWNORMAL (ban van dung may muot trong luc
 set "UU_TIEN=BELOWNORMAL"
 rem Hat giong dau (cac tran va cac lan nhich so deu theo hat giong: cung hat giong thi chay lai y het)
 set "HAT_GIONG=9000"
+rem Doi thu (DOI_THU). De trong: hai ban nhich so danh voi nhau (nhu truoc). Ghi classic: ca hai ban danh voi may goc cua
+rem game (CRAZY; nhan vat nao co script ai\<id>.as cua ban mod - AI cua Sauce - thi may goc choi bang script do), cac so
+rem dich ve phia ban thang doi thu ay nhieu hon; moi vong mat gap doi so tran (ca hai ban deu danh), va phan kiem tra cho
+rem ban da chinh roi ban goc cung danh doi thu ay (ket qua ghi ca hai). Dung de chinh so cho mot doi thu cu the (AI cua
+rem Sauce tren 10 nhan vat goc; dat IDS trong toolsi-bench neu can); voi ban mod khong co script, classic la may CRAZY.
+set "DOI_THU="
 rem Thu muc tools\ai-bench va scripts cua goi ban 32 tro len (de trong thi tu tim canh file .bat nay)
 set "BENCH="
 set "SCRIPTS="
@@ -115,6 +121,9 @@ if !RAM_GB! GEQ 2 (
 rem Giay moi vong, giay kiem tra; cap tran moi tien trinh moi vong, uoc chung (mot cap ~2 giay) cho buoc dich cua vong
 rem dau - tu vong 2 tinh theo so cap that da danh (spsa\vong-N\k-sau.txt). (THU_GIAY: so giay moi vong, de thu.)
 set /a GIAY_VONG=PHUT_VONG*60, GIAY_KT=PHUT_KIEM_TRA*60
+rem (Doi thu, neu co, vao config cua moi tien trinh: opponent = "classic", .)
+set "DT_CFG="
+if defined DOI_THU set DT_CFG=opponent = "%DOI_THU%", 
 if defined THU_GIAY set /a GIAY_VONG=THU_GIAY, GIAY_KT=THU_GIAY
 if %GIAY_VONG% LSS 10 set /a GIAY_VONG=10
 set /a K_NOM=GIAY_VONG/2, TONG=VONG*(GIAY_VONG/2)
@@ -198,7 +207,7 @@ for /L %%k in (1,1,%N%) do (
   set /a PI+=1
   if !PI! GTR %NP% set /a PI=1
   set /a SEED=HAT_GIONG+E*1000+%%k+LAN*100000
-  >"%D%\p%%k\config.lua" echo return {command = "spsa", step = "chain", start = "spsa_start", iterations = 1000000, seconds = %GIAY_VONG%, first = %FIRST%, total = %TONG%, seed = !SEED!, mod = !PI!, limit = 9000}
+  >"%D%\p%%k\config.lua" echo return {command = "spsa", step = "chain", !DT_CFG!start = "spsa_start", iterations = 1000000, seconds = %GIAY_VONG%, first = %FIRST%, total = %TONG%, seed = !SEED!, mod = !PI!, limit = 9000}
   start "SPSA vong %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 vong-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
@@ -245,7 +254,7 @@ set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=VONG-E, CON=CON_V*P
   findstr /c:"SPSA_LIST" "%M%\out.txt"
   findstr /c:"SPSA_MODS" "%M%\out.txt"
   echo.
-  echo Cai dat: VONG=%VONG% PHUT_VONG=%PHUT_VONG% SONG_SONG=%N% PHUT_KIEM_TRA=%PHUT_KIEM_TRA% HAT_GIONG=%HAT_GIONG%; ban mod:
+  echo Cai dat: VONG=%VONG% PHUT_VONG=%PHUT_VONG% SONG_SONG=%N% PHUT_KIEM_TRA=%PHUT_KIEM_TRA% HAT_GIONG=%HAT_GIONG% DOI_THU=%DOI_THU%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   type "%LV%\thoi-gian.txt"
 ) >"%LV%\ket-qua.txt"
@@ -270,26 +279,38 @@ for /L %%k in (1,1,%N%) do (
   set /a SEED=HAT_GIONG+500000+%%k
   copy /y "%LV%\bat-dau.lua" "%K%\p%%k\spsa_base.lua" >nul
   >>"%K%\p%%k\package.manifest" echo module=spsa_base^|spsa_base.lua
-  >"%K%\p%%k\config.lua" echo return {command = "spsa", step = "check", start = "spsa_start", base = "spsa_base", games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
+  >"%K%\p%%k\config.lua" echo return {command = "spsa", step = "check", !DT_CFG!start = "spsa_start", base = "spsa_base", games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
   start "SPSA kiem tra - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 kiem-tra %%k !SEED! !PI!
 )
-call :cho "%K%" "SPSA_CHECK"
+rem (Co doi thu: ban da chinh danh truoc, ban goc danh sau - dong SPSA_CHECK_BASE la dong cuoi.)
+set "DAU_KT=SPSA_CHECK "
+if defined DOI_THU set "DAU_KT=SPSA_CHECK_BASE"
+call :cho "%K%" "%DAU_KT%"
 rem Cong ket qua: ca thay, va tung ban mod (tien trinh k dung ban mod thu ((k-1) chia du cho so ban mod) + 1).
-set /a TW=0, TL=0, TD=0, CO=0, PK=0
-for /L %%p in (1,1,%NP%) do set /a "W_%%p=0, L_%%p=0, D_%%p=0"
+rem (Co doi thu: ban da chinh - dong "SPSA_CHECK " - va ban goc - dong SPSA_CHECK_BASE - deu danh doi thu ay.)
+set /a TW=0, TL=0, TD=0, CO=0, PK=0, BW=0, BL=0, BD=0
+for /L %%p in (1,1,%NP%) do set /a "W_%%p=0, L_%%p=0, D_%%p=0, BW_%%p=0, BL_%%p=0, BD_%%p=0"
 for /L %%k in (1,1,%N%) do (
   set /a PK+=1
   if !PK! GTR %NP% set /a PK=1
-  if exist "%K%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK" "%K%\p%%k\out.txt"') do (
+  if exist "%K%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK " "%K%\p%%k\out.txt"') do (
     set /a TW+=%%a, TL+=%%b, TD+=%%c, CO+=1
     set /a "W_!PK!+=%%a, L_!PK!+=%%b, D_!PK!+=%%c"
+  )
+  if exist "%K%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK_BASE" "%K%\p%%k\out.txt"') do (
+    set /a BW+=%%a, BL+=%%b, BD+=%%c
+    set /a "BW_!PK!+=%%a, BL_!PK!+=%%b, BD_!PK!+=%%c"
   )
 )
 set /a TT=TW+TL
 set /a PT=0
 if !TT! GTR 0 set /a PT=TW*1000/TT
 set /a P1=PT/10, P2=PT%%10
->"%K%\tong.txt" echo Ban da chinh thang !TW!, ban goc thang !TL!, hoa !TD! ^(!CO!/%N% tien trinh; ban da chinh thang !P1!.!P2!%% so tran co nguoi thang^)
+if defined DOI_THU (
+  >"%K%\tong.txt" echo Danh voi %DOI_THU%: ban da chinh thang !TW!, thua !TL!, hoa !TD!; ban goc thang !BW!, thua !BL!, hoa !BD! ^(!CO!/%N% tien trinh^)
+) else (
+  >"%K%\tong.txt" echo Ban da chinh thang !TW!, ban goc thang !TL!, hoa !TD! ^(!CO!/%N% tien trinh; ban da chinh thang !P1!.!P2!%% so tran co nguoi thang^)
+)
 if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :in_mod %%p
 type "%K%\tong.txt" >>"%LV%\ket-qua.txt"
 
@@ -358,7 +379,11 @@ for %%n in ("!TEN!") do set "TEN=%%~nxn"
 set /a "MT=W_%1+L_%1, MP=0"
 if !MT! GTR 0 set /a "MP=W_%1*1000/MT"
 set /a "M1=MP/10, M2=MP %% 10"
->>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)
+if defined DOI_THU (
+  >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1! thua !L_%1! hoa !D_%1!; ban goc thang !BW_%1! thua !BL_%1! hoa !BD_%1!
+) else (
+  >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)
+)
 exit /b 0
 
 rem --- So giay tu nua dem theo dong ho vao bien %1 (%TIME% la gio:phut:giay; gio duoi 10 co dau cach o dau) ---

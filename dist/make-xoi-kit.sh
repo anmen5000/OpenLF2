@@ -9,21 +9,26 @@
 # put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
 # kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
 # they lay over the installed game's scripts.
+# make-xoi-kit.sh --en OUT.zip: the English edition (tools/ai-bench/windows/en: the same tools under English names —
+# play.bat, train.bat, measure.bat, spsa.bat, watch.bat, publish.bat, check.bat — with English settings and messages),
+# folder LF2-XOI-kit-en.
 set -euo pipefail
+edition=vi
+if [ "${1:-}" = "--en" ]; then edition=en; shift; fi
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 out=$(realpath -m "$1")
 mkdir -p "$(dirname "$out")"
 commit=$(git -C "$repo_root" rev-parse --short HEAD 2>/dev/null || echo unknown)
 stamp=$(git -C "$repo_root" log -1 --format=%ct 2>/dev/null || date +%s)
-python3 - "$repo_root" "$out" "$commit" "$stamp" <<'PY'
+python3 - "$repo_root" "$out" "$commit" "$stamp" "$edition" <<'PY'
 import re
 import sys
 import time
 import zipfile
 from pathlib import Path
 
-root, out, commit, stamp = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], int(sys.argv[4])
-top = "LF2-XOI-kit"
+root, out, commit, stamp, edition = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5]
+top = "LF2-XOI-kit" if edition == "vi" else "LF2-XOI-kit-en"
 when = time.gmtime(stamp)[:6]
 files = []
 
@@ -33,13 +38,20 @@ def crlf(data):
 
 
 windows = root / "tools/ai-bench/windows"
-for name in ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xem.bat", "xuat-ban.bat", "kiem-tra.bat"):
+if edition == "vi":
+    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xem.bat", "xuat-ban.bat", "kiem-tra.bat")
+    texts = ("README.txt", "xuat-ban.ps1", "xuat-ban-README.txt")
+else:
+    windows = windows / "en"
+    bats = ("play.bat", "train.bat", "measure.bat", "spsa.bat", "watch.bat", "publish.bat", "check.bat")
+    texts = ("README.txt", "publish.ps1", "publish-README.txt")
+for name in bats:
     data = (windows / name).read_bytes()
     # cmd reads labels wrongly in a batch file without CRLF line ends (.gitattributes keeps them).
     if data.count(b"\n") != data.count(b"\r\n"):
         sys.exit(f"{name} must keep its CRLF line ends")
     files.append((name, data))
-for name in ("README.txt", "xuat-ban.ps1", "xuat-ban-README.txt"):
+for name in texts:
     files.append((name, crlf((windows / name).read_bytes())))
 files.append(("LICENSE.txt", crlf((root / "LICENSE").read_bytes())))
 smart = (root / "scripts/base/game/smart_ai.lua").read_text(encoding="utf-8")
@@ -53,7 +65,7 @@ for source, target in ((root / "scripts", "scripts"), (root / "tools/ai-bench", 
             continue
         files.append((f"{target}/{relative.as_posix()}", path.read_bytes()))
 names = {name for name, _ in files}
-for needed in ("xuat-ban.ps1", "xuat-ban-README.txt", "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
+for needed in (texts[1], texts[2], "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
                "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/list.lua",
                "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
                "tools/ai-bench/package.manifest"):
@@ -65,5 +77,5 @@ with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as kit:
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o644 << 16
         kit.writestr(info, data)
-print(f"{out}: {len(files)} files, INSANE! v{version}, commit {commit}")
+print(f"{out}: {len(files)} files ({top}), INSANE! v{version}, commit {commit}")
 PY

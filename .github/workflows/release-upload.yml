@@ -53,7 +53,7 @@ jobs:
             "OpenLF2 built from \`$BRANCH\`." \
             "" \
             "- **OpenLF2-Windows-x64.exe**: the installer for Windows 10 and 11 (64-bit; \`x86\` for 32-bit Windows, \`arm64\` for ARM PCs)." \
-            "- **xoi-kit.zip**: play any LF2 mod with the INSANE! and XOI computer players, train XOI for a mod, and publish the mod for its players with both built in: $site/xoi.html" \
+            "- **xoi-kit.zip**: play any LF2 mod with the INSANE! and XOI computer players, train XOI for a mod, and publish the mod for its players with both built in: $site/xoi.html (**xoi-kit-en.zip**: the same tools in English — play.bat, train.bat, measure.bat, spsa.bat, watch.bat, publish.bat, check.bat)" \
             "- **OpenLF2-Web.zip**: the web version, as published at $site/" > notes.md
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "Release $TAG is there already: uploading to it"
