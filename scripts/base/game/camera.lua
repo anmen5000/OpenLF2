@@ -12,7 +12,7 @@ local item_id_beer = constants.item_ids.beer
 local item_id_milk = constants.item_ids.milk
 local item_slots = constants.item_slots
 local mode_stage = constants.modes.stage
-local screen_width = constants.screen.width
+local view = constants.view -- the match's picture (a mod's own screen, else the classic one), read when it runs
 local stage_group_survival = constants.stage_groups.survival
 local team_enemies = constants.teams.enemies
 local world_edge_ball_margin = constants.world_edges.ball_margin
@@ -37,7 +37,7 @@ end
 -- Keeps items inside the stage depth and width; the last-rendered-width rules by kind.
 local function clamp(state)
     local stage = state.stage
-    local near, far, width = stage.zboundary[1] or 0, stage.zboundary[2] or 0, stage.width or screen_width
+    local near, far, width = stage.zboundary[1] or 0, stage.zboundary[2] or 0, stage.width or view.width
     for index = 0, item_slots - 1 do
         local value = state.items[index]
         if value then
@@ -101,6 +101,7 @@ function camera.step(state)
         end
         if count == 0 then sum, count = camera_motion_fallback_focus_x, 1 end
     end
+    local screen_width = view.width
     local width = state.stage.width or screen_width
     local target = cdiv(sum, count) - screen_width / 2
     if target < 0 then target = 0 end

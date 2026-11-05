@@ -161,11 +161,15 @@ if ($isFolder) {
     } finally { $archive.Dispose() }
 }
 if ($null -eq $source) { Fail ('"' + $item.FullName + '" has no data\data.txt: this is not an LF2 mod (or its folder / zip file).') }
+# The mod's own settings for OpenLF2 (openlf2.txt: a mod that plays on a screen of its own says so there, Naruto:
+# The Setting Dawn 2.6), kept; the lock lines are added to them below.
+$ownSettings = ''
 if ($isFolder) {
     foreach ($entry in @(Get-ChildItem -LiteralPath $source -Recurse)) {
         $relative = $entry.FullName.Substring($source.Length + 1)
         $target = Join-Path $out $relative
         if ($entry.PSIsContainer) { [void][IO.Directory]::CreateDirectory($target); continue }
+        if ($relative -ieq 'openlf2.txt') { $ownSettings = [IO.File]::ReadAllText($entry.FullName) }
         if (Test-Later $relative) { continue }
         [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
         [IO.File]::Copy($entry.FullName, $target, $true)
@@ -182,6 +186,10 @@ if ($isFolder) {
             if (@($parts | Where-Object { -not (Test-Part $_) }).Count -gt 0) { $skipped += 1; continue }
             $target = Join-Path $out ($parts -join [IO.Path]::DirectorySeparatorChar)
             if ($relative.EndsWith('/')) { [void][IO.Directory]::CreateDirectory($target); continue }
+            if ($relative -ieq 'openlf2.txt') {
+                $reader = New-Object IO.StreamReader($entry.Open())
+                try { $ownSettings = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            }
             if (Test-Later $relative) { continue }
             [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
             [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
@@ -257,15 +265,27 @@ if (Test-File $notesFile) { Write-Host ('XOI notes: yes (' + [math]::Ceiling((Ge
 else { Write-Host 'XOI notes: none - XOI still plays, but without notes of training for this mod (train.bat makes them)' }
 if (Test-File (Under $out 'xoi' 'tune.txt')) { Write-Host 'XOI numbers tuned for this mod: yes' }
 else { Write-Host 'XOI numbers tuned for this mod: none - XOI uses the shared numbers (spsa.bat tunes numbers for a mod)' }
-# The mod's settings for OpenLF2: written when locking, left out otherwise (the publisher's choice).
+# The mod's settings for OpenLF2: its own lines as they came (the lock's two keys taken out when locking), and the
+# lock lines when locking; nothing written for a mod without settings that is not locked (the publisher's choice).
+$settings = ''
+if ($ownSettings) {
+    foreach ($line in ($ownSettings -split "\r?\n")) {
+        if ($lock -and $line -imatch '^\s*(hidden_characters|options)\s*=') { continue }
+        $settings += $line.TrimEnd() + "`r`n"
+    }
+    $settings = $settings.TrimEnd("`r", "`n") + "`r`n"
+}
 if ($lock) {
-    [IO.File]::WriteAllText((Join-Path $out 'openlf2.txt'),
-        "# OpenLF2: this mod's settings for OpenLF2 (written by publish.bat)`r`n" +
+    $settings += "# OpenLF2: this mod's settings for OpenLF2 (written by publish.bat)`r`n" +
         "# Hidden fighters locked: no options button, typing lf2.net does not unlock them`r`n" +
-        "hidden_characters = locked`r`noptions = hidden`r`n", (New-Object Text.UTF8Encoding $false))
+        "hidden_characters = locked`r`noptions = hidden`r`n"
     Write-Host 'Hidden fighters: LOCKED - no options button on the title screen, typing lf2.net does not unlock them; CRAZY!, INSANE! and XOI can still be chosen'
 } else {
     Write-Host 'Hidden fighters: as usual - the players can unlock them (options, lf2.net)'
+}
+if ($settings) {
+    [IO.File]::WriteAllText((Join-Path $out 'openlf2.txt'), $settings, (New-Object Text.UTF8Encoding $false))
+    if ($ownSettings) { Write-Host "The mod's own settings (openlf2.txt): kept" }
 }
 
 # Tried once as a player starts it, without a window: the program must play the folder it lies in by itself.

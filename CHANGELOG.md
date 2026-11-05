@@ -183,6 +183,25 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- A mod's own screen: a mod whose program draws its matches on a picture other than LF2's 794x550 says so in its
+  `openlf2.txt` (`screen = 1330x730`: Naruto: The Setting Dawn 2.6, whose stages are 1330 wide and 730 deep, their
+  backgrounds 735 tall — OpenLF2 drew its top left corner, the fighters at the bottom edge). The match is drawn on
+  that picture (`constants.view`, set when the game's files are open: the camera's width, the backgrounds, the
+  stage's shutters, the order markers and labels, the scoreboard, PAUSE and DEMO in its middle, the mode line,
+  recording and FPS lines at its bottom; the status panels stay at the top left), a looped background layer on a
+  stage exactly as wide as the screen is drawn once (the original divides by zero there), the window opens with
+  it (a window remembered smaller than it in both directions opens at it), and the web page's canvas takes its
+  shape (the engine tells it: `OpenLF2Screen`). Menus keep the classic screen, letterboxed. The publishing scripts
+  keep a mod's own `openlf2.txt` lines (they were dropped: only the lock's were written)
+- A mod's pictures in its `sprite/ui/` folder (Naruto: The Setting Dawn 2.6 keeps LF2's there: WORDS, MENU_CLIP, the
+  status frame, the scoreboard) come before an executable's, as `UI/` does (Sauce's), so a packed program played
+  with an lf2.exe beside it shows the mod's own title and menus, not LF2's; a menu background it lacks shows its
+  first (`sprite/menu/1.png`); a `bars` picture not laid out like LF2's (the status panels read its rows) is left to
+  the executable's. The site's Game list is a picker: a search box (accents and case do not matter), the games by
+  name in groups (the original, the relay's mods, Hero Fighter, a file of this computer) with their size and
+  "saved" (in this browser: starts without a download) or "playing", arrows and Enter choose; the status line says
+  what Start game will do with a choice made before any game runs. `OPENLF2_FRAME_DUMP=<prefix>:<frames>` saves
+  the window's frames as BMP (SDL's offscreen driver: a look at the game where no display is)
 - INSANE!/XOI v35: follows a knock-up into the air, rolls out of a run, grabs a dizzy opponent and steers its moves
   in depth — what the project owner saw Sauce's AI do and asked for, worked out in a form that holds for every mod.
   An opponent knocked into the air is foreseen along its flight (`falling_path`: the blow's impulse once its hit lag
@@ -461,6 +480,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   largest — OpenLF2's own program, larger than the game, gave "has none of LF2's pictures: it is packed or protected"
 - The site page: Normal view, Fullscreen and the other buttons that wait for a game no longer show before it runs
   (the buttons' style won over `hidden`), and the Game list fits a phone's width (the page scrolled sideways)
+- The site page since package 57: choosing another game did nothing lasting — the choice was not remembered and,
+  with a game running, the page did not reload into it (the same mod came back; a private window was the way to
+  another). The Online panel's direct-links row brought a second `.help` element, which the page took for the
+  panel's help paragraph and failed on (`insertBefore`), before the choice was saved. The choice is saved first now,
+  the paragraph has an id, and a panel glitch is reported in the diagnostic output instead of stopping the choice
 - Music on a PC: the desktop builds' FFmpeg decoded only WMA version 2, so the music of mods in WMA Pro (Naruto: The
   Setting Dawn 2.4's and One Piece GrandWorld's main.wma among others) or MP3 (One Piece GrandWorld) was silent
   ("music: no audio stream: Decoder not found"); it now has the web build's decoders (WMA 1 and 2, WMA Pro, MP3).

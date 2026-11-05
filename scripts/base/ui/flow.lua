@@ -302,14 +302,20 @@ function flow.draw(state, context)
         state.touch_gamepad.fast_on = speed.fast
         touch_gamepad.draw(state.touch_gamepad, context)
     end
+    -- The bottom line: the classic screen's, or the match's own picture's (a mod's screen, constants.view).
+    local line_y, line_width = 0x213, constants.screen.width
+    if state.active == "match" then
+        line_y = 0x213 + constants.view.height - constants.screen.height
+        line_width = constants.view.width
+    end
     local status = recording.status_text()
-    if status then font.gdi(context, i18n.clip(status, 128), 3, 0x213, recording.status_color())
-    elseif state.volume_text then font.gdi(context, state.volume_text, 3, 0x213, 0x00ff00) end
+    if status then font.gdi(context, i18n.clip(status, 128), 3, line_y, recording.status_color())
+    elseif state.volume_text then font.gdi(context, state.volume_text, 3, line_y, 0x00ff00) end
     -- Show FPS (OpenLF2 extension): centered on the statusbar line so it never overlaps the
     -- left-aligned text.
     if shown_options.show_fps and state.fps then
         local fps_text = "FPS: " .. state.fps
-        font.gdi(context, fps_text, math.floor((constants.screen.width - font.gdi_width(fps_text)) / 2), 0x213)
+        font.gdi(context, fps_text, math.floor((line_width - font.gdi_width(fps_text)) / 2), line_y)
     end
     if state.quit_dialog then quit_dialog.draw(state.quit_dialog, context) end
 end

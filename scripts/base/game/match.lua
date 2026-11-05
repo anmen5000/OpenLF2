@@ -28,6 +28,7 @@ local control = require("base/game/control")
 local physics = require("base/game/physics")
 local animation = require("base/game/animation")
 local camera = require("base/game/camera")
+local mod_settings = require("base/game/mod_settings")
 local combat = require("base/game/combat")
 local ai = require("base/game/ai")
 local ai_scripts = require("base/game/ai_scripts")
@@ -76,6 +77,8 @@ end
 -- options: mode, difficulty, background row (100 = random), fighters (catalog list),
 -- backgrounds (catalog list), slots[0..7] = {kind = "human"|"computer"|nil, fighter, team}.
 function match.create(options)
+    -- The picture the match is drawn on: a mod's own screen when it declares one (constants.view).
+    mod_settings.apply_view()
     local state = {mode = options.mode, difficulty = options.difficulty, running = true,
         items = {}, counter_12 = 0, counter_3 = 0, shake = 0,
         camera = 0, camera_step = 0, frame_number = 0, input_phase = 0,
@@ -99,7 +102,7 @@ function match.create(options)
     if options.mode == mode_battle then state.battle_run = battle.create(options.battle) end
     state.stage = stage_description(options.backgrounds, row)
     state.view = background.create_state(state.stage)
-    local width = state.stage.width or constants.screen.width
+    local width = state.stage.width or constants.view.width
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     if options.demo then create_demo(state, options, width, near, far) end
     if options.replay then create_replay(state, options.replay) end
@@ -510,7 +513,7 @@ local function fill_weapons(state)
             wanted[#wanted + 1] = entry.id
         end
     end
-    local width = state.stage.width or constants.screen.width
+    local width = state.stage.width or constants.view.width
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     for _, id in ipairs(wanted) do
         local roll_a = engine.random(30)

@@ -5,7 +5,7 @@ local constants = require("base/game/constants")
 
 local background = {}
 local cache = {}
-local screen_width = constants.screen.width
+local view = constants.view -- the match's picture: a mod's own screen (openlf2.txt), else the classic one
 -- The painter's fixed replacements for four converted rect: colors.
 local remapped = {[0x175317] = 0x104f10, [0x575347] = 0x5a4e4b, [0x977757] = 0x9a6e5a, [0x473f1f] = 0x423818}
 local function canonical(path)
@@ -35,7 +35,9 @@ local function truncate(value)
     return math.ceil(value)
 end
 local function parallax(layer, stage_width, camera_x)
-    return -truncate((layer.width - screen_width) * camera_x / (stage_width - screen_width))
+    -- A stage exactly as wide as the screen never scrolls: nothing to move (the division would be by zero).
+    if stage_width <= view.width then return 0 end
+    return -truncate((layer.width - view.width) * camera_x / (stage_width - view.width))
 end
 -- Advances the counter on every paint call; hidden outside c1..c2.
 local function visible(layer, state, index)
@@ -56,9 +58,9 @@ end
 local function classic_x(layer, stage_width, wide)
     -- The classic camera that would have put the window where it is (the window is not always at the game's own
     -- camera): scenery moves with the window, so it stands still when the window does.
-    local camera = math.floor(wide.camera * (stage_width - screen_width) / (stage_width - (wide.right - wide.left)))
+    local camera = math.floor(wide.camera * (stage_width - view.width) / (stage_width - (wide.right - wide.left)))
     local x = layer.x
-    if stage_width > screen_width then x = x + parallax(layer, stage_width, camera) end
+    if stage_width > view.width then x = x + parallax(layer, stage_width, camera) end
     return x + camera - (wide.camera - wide.left)
 end
 local function wide_x(layer, stage_width, wide)
@@ -75,7 +77,7 @@ local function wide_x(layer, stage_width, wide)
 end
 -- True for a layer that covers the whole classic screen at every camera position (a background, not a decoration).
 local function spans_screen(layer)
-    return layer.x <= 0 and layer.width >= screen_width
+    return layer.x <= 0 and layer.width >= view.width
 end
 -- Width of an original bitmap, read from its header (nil if it cannot be read).
 local bitmap_widths = {}
@@ -157,16 +159,14 @@ function background.paint(context, data, state, camera_x, bounds, wide)
                     image(context, layer, x)
                     continue_layer(context, layer, x - layer.x, wide)
                 else
-                    local offset = 0
-                    if stage_width > screen_width then offset = parallax(layer, stage_width, camera_x) end
-                    image(context, layer, layer.x + offset)
+                    image(context, layer, layer.x + parallax(layer, stage_width, camera_x))
                 end
             end
         elseif layer.color == 0 then
             if visible(layer, state, index) then
-                -- The original divides by zero or never terminates in these cases.
+                -- The original never terminates on a loop step of zero or less (and divides by zero on a stage as wide
+                -- as its screen, where a mod's own program draws the layer once, unmoved: so here).
                 assert(layer.loop > 0, "negative background layer loop step")
-                assert(stage_width ~= screen_width, "looped layer on a screen-wide background")
                 local offset
                 local extend = false
                 if not wide then offset = parallax(layer, stage_width, camera_x)
@@ -189,7 +189,7 @@ function background.paint(context, data, state, camera_x, bounds, wide)
         elseif layer.width > 0 and layer.height > 0 then
             local color = (remapped[layer.color] or layer.color) % 16777216
             local x, width = layer.x, layer.width
-            if bounds and x <= 0 and x + width >= screen_width then
+            if bounds and x <= 0 and x + width >= view.width then
                 x, width = bounds.left, bounds.right - bounds.left
             end
             context.fill(x, layer.y, width, layer.height,
@@ -205,7 +205,7 @@ local function rgb(context, x, y, width, height, color)
 end
 function background.paint_lee_on_road(context, camera_x, bounds)
     local left = bounds and bounds.left or 0
-    local width = bounds and bounds.right - bounds.left or screen_width
+    local width = bounds and bounds.right - bounds.left or view.width
     context.image("pe/back99_2", 250 - math.floor(camera_x / 100), 120, false)
     for x = 0, 3999, 500 do
         context.image("pe/back99_3", x - math.floor(camera_x * 7 / 10) + 30, 175, true)

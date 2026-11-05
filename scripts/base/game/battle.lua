@@ -94,7 +94,7 @@ function battle.update(state, run)
             end
         end
     end
-    local width = state.stage.width or constants.screen.width
+    local width = state.stage.width or constants.view.width
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     for side_base = 0, type_count, type_count do
         for kind = 0, type_count - 1 do

@@ -167,7 +167,10 @@ folder packed as a ZIP file, with its own program and data, instead of the insta
 folder the executable lies in (`data/data.txt` beside it), or else a `game.zip` beside it, is played
 as with `--pack` when neither `--pack` nor `--installer` is given. A pack may carry `openlf2.txt` beside its
 `data` folder, `key = value` lines: `hidden_characters = locked` (no unlocking the hidden fighters, LF2.NET
-included) and `options = hidden` (no options entry on the title screen).
+included), `options = hidden` (no options entry on the title screen) and `screen = 1330x730` (the picture the
+mod's own program draws its matches on, when it is not LF2's 794x550: the matches are drawn on it, the window
+opens with it; Naruto: The Setting Dawn 2.6). A mod whose program keeps LF2's pictures in files instead
+(`UI/`, `sprite/ui/`) has them read from there, before the program's.
 
 ### Flatpak
 

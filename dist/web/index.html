@@ -21,15 +21,17 @@
     button { padding: .55rem 1rem; cursor: pointer; }
     @media (max-width: 480px) { body { padding: 1rem; } }
     /* !important: SDL 3.4 writes an inline size onto the canvas (even 1px x 1px) when pixel ratio != 1, which would otherwise win. */
-    canvas { display: block; width: 100% !important; max-width: 794px !important; height: auto !important; aspect-ratio: 794 / 550; background: #000; }
+    /* The game's picture: the classic 794x550, or a mod's own screen (the engine says: OpenLF2Screen in the script). */
+    #stage { --screen-w: 794; --screen-h: 550; }
+    canvas { display: block; width: 100% !important; max-width: calc(var(--screen-w) * 1px) !important; height: auto !important; aspect-ratio: var(--screen-w) / var(--screen-h); background: #000; }
     /* The wrapper goes fullscreen, not the canvas: the canvas just fills it, so SDL sees an ordinary canvas that changes size. */
     #stage:fullscreen { background: #000; width: 100vw; height: 100vh; height: 100dvh; display: flex; }
     #stage:-webkit-full-screen { background: #000; width: 100vw; height: 100vh; height: 100dvh; display: flex; }
     #stage:fullscreen canvas { width: 100% !important; max-width: none !important; height: 100% !important; aspect-ratio: auto; }
     #stage:-webkit-full-screen canvas { width: 100% !important; max-width: none !important; height: 100% !important; aspect-ratio: auto; }
     /* Large view (while playing, unless turned off): the game takes as much of the window as fits, centred. */
-    #stage.wide { position: relative; width: min(calc(100vw - 2rem), calc((100vh - 1.5rem) * 794 / 550)); left: 50%; transform: translateX(-50%); }
-    @supports (height: 100dvh) { #stage.wide { width: min(calc(100vw - 2rem), calc((100dvh - 1.5rem) * 794 / 550)); } }
+    #stage.wide { position: relative; width: min(calc(100vw - 2rem), calc((100vh - 1.5rem) * var(--screen-w) / var(--screen-h))); left: 50%; transform: translateX(-50%); }
+    @supports (height: 100dvh) { #stage.wide { width: min(calc(100vw - 2rem), calc((100dvh - 1.5rem) * var(--screen-w) / var(--screen-h))); } }
     #stage.wide canvas { max-width: none !important; }
     #stage.wide:fullscreen { left: 0; transform: none; width: 100vw; }
     #stage.wide:-webkit-full-screen { left: 0; transform: none; width: 100vw; }
@@ -72,6 +74,15 @@
   const canvas = document.getElementById('canvas');
   // Large view: on by default while playing; the choice is remembered.
   const stageElement = document.getElementById('stage');
+  // The picture the game draws on (the engine calls this once it knows: the classic 794x550, or a mod's own
+  // screen): the canvas takes its shape.
+  globalThis.OpenLF2Screen = (width, height) => {
+    if (!(width > 0 && height > 0)) return;
+    stageElement.style.setProperty('--screen-w', String(width));
+    stageElement.style.setProperty('--screen-h', String(height));
+    message('Screen: ' + width + 'x' + height);
+    window.dispatchEvent(new Event('resize'));
+  };
   const wideButton = document.getElementById('wide');
   let wide = true;
   try { wide = localStorage.getItem('openlf2-wide') !== '0'; } catch (error) { /* storage unavailable */ }

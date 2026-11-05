@@ -116,11 +116,37 @@ const packStore = (() => {
     }
   }
 
+  // Every record without its data: [{id, title, sha256, saved}], for a list of what the browser keeps.
+  async function list() {
+    const database = await open();
+    try {
+      return await new Promise((resolve, reject) => {
+        const found = [];
+        const transaction = database.transaction(storeName, 'readonly');
+        const request = transaction.objectStore(storeName).openCursor();
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) return;
+          const record = cursor.value || {};
+          found.push({id: String(cursor.key), title: record.title || '', sha256: record.sha256 || '', saved: record.saved || 0});
+          cursor.continue();
+        };
+        transaction.oncomplete = () => resolve(found);
+        request.onerror = () => reject(request.error);
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error);
+      });
+    } finally {
+      database.close();
+    }
+  }
+
   return {
     // { blob, title, sha256, saved } or undefined
     load: id => transact('readonly', store => store.get(id)),
     save: (id, record) => transact('readwrite', store => store.put(record, id)),
-    remove: id => transact('readwrite', store => store.delete(id))
+    remove: id => transact('readwrite', store => store.delete(id)),
+    list
   };
 })();
 

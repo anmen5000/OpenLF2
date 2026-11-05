@@ -74,7 +74,7 @@ local function phase_bound(state, run, index)
         local bound = phase_data(run, at).bound
         if bound >= 0 then return bound end
     end
-    return state.stage.width or constants.screen.width
+    return state.stage.width or constants.view.width
 end
 
 -- The record ids the current stage brings in (for the Bandit/Hunter selectors, what they may pick; a random
@@ -176,7 +176,7 @@ local function spawn(state, run, entry, runtime, slot)
         value.y = value.y_int
     else
         value.blink = constants.blink.spawn_frames
-        value.facing = value.x_int > state.stage_bound - constants.screen.width and constants.facings.left or constants.facings.right
+        value.facing = value.x_int > state.stage_bound - constants.view.width and constants.facings.left or constants.facings.right
         value.frame = entry.act
         -- (A mod's stage may send in an ally: `team:` 1-4, Naruto: The Setting Dawn 2.6's story stages.)
         local team = entry.team or 0
@@ -237,9 +237,9 @@ local function next_stage(state, run)
     end
 end
 
--- Black shutter bars: eleven 794-wide bars 43 px apart from y 135.
+-- Black shutter bars: eleven screen-wide bars 43 px apart from y 135 (more on a mod's deeper screen).
 local function shutter(display, height)
-    for y = 135, 564, 43 do display[#display + 1] = {"fill", 0, y, constants.screen.width, height} end
+    for y = 135, constants.view.height + 14, 43 do display[#display + 1] = {"fill", 0, y, constants.view.width, height} end
 end
 
 -- New phase: counters, bounds, revival in survival, and the first wave of every entry.
@@ -254,7 +254,7 @@ local function start_phase(state, run)
     local data = phase_data(run, run.phase)
     if data.music ~= "" then music.play(data.music) end
     local bound = phase_bound(state, run, run.phase)
-    state.camera_limit = bound - constants.screen.width
+    state.camera_limit = bound - constants.view.width
     state.stage_bound = bound
     if group == constants.stage_groups.survival then
         for index = 0, constants.first_spawned_slot - 1 do
@@ -302,7 +302,7 @@ function stage.update(state, run)
             state.round_counter = 0
             if run.shutter >= 0 and run.shutter < 21 then
                 if run.shutter < 10 then shutter(display, cdiv(run.shutter * 43, 10))
-                else display[#display + 1] = {"fill", 0, 109, constants.screen.width, 440} end
+                else display[#display + 1] = {"fill", 0, 109, constants.view.width, constants.view.height - 110} end
                 run.shutter = run.shutter + 1
                 if run.shutter == 21 then
                     if group == constants.stage_groups.final_story then

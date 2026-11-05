@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <list>
@@ -892,12 +893,44 @@ public:
         // finished frame, erasing the viewport colour and the overlay drawn in the bars. Present without it, then
         // restore it: input coordinates are converted with it between frames.
         if (!SDL_SetRenderLogicalPresentation(renderer_.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED)) return error();
+        dump_frame();
         if (!SDL_RenderPresent(renderer_.get())) return error();
         if (!SDL_SetRenderLogicalPresentation(renderer_.get(), viewport.width, viewport.height,
                                               SDL_LOGICAL_PRESENTATION_LETTERBOX)) return error();
         return {};
     }
 private:
+    // OPENLF2_FRAME_DUMP=<prefix>:<frame numbers, comma separated>: those frames, as the window shows them, saved
+    // to <prefix>-<number>.bmp (for looking at the game where no one can: a test on a machine without a display,
+    // SDL's offscreen video driver). Nothing without the variable.
+    void dump_frame() {
+        static const char* setting = std::getenv("OPENLF2_FRAME_DUMP");
+        if (setting == nullptr) return;
+        ++presented_frames_;
+        const std::string value(setting);
+        const auto colon = value.find(':');
+        if (colon == std::string::npos) return;
+        const std::string prefix = value.substr(0, colon);
+        std::string list = value.substr(colon + 1);
+        bool wanted = false;
+        for (std::size_t start = 0; start <= list.size();) {
+            auto end = list.find(',', start);
+            if (end == std::string::npos) end = list.size();
+            if (std::stoll(list.substr(start, end - start).empty() ? "0" : list.substr(start, end - start)) == presented_frames_) wanted = true;
+            start = end + 1;
+        }
+        if (!wanted) return;
+        SDL_Surface* surface = SDL_RenderReadPixels(renderer_.get(), nullptr);
+        if (surface == nullptr) {
+            std::cerr << "Frame dump: " << SDL_GetError() << '\n';
+            return;
+        }
+        const std::string file = prefix + "-" + std::to_string(presented_frames_) + ".bmp";
+        if (!SDL_SaveBMP(surface, file.c_str())) std::cerr << "Frame dump " << file << ": " << SDL_GetError() << '\n';
+        else std::cout << "Frame dump " << file << '\n';
+        SDL_DestroySurface(surface);
+    }
+    long long presented_frames_ = 0;
     // How the finished frame is scaled to the window by the renderer (xBRZ has its own shader).
     static SDL_ScaleMode scale_mode(RenderFilter filter) {
         if (filter == RenderFilter::linear) return SDL_SCALEMODE_LINEAR;

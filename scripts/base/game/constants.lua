@@ -153,8 +153,16 @@ return {
         troop_picker = 5,
         continue = 6,
     },
-    -- The classic picture the game is drawn on, in pixels; stages are at least this wide.
+    -- The classic picture the game is drawn on, in pixels; stages are at least this wide. Menus are laid out on it.
     screen = {
+        width = 794,
+        height = 550,
+    },
+    -- The picture a match is drawn on: the classic screen, or the one a mod's own program has when the mod says so
+    -- (openlf2.txt: screen = 1330x730, Naruto: The Setting Dawn 2.6, whose stages are 1330 wide and 730 deep).
+    -- Set from the mod's settings once its files are open (mod_settings.apply_view); the camera, the backgrounds,
+    -- the stage's shutters and the match screen go by it, read when they run, never kept at load time.
+    view = {
         width = 794,
         height = 550,
     },

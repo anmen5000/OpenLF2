@@ -4297,7 +4297,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         end
     end
     local away = source.x_int > self.x_int and -1 or 1
-    local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+    local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
     local cornered = (away < 0 and self.x_int < 60) or (away > 0 and self.x_int > width - 60)
     local plan = fstate == states.running and function(k) return trunc(away * speed * k), 0, 0 end
         or positioning.walk_plan(self, away, 0)
@@ -4574,7 +4574,7 @@ function grab_kit.hold(state, self, frame, memory, analysis)
         hold.pressed_at = self.catch_timer
         memory.note = "hold: punch"
     elseif c.taction ~= 0 then
-        local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+        local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
         local dir = self.x_int < width / 2 and -1 or 1
         if min(self.x_int, width - self.x_int) > 300 then dir = self.facing == facing_right and 1 or -1 end
         hold.throw_dir = dir
@@ -5347,7 +5347,7 @@ function smart.control(state, index)
     -- (Against loops: in a standoff long enough to be one, no spot is left for the enemy's blows — one of the two has
     -- to come in.)
     if (memory.calm or 0) >= tune.loop_calm then keep_out = math.huge end
-    local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+    local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
     -- Both pressed against the same wall at the same x (the stage's edge holds them both there): dx 0 reads as the
     -- target to the left, so at the right wall a step back for room is a step into the wall, and two such fighters
     -- stood there for good, nothing reaching the other (Crimson against Crimson in mode Convergence, 5,000 ticks).

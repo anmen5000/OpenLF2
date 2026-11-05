@@ -14,6 +14,24 @@ local controls = require("base/ui/controls")
 local options = require("base/game/options")
 local screen = {}
 local replay_lines, mode_line
+-- The picture the match is drawn on (constants.view): the classic screen, or a mod's own (openlf2.txt). The
+-- status panels stay at the top left; what the original puts at the bottom or in the middle of its screen moves
+-- down and across with the view's size.
+local match_view = constants.view
+local function bottom_shift() return match_view.height - constants.screen.height end
+local function centre_shift() return math.floor((match_view.width - constants.screen.width) / 2), math.floor((match_view.height - constants.screen.height) / 2) end
+-- The context with every picture, sprite, fill and text moved by (dx, dy): what the original draws in the middle of
+-- its screen (the scoreboard, PAUSE, DEMO) keeps the middle of a bigger view.
+local function shifted(context, dx, dy)
+    if dx == 0 and dy == 0 then return context end
+    local proxy = {}
+    for name, call in pairs(context) do proxy[name] = call end
+    function proxy.image(resource, x, y, keyed) return context.image(resource, x + dx, y + dy, keyed) end
+    function proxy.sprite(resource, source, x, y, ...) return context.sprite(resource, source, x + dx, y + dy, ...) end
+    function proxy.fill(x, y, width, height, ...) return context.fill(x + dx, y + dy, width, height, ...) end
+    function proxy.text(text, x, y, ...) return context.text(text, x + dx, y + dy, ...) end
+    return proxy
+end
 
 -- options: see base/game/match create().
 function screen.create(options)
@@ -149,7 +167,7 @@ replay_lines = function(context, current)
         bold_text(context, "  Info:", 10, y)
         wrapped_text(context, replay.info, 0x4b, y, 4)
     end
-    bold_text(context, clock(current.elapsed) .. " / " .. clock(replay.total_time), 5, 0x1fe)
+    bold_text(context, clock(current.elapsed) .. " / " .. clock(replay.total_time), 5, 0x1fe + bottom_shift())
 end
 local mode_text = ""
 mode_line = function(context, current, replaying)
@@ -182,7 +200,9 @@ mode_line = function(context, current, replaying)
         end
         mode_text = i18n.tr(base:sub(1, -2)) .. " " .. suffix
     end
-    if mode_text ~= "" then bold_text(context, mode_text, 0x316 - font.width(mode_text), replaying and 0x1fe or 0x213) end
+    if mode_text ~= "" then
+        bold_text(context, mode_text, 0x316 - font.width(mode_text) + (match_view.width - constants.screen.width), (replaying and 0x1fe or 0x213) + bottom_shift())
+    end
 end
 
 local function label_font(team)
@@ -259,7 +279,7 @@ local function draw_item(context, stage, view, entry, bounds, lighting)
         if on_screen then
             -- Order markers stay on the screen: the classic one, or the whole window in the widescreen layout.
             if bounds then x = math.max(bounds.left, math.min(x, bounds.right - (constants.screen.width - 0x2ca)))
-            else x = math.max(0, math.min(x, 0x2ca)) end
+            else x = math.max(0, math.min(x, 0x2ca + match_view.width - constants.screen.width)) end
         end
         if (lighting.character_shading or lighting.projected_shadows) and not on_screen then
             local kind = entry.record.kind
@@ -303,7 +323,7 @@ local function draw_item(context, stage, view, entry, bounds, lighting)
             x = math.max(bounds.left, math.min(x, bounds.right - length * 9))
         else
             if x < 0 then x = 0 end
-            if x > constants.screen.width - length * 9 then x = constants.screen.width - length * 9 end
+            if x > match_view.width - length * 9 then x = match_view.width - length * 9 end
         end
         glyphs(context, sheet, label, x, entry.z + 3, 9)
     end
@@ -449,17 +469,20 @@ function screen.outcome(state)
 end
 
 function screen.draw(state, context, window_bounds)
-    context.viewport(constants.screen.width, constants.screen.height, 0, 0, 0)
+    -- The match's own picture: the classic screen, or the mod's (constants.view; the names below keep the original's
+    -- "classic" for the game's own camera width, which is this view's).
+    local view_width, view_height = match_view.width, match_view.height
+    context.viewport(view_width, view_height, 0, 0, 0)
     local view = state.view
     local current = state.match
     if not view then return end
     local bounds, passable_bounds, wide
     if window_bounds and (window_bounds.left < 0 or window_bounds.top < 0
-            or window_bounds.right > constants.screen.width or window_bounds.bottom > constants.screen.height) then
+            or window_bounds.right > view_width or window_bounds.bottom > view_height) then
         -- The stage's edges are the screen's edges: a window of the full screen width scrolls across the stage
         -- (slower than the game's camera, which follows the fighters on a 794 wide view) and always contains
         -- that classic view. Nothing is scaled and nothing slides in at the stage ends.
-        local stage_width = current.stage.width or constants.screen.width
+        local stage_width = current.stage.width or view_width
         local window_width = window_bounds.right - window_bounds.left
         -- The window scrolls across the part of the stage that is open, so that its edge is the screen's edge: the
         -- whole stage, or, in Stage mode, the current section (it grows step by step). Nothing is drawn beyond a
@@ -471,7 +494,7 @@ function screen.draw(state, context, window_bounds)
             -- The open section is narrower than the window: all of it is shown, from its left edge.
             camera = 0
         elseif stage_width > window_width then
-            camera = math.floor(math.min(view.camera, limit - constants.screen.width) * (limit - window_width) / (limit - constants.screen.width))
+            camera = math.floor(math.min(view.camera, limit - view_width) * (limit - window_width) / (limit - view_width))
         else
             -- A stage narrower than the window is centred.
             camera = math.floor((stage_width - window_width) / 2)
@@ -480,14 +503,14 @@ function screen.draw(state, context, window_bounds)
             -- The window moves smoothly when the section opens up, and always holds the classic 794 wide view.
             local previous = state.wide_camera
             if previous then camera = math.max(previous - 10, math.min(previous + 10, camera)) end
-            camera = math.max(view.camera + constants.screen.width - window_width, math.min(view.camera, camera))
+            camera = math.max(view.camera + view_width - window_width, math.min(view.camera, camera))
             camera = math.max(0, math.min(stage_width - window_width, camera))
             state.wide_camera = camera
         end
         wide = {left = window_bounds.left, right = window_bounds.right, camera = camera}
         -- World x is drawn at x - shift in viewport coordinates.
         local shift = camera - window_bounds.left
-        local classic_right = view.camera + constants.screen.width - shift
+        local classic_right = view.camera + view_width - shift
         view = {camera = shift, items = view.items, paused = view.paused, shake = view.shake, stage = view.stage}
         -- Only matters for a stage narrower than the window.
         bounds = {left = math.max(window_bounds.left, -shift), right = math.min(window_bounds.right, stage_width - shift)}
@@ -507,7 +530,7 @@ function screen.draw(state, context, window_bounds)
         background.paint(context, current.stage, current.view, view.camera, bounds, wide)
     end
     context.clip(passable_bounds and passable_bounds.left or 0, 128,
-        passable_bounds and passable_bounds.right - passable_bounds.left or constants.screen.width, constants.screen.height - 128)
+        passable_bounds and passable_bounds.right - passable_bounds.left or view_width, view_height - 128)
     local lighting = options.current()
     for _, entry in ipairs(view.items) do
         draw_item(context, current.stage, view, entry, passable_bounds, lighting)
@@ -516,7 +539,7 @@ function screen.draw(state, context, window_bounds)
     for _, command in ipairs(view.stage or {}) do
         if command[1] == "sprite" then context.sprite(command[2], command[3], command[4], command[5], true)
         elseif command[1] == "fill" then
-            if bounds and command[2] == 0 and command[4] == constants.screen.width then
+            if bounds and command[2] == 0 and command[4] == view_width then
                 -- Stage shutters cover the whole window, including blocked scenery.
                 context.clip(window_bounds.left, window_bounds.top,
                     window_bounds.right - window_bounds.left, window_bounds.bottom - window_bounds.top)
@@ -535,8 +558,9 @@ function screen.draw(state, context, window_bounds)
         end
     end
     draw_status(context, current)
+    local centre = shifted(context, centre_shift())
     if view.paused then
-        context.image("pe/pause", 360, 288, true)
+        centre.image("pe/pause", 360, 288, true)
         return
     end
     -- After the end loop: the demo's exit hint and DEMO picture, or the function-key line (GDI
@@ -544,13 +568,13 @@ function screen.draw(state, context, window_bounds)
     if current.random_game then
         font.gdi(context, i18n.tr("Press F4 or 'Attack' to exit"), 0x262, 0x6e, 0x7d7d7d)
         font.gdi(context, "http://www.LittleFighter.com", 5, 0x6e, 0xc8c8c8)
-        context.image("pe/demo", 0x168, 0x120, true)
+        centre.image("pe/demo", 0x168, 0x120, true)
     elseif current.cheat_lock == 1 then
         local counts = current.function_counts
         local text = i18n.tr("Function Keys Used:    F6: %d time(s)    F7: %d time(s)    F8: %d time(s)    F9: %d time(s)",
             counts[6], counts[7], counts[8], counts[9])
         if current.mode == constants.modes.stage then
-            context.fill(0, 128, constants.screen.width, 21, 0, 0, 0)
+            context.fill(0, 128, view_width, 21, 0, 0, 0)
             font.gdi(context, text, 0, 129)
         else
             font.gdi(context, text, 0, 109)
@@ -558,10 +582,10 @@ function screen.draw(state, context, window_bounds)
     elseif current.cheat_lock == 2 then
         font.gdi(context, i18n.tr("Function Keys Locked"), 0, 109)
     end
-    draw_scoreboard(context, current)
+    draw_scoreboard(centre, current)
     local replaying = current.replay and not current.replay_ended
     if replaying then
-        context.sprite("pe/menu_clip4", {2, 586, 725, 12}, 0x43, 0x216, false)
+        context.sprite("pe/menu_clip4", {2, 586, 725, 12}, 0x43, 0x216 + bottom_shift(), false)
         if current.replay_status then replay_lines(context, current) end
     end
     mode_line(context, current, replaying)

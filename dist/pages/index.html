@@ -76,9 +76,59 @@
   button#start:disabled { background: #4a5079; color: #9aa1c4; }
   button#fullscreen { padding: .65rem 1.2rem; font-size: .92rem; }
   #chosen { flex: 1 1 10rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: .88rem; }
-  .game-choice { display: flex; align-items: center; gap: .5rem; color: var(--text-dim); font-size: .92rem; max-width: 100%; min-width: 0; }
-  select#game { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
-    padding: .55rem .9rem; max-width: 22rem; min-width: 0; flex: 0 1 auto; } /* a phone's width: the list narrows */
+  /* The game picker: a field showing the choice, and under it a panel with a search box and the list of games
+     (the original, the relay's mods, Hero Fighter, a file of this computer). The hidden <select> behind it is
+     the page's model of the choice; the picker only shows it. */
+  .game-choice { display: flex; align-items: center; gap: .6rem; color: var(--text-dim); font-size: .92rem; flex: 1 1 24rem; min-width: 0; max-width: 36rem; position: relative; }
+  .game-choice > .label { flex: none; }
+  select#game[hidden] { display: none; }
+  .picker { position: relative; flex: 1 1 auto; min-width: 0; }
+  .picker-field { display: flex; align-items: center; gap: .7rem; width: 100%; min-height: 3.2rem; padding: .45rem .9rem .45rem 1rem; text-align: left;
+    font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; cursor: pointer;
+    transition: border-color .15s ease, background .15s ease; }
+  .picker-field:hover { border-color: #4a57a0; }
+  .picker-field:focus-visible, .picker-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .picker-field[aria-expanded="true"] { border-color: var(--accent); }
+  .picker-field:disabled { opacity: .55; cursor: not-allowed; }
+  .picker-field .icon { flex: none; width: 1.35rem; height: 1.35rem; color: var(--accent); }
+  .picker-field .lines { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .picker-field .title { font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker-field .meta { color: var(--text-dim); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .picker-field .meta:empty { display: none; }
+  .picker-field .chevron { flex: none; width: 1rem; height: 1rem; color: var(--text-dim); transition: transform .15s ease; }
+  .picker-field[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+  .picker-panel { position: absolute; z-index: 20; top: calc(100% + .4rem); left: 0; right: 0; min-width: min(24rem, calc(100vw - 2rem));
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.5); overflow: hidden; }
+  .picker-panel[hidden] { display: none; }
+  .picker-search { display: flex; align-items: center; gap: .5rem; padding: .6rem .7rem; border-bottom: 1px solid var(--card-border); }
+  .picker-search svg { flex: none; width: 1.1rem; height: 1.1rem; color: var(--text-dim); }
+  .picker-search input { flex: 1 1 auto; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--bg); border: 1px solid var(--card-border);
+    border-radius: 10px; padding: .45rem .7rem; }
+  .picker-search input::placeholder { color: #8f98c4; }
+  .picker-search input::-webkit-search-cancel-button { filter: invert(.8); }
+  .picker-list { max-height: min(19rem, 50vh); overflow-y: auto; padding: .35rem; }
+  .picker-group { padding: .55rem .7rem .25rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8f98c4; }
+  .picker-group:first-child { padding-top: .35rem; }
+  .pick { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .5rem .7rem; border: 0; border-radius: 10px; background: transparent;
+    color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .pick:hover, .pick.active { background: rgba(80, 200, 239, .14); }
+  .pick[aria-selected="true"] .name { color: var(--accent); }
+  .pick .dot { flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: transparent; border: 1px solid var(--card-border); }
+  .pick[aria-selected="true"] .dot { background: var(--accent); border-color: var(--accent); }
+  .pick .name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pick .name mark { background: rgba(255, 210, 60, .35); color: inherit; border-radius: 3px; padding: 0 1px; }
+  .pick .size { flex: none; color: var(--text-dim); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .pick .badge { flex: none; font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: .1rem .45rem; border-radius: 999px;
+    border: 1px solid rgba(80, 200, 239, .45); color: var(--accent); }
+  .pick .badge.saved { border-color: rgba(120, 220, 140, .5); color: #8fe3a2; }
+  .pick .badge.playing { background: var(--accent); color: #062231; border-color: var(--accent); }
+  .picker-empty { padding: 1rem .9rem 1.1rem; color: var(--text-dim); font-size: .9rem; }
+  .picker-foot { padding: .45rem .9rem .55rem; border-top: 1px solid var(--card-border); color: #8f98c4; font-size: .78rem; display: flex; justify-content: space-between; gap: .8rem; flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .game-choice { flex-basis: 100%; max-width: none; }
+    .picker { position: static; } /* the panel spans the whole row, label included */
+    .picker-panel { left: 0; right: 0; min-width: 0; }
+  }
   progress#progress { display: block; width: 100%; height: .6rem; margin-top: .9rem; accent-color: var(--accent); }
   progress#progress[hidden] { display: none; }
   @media (max-width: 480px) { .wrap { padding: 0 1rem; } #play { padding: 1.25rem; } }
@@ -91,9 +141,11 @@
     position: relative;
     background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border);
     box-shadow: 0 12px 40px rgba(0,0,0,.45); margin-top: 1rem; width: 100%;
+    /* The game's picture: the classic 794x550, or a mod's own screen (the engine says: OpenLF2Screen below). */
+    --screen-w: 794; --screen-h: 550;
   }
   /* !important: SDL 3.4 writes an inline size onto the canvas (even 1px x 1px) when pixel ratio != 1, which would otherwise win. */
-  canvas#canvas { display: block; width: 100% !important; height: auto !important; aspect-ratio: 794 / 550; background: #000; }
+  canvas#canvas { display: block; width: 100% !important; height: auto !important; aspect-ratio: var(--screen-w) / var(--screen-h); background: #000; }
   /* The stage goes fullscreen, not the canvas: the canvas just fills it, so SDL sees an ordinary canvas that changes size. */
   .stage:fullscreen { width: 100vw; height: 100vh; height: 100dvh; border: 0; border-radius: 0; margin: 0; display: flex; }
   .stage:-webkit-full-screen { width: 100vw; height: 100vh; height: 100dvh; border: 0; border-radius: 0; margin: 0; display: flex; }
@@ -101,9 +153,9 @@
   .stage:-webkit-full-screen canvas#canvas { width: 100% !important; height: 100% !important; aspect-ratio: auto; }
   /* Large view (while playing, unless turned off): the stage leaves the text column and takes as much of the
      window as fits, centred; the game scales up with its upscaling filter (Options). */
-  .stage.wide { width: min(calc(100vw - 2rem), calc((100vh - 1.5rem) * 794 / 550)); left: 50%; transform: translateX(-50%); }
+  .stage.wide { width: min(calc(100vw - 2rem), calc((100vh - 1.5rem) * var(--screen-w) / var(--screen-h))); left: 50%; transform: translateX(-50%); }
   @supports (height: 100dvh) {
-    .stage.wide { width: min(calc(100vw - 2rem), calc((100dvh - 1.5rem) * 794 / 550)); }
+    .stage.wide { width: min(calc(100vw - 2rem), calc((100dvh - 1.5rem) * var(--screen-w) / var(--screen-h))); }
   }
   .stage.wide:fullscreen { left: 0; transform: none; width: 100vw; }
   .stage.wide:-webkit-full-screen { left: 0; transform: none; width: 100vw; }
@@ -252,10 +304,31 @@
         <b>Let another computer play</b> lấy mã, máy yếu bấm <b>Play through another computer</b> rồi nhập mã.</p>
 
       <div class="play-controls">
-        <label class="game-choice">Game <select id="game" aria-label="Game to play">
-          <option value="">LF2 v2.0a (original)</option>
-          <option value="hf">Hero Fighter v0.7+</option>
-        </select></label>
+        <div class="game-choice">
+          <span class="label" id="game-label">Game</span>
+          <div class="picker" id="picker">
+            <button type="button" class="picker-field" id="picker-field" aria-haspopup="listbox" aria-expanded="false" aria-controls="picker-list" aria-labelledby="game-label picker-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9h4M8 7v4M15 8h.01M18 10h.01"/>
+                <path d="M7.5 5h9a5 5 0 0 1 5 5v1.5a3.5 3.5 0 0 1-6.2 2.2L14 12h-4l-1.3 1.7A3.5 3.5 0 0 1 2.5 11.5V10a5 5 0 0 1 5-5z"/>
+              </svg>
+              <span class="lines"><span class="title" id="picker-title">LF2 v2.0a (original)</span><span class="meta" id="picker-meta"></span></span>
+              <svg class="chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+            </button>
+            <div class="picker-panel" id="picker-panel" hidden>
+              <div class="picker-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <input type="search" id="picker-search" placeholder="Search a game or mod… (tìm mod)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search games and mods" aria-controls="picker-list">
+              </div>
+              <div class="picker-list" id="picker-list" role="listbox" aria-label="Games and mods"></div>
+              <div class="picker-foot" id="picker-foot"></div>
+            </div>
+          </div>
+          <select id="game" aria-label="Game to play" hidden>
+            <option value="">LF2 v2.0a (original)</option>
+            <option value="hf">Hero Fighter v0.7+</option>
+          </select>
+        </div>
         <button id="choose" class="btn secondary" type="button">Select file manually…</button>
         <input id="installer" type="file" accept=".exe,.zip,.swf,application/octet-stream,application/zip" aria-label="LF2 v2.0a installer, a mod's ZIP file, or Hero Fighter's file" hidden>
         <span id="chosen" hidden></span>
@@ -432,6 +505,15 @@
   })();
   // The game ended (the engine calls this): an error stopped it, which the page says instead of leaving a black
   // canvas (the first line of the engine's message; Diagnostic output, opened, has all of it), or it was closed.
+  // The picture the game draws on (the engine calls this once it knows: the classic 794x550, or a mod's own screen,
+  // Naruto: The Setting Dawn 2.6's 1330x730): the canvas takes its shape.
+  globalThis.OpenLF2Screen = (width, height) => {
+    if (!(width > 0 && height > 0)) return;
+    stage.style.setProperty('--screen-w', String(width));
+    stage.style.setProperty('--screen-h', String(height));
+    message('Screen: ' + width + 'x' + height);
+    replayResize();
+  };
   globalThis.OpenLF2Stopped = error => {
     if (error) {
       const reason = error.split('\n')[0].replace(/^runtime\/bootstrap:\d+: /, '');
@@ -454,6 +536,7 @@
     chooseButton.disabled = started || downloading;
     // Another game can be chosen while one runs: the page then reloads into it (see the change handler).
     gameSelect.disabled = downloading;
+    picker.render();
     updateRemote();
   }
 
@@ -467,7 +550,9 @@
   let pendingHf = null; // Hero Fighter's file just selected
   let hfPack = null; // the relay's copy of Hero Fighter (packs.js: a Flash pack of game "herofighter")
   let hfPlayer = null;
-  function addOption(value, label) {
+  // An entry of the list: its label (the <select>'s text, also the confirm dialog's), and for the picker its
+  // title and size in bytes (data-title, data-size; the label when no title is given).
+  function addOption(value, label, title, size) {
     let option = [...gameSelect.options].find(item => item.value === value);
     if (!option) {
       option = document.createElement('option');
@@ -475,14 +560,19 @@
       gameSelect.appendChild(option);
     }
     option.textContent = label;
+    option.dataset.title = title || label;
+    if (size) option.dataset.size = String(size);
+    picker.render();
     return option;
   }
   function selectGame(value) {
     if (value && ![...gameSelect.options].some(item => item.value === value)) {
-      addOption(value, value.startsWith('pack:') ? value.slice(5) + ' (mod)' : 'Mod file on this computer');
+      addOption(value, value.startsWith('pack:') ? value.slice(5) + ' (mod)' : 'Mod file on this computer',
+        value.startsWith('pack:') ? value.slice(5) : 'Mod file on this computer');
     }
     gameSelect.value = value;
-    panelFor(value);
+    // The choice is kept first: a glitch in the panel below must not lose it (package 57 to 59 did, when the
+    // Online panel's rows changed under panelFor, and no game could be chosen for the next visit).
     try { localStorage.setItem('openlf2-game', value); } catch (error) { /* storage unavailable */ }
     if (window.OpenLF2Online) OpenLF2Online.pack = value.startsWith('pack:') ? value.slice(5) : '';
     // An invite link's address follows the choice, so that reloading it keeps the game chosen last.
@@ -491,6 +581,9 @@
       addressFor(address, value);
       if (address.href !== location.href) history.replaceState(history.state, '', address.href);
     }
+    picker.render();
+    try { panelFor(value); }
+    catch (error) { message('Online panel: ' + (error && error.message || error)); }
   }
   // The online panel (online.js) is about LF2's rooms; Hero Fighter has its own room list in the game, so the panel keeps
   // only the relay's address then.
@@ -504,7 +597,8 @@
     const lf2Direct = panel.querySelector('#online-direct-row');
     if (lf2Direct) lf2Direct.hidden = value === 'hf';
     directSwitch(panel, value);
-    const help = panel.querySelector('.help');
+    // The panel's help paragraph (not the direct-links row's own .help note, which came in package 57).
+    const help = panel.querySelector('#online-help') || panel.querySelector(':scope > p.help');
     if (!help) return;
     if (lf2Help === null) lf2Help = help.innerHTML;
     help.innerHTML = value === 'hf'
@@ -527,7 +621,9 @@
       row.innerHTML = '<label><input type="checkbox" id="hf-direct"> Direct links between the players\' computers</label>'
         + '<span class="hf-direct-note">off: every frame through the relay, and the ping at the bottom of the game is the relay\'s '
         + '(kết nối thẳng: tắt thì mọi khung đi qua relay)</span>';
-      panel.insertBefore(row, panel.querySelector('.help'));
+      const help = panel.querySelector('#online-help') || panel.querySelector(':scope > p.help');
+      if (help) help.before(row);
+      else panel.appendChild(row);
       const box = row.querySelector('#hf-direct');
       box.checked = hfDirectOn;
       box.addEventListener('change', () => {
@@ -556,7 +652,7 @@
       selectGame(value);
       update();
       if (value === 'hf') autoStart();
-      else loadOpenLF2();
+      else { loadOpenLF2(); readyStatus(); }
       return;
     }
     if (value === runningGame) return;
@@ -565,6 +661,7 @@
     const title = gameSelect.selectedOptions[0] ? gameSelect.selectedOptions[0].textContent : value;
     if (!confirm('Switch to ' + title + '? The page reloads and the game running now stops.')) {
       gameSelect.value = runningGame;
+      picker.render();
       canvas.focus({preventScroll: true});
       return;
     }
@@ -573,6 +670,220 @@
     if (url.href === location.href) location.reload();
     else location.replace(url.href);
   });
+  // ---- The game picker: the field, the search box and the list, over the hidden <select> -------------------
+  // The <select> stays the page's model (its value, its options); the picker shows it and sets it, firing
+  // the change event the handler above listens to. Mods are listed by name; typing in the search box narrows
+  // the list (accents and case do not matter); arrows and Enter choose with the keyboard.
+  const picker = (() => {
+    const root = document.getElementById('picker');
+    const field = document.getElementById('picker-field');
+    const titleLine = document.getElementById('picker-title');
+    const metaLine = document.getElementById('picker-meta');
+    const panel = document.getElementById('picker-panel');
+    const search = document.getElementById('picker-search');
+    const list = document.getElementById('picker-list');
+    const foot = document.getElementById('picker-foot');
+    let open = false;
+    let active = -1; // the row the arrow keys are on
+    let shown = []; // the rows in the list, in order
+    let kept = new Map(); // what packStore holds, by the <select>'s value: {sha256}; read when the panel opens
+    const fold = text => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+    const megabytes = size => size ? (size >= 1e8 ? Math.round(size / 1e6) : (size / 1e6).toFixed(0)) + ' MB' : '';
+    const groups = {'': 'Little Fighter 2', 'hf': 'Hero Fighter', 'file': 'This computer'};
+    const groupOrder = ['Little Fighter 2', 'Mods', 'Hero Fighter', 'This computer'];
+    function groupOf(value) { return groups[value] || 'Mods'; }
+    // Whether the browser keeps this game's data (so that it starts at once, without a download).
+    function keptCurrent(value) {
+      const record = kept.get(value === 'hf' ? 'hf' : value);
+      if (!record) return false;
+      if (value === 'hf') return !hfPack || !hfPack.sha256 || record.sha256 === hfPack.sha256;
+      if (value === 'file') return true;
+      const listed = packList.find(pack => 'pack:' + pack.id === value);
+      return !listed || !listed.sha256 || record.sha256 === listed.sha256;
+    }
+    function entries() {
+      const result = [...gameSelect.options].map(option => ({
+        value: option.value,
+        title: option.dataset.title || option.textContent,
+        size: Number(option.dataset.size) || 0,
+        group: groupOf(option.value),
+        saved: keptCurrent(option.value),
+        playing: runningGame !== null && option.value === runningGame,
+      }));
+      result.sort((a, b) => {
+        const order = groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group);
+        return order || fold(a.title).localeCompare(fold(b.title));
+      });
+      return result;
+    }
+    function metaOf(entry) {
+      const parts = [];
+      if (entry.value === '') parts.push('the original game');
+      else if (entry.value === 'hf') parts.push('Flash game, in Ruffle');
+      else if (entry.value === 'file') parts.push('mod file on this computer');
+      else parts.push('mod');
+      if (entry.size) parts.push(megabytes(entry.size));
+      if (entry.playing) parts.push('playing now');
+      else if (entry.saved) parts.push('saved in this browser');
+      return parts.join(' · ');
+    }
+    function highlight(title, query) {
+      const span = document.createElement('span');
+      span.className = 'name';
+      const folded = fold(title);
+      const at = query ? folded.indexOf(query) : -1;
+      // Folding keeps one character per character, so the match's place is the same in the title.
+      if (at < 0 || folded.length !== title.length) { span.textContent = title; return span; }
+      span.append(title.slice(0, at));
+      const mark = document.createElement('mark');
+      mark.textContent = title.slice(at, at + query.length);
+      span.append(mark, title.slice(at + query.length));
+      return span;
+    }
+    function renderList() {
+      const query = fold(search.value.trim());
+      const all = entries();
+      shown = all.filter(entry => !query || fold(entry.title).includes(query) || fold(entry.value).includes(query));
+      list.textContent = '';
+      let group = null;
+      const current = gameSelect.value;
+      shown.forEach((entry, index) => {
+        if (entry.group !== group) {
+          group = entry.group;
+          const heading = document.createElement('div');
+          heading.className = 'picker-group';
+          heading.textContent = group;
+          list.appendChild(heading);
+        }
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'pick' + (index === active ? ' active' : '');
+        row.setAttribute('role', 'option');
+        row.setAttribute('aria-selected', String(entry.value === current));
+        row.dataset.value = entry.value;
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        row.append(dot, highlight(entry.title, query));
+        if (entry.playing) {
+          const badge = document.createElement('span');
+          badge.className = 'badge playing';
+          badge.textContent = 'playing';
+          row.appendChild(badge);
+        } else if (entry.saved) {
+          const badge = document.createElement('span');
+          badge.className = 'badge saved';
+          badge.textContent = 'saved';
+          row.appendChild(badge);
+        }
+        if (entry.size) {
+          const size = document.createElement('span');
+          size.className = 'size';
+          size.textContent = megabytes(entry.size);
+          row.appendChild(size);
+        }
+        row.addEventListener('click', () => choose(entry.value));
+        row.addEventListener('pointermove', () => { if (active !== index) { active = index; markActive(); } });
+        list.appendChild(row);
+      });
+      if (!shown.length) {
+        const empty = document.createElement('div');
+        empty.className = 'picker-empty';
+        empty.textContent = 'No game or mod matches "' + search.value.trim() + '". Mods are added to the online relay; a mod\'s own .zip file plays through "Select file manually…".';
+        list.appendChild(empty);
+      }
+      const mods = all.filter(entry => entry.group === 'Mods').length;
+      foot.textContent = '';
+      const count = document.createElement('span');
+      count.textContent = query ? shown.length + ' of ' + all.length + ' shown' : all.length + ' games, ' + mods + (mods === 1 ? ' mod' : ' mods') + ' on the relay';
+      const hint = document.createElement('span');
+      hint.textContent = 'saved: starts at once, no download';
+      foot.append(count, hint);
+    }
+    function markActive() {
+      const rows = list.querySelectorAll('.pick');
+      rows.forEach((row, index) => row.classList.toggle('active', index === active));
+      if (active >= 0 && rows[active]) rows[active].scrollIntoView({block: 'nearest'});
+    }
+    function choose(value) {
+      close();
+      if (value === gameSelect.value) { field.focus({preventScroll: true}); return; }
+      gameSelect.value = value;
+      gameSelect.dispatchEvent(new Event('change'));
+    }
+    async function refreshKept() {
+      try {
+        const records = await packStore.list();
+        kept = new Map(records.map(record => [record.id, record]));
+      } catch (error) {
+        kept = new Map();
+      }
+      if (open) renderList();
+      render();
+    }
+    function show() {
+      if (open || field.disabled) return;
+      open = true;
+      panel.hidden = false;
+      field.setAttribute('aria-expanded', 'true');
+      search.value = '';
+      active = -1;
+      renderList();
+      refreshKept();
+      const chosen = list.querySelector('[aria-selected="true"]');
+      if (chosen) chosen.scrollIntoView({block: 'center'});
+      // A finger on a phone: the list first, the keyboard only when the box is tapped.
+      if (!(window.matchMedia && matchMedia('(pointer: coarse)').matches)) search.focus({preventScroll: true});
+    }
+    function close() {
+      if (!open) return;
+      open = false;
+      panel.hidden = true;
+      field.setAttribute('aria-expanded', 'false');
+    }
+    field.addEventListener('click', () => (open ? close() : show()));
+    field.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); show(); }
+      else if (event.key === 'Escape' && open) { event.preventDefault(); close(); }
+    });
+    search.addEventListener('input', () => { active = -1; renderList(); });
+    search.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (!shown.length) return;
+        active = event.key === 'ArrowDown' ? (active + 1) % shown.length : (active <= 0 ? shown.length - 1 : active - 1);
+        markActive();
+      } else if (event.key === 'Home' || event.key === 'End') {
+        if (!shown.length) return;
+        event.preventDefault();
+        active = event.key === 'Home' ? 0 : shown.length - 1;
+        markActive();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        const entry = shown[active >= 0 ? active : 0];
+        if (entry) choose(entry.value);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+        field.focus({preventScroll: true});
+      }
+    });
+    document.addEventListener('pointerdown', event => { if (open && !root.contains(event.target)) close(); });
+    document.addEventListener('focusin', event => { if (open && !root.contains(event.target)) close(); });
+    window.addEventListener('keydown', event => { if (open && event.key === 'Escape') close(); });
+    // The field shows the choice; the list follows it while open.
+    function render() {
+      const value = gameSelect.value;
+      const option = [...gameSelect.options].find(item => item.value === value);
+      const entry = option ? entries().find(item => item.value === value) : null;
+      titleLine.textContent = entry ? entry.title : (option ? option.textContent : 'Choose a game');
+      metaLine.textContent = entry ? metaOf(entry) : '';
+      field.disabled = gameSelect.disabled;
+      if (field.disabled) close();
+      if (open) renderList();
+    }
+    refreshKept();
+    return {render, refreshKept};
+  })();
   {
     let initial = '';
     try { initial = localStorage.getItem('openlf2-game') || ''; } catch (error) { /* storage unavailable */ }
@@ -590,15 +901,16 @@
       if (!response.ok) return;
       const listed = ((await response.json()).packs || []).filter(pack => pack && /^[a-z0-9][a-z0-9-]{0,39}$/.test(pack.id));
       hfPack = listed.find(pack => pack.kind === 'flash' && pack.game === 'herofighter') || null;
-      if (hfPack) addOption('hf', 'Hero Fighter v0.7+ (' + Math.round(hfPack.size / 1e6) + ' MB)');
+      if (hfPack) addOption('hf', 'Hero Fighter v0.7+ (' + Math.round(hfPack.size / 1e6) + ' MB)', 'Hero Fighter v0.7+', hfPack.size);
       packList = listed.filter(pack => pack.kind !== 'flash');
-      for (const pack of packList) addOption('pack:' + pack.id, pack.title + ' (mod, ' + Math.round(pack.size / 1e6) + ' MB)');
+      for (const pack of packList) addOption('pack:' + pack.id, pack.title + ' (mod, ' + Math.round(pack.size / 1e6) + ' MB)', pack.title, pack.size);
+      picker.refreshKept();
     } catch (error) {
       message('Mods on the relay unavailable: ' + error);
     }
   })();
   packStore.load('file').then(record => {
-    if (record && record.blob) addOption('file', record.title + ' (mod file on this computer)');
+    if (record && record.blob) addOption('file', record.title + ' (mod file on this computer)', record.title, record.blob.size);
   }).catch(() => {});
 
   const cachedInstaller = installerStore.load().catch(error => {
@@ -617,6 +929,26 @@
       autoStart();
     }
   };
+  // The status line for a choice made before any game runs: what Start game will do with it.
+  async function readyStatus() {
+    const game = gameSelect.value;
+    if (!ready || started || downloading || game === 'hf') return;
+    let text;
+    if (game.startsWith('pack:') || game === 'file') {
+      await packsLoaded;
+      const record = await packStore.load(game).catch(() => null);
+      const listed = packList.find(pack => 'pack:' + pack.id === game);
+      const current = record && record.blob && (game === 'file' || !listed || !listed.sha256 || record.sha256 === listed.sha256);
+      const title = listed ? listed.title : (record && record.title) || (game === 'file' ? 'the mod file' : game.slice(5));
+      text = current ? 'Ready. Press Start game to play ' + title + ' (saved in this browser, no download).'
+        : 'Ready. Press Start game to download ' + title + (listed ? ' (' + (listed.size / 1e6).toFixed(0) + ' MB, once).' : '.');
+    } else {
+      const file = await cachedInstaller;
+      text = file ? 'Ready. Press Start game to play LF2 v2.0a (its game data is saved in this browser).'
+        : 'Ready. Press Start game to download the game data, or select your installer manually.';
+    }
+    if (gameSelect.value === game && !started && !downloading) status.textContent = text;
+  }
   // Starts at once when the chosen game is already saved in this browser.
   async function autoStart() {
     const game = gameSelect.value;
@@ -642,14 +974,15 @@
       const record = await packStore.load(game === 'file' ? 'file' : game).catch(() => null);
       const listed = packList.find(pack => 'pack:' + pack.id === game);
       const current = record && record.blob && (game === 'file' || !listed || !listed.sha256 || record.sha256 === listed.sha256);
-      if (started || selectionChanged || downloading) return;
+      if (started || downloading) return;
+      if (selectionChanged) return readyStatus(); // chosen while loading: no automatic start, the line says what Start game does
       if (current) return launchPack(record.blob, record.title);
       status.textContent = 'Ready. Press Start game to download the chosen mod' + (listed ? ' (' + (listed.size / 1e6).toFixed(0) + ' MB, once).' : '.');
       return;
     }
     const file = await cachedInstaller;
     if (started || selectionChanged || downloading) {
-      if (!started && !downloading) status.textContent = 'Ready. Start the game with your selection.';
+      if (!started && !downloading) readyStatus();
     } else if (file) {
       launch(file, false);
     } else {
@@ -715,6 +1048,7 @@
       status.textContent = 'Running ' + title + '. To play another game, choose it under Game.';
       Module.callMain(['--config-dir', '/data', '--pack', '/data/game.zip']);
       running();
+      picker.refreshKept();
     } catch (error) {
       status.textContent = 'Could not start: ' + error.message;
       message(String(error));
@@ -740,7 +1074,7 @@
     if (pendingHf) {
       selectGame('hf');
     } else if (pendingPack) {
-      addOption('file', file.name + ' (mod file on this computer)');
+      addOption('file', file.name + ' (mod file on this computer)', file.name.replace(/\.zip$/i, ''), file.size);
       selectGame('file');
       loadOpenLF2();
     } else if (file) {
@@ -845,6 +1179,7 @@
           : 'keyboard: player 1 plays on the number pad, player 2 on W A S D (Key Setting in the game changes them). ')
         + 'To play another game, choose it under Game.';
       running();
+      picker.refreshKept();
     } catch (error) {
       status.textContent = 'Could not start Hero Fighter: ' + error.message;
       message(String(error && error.stack || error));

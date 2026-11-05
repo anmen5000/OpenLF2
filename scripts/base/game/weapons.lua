@@ -195,7 +195,7 @@ function weapons.drop_background(state)
     end
     local roll_a, roll_b = random(30), random(30)
     local span = state.stage_bound or 0
-    if span == 0 then span = state.stage.width or constants.screen.width end
+    if span == 0 then span = state.stage.width or constants.view.width end
     local x = roll_b + 30 + roll_a * cdiv(span - 60, 30)
     local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
     roll_a, roll_b = random(30), random(30)

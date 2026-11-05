@@ -789,7 +789,7 @@ function ai.control(state, index, mode, context)
         S.order_x, S.order_z = no_order, no_order
         return
     end
-    context.width_limit = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.screen.width)
+    context.width_limit = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
     local skill
     if state.random_game or (mode == mode_stage and S.team ~= team_enemies
        and (index < 20 or S.record.id < constants.record_id_ranges.random_fighter_end_exclusive)) then

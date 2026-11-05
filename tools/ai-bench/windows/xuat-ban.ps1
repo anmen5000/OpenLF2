@@ -161,11 +161,15 @@ if ($isFolder) {
     } finally { $archive.Dispose() }
 }
 if ($null -eq $source) { Fail ('"' + $item.FullName + '" khong co data\data.txt: day khong phai ban mod LF2 (hay thu muc / file zip cua no).') }
+# The mod's own settings for OpenLF2 (openlf2.txt: a mod that plays on a screen of its own says so there, Naruto:
+# The Setting Dawn 2.6), kept; the lock lines are added to them below.
+$ownSettings = ''
 if ($isFolder) {
     foreach ($entry in @(Get-ChildItem -LiteralPath $source -Recurse)) {
         $relative = $entry.FullName.Substring($source.Length + 1)
         $target = Join-Path $out $relative
         if ($entry.PSIsContainer) { [void][IO.Directory]::CreateDirectory($target); continue }
+        if ($relative -ieq 'openlf2.txt') { $ownSettings = [IO.File]::ReadAllText($entry.FullName) }
         if (Test-Later $relative) { continue }
         [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
         [IO.File]::Copy($entry.FullName, $target, $true)
@@ -182,6 +186,10 @@ if ($isFolder) {
             if (@($parts | Where-Object { -not (Test-Part $_) }).Count -gt 0) { $skipped += 1; continue }
             $target = Join-Path $out ($parts -join [IO.Path]::DirectorySeparatorChar)
             if ($relative.EndsWith('/')) { [void][IO.Directory]::CreateDirectory($target); continue }
+            if ($relative -ieq 'openlf2.txt') {
+                $reader = New-Object IO.StreamReader($entry.Open())
+                try { $ownSettings = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            }
             if (Test-Later $relative) { continue }
             [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
             [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
@@ -257,15 +265,27 @@ if (Test-File $notesFile) { Write-Host ('Bo nho XOI: co (' + [math]::Ceiling((Ge
 else { Write-Host 'Bo nho XOI: chua co - XOI van choi, nhung khong co bo nho huan luyen cua ban mod (xoi-hoc.bat lam bo nho)' }
 if (Test-File (Under $out 'xoi' 'tune.txt')) { Write-Host 'Bo so rieng cua ban mod (XOI): co' }
 else { Write-Host 'Bo so rieng cua ban mod (XOI): chua co - XOI dung bo so chung (spsa.bat chinh bo so rieng)' }
-# The mod's settings for OpenLF2: written when locking, left out otherwise (the publisher's choice).
+# The mod's settings for OpenLF2: its own lines as they came (the lock's two keys taken out when locking), and the
+# lock lines when locking; nothing written for a mod without settings that is not locked (the publisher's choice).
+$settings = ''
+if ($ownSettings) {
+    foreach ($line in ($ownSettings -split "\r?\n")) {
+        if ($lock -and $line -imatch '^\s*(hidden_characters|options)\s*=') { continue }
+        $settings += $line.TrimEnd() + "`r`n"
+    }
+    $settings = $settings.TrimEnd("`r", "`n") + "`r`n"
+}
 if ($lock) {
-    [IO.File]::WriteAllText((Join-Path $out 'openlf2.txt'),
-        "# OpenLF2: cai dat cua ban mod (xuat-ban.bat) / this mod's settings for OpenLF2`r`n" +
+    $settings += "# OpenLF2: cai dat cua ban mod (xuat-ban.bat) / this mod's settings for OpenLF2`r`n" +
         "# Nhan vat an bi khoa: khong co nut options, go lf2.net khong mo khoa / hidden fighters stay hidden`r`n" +
-        "hidden_characters = locked`r`noptions = hidden`r`n", (New-Object Text.UTF8Encoding $false))
+        "hidden_characters = locked`r`noptions = hidden`r`n"
     Write-Host 'Nhan vat an: KHOA - khong co nut options o man hinh dau, go lf2.net cung khong mo; CRAZY!, INSANE!, XOI van chon duoc'
 } else {
     Write-Host 'Nhan vat an: nhu thuong - nguoi choi mo khoa duoc (options, lf2.net)'
+}
+if ($settings) {
+    [IO.File]::WriteAllText((Join-Path $out 'openlf2.txt'), $settings, (New-Object Text.UTF8Encoding $false))
+    if ($ownSettings) { Write-Host 'Cai dat rieng cua ban mod (openlf2.txt): giu nguyen' }
 }
 
 # Tried once as a player starts it, without a window: the program must play the folder it lies in by itself.

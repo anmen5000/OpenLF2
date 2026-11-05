@@ -25,6 +25,7 @@
 #include <array>
 #include <atomic>
 #include <cassert>
+#include <cctype>
 #include <exception>
 #ifdef OPENLF2_SIMULATION_THREADS
 #include <condition_variable>
@@ -33,6 +34,7 @@
 #include <charconv>
 #include <chrono>
 #include <cmath>
+#include <initializer_list>
 #include <optional>
 #include <cstdint>
 #include <functional>
@@ -86,6 +88,12 @@ EM_ASYNC_JS(void, openlf2_wait_display, (int limit), {
 EM_JS(void, openlf2_stopped, (const char* message), {
     const stopped = globalThis.OpenLF2Stopped;
     if (typeof stopped === "function") stopped(message ? UTF8ToString(message) : "");
+});
+// The picture the game's matches are drawn on (the classic 794x550, or a mod's own screen): a page that sets
+// globalThis.OpenLF2Screen to a function shapes its canvas to it.
+EM_JS(void, openlf2_screen, (int width, int height), {
+    const screen = globalThis.OpenLF2Screen;
+    if (typeof screen === "function") screen(width, height);
 });
 // Frames at normal speed on the web: started on display refreshes, 33 1/3 ms apart (30 per second, two
 // refreshes at 60 Hz and four at 120 Hz; the original's 33 ms would slip a refresh every 50 frames). A frame
@@ -529,6 +537,20 @@ Result<Configuration> configuration(std::span<const std::string> arguments,
     }
     return config;
 }
+// A picture file's width and height from its header: PNG (IHDR) or BMP (its info header); nothing for others.
+std::optional<std::pair<int, int>> picture_size(const Bytes& bytes) {
+    const auto byte = [&](std::size_t at) { return static_cast<unsigned>(static_cast<unsigned char>(bytes[at])); };
+    if (bytes.size() >= 24 && byte(1) == 'P' && byte(2) == 'N' && byte(3) == 'G') {
+        const auto big = [&](std::size_t at) { return (byte(at) << 24) | (byte(at + 1) << 16) | (byte(at + 2) << 8) | byte(at + 3); };
+        return std::pair{static_cast<int>(big(16)), static_cast<int>(big(20))};
+    }
+    if (bytes.size() >= 26 && byte(0) == 'B' && byte(1) == 'M') {
+        const auto little = [&](std::size_t at) { return byte(at) | (byte(at + 1) << 8) | (byte(at + 2) << 16) | (byte(at + 3) << 24); };
+        const auto height = static_cast<std::int32_t>(little(22));
+        return std::pair{static_cast<int>(little(18)), height < 0 ? -height : height};
+    }
+    return std::nullopt;
+}
 class GameResources final : public ResourceSource {
 public:
     GameResources(const ResourceSource& archive, Bytes executable, std::span<const PackageAsset> assets)
@@ -548,25 +570,44 @@ public:
             for (auto& character : name) {
                 if (character >= 'a' && character <= 'z') character = static_cast<char>(character - ('a' - 'A'));
             }
+            // A mod whose own program keeps such a picture in a file instead of the executable. Its UI folder comes
+            // first (a program whose pictures all moved to UI/, as the community's reworked lf2.exe has them —
+            // Sauce's "lf2-AI VS and Stage Challenge": UI/WORDS0.bmp; or to sprite/ui/, Naruto: The Setting Dawn
+            // 2.6, whose packed program plays here with an lf2.exe beside it: the mod's own pictures, not that
+            // one's, where it has them), with sprite/menu/<n>.png for the menu's MENU_BACK<n>; then the executable;
+            // then the sprite folders (Sx2 ~ The power of emancipation: sprite/BARS.png), PNG or BMP.
+            const auto lower = normalized->substr(3);
+            const auto from_files = [&](std::initializer_list<std::string> candidates) -> std::optional<Bytes> {
+                for (const auto& candidate : candidates) {
+                    auto file = archive_.read(candidate);
+                    if (!file) continue;
+                    // The status panels read LF2's BARS by its rows (124x50); a mod's own program may lay its
+                    // bars out otherwise (Naruto: The Setting Dawn 2.6: 106x24, for its own panels), which the
+                    // panels here cannot read: the program's picture then.
+                    if (lower == "bars") {
+                        const auto size = picture_size(*file);
+                        if (size && (size->first < 124 || size->second < 50)) continue;
+                    }
+                    if (!candidate.ends_with(".bmp")) return std::move(*file);
+                    auto converted = bitmap::from_file(*file);
+                    if (converted) return std::move(*converted);
+                }
+                return std::nullopt;
+            };
+            if (lower.starts_with("menu_back") && lower.size() > 9) {
+                // The mod's own menu backgrounds; for a number it lacks, its first (a mod that moved them out of its
+                // program has the ones it means to show: Naruto: The Setting Dawn 2.6 has one).
+                if (auto file = from_files({"sprite/menu/" + lower.substr(9) + ".png", "sprite/menu/1.png"})) return std::move(*file);
+            }
+            if (auto file = from_files({"sprite/ui/" + lower + ".png", "ui/" + lower + ".png", "sprite/ui/" + lower + ".bmp",
+                                        "ui/" + lower + ".bmp"})) {
+                return std::move(*file);
+            }
             auto resource = bitmap_resource(executable_, name);
             if (resource) return resource;
-            // A mod whose own program keeps such a picture in a file instead of the executable (Sx2 ~ The
-            // power of emancipation: sprite/BARS.png, sprite/menu/<n>.png for the menu's MENU_BACK<n>; a
-            // program whose pictures all moved to UI/, as the community's reworked lf2.exe has them — Sauce's
-            // "lf2-AI VS and Stage Challenge": UI/WORDS0.bmp): the file from the pack, PNG or BMP.
-            const auto lower = normalized->substr(3);
-            std::vector<std::string> candidates = {"sprite/" + lower + ".png", "sprite/sys/" + lower + ".png",
-                                                   "sprite/" + lower + ".bmp", "sprite/sys/" + lower + ".bmp",
-                                                   "ui/" + lower + ".bmp", "ui/" + lower + ".png"};
-            if (lower.starts_with("menu_back") && lower.size() > 9) {
-                candidates.insert(candidates.begin(), "sprite/menu/" + lower.substr(9) + ".png");
-            }
-            for (const auto& candidate : candidates) {
-                auto file = archive_.read(candidate);
-                if (!file) continue;
-                if (!candidate.ends_with(".bmp")) return file;
-                auto converted = bitmap::from_file(*file);
-                if (converted) return converted;
+            if (auto file = from_files({"sprite/" + lower + ".png", "sprite/sys/" + lower + ".png", "sprite/" + lower + ".bmp",
+                                        "sprite/sys/" + lower + ".bmp"})) {
+                return std::move(*file);
             }
             return resource;
         }
@@ -742,6 +783,48 @@ Result<ScriptValue> load_settings_document(const SettingsStore& settings) {
     if (!text) return std::unexpected(text.error());
     if (!*text) return ScriptValue{ScriptTable{}};
     return parse_json(**text);
+}
+// The screen a mod's own program draws its matches on, when the mod says so: openlf2.txt in the game pack (the
+// mod's settings for OpenLF2, "key = value" lines, # a note), `screen = WIDTHxHEIGHT` (also "WIDTH HEIGHT" or
+// "WIDTH,HEIGHT"), each side 320 to 4096; Naruto: The Setting Dawn 2.6 is 1330x730. The scripts read the same
+// setting (base/game/mod_settings.lua) and draw the matches on it; here it sizes the window and the web page's canvas.
+std::optional<WindowSize> mod_screen_size(const ResourceSource& archive) {
+    auto text = archive.read("openlf2.txt");
+    if (!text) return std::nullopt;
+    std::string_view rest(reinterpret_cast<const char*>(text->data()), text->size());
+    while (!rest.empty()) {
+        const auto end = rest.find('\n');
+        std::string_view line = rest.substr(0, end);
+        rest = end == std::string_view::npos ? std::string_view{} : rest.substr(end + 1);
+        if (const auto note = line.find('#'); note != std::string_view::npos) line = line.substr(0, note);
+        const auto equals = line.find('=');
+        if (equals == std::string_view::npos) continue;
+        auto trim = [](std::string_view part) {
+            while (!part.empty() && std::isspace(static_cast<unsigned char>(part.front()))) part.remove_prefix(1);
+            while (!part.empty() && std::isspace(static_cast<unsigned char>(part.back()))) part.remove_suffix(1);
+            return part;
+        };
+        std::string key(trim(line.substr(0, equals)));
+        for (auto& character : key) character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+        if (key != "screen") continue;
+        const auto value = trim(line.substr(equals + 1));
+        int width = 0;
+        int height = 0;
+        const auto first = std::from_chars(value.data(), value.data() + value.size(), width);
+        if (first.ec != std::errc{}) return std::nullopt;
+        std::string_view second_part(first.ptr, static_cast<std::size_t>(value.data() + value.size() - first.ptr));
+        second_part = trim(second_part);
+        if (second_part.empty()) return std::nullopt;
+        if (second_part.front() == 'x' || second_part.front() == 'X' || second_part.front() == ',') {
+            second_part.remove_prefix(1);
+            second_part = trim(second_part);
+        }
+        const auto second = std::from_chars(second_part.data(), second_part.data() + second_part.size(), height);
+        if (second.ec != std::errc{} || second.ptr != second_part.data() + second_part.size()) return std::nullopt;
+        if (width < 320 || width > 4096 || height < 320 || height > 4096) return std::nullopt;
+        return WindowSize{width, height};
+    }
+    return std::nullopt;
 }
 Result<std::optional<WindowPlacement>> load_window_placement(const SettingsStore& settings) {
     auto document = load_settings_document(settings);
@@ -947,20 +1030,8 @@ Result<void> run(const Configuration& config) {
         settings = make_file_settings(std::move(*directory));
     }
 #endif
-    // Open the window before installer setup, restoring saved desktop placement if present.
-    std::unique_ptr<Platform> platform;
-    if (!config.headless) {
-        const Viewport window{scripts->window.width, scripts->window.height, 0, 0, 0};
-        auto placement = load_window_placement(*settings);
-        if (!placement) std::cerr << "Window settings: " << placement.error().message << '\n';
-        auto made = make_platform(game_data, window, *music_decoder, config.renderer,
-                                  placement ? *placement : std::nullopt);
-        if (!made) return std::unexpected(made.error());
-        platform = std::move(*made);
-        std::cout << "Renderer: " << platform->renderer_name()
-                  << (platform->supports(RenderFilter::xbrz) ? " (xBRZ upscaling available)\n" : "\n");
-        if (!platform->supports_text()) std::cout << "Translated languages unavailable: this build has no SDL3_ttf\n";
-    }
+    // A game pack is opened before the window: the mod may draw its matches on a screen of its own (openlf2.txt,
+    // screen = 1330x730 for Naruto: The Setting Dawn 2.6), which the window opens with.
     std::error_code folder_error;
     if (config.pack && std::filesystem::is_directory(*config.pack, folder_error)) {
         // A game folder: the mod's own folder (--pack DIR, or the one the program lies in).
@@ -979,7 +1050,36 @@ Result<void> run(const Configuration& config) {
         archive_files = (*opened)->file_count();
         pack_executable = (*opened)->executable_name();
         archive = std::move(*opened);
-    } else {
+    }
+    const auto mod_screen = archive ? mod_screen_size(*archive) : std::nullopt;
+    if (mod_screen) std::cout << "Mod screen: " << mod_screen->width << 'x' << mod_screen->height << '\n';
+#ifdef __EMSCRIPTEN__
+    // The page shapes its canvas to the match's picture.
+    openlf2_screen(mod_screen ? mod_screen->width : scripts->window.width, mod_screen ? mod_screen->height : scripts->window.height);
+#endif
+    // Open the window before installer setup, restoring saved desktop placement if present.
+    std::unique_ptr<Platform> platform;
+    if (!config.headless) {
+        const Viewport window{mod_screen ? mod_screen->width : scripts->window.width,
+                              mod_screen ? mod_screen->height : scripts->window.height, 0, 0, 0};
+        auto placement = load_window_placement(*settings);
+        if (!placement) std::cerr << "Window settings: " << placement.error().message << '\n';
+        // A window kept smaller than the mod's screen in both directions (the classic size, from another game)
+        // opens at the mod's screen, so that its matches are not shown scaled down; one made larger is kept.
+        if (placement && *placement && mod_screen && !(*placement)->maximized
+            && (*placement)->width < mod_screen->width && (*placement)->height < mod_screen->height) {
+            (*placement)->width = mod_screen->width;
+            (*placement)->height = mod_screen->height;
+        }
+        auto made = make_platform(game_data, window, *music_decoder, config.renderer,
+                                  placement ? *placement : std::nullopt);
+        if (!made) return std::unexpected(made.error());
+        platform = std::move(*made);
+        std::cout << "Renderer: " << platform->renderer_name()
+                  << (platform->supports(RenderFilter::xbrz) ? " (xBRZ upscaling available)\n" : "\n");
+        if (!platform->supports_text()) std::cout << "Translated languages unavailable: this build has no SDL3_ttf\n";
+    }
+    if (!archive) {
         auto installer = locate_installer(config, platform ? std::optional{std::ref(platform->setup_dialog())} : std::nullopt);
         if (!installer) return std::unexpected(installer.error());
         if (!*installer) {
@@ -997,7 +1097,8 @@ Result<void> run(const Configuration& config) {
     // or encrypted inside it (Naruto: The Setting Dawn's NTSD.exe). Nothing in it can be read, so say so rather
     // than stop at the first picture. (A program whose pictures were moved out to the pack's UI/ folder plays,
     // its pictures read from there: see GameResources.)
-    if (config.pack && !bitmap_resource(*executable, "WORDS0") && !archive->read("ui/words0.bmp")) {
+    if (config.pack && !bitmap_resource(*executable, "WORDS0") && !archive->read("ui/words0.bmp")
+        && !archive->read("ui/words0.png") && !archive->read("sprite/ui/words0.png") && !archive->read("sprite/ui/words0.bmp")) {
         return fail(ErrorCode::unsupported, "this mod's " + pack_executable + " has none of LF2's pictures: it is "
             "packed or protected, with the game's files inside it, where OpenLF2 cannot read them");
     }

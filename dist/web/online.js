@@ -1601,7 +1601,7 @@
         <span class="help" style="margin:0">on: no relay in between once everyone reaches the host directly, wherever the relay stands
           (ưu tiên kết nối thẳng: mọi người nối thẳng được tới chủ phòng thì không đi qua relay)</span>
       </div>
-      <p class="help">Host: <b>Network Game &rarr; Host</b>, then <b>START</b> once everyone is in (2 to 8 players).
+      <p class="help" id="online-help">Host: <b>Network Game &rarr; Host</b>, then <b>START</b> once everyone is in (2 to 8 players).
         Friends: open your invite link, then <b>Network Game &rarr; Connect</b> with the address left empty (or type the room code).
         Everyone needs the same game version. Players who reach the host directly (on one network, often across the
         Internet too) play without the relay in between; the host then keeps the game's beat: keep the host's tab open.</p>`;
