@@ -180,6 +180,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   from `xuat-ban-README.txt`; it starts the folder's program once without a window, zips the folder only when the
   game found `game.zip` by itself (and says so when the installed OpenLF2 is too old for it), and takes away what it
   made when anything fails. The XOI page has a section on it (English and Vietnamese)
+- A seat for watching: whoever picks the Template (the game's blank fighter, `data/template.dat`, first in the
+  character selection) is out of the match from its first frame — gone, not lying dead in the way — so that a
+  person can watch computer players fight without a fighter of their own (the project owner's wish: two INSANE!
+  or XOI players against each other, in a network room too). Known by its file or name (some mods put a fighter of
+  their own at id 0). A match of the Template and one other fighter ends at once; with the Template on its own team,
+  two or more others fight it out
+- Network play in the browser: a switch in the Online panel, **Prefer direct links between the players' computers**,
+  on unless turned off (remembered in the browser): the host's page keeps the beat whenever every player reaches it
+  directly and no player's direct link is slower than his way through the relay by more than 150 ms, so players far
+  from the relay (another country) play among themselves with the relay only setting the room up. Off, the earlier
+  rule holds: direct only when it is no slower than the relay for everyone (10 ms) and quicker on the whole. The
+  network report says which is set
 - Network play in the browser: the corner of the game also shows how busy each computer is (`busy`: the longest
   the page stalled in the last 5 seconds; `host busy` / `player busy` for the other side, which tells it every
   2 seconds), and the Online panel has **Copy network report**: the network's last minute as text (ping, jitter,

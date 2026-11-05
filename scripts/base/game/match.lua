@@ -63,6 +63,16 @@ local function stage_description(catalog_backgrounds, row)
     return background.load(catalog_backgrounds[row + 1].path)
 end
 
+-- The Template (data/template.dat: the game's blank fighter, id 0, nothing drawn) is a seat for watching: whoever
+-- picks it is out of the match from its first frame — gone for good, not lying dead on the ground — so that a
+-- person can watch computer players fight without a fighter of their own in the way (the project owner's wish).
+-- Known by its file or its name, not its id alone: some mods put a fighter of their own at id 0.
+local function spectator_seat(fighter, record)
+    local path = (fighter.path or ""):lower()
+    local name = (record.data.name or ""):lower()
+    return path:match("template%.dat$") ~= nil or name == "template"
+end
+
 -- options: mode, difficulty, background row (100 = random), fighters (catalog list),
 -- backgrounds (catalog list), slots[0..7] = {kind = "human"|"computer"|nil, fighter, team}.
 function match.create(options)
@@ -99,6 +109,8 @@ function match.create(options)
             local fighter = options.fighters[entry.fighter]
             local record = item.record({id = fighter.id, kind = record_kinds.character}, object_data.load(fighter.path))
             local index = entry.kind == "human" and slot or slot + 10
+            -- (The Template's seat stays empty: see spectator_seat. The same on every computer of a network game.)
+            if spectator_seat(fighter, record) then goto next_slot end
             local value = item.create(record)
             value.team = entry.team
             value.blink = 75
@@ -128,6 +140,7 @@ function match.create(options)
             value.slot = slot
             state.items[index] = value
         end
+        ::next_slot::
     end
     for index = 0, item_slots - 1 do
         local value = state.items[index]

@@ -33,7 +33,7 @@
   const ROOM_PATTERN = /^\d{4,12}$/;
   const SEND_LIMIT = 65536; // the TCP transport's send queue limit
   const OPEN = 1; // WebSocket.OPEN
-  const STORAGE = Object.freeze({ relay: 'openlf2-relay', room: 'openlf2-room' });
+  const STORAGE = Object.freeze({ relay: 'openlf2-relay', room: 'openlf2-room', direct: 'openlf2-direct' });
   // The relay's close codes (tools/relay/server.js), for proxies that drop the close reason.
   const CLOSE_REASONS = Object.freeze({
     4000: 'Relay: bad request',
@@ -74,6 +74,10 @@
     pingMs: 2000, // how often both ways are timed, in the lobby and during play
     samples: 5, // round trips kept (their median counts)
     slack: 10, // ms a player's direct connection may be slower than his way through the relay
+    // With direct links preferred (the panel's switch, on unless turned off): the host keeps the beat whenever every
+    // player reaches it directly, unless a player's direct link is slower than his way through the relay by more than
+    // this (a broken route) — players abroad then play without the relay in between, wherever it stands.
+    preferSlack: 150,
     input: 16, queue: 64, // the relay's limits (ROOM_LIMITS)
     // Version 2 links (both pages say so on the link): the game's messages numbered, each on the reliable
     // channel once and on a second channel that never sends again what was lost (a datagram), together
@@ -95,6 +99,8 @@
       this.RTCPeerConnection = options.RTCPeerConnection === undefined ? root.RTCPeerConnection : options.RTCPeerConnection;
       this.iceServers = options.iceServers || DIRECT.iceServers;
       this.pageProtocol = options.pageProtocol || (root.location && root.location.protocol) || '';
+      // Direct links preferred (chooseBeat): the page's switch, remembered; options.preferDirect for tests.
+      this.preferDirect = options.preferDirect !== undefined ? Boolean(options.preferDirect) : storageGet(STORAGE.direct) !== '0';
       this.relay = '';
       this.room = '';
       this.pack = ''; // the game pack (mod) this page plays, for invite links; set by the page
@@ -521,22 +527,39 @@
     }
 
     // The host's page at START: it keeps the beat when every player reaches it directly, none of them
-    // sooner through the relay (DIRECT.slack), and the players' round trips add up to less so.
+    // sooner through the relay (DIRECT.slack), and the players' round trips add up to less so. With direct links
+    // preferred (this.preferDirect, the panel's switch), it keeps the beat whenever every player reaches it directly
+    // and no player's direct link is far slower than the relay (DIRECT.preferSlack): the relay then only sets up the
+    // room, and players far from it play among themselves.
     chooseBeat() {
       const own = median(this.relayTimes);
-      if (!this.rules || own === null || this.lobbyIds.length < 2) return 'relay';
-      let viaRelay = own;
+      if (!this.rules || this.lobbyIds.length < 2) return 'relay';
+      if (!this.preferDirect && own === null) return 'relay';
+      let viaRelay = own || 0;
       let viaHost = 0;
       for (const id of this.lobbyIds) {
         if (id === this.id) continue;
         const link = this.links.get(id);
         const times = link && link.open && link.reported;
-        if (!times || times.relay === null || times.direct === null) return 'relay';
+        if (!times || times.direct === null) return 'relay';
+        if (this.preferDirect) {
+          if (times.relay !== null && times.direct > times.relay + DIRECT.preferSlack) return 'relay';
+          continue;
+        }
+        if (times.relay === null) return 'relay';
         if (times.direct > times.relay + DIRECT.slack) return 'relay';
         viaRelay += times.relay;
         viaHost += times.direct;
       }
+      if (this.preferDirect) return 'host';
       return viaHost < viaRelay ? 'host' : 'relay';
+    }
+
+    // The panel's switch: direct links preferred (see chooseBeat), remembered in this browser.
+    setPreferDirect(on) {
+      this.preferDirect = Boolean(on);
+      storageSet(STORAGE.direct, this.preferDirect ? null : '0');
+      this.emit();
     }
 
     // The relay's word on who keeps the beat (just before STARTED).
@@ -700,7 +723,7 @@
       const lines = [];
       const stats = this.netStats();
       lines.push(`OpenLF2 network report, ${new Date().toISOString()}`);
-      lines.push(`role ${this.role || '-'}, room ${this.activeRoom || '-'}, started ${this.started}, beat by ${this.beatBy}, `
+      lines.push(`role ${this.role || '-'}, room ${this.activeRoom || '-'}, started ${this.started}, beat by ${this.beatBy}, direct links preferred ${this.preferDirect}, `
         + `beat in a worker: ${this.role === 'host' ? Boolean(this.worker && this.workerBeating) : '-'}, tick ${this.tickMs.toFixed(2)} ms, `
         + `relay ${this.relay}`);
       if (stats) {
@@ -1573,6 +1596,11 @@
         <label class="relay">Relay <input id="online-relay" type="url" placeholder="wss://relay.example.com/relay" autocomplete="off" spellcheck="false"></label>
         <span id="online-relay-check"></span>
       </div>
+      <div class="row" id="online-direct-row">
+        <label><input type="checkbox" id="online-direct"> Prefer direct links between the players' computers</label>
+        <span class="help" style="margin:0">on: no relay in between once everyone reaches the host directly, wherever the relay stands
+          (ưu tiên kết nối thẳng: mọi người nối thẳng được tới chủ phòng thì không đi qua relay)</span>
+      </div>
       <p class="help">Host: <b>Network Game &rarr; Host</b>, then <b>START</b> once everyone is in (2 to 8 players).
         Friends: open your invite link, then <b>Network Game &rarr; Connect</b> with the address left empty (or type the room code).
         Everyone needs the same game version. Players who reach the host directly (on one network, often across the
@@ -1593,6 +1621,9 @@
     const relayCheck = $('online-relay-check');
     roomInput.value = online.room;
     relayInput.value = online.relay;
+    const directBox = $('online-direct');
+    directBox.checked = online.preferDirect;
+    directBox.addEventListener('change', () => online.setPreferDirect(directBox.checked));
 
     const render = () => {
       const room = online.activeRoom || online.room;

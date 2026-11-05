@@ -494,6 +494,9 @@
     if (!panel) return;
     const room = panel.querySelector('#online-room');
     if (room && room.closest('.row')) room.closest('.row').hidden = value === 'hf';
+    // (The LF2 games' switch for direct links, in online.js's panel; Hero Fighter has its own below.)
+    const lf2Direct = panel.querySelector('#online-direct-row');
+    if (lf2Direct) lf2Direct.hidden = value === 'hf';
     directSwitch(panel, value);
     const help = panel.querySelector('.help');
     if (!help) return;
