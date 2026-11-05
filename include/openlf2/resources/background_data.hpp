@@ -14,7 +14,9 @@
 #include <vector>
 
 namespace openlf2::background_data {
-inline constexpr std::size_t max_layers = 30;
+// The original reads at most 30 layers; a mod's own program may allow more (Naruto: The Setting Dawn 2.6's Sand
+// Country has 37), and nothing here depends on the count, so the limit only guards against a runaway file.
+inline constexpr std::size_t max_layers = 200;
 
 struct Layer {
     std::string path;              // loaded for every layer, including filled ones

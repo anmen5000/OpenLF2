@@ -7,6 +7,7 @@ local slot_phases = constants.character_slot_phases
 local menus = constants.character_menus
 local catalog = require("base/game/catalog")
 local background = require("base/game/background")
+local stage = require("base/game/stage")
 local font = require("base/ui/font")
 local i18n = require("base/i18n/i18n")
 local sounds = require("base/game/sounds")
@@ -524,7 +525,9 @@ local function options_menu(state, previous_menu, context)
         sprite(state, options_sheet, {330, 363, 279, 22}, 15, 87, false)
         if options.row == option_rows.background then sprite(state, options_sheet, {330, 332, 279, 22}, 15, 87, false) end
         local level = math.floor(options.stage_level / 10)
-        if level < 5 then text(state, tostring(level + 1), 194, 91, option_blue)
+        local name = stage.level_name(level)
+        if name then text(state, name:sub(1, 29), 174, 91, option_blue)
+        elseif level < 5 then text(state, tostring(level + 1), 194, 91, option_blue)
         else text(state, "Survival", 174, 91, option_blue) end
     else
         text(state, background_name(state, options.background), 174, 91, option_blue)

@@ -88,7 +88,7 @@ private:
 
     void layer() {
         if (data_.layers.size() == max_layers) {
-            throw ParseFailure{ErrorCode::unsupported, "more than thirty background layers"};
+            throw ParseFailure{ErrorCode::unsupported, "more than two hundred background layers"};
         }
         auto& layer = data_.layers.emplace_back();
         if (!stream_.word(layer.path, 30)) unterminated();

@@ -416,6 +416,7 @@ rem --- Cho moi tien trinh xong: dong cuoi %2 trong out.txt, hoac xong.txt (game
 rem (THU_WINE: chi dung dong cuoi - khi thu file nay bang Wine, cmd khong cho game chay xong.)
 :cho
 set /a CHO=0, NHIP=-1
+call :giay CHO_TU
 if not defined DOI_THEM set /a DOI_THEM=300
 :cho_tiep
 ping -n 6 127.0.0.1 >nul 2>&1
@@ -448,10 +449,12 @@ if !NHIP! GEQ 0 (
   )
 )
 set /a PHUT=CHO%%60
-rem Moi phut: bao tien do; khong con openlf2.exe nao chay ma van thieu thi mot cua so tien trinh da bi dong, thoi cho.
+rem Moi phut: bao tien do (theo dong ho that: voi nhieu tien trinh, mot vong doc ket qua lau hon 5 giay, nen dem vong
+rem thi cham hon gio that); khong con openlf2.exe nao chay ma van thieu thi mot cua so tien trinh da bi dong, thoi cho.
 if !PHUT! EQU 0 (
-  set /a M_=CHO/60
-  echo   ... !XONG!/%N% tien trinh xong, da cho !M_! phut
+  call :giay BAY_GIO
+  set /a "M_=((BAY_GIO-CHO_TU+86400) %% 86400)/60"
+  echo   ... !XONG!/%N% tien trinh xong, da cho !M_! phut ^(!TIME:~0,8!^)
   if not defined KHONG_TASKLIST (
     tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul || (echo   [CHU Y] Khong con game nao chay - bo qua cac tien trinh chua xong.& exit /b 0)
   )

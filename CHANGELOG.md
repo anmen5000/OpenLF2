@@ -170,6 +170,19 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   its opponent. Against Sauce's AI on the ten original fighters, each against every other both ways (360 games):
   68 won (the forecast alone 57), version 33 27; as XOI 75. INSANE! against CRAZY! on the four mods'
   benchmark: 153–7 (One Piece GrandWorld 40–0, Naruto 40–0, KT-LF2 34–6, Sx2 39–1)
+- Naruto: The Setting Dawn 2.6 plays (the version its team shared for the site; its newest they keep to themselves).
+  Its program is packed, with LF2's pictures inside where nothing can read them, so the pack needs LF2 2.0a's
+  `lf2.exe` beside it (as Sauce's pack does), and OpenLF2 now takes what else the mod's own program allowed: a
+  background of more than 30 layers (Sand Country has 37; the limit is 200 now, nothing depends on it), a `stage.dat`
+  that only lists the stages (`<stage_information> id: name: file:`), each file holding that stage's own `<stage>`
+  blocks — loaded at the listed level (0-4 the stages 1-5, 5 the survival level), the level's name shown in the
+  options in place of its number — a stage entry's `team:` (an ally sent in on the players' side), and a phase without
+  `bound:` keeping the last one given (the original gives every phase one). The stage objects of the mod's own engine
+  (its cut-scenes and events) are beyond OpenLF2, so its story stages may not run through; the fighters, backgrounds
+  and VS play do. Its PNG pictures of 1, 2 and 4 bits were re-saved as 8-bit palettes in the pack, the same pixels
+- spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
+  day): with many processes one pass over the results takes longer than the five seconds between passes, so the
+  count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
 - INSANE!/XOI v35: follows a knock-up into the air, rolls out of a run, grabs a dizzy opponent and steers its moves
   in depth — what the project owner saw Sauce's AI do and asked for, worked out in a form that holds for every mod.
   An opponent knocked into the air is foreseen along its flight (`falling_path`: the blow's impulse once its hit lag

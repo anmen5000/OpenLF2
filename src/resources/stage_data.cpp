@@ -25,6 +25,7 @@ public:
         while (!stream_.at_end()) {
             if (!stream_.word(word_, word_capacity)) break;
             if (word_ == "<stage>") stage();
+            if (word_ == "<stage_information>") information();
         }
         return std::move(list_);
     }
@@ -67,6 +68,28 @@ private:
             }
             if (word_ == "<phase>") phase();
         } while (word_ != "<stage_end>");
+    }
+
+    // A listing's entry: `id:`, `name:` (underscores for spaces, as a background's) and `file:`.
+    void information() {
+        IndexEntry entry;
+        do {
+            next_in("<stage_information>");
+            if (word_ == "id:") read_int(entry.id);
+            if (word_ == "name:") {
+                std::string name;
+                if (stream_.word(name, word_capacity)) entry.name = std::move(name);
+            }
+            if (word_ == "file:") {
+                std::string file;
+                if (stream_.word(file, word_capacity)) entry.file = std::move(file);
+            }
+        } while (word_ != "<stage_information_end>");
+        if (entry.id < 0 || entry.file.empty()) {
+            note("stage listing entry without an id or a file; left out");
+            return;
+        }
+        list_.index.push_back(std::move(entry));
     }
 
     Stage& current_stage() {
@@ -130,6 +153,7 @@ private:
             }
             if (word_ == "y:") read_int(current_entry(phase).y);
             if (word_ == "act:") read_int(current_entry(phase).act);
+            if (word_ == "team:") read_int(current_entry(phase).team);
         } while (word_ != "<phase_end>");
     }
 
@@ -151,11 +175,44 @@ Result<StageList> parse(std::string_view text) {
     }
 }
 
-Result<StageList> load(const ResourceSource& resources, std::string_view path) {
+namespace {
+Result<StageList> load_one(const ResourceSource& resources, std::string_view path) {
     auto bytes = read_data_text(resources, path, max_input);
     if (!bytes) return std::unexpected(bytes.error());
     auto parsed = parse(std::string_view(bytes->data(), bytes->size()));
     if (!parsed) parsed.error().message = std::string(path) + ": " + parsed.error().message;
+    return parsed;
+}
+}
+
+Result<StageList> load(const ResourceSource& resources, std::string_view path) {
+    auto parsed = load_one(resources, path);
+    if (!parsed || parsed->index.empty()) return parsed;
+    // A listing: each file's stages at its level. A listed file that cannot be read or parsed is noted and left
+    // out, so that the other stages play.
+    for (const auto& entry : parsed->index) {
+        const auto level = static_cast<std::size_t>(entry.id);
+        if (level >= parsed->names.size()) {
+            parsed->diagnostics.push_back("stage listing id " + std::to_string(entry.id) + " is beyond the levels 0-5; left out");
+            continue;
+        }
+        std::string file = entry.file;
+        for (auto& character : file) {
+            if (character == '\\') character = '/';
+        }
+        auto sub = load_one(resources, file);
+        if (!sub) {
+            parsed->diagnostics.push_back(sub.error().message + "; the listed stage is left out");
+            continue;
+        }
+        for (std::size_t id = 0; id < 10; ++id) {
+            if (!sub->stages[id]) continue;
+            const auto placed = level * 10 + id;
+            if (placed < max_stages) parsed->stages[placed] = std::move(sub->stages[id]);
+        }
+        for (auto& line : sub->diagnostics) parsed->diagnostics.push_back(file + ": " + std::move(line));
+        if (!entry.name.empty()) parsed->names[level] = entry.name;
+    }
     return parsed;
 }
 
@@ -175,7 +232,7 @@ ScriptValue to_script_value(const StageList& list) {
                               {"reserve", integer(entry.reserve)}, {"join", integer(entry.join)},
                               {"join_reserve", integer(entry.join_reserve)}, {"act", integer(entry.act)},
                               {"y", integer(entry.y)}, {"ratio", ScriptValue{entry.ratio}},
-                              {"kind", integer(static_cast<std::int32_t>(entry.kind))}}});
+                              {"kind", integer(static_cast<std::int32_t>(entry.kind))}, {"team", integer(entry.team)}}});
             }
             set_field(phases, static_cast<std::int32_t>(index),
                       ScriptValue{ScriptTable{{"bound", integer(phase.bound)}, {"music", ScriptValue{phase.music}},
@@ -191,7 +248,13 @@ ScriptValue to_script_value(const StageList& list) {
     for (std::size_t index = 0; index < list.diagnostics.size(); ++index) {
         set_field(diagnostics, static_cast<std::int32_t>(index + 1), ScriptValue{list.diagnostics[index]});
     }
+    // The levels' names, where a listing gave them (by level: 0-4 the stages 1-5, 5 the survival level).
+    ScriptTable names;
+    for (std::size_t level = 0; level < list.names.size(); ++level) {
+        if (list.names[level]) set_field(names, static_cast<std::int32_t>(level), ScriptValue{*list.names[level]});
+    }
     return ScriptValue{ScriptTable{{"stages", ScriptValue{std::move(stages)}},
-                                   {"diagnostics", ScriptValue{std::move(diagnostics)}}}};
+                                   {"diagnostics", ScriptValue{std::move(diagnostics)}},
+                                   {"names", ScriptValue{std::move(names)}}}};
 }
 }

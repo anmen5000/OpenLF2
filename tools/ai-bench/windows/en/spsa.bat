@@ -419,6 +419,7 @@ rem --- Waits for every process to finish: the end line %2 in out.txt, or done.t
 rem (THU_WINE: the end line only - when this file is tried under Wine, cmd does not wait for the game to finish.)
 :cho
 set /a CHO=0, NHIP=-1
+call :giay CHO_TU
 if not defined DOI_THEM set /a DOI_THEM=300
 :cho_tiep
 ping -n 6 127.0.0.1 >nul 2>&1
@@ -451,10 +452,13 @@ if !NHIP! GEQ 0 (
   )
 )
 set /a PHUT=CHO%%60
-rem Every minute: progress report; no openlf2.exe running yet some still missing means a process window was closed - stop waiting.
+rem Every minute: progress report (by the real clock: with many processes one pass over the results takes longer than
+rem 5 seconds, so counting passes runs slow); no openlf2.exe running yet some still missing means a process window was
+rem closed - stop waiting.
 if !PHUT! EQU 0 (
-  set /a M_=CHO/60
-  echo   ... !XONG!/%N% processes done, waited !M_! minutes
+  call :giay BAY_GIO
+  set /a "M_=((BAY_GIO-CHO_TU+86400) %% 86400)/60"
+  echo   ... !XONG!/%N% processes done, waited !M_! minutes ^(!TIME:~0,8!^)
   if not defined KHONG_TASKLIST (
     tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul || (echo   [NOTE] No game is running any more - skipping the unfinished processes.& exit /b 0)
   )

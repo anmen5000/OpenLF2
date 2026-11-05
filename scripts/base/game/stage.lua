@@ -46,15 +46,36 @@ function stage.set_random_list(fighters, index)
     random_index = index
 end
 
-local list
+local list, names
 local function stage_list()
-    if not list then list = engine.read_stage_data("data/stage.dat").stages end
+    if not list then
+        local data = engine.read_stage_data("data/stage.dat")
+        list, names = data.stages, data.names or {}
+    end
     return list
+end
+-- The name a mod's stage listing gives a level (0-4 the stages 1-5, 5 the survival level), underscores as
+-- spaces, or nil (the original names none: the levels are numbered).
+function stage.level_name(level)
+    stage_list()
+    local name = names and names[level]
+    if not name or name == "" then return nil end
+    return (name:gsub("_", " "))
 end
 
 local empty_phase = {bound = -1, music = "", when_clear_goto_phase = -1, entry_count = 0, entries = {}}
 local function stage_data(run) return stage_list()[run.id] or {phase_count = -1, phases = {}} end
 local function phase_data(run, index) return stage_data(run).phases[index] or empty_phase end
+-- A phase's bound: its own, or — a phase without `bound:` (a mod's stage files, Naruto: The Setting Dawn 2.6's,
+-- give it to the first phase of a stage only; the original gives it to every phase) — the last one given before
+-- it, else the whole background.
+local function phase_bound(state, run, index)
+    for at = index, 0, -1 do
+        local bound = phase_data(run, at).bound
+        if bound >= 0 then return bound end
+    end
+    return state.stage.width or constants.screen.width
+end
 
 -- The record ids the current stage brings in (for the Bandit/Hunter selectors, what they may pick; a random
 -- fighter is left out), so that INSANE!'s computer players can learn their moves before they come.
@@ -157,7 +178,9 @@ local function spawn(state, run, entry, runtime, slot)
         value.blink = constants.blink.spawn_frames
         value.facing = value.x_int > state.stage_bound - constants.screen.width and constants.facings.left or constants.facings.right
         value.frame = entry.act
-        value.team = constants.teams.enemies
+        -- (A mod's stage may send in an ally: `team:` 1-4, Naruto: The Setting Dawn 2.6's story stages.)
+        local team = entry.team or 0
+        value.team = (team >= constants.teams.player_one and team <= constants.teams.player_four) and team or constants.teams.enemies
         value.y_int = entry.y
         value.y = value.y_int
         value.vy = 0.0
@@ -230,8 +253,9 @@ local function start_phase(state, run)
     if phase < 0 or goto_phase == -1 then run.phase = phase + 1 else run.phase = goto_phase end
     local data = phase_data(run, run.phase)
     if data.music ~= "" then music.play(data.music) end
-    state.camera_limit = data.bound - constants.screen.width
-    state.stage_bound = data.bound
+    local bound = phase_bound(state, run, run.phase)
+    state.camera_limit = bound - constants.screen.width
+    state.stage_bound = bound
     if group == constants.stage_groups.survival then
         for index = 0, constants.first_spawned_slot - 1 do
             local value = state.items[index]
@@ -383,7 +407,7 @@ function stage.update(state, run)
     end
     if target == "clear" then
         if run.phase >= 0 and run.phase < 99 and run.last_phase ~= 1
-           and phase_data(run, run.phase).bound == phase_data(run, run.phase + 1).bound then
+           and phase_bound(state, run, run.phase) == phase_bound(state, run, run.phase + 1) then
             run.go = 0
         end
         if cmod(cdiv(run.go, 10), 2) == 1 then
@@ -407,7 +431,7 @@ function stage.update(state, run)
         else
             local next_exists = stage_list()[run.id + 1] ~= nil
             if run.id % 10 ~= 9 and next_exists then
-                local bound = phase_data(run, run.phase).bound
+                local bound = phase_bound(state, run, run.phase)
                 local all_done = true
                 for index = 0, constants.first_spawned_slot - 1 do
                     local value = state.items[index]
