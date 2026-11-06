@@ -183,6 +183,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- INSANE!/XOI version 36: reversals — the keys a mod gives a fighter that has been hit (hit_a, hit_d, hit_j in the
+  injured, falling, guard-broken, dizzy, lying or frozen frames; the original's fighters have none) are learned as
+  moves from the frame that takes them, with the keys the move's own frames take as its chains (a continuation from a
+  frame reached turned round is read the way the fighter faces then), and used: hit, with a blow on its way, the
+  reversal whose blow lands first, else one that takes the fighter out of the blow's way when it strikes back, the blow
+  is heavy or MP stays for a strong move; with none coming, the reversal whose blow lands before the opponent can hit
+  back, when it is worth its MP. The opponent's reversal out of the frame it is in counts among its answers; a falling
+  frame that takes jump into such a move is not flipped out of with jump. Kizaru of One Piece GrandWorld (struck,
+  defend puts him behind the enemy, attack kicks it away from there — the project owner's report: INSANE! fired the
+  teleport by a guard pressed too late and stood where it put him), the substitution of every fighter of Naruto: The
+  Setting Dawn 2.6, Hell's wake-up moves out of lying. Against version 35 on the eight One Piece fighters with such keys
+  233 to 205; the usual five mods 1,120 to 1,089
 - A mod's own screen: a mod whose program draws its matches on a picture other than LF2's 794x550 says so in its
   `openlf2.txt` (`screen = 1330x730`: Naruto: The Setting Dawn 2.6, whose stages are 1330 wide and 730 deep, their
   backgrounds 735 tall — OpenLF2 drew its top left corner, the fighters at the bottom edge). The match is drawn on

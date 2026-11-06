@@ -36,6 +36,19 @@ local abs, floor, min, max = math.abs, math.floor, math.min, math.max
 local sqrt = math.sqrt
 local states = constants.frame_states
 local frames = constants.character_frames
+-- The states of being hit whose frames may take a key into a move of the fighter's own (reversals, see explore): a
+-- mod's way out of a blow taken — injured, falling, the guard broken, dizzy, lying, frozen; the original's fighters
+-- take no key in them.
+local reversal_states = {[states.injured] = true, [states.falling] = true, [states.broken_defend] = true,
+    [states.dizzy] = true, [states.lying] = true, [states.frozen] = true}
+local reversal_key_names = {a = "attack", d = "defend", j = "jump"}
+-- The frames of a fighter's data by number, the same on every computer (pairs' order is not).
+local function sorted_frame_ids(data)
+    local ids = {}
+    for id in pairs(data.frames) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return ids
+end
 local combo = constants.combo_indices
 local complete = constants.combo_states.complete
 local facing_right, facing_left = constants.facings.right, constants.facings.left
@@ -217,8 +230,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 35
+smart.version = 36
 smart.history = {
+    {36, "2026-11-06", "Knows the keys a mod gives a fighter that has been hit: reversals, a move of the fighter's own out of the injured, falling, guard-broken, dizzy, lying or frozen frames (hit_a, hit_d or hit_j there; the original's fighters have none). What the project owner saw a person do with Kizaru of One Piece GrandWorld and INSANE! never did: struck, Kizaru vanishes with defend (85 MP in all: he turns round and the game puts him 120 pixels behind the enemy) and from there kicks it away with attack (65 MP, 70 damage, a knock-down) — INSANE! fired the teleport without knowing it (a guard pressed as the blow landed: a press lasts five frames) and stood where it put him, to be slashed from behind. Each such key is learned in the private copy from the first frame of being hit that takes it, with the keys the move's own frames take as its chains (the kick is the teleport's, and a move of its own from where the teleport lands: a continuation from a frame reached turned round is read the way the fighter faces then). Hit, with a blow on its way, a reversal is the answer: the one whose blow lands first, else one that takes the fighter out of the blow's way when it strikes back, the blow is a heavy one or MP stays for a strong move; with none coming, the reversal whose blow lands before the opponent can hit back, when it is worth its MP. An opponent's reversal out of the frame it is in counts among its answers, its blow from now rather than from when its stun ends; a falling frame that takes jump into such a move is not flipped out of with jump. In One Piece GrandWorld 35 of its 40 fighters have such keys (for most, defend in the last dizzy frame ends the dizziness and jump out of lying is a wake-up move; Whitebeard, Shanks, Enel, Croc, Akainu, Mihawk, Boa, Aokiji and Kizaru have more), every fighter of Naruto: The Setting Dawn 2.6 has the substitution (defend when hit: 45 MP, a log left behind, the fighter 180 pixels past the attacker), Hell's ten have wake-up moves out of lying, KT-LF2 a few; Convergence one, Naruto 2.4 none. Against version 35: Kizaru, Whitebeard, Shanks, Enel, Akainu, Aokiji, Mihawk and Boa of One Piece GrandWorld, every pair both ways, 4 games, two seeds (448 games): 233 to 205 (Whitebeard 42 games won to 31, Aokiji 47 to 38, Shanks 47 to 41, Kizaru 23 to 18); Kizaru against Zoro, Luffy and Mihawk, 12 games each, two seeds: 71 of 72 (version 35 66); eight fighters of Naruto: The Setting Dawn 2.6: 228 to 220; over the five mods of the usual check (Convergence, Naruto 2.4, One Piece, KT-LF2, Hell; 2,240 games): 1,120 to 1,089 (50.7%: One Piece 228 to 218, Hell 229 to 215, the other three as even as that many games can tell). Everything else plays as version 35."},
     {35, "2026-11-05", "Follows a knock-up into the air, rolls out of a run, grabs a dizzy opponent and steers its moves in depth — what the project owner saw Sauce's AI do and asked for, worked out in a form that holds for every mod. An opponent knocked into the air is foreseen along its flight (the blow's impulse, applied once its hit lag has passed; gravity 1.7 a frame; the falling frame by its speed, 180 to 183 and 186 to 189; the landing, the lying after it), and only blows that touch a falling fighter count (fall 41 and more, whirlwinds), so a knock-up can be followed into the air — Woody's D^A then D>J, the owner's example: the D-sequences a move's frames take (hit_Fa, hit_Fj and the rest, where they lead elsewhere than the standing frame's do: Woody's D>J out of his turning kick's end and his flip kick's landing crouch) are learned as chains of that move, and the fighter's own D-moves are started out of a move's recovery when they land before the opponent could answer; a blow landing once the opponent may flip up (from its frame of descent, 182 or 188) is worth less by how often this opponent flips, and no such follow-up is thrown at one that flips every time. Up to version 34 a knocked-up opponent was taken for about to strike back and the fighter walked away from it: knock-ups followed up 0 of 26 times in Woody's games against Sauce's Davis, now about 4 in 10. The roll (defend out of a run, and out of the landing crouch, frame 215, where a jump or an air move comes down) is a way out of a blow that no step clears — a run has no guard, and the crouch no feet yet. A dizzy opponent (one blow too many: state 16) is grabbed as a person grabs it: walked into with the direction key held so that the walking frames' catch takes it, when the hold is worth more than the best blow at it (the hold's worth read from the fighter's data: its punch's injury and what a punch costs the hold's timer, 300 to start, and its throw's), there is time to get there and nothing else reaches us on the way; held, it is punched while the timer has room for a punch and the throw (the cost of a punch measured on the first), and thrown then, toward the nearer wall when one is near. In 60 games against Sauce's AI the opponent went dizzy 17 times: 11 grabs (version 34 none), each hold about 55 HP. A direction key steers in depth: in a frame of a move that a key steers (its dvz, as the game reads it) the fighter bends onto the opponent's line, and a ball, a thrown thing or a missile leaves with the depth the key gives it, so a move whose object would miss an opponent off the line straight and land steered is chosen and steered (the forecast knows the bend; the key is held as the thing leaves — not for one that would pass an opponent on the line). The forecast also learned: a blow coming in at an angle (its maker's speed in depth: a dash kick flown onto the line from 15 pixels off it); a running enemy's dash kick, flown in from the dash's first frame on, its depth steered toward us at worst (Woody, running at Davis from 150 pixels, dashed and kicked him out of the move he had started on seeing no danger); an opponent that hardly ever attacks but punishes — lands a blow on us in a move of our own — is not passive, whatever its rate of attack (Sauce's AI was taken for passive after a while and its counters no longer expected); a step is foreseen as the game walks it (the walking speed set each frame, a 1.4th of it along x while a depth key is held, the speed left running down afterwards). Against version 34 over five mods (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, 4 games, two seeds): 1,197 to 1,005 (54.4%; Hell 264 to 181, KT-LF2 249 to 180, Naruto 231 to 210, Convergence 227 to 216, One Piece 226 to 218 — the rolls alone worth about 20 of One Piece's 448 games, the juggling as much). Against Sauce's AI on the ten original fighters, each against every other both ways (360 games): 117 of 360 games won (version 34 68, version 33 27); as XOI 122 (version 34 75)."},
     {34, "2026-11-04", "Sees a blow coming a frame sooner, and learns from the blows it takes in the match. A move under way was foreseen from the step it had just taken as if that step were still to come: its blow a frame late, a slide's 12 pixels short (Brad's slip kick in mode Convergence), so that a step ending at the edge of its depth was taken for safe and Crimson walked back into the kick; things flying were seen against where the fighter stood a frame before. Each blow taken now counts against what dealt it (the enemy's move by how it starts, or the kind of thing thrown) and against the answer given to it just before: a move that keeps landing while the fighter was free is foreseen a few pixels wider each time, an answer that has failed against it twice, and in half the times it was given (a step aside, a jump, a step back, the guard, striking first, a move out of the way), is no longer given to it while the others still are, and a heavy blow whose ways out have all failed is guarded. Against version 33 over five mods (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, two seeds): the forecast alone 1,307 to 897 (59.3%); the lessons on top of it 451 to 428 against the same without them, as even as that many games can tell (computer players do not change habits). Against Sauce's AI (his 'lf2-AI VS and Stage Challenge', the ten original fighters each against every other both ways): 68 of 360 games, version 33 27."},
     {33, "2026-11-04", "Set-ups: a move that strikes nothing itself but leaves objects of the fighter's making standing, which strike with its next moves, is learned as such and used. Crimson's DvJ in mode Convergence leaves a shadow (with J pressed on, three or five) that copies her D>A, D^A or DvA from where it stands, told which by a body of hers far above the stage, and stands again where its slash ends; weighed one move at a time, DvJ did nothing for its MP and was never used, as the project owner saw. In the copy each set-up is played, then each of the fighter's D-moves once it is free, and once without one: what a standing object strikes only after the D-move, having left its own frames, is its answer to it, from where it stood (no other fighter of seven mods has such a move: an object that strikes by itself, or what a D-move throws itself, is no answer). In a match a D-move is weighed with the blows of the objects standing then (as sure as its own blow while that one holds the target, a quarter of that otherwise, half in all when only theirs land), and taken at half the usual score while they stand; the set-up is laid when none of its objects stands, the target is within 420 and nothing can reach the fighter first: the one that adds most to a D-move where the D-move lands (DvJ with J once, 225 MP: 50 HP), or DvJ alone when MP or time is short. Crimson laid one about three times a game and the shadows struck about 45 HP a game. Crimson against the 20 other fighters of the mod won 580 of 1,196 decided games where version 32's won 551 of 1,196 (48.5% against 46.1%), as XOI with the mod's own numbers 313 of 587 where version 32's won 303 of 588 (53.3% against 51.5%); Crimson against version 32's Crimson 23 to 30 in those games (too few to tell). Every other fighter plays exactly as before"},
@@ -359,12 +373,23 @@ end
 -- Puts the fighter of a fresh copy where a move of this context starts. Returns false when it cannot.
 -- A fighter whose frame 0 only leads to its standing frames (Blackbeard of One Piece GrandWorld: 0 to 329 to
 -- 1-4) gets there first.
-local function enter_context(state, me, context, step, heavy)
+local function enter_context(state, me, context, step, heavy, entry)
     step()
     for _ = 1, 120 do
         local fstate = me.record.frame(me.frame).state
         if (fstate == states.standing or (heavy and fstate == states.walking)) and me.y_int == 0 then break end
         step()
+    end
+    if context == "hit" then
+        -- Hit: the fighter put in the frame a reversal starts from (see explore: injured, falling, its guard broken,
+        -- dizzy), facing the dummy as one struck from the front does; in the air for a falling frame.
+        local frame = entry and entry.from and me.record.frames[entry.from]
+        if not frame then return false end
+        me.frame, me.wait_counter = entry.from, 0
+        if frame.state == states.falling then
+            me.y_int, me.y, me.vy = -24, -24.0, 2.0
+        end
+        return true
     end
     if context == "ground" then
         local fstate = me.record.frame(me.frame).state
@@ -692,14 +717,14 @@ local function play(record, entry, mp, weapon_record, hp)
     if entry.mode then
         if not enter_mode(state, me, entry.mode, entry.context, step) then return nil end
     else
-        if not enter_context(state, me, entry.context, step, weapon_record and weapon_record.kind == record_kinds.heavy_item) then return nil end
+        if not enter_context(state, me, entry.context, step, weapon_record and weapon_record.kind == record_kinds.heavy_item, entry) then return nil end
     end
     if entry.walking then
         set_keys(me, {right = true}); step()
         if me.record.frame(me.frame).state ~= states.walking then return nil end
     end
     local start_frame = me.frame
-    local origin = {x = me.x_int, y = me.y_int, z = me.z_int}
+    local origin = {x = me.x_int, y = me.y_int, z = me.z_int, facing = me.facing}
     local start_mp, start_hp, start_record = me.mp, me.hp, me.record
     local move = {entry = entry, boxes = {}, traj_x = {[0] = 0}, traj_y = {[0] = 0}, traj_z = {[0] = 0},
         vel_x = {[0] = me.vx}, vel_y = {[0] = me.vy}, frames = {}, ready = horizon_ticks, mp = 0, hp = 0}
@@ -750,6 +775,12 @@ local function play(record, entry, mp, weapon_record, hp)
         end
         move.traj_x[t], move.traj_y[t], move.traj_z[t] = me.x_int - origin.x, me.y_int - origin.y, me.z_int - origin.z
         move.vel_x[t], move.vel_y[t] = me.vx, me.vy
+        -- (Turned round since the start — a frame entered as its negative: Kizaru's teleport turns him before it
+        -- puts him behind the enemy. A continuation from such a frame reads the rest the other way round.)
+        if me.facing ~= origin.facing then
+            move.turned = move.turned or {}
+            move.turned[t] = true
+        end
         local at_pass = me.frame_at_pass or me.frame
         move.frames[t] = at_pass
         local frame = me.record.frame(at_pass)
@@ -880,10 +911,14 @@ local function continuation(data, move)
         vel_x = {[0] = move.vel_x[from]}, vel_y = {[0] = move.vel_y[from]}, frames = {},
         ready = max(move.ready - from, 1), mp = cost >= 0 and mp_cost or 0, hp = cost >= 0 and floor(cost / 1000) * 10 or 0}
     local bx, by, bz = move.traj_x[from], move.traj_y[from], move.traj_z[from]
+    -- (The fighter turned round by then: the part is read the way it faces at its start, so the rest of the move is
+    -- mirrored along x — Kizaru's kick after his teleport goes the way he faces then, at the enemy behind which the
+    -- teleport put him.)
+    local mirror = move.turned and move.turned[from] and -1 or 1
     for t = from + 1, move.length do
         local k = t - from
-        part.traj_x[k], part.traj_y[k], part.traj_z[k] = move.traj_x[t] - bx, move.traj_y[t] - by, move.traj_z[t] - bz
-        part.vel_x[k], part.vel_y[k] = move.vel_x[t], move.vel_y[t]
+        part.traj_x[k], part.traj_y[k], part.traj_z[k] = (move.traj_x[t] - bx) * mirror, move.traj_y[t] - by, move.traj_z[t] - bz
+        part.vel_x[k], part.vel_y[k] = move.vel_x[t] * mirror, move.vel_y[t]
         part.frames[k] = move.frames[t]
     end
     for _, box in ipairs(move.boxes) do
@@ -897,6 +932,7 @@ local function continuation(data, move)
                 copy.z = box.z - bz
                 copy.spawn = max(box.spawn - from, 0)
             end
+            if mirror < 0 then copy.x1, copy.x2 = -copy.x2, -copy.x1 end
             part.boxes[#part.boxes + 1] = copy
         end
     end
@@ -979,6 +1015,7 @@ local function explore(record, analysis, mode, first_index)
     local cap = mode and 40 or max_moves
     local function want(entry)
         local key = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.press or entry.frame)
+        if entry.target then key = key .. "@" .. entry.target end
         if entry.parent then key = key .. ":from" .. entry.from end
         for _, link in ipairs(entry.chain or {}) do key = key .. ">" .. link.from .. link.button end
         if seen[key] or #entries >= cap then return end
@@ -1030,6 +1067,26 @@ local function explore(record, analysis, mode, first_index)
                 if any then
                     want({context = "ground", press = "jump", basic = "jump"})
                     break
+                end
+            end
+        end
+        -- Reversals (version 36): a key that the frames of being hit take into a move of the fighter's own — a mod's
+        -- way out of a blow taken (the original's fighters have none): Kizaru of One Piece GrandWorld, struck, vanishes
+        -- with defend (frame 85, 45 MP: he turns round and the game puts him behind the enemy) and from where he lands
+        -- kicks it away with attack (what the project owner saw a person do with him and INSANE! never did: it took
+        -- the teleport for a blow of the enemy's and stood there). Each key's target once, from the first frame of being
+        -- hit that takes it (the others take it too: can_start); the keys the frames of the move take are learned as
+        -- its chains as for any move, so the kick is the teleport's chain and a move of its own from where it lands.
+        local reversal_targets = {}
+        for _, frame_id in ipairs(sorted_frame_ids(data)) do
+            local frame = data.frames[frame_id]
+            if frame and reversal_states[frame.state] then
+                for _, key in ipairs({"d", "a", "j"}) do
+                    local target = frame.hits[key]
+                    if target > 0 and target ~= 999 and data.frames[target] and not reversal_targets[key .. target] then
+                        reversal_targets[key .. target] = true
+                        want({context = "hit", from = frame_id, press = reversal_key_names[key], key = key, target = target, basic = "reversal"})
+                    end
                 end
             end
         end
@@ -1165,7 +1222,8 @@ local function explore(record, analysis, mode, first_index)
                                 for position, link in ipairs(entry.chain or {}) do chain[position] = link end
                                 chain[#chain + 1] = {from = frame_id, button = button, key = key, target = target}
                                 want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
-                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
+                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain,
+                                    from = entry.from, key = entry.key, target = entry.target})
                             end
                         end
                         -- A D-sequence a frame of the move takes (version 35): Woody's D>J out of the end of his turning
@@ -1189,7 +1247,8 @@ local function explore(record, analysis, mode, first_index)
                                     for position, link in ipairs(entry.chain or {}) do chain[position] = link end
                                     chain[#chain + 1] = {from = frame_id, button = spec.field, key = spec.field, target = target, sequence = spec.sequence}
                                     want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
-                                        basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
+                                        basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain,
+                                        from = entry.from, key = entry.key, target = entry.target})
                                 end
                             end
                         end
@@ -1205,7 +1264,8 @@ local function explore(record, analysis, mode, first_index)
                                 chain[#chain + 1] = {from = frame_id, button = "attack", key = "pick",
                                     target = explored.spawned_weapon.kind == record_kinds.heavy_item and frames.picking_heavy or frames.picking_light}
                                 want({context = entry.context, sequence = entry.sequence, field = entry.field, frame = entry.frame,
-                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain})
+                                    basic = entry.basic, press = entry.press, mode = entry.mode, held = entry.held, chain = chain,
+                                    from = entry.from, key = entry.key, target = entry.target})
                             end
                         end
                     end
@@ -1609,6 +1669,13 @@ local function analyze(record)
             analysis.chains[entry.from] = analysis.chains[entry.from] or {}
             local list = analysis.chains[entry.from]
             list[#list + 1] = move
+        end
+        -- (The frames of being hit a reversal starts from, every one that takes its key: smart.control looks there.)
+        if entry.basic == "reversal" and not entry.chain then
+            analysis.reversals = analysis.reversals or {}
+            for frame_id, frame in pairs(data.frames) do
+                if reversal_states[frame.state] and frame.hits[entry.key] == entry.target then analysis.reversals[frame_id] = true end
+            end
         end
         if move.mp < 0 and move.first == nil then move.charge = -move.mp end
         -- A move that puts the fighter into a mode: the mode is learned when the fighter is first seen in it
@@ -2430,6 +2497,8 @@ local function can_start(self, frame, fstate, move)
         if entry.field == "ja" and self.transform ~= -1 then return false end
         return frame.hits[entry.field] == entry.frame
     end
+    -- A reversal: hit (injured, falling, the guard broken, dizzy), in a frame that takes its key there.
+    if entry.basic == "reversal" then return reversal_states[fstate] == true and frame.hits[entry.key] == entry.target end
     if self.weapon ~= weapon_none then return false end
     local basic = entry.basic
     if basic == "attack" then return fstate == states.standing or fstate == states.walking end
@@ -2629,6 +2698,20 @@ local function enemy_reach(context, other, self, horizon, lock, plan, frames_at)
                     offset = lock
                     if k then best, damage = step + k, box.injury; break end
                 end
+            end
+        end
+    end
+    -- An enemy hit (the lock is its stun) may have a reversal out of the frame it is in (a mod's; see explore), whose
+    -- blow counts from now, not from when the stun ends (Kizaru's kick from behind us, after his teleport).
+    if lock > 0 and analysis.reversals and analysis.reversals[other.frame] then
+        local cframe = other.record.frame(other.frame)
+        offset = 0
+        for _, move in ipairs(analysis.moves) do
+            if move.entry.basic == "reversal" and move.first and move.first <= horizon and (not best or move.first < best)
+               and can_start(other, cframe, cframe.state, move) then
+                local own_face = other.facing == facing_right and 1 or -1
+                local k, box = move_hits(other, own_face, move, 0, self, vframe, self_at, best and best - 1 or horizon, plan ~= nil)
+                if k then best, damage = k, box.injury end
             end
         end
     end
@@ -3176,6 +3259,7 @@ local function note_key(move)
     if key then return key end
     local entry = move.entry
     key = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.press or entry.frame)
+    if entry.target then key = key .. "@" .. tostring(entry.target) end
     if entry.parent then key = key .. ":from" .. tostring(entry.from) end
     for _, link in ipairs(entry.chain or {}) do key = key .. ">" .. tostring(link.from) .. tostring(link.button) end
     if move.weapon then key = "w" .. tostring(move.weapon) .. ":" .. tostring(entry.basic or key) end
@@ -3192,6 +3276,7 @@ local function move_family(move)
     if family then return family end
     local entry = move.entry
     family = entry.context .. ":" .. tostring(entry.sequence and ("s" .. entry.sequence .. ":" .. entry.frame) or entry.press or entry.frame)
+    if entry.target then family = family .. "@" .. tostring(entry.target) end
     if entry.parent then family = family .. ":from" .. tostring(entry.from) end
     if move.weapon then family = "w" .. tostring(move.weapon) .. ":" .. tostring(entry.basic or family) end
     if entry.mode and entry.mode.record then family = "m" .. tostring(entry.mode.record.id) .. ":" .. family end
@@ -4219,6 +4304,22 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         end
         return false
     end
+    -- Hit, with a reversal the frame takes (a mod's own; see explore): the one that gets out of the blow's way, when it
+    -- strikes back, or the blow is a heavy one, or MP stays for a strong move after it — a blow that cannot be guarded
+    -- or stepped out of here; nothing else can be done hit.
+    if reversal_states[fstate] then
+        if not failed("escape") then
+            local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
+            if escape and (strikes or heavy or self.mp - escape.mp >= special_mp(analysis)) then
+                start(self, escape, source)
+                dodged(memory, state)
+                answered("escape")
+                memory.note = strikes and "reverse and strike" or "reverse out"
+                return true
+            end
+        end
+        return false
+    end
     if self.y_int < 0 or not (fstate == states.standing or fstate == states.walking or fstate == states.running) then
         return false
     end
@@ -4679,7 +4780,8 @@ function smart.control(state, index)
     -- Falling: flipping back onto the feet (jump) is quick, but the roll it lands in can be hit; with an enemy
     -- still swinging there, or free right next to where the roll ends, the fall is let finish: lying cannot be
     -- hit and the fighter gets up blinking (untouchable) instead.
-    if self.frame == 182 or self.frame == 188 then
+    -- (Not where a mod's falling frame takes jump into a move of its own, a reversal: that is weighed below.)
+    if (self.frame == 182 or self.frame == 188) and not (frame.hits.j > 0 and frame.hits.j ~= 999) then
         local target_index = choose_target(state, index, self, memory)
         local target = target_index and items[target_index]
         local flip, fall = rare.recovery_paths(self, context.analysis_of(self))
@@ -4807,6 +4909,39 @@ function smart.control(state, index)
         local analysis = context.analysis_of(self)
         -- (Up or down held to steer the move, or what it is about to send off, onto the target's depth: steer_keys.)
         if target and self.y_int <= 0 and fstate ~= states.catching then rare.steer(state, self, frame, target, context) end
+        -- Hit — injured, falling, the guard broken, dizzy — in a frame that takes a key into a move of the fighter's own
+        -- (a reversal, learned in the copy; Kizaru of One Piece GrandWorld vanishes behind the enemy with defend and
+        -- kicks it away with attack from there): a blow on its way is answered with one (answer: the reversal whose
+        -- blow lands first, else one that gets out of the way); none coming, the reversal whose blow lands before the
+        -- target can hit back, when it is worth its MP (best_attack, as any attack of the moment).
+        if target and reversal_states[fstate] and analysis.reversals and analysis.reversals[self.frame] then
+            local tframe = target.record.frame(target.frame)
+            local target_lock = target_lock_of(context, target, tframe)
+            context.target_lock = target_lock
+            context.target_path = nil
+            memory.last_use = memory.last_use or {}
+            context.last_use, context.now = memory.last_use, state.frame_number
+            context.target_where = nil
+            if not is_free(target) then
+                local where = where_of(target.record, context.analysis_of(target), target)
+                if where then context.target_where = {value = target, move = where.move, now = where.t + target.wait_counter} end
+            end
+            context.counter_first, context.counter_damage = nil, nil
+            local threat_t, threat_box, threat_source = earliest_threat(state, index, self, tune.threat_horizon, nil, level.reaction, context)
+            if threat_t then
+                if answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, threat_source, target) then return end
+            else
+                local danger = counter_time(context, target, self, target_lock)
+                local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
+                if move and score > tune.attack_threshold then
+                    start(self, move, target, t, score)
+                    memory.last_use[move.index] = state.frame_number
+                    rare.tried(memory, move, state.frame_number)
+                    memory.note = string.format("reverse %s t%d s%.1f", tostring(move.entry.press), t, score)
+                    return
+                end
+            end
+        end
         if target then
             local chains = analysis.chains[self.frame]
             -- (The fighter's own D-moves the frame takes: once the move under way has no blow left to land — in its
