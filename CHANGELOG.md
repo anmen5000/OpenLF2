@@ -183,6 +183,23 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- XOI version 37: its numbers tuned against Sauce's AI. The project owner ran spsa.bat with `DOI_THU=classic` on
+  Sauce's "lf2-AI VS and Stage Challenge" (the community's computer player for the ten original fighters): 50 rounds
+  on 83 threads over those fighters, about 377,000 pairs of games, each pair the two nudged sets against that AI and
+  the numbers moved toward the set that did better; the tuning's own check, about 77,000 games a set, 42.8% won
+  against it (version 29's set 39.9%). The set is XOI's default now (`smart.xoi_tune`), all 77 numbers named (version
+  29's named 31; the rest were INSANE!'s hand-set values): bolder in close and about being countered (counter_price
+  0.57 to 0.22, guard_counter 0.35 to 0.20, danger_sure 0.65 to 0.80), a hit on a target long free to act trusted
+  less for longer (sure_decay 0.052 to 0.097), spots within slow or guard-breaking blows a quarter as dangerous,
+  knocking down worth little of itself (fall_bonus 12 to 1.5), MP held dearer, weapons worth more steps, waiting
+  further out of quick blows but closer to a fallen enemy, fewer flips within reach, a later guard. Checked here
+  against XOI with its old numbers (every pair of 8 fighters both ways, 4 games, two seeds): the ten original
+  fighters 196 to 156, Convergence 243 to 200, KT-LF2 253 to 182, Hell 263 to 180, DBS 217 to 162, One Piece
+  GrandWorld 230 to 217, Naruto: The Setting Dawn 2.6 221 to 227, Naruto 2.4 411 to 471 over four seeds; against
+  Sauce's AI on the ten original fighters 150 of 360 games won, the old numbers 115; against INSANE! 109 to 67 on
+  the ten (the old numbers 92 to 83). A mod's own numbers (`xoi/tune.txt`, spsa.bat's) stand over the default as
+  before, so a mod tuned by its owner plays as it did. INSANE! is unchanged (version 36's play, its numbers set by
+  hand); the "default" column of spsa.bat's results is the new set, and a further round continues from it.
 - INSANE!/XOI version 36: reversals — the keys a mod gives a fighter that has been hit (hit_a, hit_d, hit_j in the
   injured, falling, guard-broken, dizzy, lying or frozen frames; the original's fighters have none) are learned as
   moves from the frame that takes them, with the keys the move's own frames take as its chains (a continuation from a
