@@ -524,6 +524,10 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   360 games against it (only its Deep holds its own)
 
 ### Fixed
+- The web build (`dist/build-web.sh`) fetches each library's source from the first of several servers that serves
+  it with the right digest: a GitHub release download or download.savannah.gnu.org answering 504 failed four web
+  builds in a row (the site's and the kit's) on November 8; SDL and SDL_ttf now fall back to libsdl.org, FreeType to
+  SourceForge and GitHub
 - `--no-jit` used the JIT all the same: opening LuaJIT's libraries switches the compiler on whatever mode was set
   before (lib_jit.c's `jit_init`), so the mode is set again after them. Found chasing a crash of the native test
   build (LuaJIT's rolling branch at 8ca76297, 2026-10-29): in compiled code, a store through a tagged value, within

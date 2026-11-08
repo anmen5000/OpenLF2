@@ -6,24 +6,44 @@ build_dir="$repo_root/build/web"
 vendor_dir="$build_dir/vendor"
 mkdir -p "$vendor_dir"
 
+# fetch_source <name> <sha256> <url>...: the archive from the first of its sources that serves it with that digest
+# (the projects' own servers and GitHub both time out now and then: a 504 from a GitHub release download or from
+# download.savannah.gnu.org failed four web builds in a row on November 8, 2026).
 fetch_source() {
-    local name=$1 url=$2 digest=$3
-    if [[ ! -f "$vendor_dir/$name" ]]; then
-        curl --fail --location --retry 3 --output "$vendor_dir/$name" "$url"
-    fi
-    printf '%s  %s\n' "$digest" "$vendor_dir/$name" | sha256sum --check
+    local name=$1 digest=$2 url
+    shift 2
+    local path="$vendor_dir/$name"
+    if [[ -f "$path" ]] && ! printf '%s  %s\n' "$digest" "$path" | sha256sum --check --quiet 2>/dev/null; then rm -f "$path"; fi
+    for url in "$@"; do
+        [[ -f "$path" ]] && break
+        if curl --fail --location --retry 3 --connect-timeout 30 --output "$path.part" "$url"; then
+            mv "$path.part" "$path"
+            if ! printf '%s  %s\n' "$digest" "$path" | sha256sum --check --quiet; then
+                echo "$name from $url: wrong digest, trying the next source" >&2
+                rm -f "$path"
+            fi
+        else
+            echo "$name from $url: not served, trying the next source" >&2
+            rm -f "$path.part"
+        fi
+    done
+    printf '%s  %s\n' "$digest" "$path" | sha256sum --check
 }
 
-fetch_source lua-5.2.4.tar.gz https://www.lua.org/ftp/lua-5.2.4.tar.gz \
-    b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b
-fetch_source SDL3-3.4.14.tar.gz https://github.com/libsdl-org/SDL/releases/download/release-3.4.14/SDL3-3.4.14.tar.gz \
-    30d4aa2b3037718142b32dffd4e72f917ebb6cc5227150e7bb9c45efb2153aeb
-fetch_source ffmpeg-7.1.5.tar.xz https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz \
-    de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f
-fetch_source freetype-2.13.2.tar.xz https://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz \
-    12991c4e55c506dd7f9b765933e62fd2be2e06d421505d7950a132e4f1bb484d
-fetch_source SDL3_ttf-3.2.2.tar.gz https://github.com/libsdl-org/SDL_ttf/releases/download/release-3.2.2/SDL3_ttf-3.2.2.tar.gz \
-    63547d58d0185c833213885b635a2c0548201cc8f301e6587c0be1a67e1e045d
+fetch_source lua-5.2.4.tar.gz b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b \
+    https://www.lua.org/ftp/lua-5.2.4.tar.gz
+fetch_source SDL3-3.4.14.tar.gz 30d4aa2b3037718142b32dffd4e72f917ebb6cc5227150e7bb9c45efb2153aeb \
+    https://github.com/libsdl-org/SDL/releases/download/release-3.4.14/SDL3-3.4.14.tar.gz \
+    https://www.libsdl.org/release/SDL3-3.4.14.tar.gz
+fetch_source ffmpeg-7.1.5.tar.xz de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f \
+    https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz
+fetch_source freetype-2.13.2.tar.xz 12991c4e55c506dd7f9b765933e62fd2be2e06d421505d7950a132e4f1bb484d \
+    https://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz \
+    https://downloads.sourceforge.net/project/freetype/freetype2/2.13.2/freetype-2.13.2.tar.xz \
+    https://github.com/freetype/freetype/releases/download/VER-2-13-2/freetype-2.13.2.tar.xz
+fetch_source SDL3_ttf-3.2.2.tar.gz 63547d58d0185c833213885b635a2c0548201cc8f301e6587c0be1a67e1e045d \
+    https://github.com/libsdl-org/SDL_ttf/releases/download/release-3.2.2/SDL3_ttf-3.2.2.tar.gz \
+    https://www.libsdl.org/projects/SDL_ttf/release/SDL3_ttf-3.2.2.tar.gz
 
 if [[ ! -d "$vendor_dir/lua-5.2.4" ]]; then
     tar -xf "$vendor_dir/lua-5.2.4.tar.gz" -C "$vendor_dir"
