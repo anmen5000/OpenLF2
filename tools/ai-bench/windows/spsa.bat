@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 rem SPSA - may tu chinh cac con so phan doan cua XOI bang cach cho no danh voi chinh no (tu goi 43 chi XOI dung
 rem cac so chinh duoc; INSANE! giu cac so dat bang tay)
-rem (OpenLF2 ban 32 tro len). Cac con so (77 so tu goi 38: diem cua mot chieu, nguong ra chieu, khoang cach, phan
+rem (OpenLF2 ban 32 tro len). Cac con so (81 so tu goi 63, 77 tu goi 38: diem cua mot chieu, nguong ra chieu, khoang cach, phan
 rem ung, chong lap...) nam trong scripts\base\game\smart_ai.lua (smart.tune_ranges).
 rem Moi vong, moi tien trinh (mot luong CPU) cho hai ban AI danh nhau: ban "cong" co cac so nhich len hoac
 rem xuong ngau nhien, ban "tru" nhich nguoc lai; ban nao danh tot hon thi cac so dich ve phia ban ay. Het vong: gop

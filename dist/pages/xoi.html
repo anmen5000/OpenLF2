@@ -572,13 +572,13 @@
 
     <section id="tune">
       <h2><span class="en">Tune XOI's numbers (SPSA)</span><span class="vi">Chỉnh các con số của XOI (SPSA)</span></h2>
-      <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 77 numbers
+      <p class="lede en">XOI learns, pair by pair, which moves work. <code>spsa.bat</code> tunes something else: the 81 numbers
         the computer player's judgement rests on — what a hit is worth against what it costs, the score a move needs, how far ahead it
         answers a blow on its way and when it guards, how bold a standoff makes it, how far to keep from longer arms or from a
         fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — the way chess engines tune
         theirs. The numbers can suit every mod at once, or one mod alone: a mod then carries its own. The tuned numbers are
         XOI's alone (from package 43): INSANE! keeps its own, set by hand, so that XOI, the last level, is plainly the stronger.</p>
-      <p class="lede vi">XOI học theo từng cặp xem chiêu nào hiệu quả. <code>spsa.bat</code> chỉnh thứ khác: 77 con số mà phán
+      <p class="lede vi">XOI học theo từng cặp xem chiêu nào hiệu quả. <code>spsa.bat</code> chỉnh thứ khác: 81 con số mà phán
         đoán của máy dựa vào — một đòn đáng bao nhiêu so với cái giá của nó, điểm một chiêu cần có để ra đòn, nhìn trước bao
         xa để đỡ hay né đòn đang tới và khi nào thì đỡ, đứng nhìn nhau lâu thì máy bạo dạn lên bao nhiêu, đứng cách đối thủ tay
         dài hay đối thủ đã ngã bao xa, khi nào nạp MP, một chiêu cứ ra mà không ăn thì bao lâu mới bỏ — giống cách các chương
@@ -589,7 +589,7 @@
           one onto it. Several mods: the processes are shared among them, and the numbers suit them all. One mod: the
           numbers suit that mod best.</li>
         <li><b>Double-click.</b> Each round, every process (one per CPU thread) plays game pairs for <code>PHUT_VONG</code>
-          minutes: two computer players, the 77 numbers nudged one way for one and the other way for the other (each number up or
+          minutes: two computer players, the 81 numbers nudged one way for one and the other way for the other (each number up or
           down at random), each playing each fighter of a random pair on the same stage; every number then moves toward
           whichever did better. All processes stop together, so no thread sits waiting for a slower one (a fast mod simply
           plays more pairs). After the round the mean step per pair is taken, every mod weighing the same, and the next round
@@ -616,7 +616,7 @@
           kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, các con số hợp với tất cả. Một bản mod: các con số
           hợp nhất với bản mod ấy.</li>
         <li><b>Nháy đúp.</b> Mỗi vòng, mỗi tiến trình (một luồng CPU) đánh liền các cặp trận trong <code>PHUT_VONG</code> phút: hai
-          máy, 77 con số nhích một phía cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy
+          máy, 81 con số nhích một phía cho máy này và phía ngược lại cho máy kia (mỗi số lên hay xuống ngẫu nhiên), mỗi máy
           cầm mỗi nhân vật của một cặp ngẫu nhiên trên cùng một sân; mọi con số rồi dịch về phía máy đánh tốt hơn. Mọi tiến trình
           dừng cùng lúc nên không luồng nào ngồi chờ luồng chậm (bản mod nhanh chỉ đánh được nhiều cặp hơn). Hết vòng, lấy bước dịch
           trung bình mỗi cặp, mỗi bản mod nặng như nhau, vòng sau bắt đầu từ đó.</li>

@@ -204,8 +204,10 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   frame for frame as before; INSANE!'s Henry 5 of 36 (3), Rudolf 8 (5). Over the five mods of the usual check against
   version 37 (2,240 games): 1,070 to 1,093, as even as that many games can tell — of their 40 fighters only Deapis of
   Convergence has such a shot (Neji of Naruto 2.4 kited before the 8-frame rule and did no better for it: 36 games won
-  to the old Neji's 41 over 224). The kite's numbers are in `positioning.kite` (`smart_ai.lua`), set by hand, not
-  among SPSA's 77
+  to the old Neji's 41 over 224). Four of the kite's numbers join those SPSA tunes (`smart.tune_ranges`, 81 now; a
+  mod's `xoi/tune.txt` without them keeps the defaults): `kite_far` (the distance that starts it, 110), `kite_room`
+  (the room behind, 260), `kite_height` (the second air shot's height, 25) and `kite_shots` (2); the rest are set by
+  hand in `positioning.kite`
 - XOI version 37: its numbers tuned against Sauce's AI. The project owner ran spsa.bat with `DOI_THU=classic` on
   Sauce's "lf2-AI VS and Stage Challenge" (the community's computer player for the ten original fighters): 50 rounds
   on 83 threads over those fighters, about 377,000 pairs of games, each pair the two nudged sets against that AI and

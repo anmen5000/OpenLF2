@@ -170,7 +170,7 @@ to latest release" attaches beside the Windows installers.
 
 The judgement of the computer player — what a hit is worth against what it costs, the score a move needs, how far
 ahead it answers a blow on its way and when it guards, how bold a standoff makes it, how far to keep from longer arms
-or from a fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — rests on 77 numbers
+or from a fallen enemy, when to charge MP, how soon it gives up a move that keeps coming to nothing — rests on 81 numbers
 gathered in `smart.tune_ranges` at the top of `scripts/base/game/smart_ai.lua` (each with INSANE!'s value, set by hand,
 and the range a tuning may try; `smart.xoi_tune` holds XOI's, tuned by play, `smart.tune` the values in use — those of the
 computer player deciding — and `smart.set_tune(values)` lays a set over them). Since version 31 the tuned numbers are
