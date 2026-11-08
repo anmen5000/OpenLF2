@@ -183,6 +183,29 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- INSANE!/XOI version 38: kiting with the shooters. A fighter whose plain attack is a shot — a cheap move from its
+  feet that sends something off 150 pixels and farther, too slow to be fired point-blank (8 frames and more to its
+  first blow; Henry's arrow, Rudolf's star — none of the other eight original fighters has one: Davis's and Deep's
+  blasts, Firen's, Freeze's and John's cost 40 to 100 MP; Neji's air palm in Naruto 2.4 comes in 6 frames and is fired
+  at arm's length as any blow) — fought a rusher at arm's length up to version 37, where its own arms are the shorter,
+  or walked backward from it at its own walking pace facing away, and lost: against Sauce's ten (each against every
+  other both ways, four seeds, 72 games each) Henry won 3, Rudolf 7. Now, with the enemy at arm's length (within 110
+  pixels), on its feet and free, no blow of its on its way and room behind (260 pixels), it takes two steps away and
+  jumps out of the run with the key toward the enemy, which turns the dash round in the air (frame 214) so that it
+  flies away facing the enemy, and shoots out of the dash when its data lets it (Henry's frame 214 takes attack into
+  his jump attack, an arrow sent forward and down; that frame takes the key again, pressed fresh, for a second while he
+  is still 25 pixels up: the two come down on an enemy close behind or following) — what a person does with Henry,
+  and what Sauce's own Henry does (28 back dashes and 38 air arrows in a two-game match, the dashes started from 0 to
+  100 pixels). Down again 180 pixels off, it shoots from its feet as before and kites again once the enemy is
+  adjacent. Tried and left out: the distance that starts it at 60, 80 and 140 (110 best), three air arrows instead of
+  two (the same), kiting out of the enemy's own moves too (worse: its recovery is the time to shoot it from the
+  feet), a shot from the feet at range whatever the enemy could answer (the same). Against Sauce's AI: Henry 18 of 72
+  games (version 37 3), Rudolf 15 (7); the ten original fighters 163 of 360 (version 37 150), the other eight playing
+  frame for frame as before; INSANE!'s Henry 5 of 36 (3), Rudolf 8 (5). Over the five mods of the usual check against
+  version 37 (2,240 games): 1,070 to 1,093, as even as that many games can tell — of their 40 fighters only Deapis of
+  Convergence has such a shot (Neji of Naruto 2.4 kited before the 8-frame rule and did no better for it: 36 games won
+  to the old Neji's 41 over 224). The kite's numbers are in `positioning.kite` (`smart_ai.lua`), set by hand, not
+  among SPSA's 77
 - XOI version 37: its numbers tuned against Sauce's AI. The project owner ran spsa.bat with `DOI_THU=classic` on
   Sauce's "lf2-AI VS and Stage Challenge" (the community's computer player for the ten original fighters): 50 rounds
   on 83 threads over those fighters, about 377,000 pairs of games, each pair the two nudged sets against that AI and
