@@ -178,6 +178,7 @@
       <a href="#measure"><span class="en">Measure</span><span class="vi">Đo</span></a>
       <a href="#watch"><span class="en">Watch</span><span class="vi">Xem</span></a>
       <a href="#tune"><span class="en">Tune XOI</span><span class="vi">Chỉnh XOI</span></a>
+      <a href="#brain"><span class="en">XOI's brain</span><span class="vi">Bộ não XOI</span></a>
       <a href="#share"><span class="en">Share</span><span class="vi">Chia sẻ</span></a>
       <a href="#publish"><span class="en">Publish</span><span class="vi">Xuất bản</span></a>
       <a href="#kit"><span class="en">Inside the kit</span><span class="vi">Trong bộ XOI</span></a>
@@ -697,6 +698,100 @@
       </ul>
     </section>
 
+    <section id="brain">
+      <h2><span class="en">XOI's brain: a learned score (hoc-sau.bat)</span><span class="vi">Bộ não XOI: học sâu (hoc-sau.bat)</span></h2>
+      <p class="lede en">Before every move XOI works out a score for it by hand-made rules: what the blow is worth, what it costs, how
+        likely the opponent answers first. From package 67 a small neural network — XOI's <i>brain</i> — can sit beside those
+        rules: given the situation (58 numbers: distances, speeds, both fighters' states, HP, MP, the move's damage, reach, MP and
+        kind…) it predicts what the move will bring, HP dealt minus HP taken over the next second and a half, and XOI weighs its own
+        score half with that prediction. The brain learns from XOI's own games, the way chess engines' NNUE networks learn from
+        theirs: <code>hoc-sau.bat</code> records every move XOI starts over thousands of games and what came of it, then trains the
+        network inside the game (a few minutes a million moves). A brain is made for one mod and travels with it as
+        <code>xoi/brain.txt</code>, like the notes and the numbers; the match shows <i>brain</i> beside XOI. Trained on Sauce's
+        pack ("lf2-AI VS and Stage Challenge"), it took XOI from 321 to 377 games won of 720 against Sauce's AI, and 216 to 134
+        against XOI without it; the same brain did nothing for other mods — each needs its own.</p>
+      <p class="lede vi">Trước mỗi đòn, XOI tính điểm cho đòn ấy bằng các luật đặt tay: đòn đáng bao nhiêu, tốn bao nhiêu, đối thủ
+        dễ đáp trước đến đâu. Từ gói 67, một mạng nơ-ron nhỏ — <i>bộ não</i> của XOI — có thể đứng cạnh các luật ấy: nhìn tình huống
+        (58 con số: khoảng cách, vận tốc, trạng thái hai bên, máu, MP, sát thương, tầm, MP và loại của đòn…) nó đoán đòn ấy sẽ mang
+        lại gì — máu gây được trừ máu mất trong một giây rưỡi sau — và XOI lấy một nửa điểm tự tính, một nửa lời đoán ấy. Bộ não học
+        từ chính các trận của XOI, như mạng NNUE của các chương trình cờ học từ các ván của chúng: <code>hoc-sau.bat</code> ghi lại
+        mọi lần XOI ra đòn trong hàng nghìn trận cùng kết quả, rồi huấn luyện mạng ngay trong game (vài phút cho một triệu lần ra
+        đòn). Bộ não làm cho một bản mod và đi cùng bản mod ấy dưới tên <code>xoi/brain.txt</code>, như bộ nhớ và bộ số; trong trận
+        ghi <i>brain</i> cạnh XOI. Học trên bản của Sauce ("lf2-AI VS and Stage Challenge"), nó đưa XOI từ 321 lên 377 trận thắng
+        trong 720 trận đấu AI của Sauce, và thắng XOI không có bộ não 216–134; cũng bộ não ấy không giúp gì cho các bản mod khác —
+        mỗi bản mod cần bộ não riêng.</p>
+      <ol class="steps en">
+        <li><b>Put one or more mods' <code>.zip</code> next to <code>hoc-sau.bat</code></b> (not the <code>*-xoi.zip</code> copies), or
+          drag one onto it. Several mods: the processes are shared among them and each mod gets a brain of its own.</li>
+        <li><b>Double-click.</b> Each round, every process (one per CPU thread) records for <code>PHUT_GHI</code> minutes: XOI against
+          the mod's own AI scripts where it has them (Sauce's AI), else against itself; random pairs of the mod's fighters on random
+          stages. The data of every round so far is gathered, a brain is trained for each mod, and from the second round XOI records
+          with the brain it just learned, so the brain learns its new play too. A process records about 2,000 moves a minute: 2
+          rounds of 20 minutes on 80 threads is some 6 million moves (2.5 GB of data) and about an hour of training.</li>
+        <li><b>The check:</b> at the end, half the processes play XOI with the brain against the opponent, the other half XOI
+          without it, for <code>PHUT_KIEM_TRA</code> minutes, same seeds: the win rates stand side by side in
+          <code>hoc-sau\ket-qua.txt</code>. <b>To pause</b>, close the windows; double-click again to go on (recorded data is kept).
+          <b>To learn further</b>, raise <code>VONG</code> and run again: it goes on from the next round with all the data so far.
+          Start over by deleting the <code>hoc-sau</code> folder. Your own settings go in <code>hoc-sau-cai-dat.bat</code> beside it
+          (<code>brain-settings.bat</code> in the English kit), as with <code>spsa.bat</code>.</li>
+        <li><b>Each mod's brain, ready to use:</b> <code>xoi-&lt;mod&gt;\brain.txt</code>, and <code>&lt;mod&gt;-xoi.zip</code> is the mod
+          with it inside (<code>xoi/brain.txt</code> beside its <code>data</code> folder, with the mod's numbers and notes if it has
+          them). Uploaded to the relay or published, XOI plays that mod with the brain. Upload it only if the check has XOI with
+          the brain winning more than XOI without it. <code>spsa.bat</code>, <code>xoi-hoc.bat</code> and <code>xuat-ban.bat</code>
+          pack the brain too when <code>xoi-&lt;mod&gt;\brain.txt</code> exists.</li>
+        <li><b>Send <code>hoc-sau\ket-qua.txt</code></b> to whoever maintains the AI: the data each round, how well the network
+          predicts (the <i>corr</i> figures: how its predictions go with what happened, where the hand-made score alone gets
+          about 0.2 and the network about 0.45), and the check.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt một hay nhiều file <code>.zip</code> bản mod cạnh <code>hoc-sau.bat</code></b> (không phải các bản <code>*-xoi.zip</code>),
+          hoặc kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, mỗi bản mod một bộ não riêng.</li>
+        <li><b>Nháy đúp.</b> Mỗi lượt, mỗi tiến trình (một luồng CPU) ghi dữ liệu trong <code>PHUT_GHI</code> phút: XOI đánh với AI
+          riêng của bản mod nếu có (AI của Sauce), không thì với chính nó; các cặp nhân vật ngẫu nhiên trên sân ngẫu nhiên. Dữ liệu
+          của mọi lượt từ trước tới giờ được gộp, mỗi bản mod được huấn luyện một bộ não, và từ lượt hai XOI ghi dữ liệu với bộ não vừa
+          học, nên bộ não học được cả cách chơi mới của nó. Một tiến trình ghi chừng 2.000 lần ra đòn mỗi phút: 2 lượt × 20 phút trên
+          máy 80 luồng được chừng 6 triệu lần ra đòn (2,5 GB dữ liệu), huấn luyện chừng một giờ.</li>
+        <li><b>Kiểm tra:</b> cuối cùng, một nửa số tiến trình cho XOI có bộ não đánh đối thủ, nửa kia cho XOI không có, trong
+          <code>PHUT_KIEM_TRA</code> phút, cùng hạt giống: hai tỉ lệ thắng đứng cạnh nhau trong <code>hoc-sau\ket-qua.txt</code>.
+          <b>Tạm dừng:</b> đóng các cửa sổ; nháy đúp lại là làm tiếp (dữ liệu đã ghi được giữ). <b>Học thêm:</b> tăng <code>VONG</code>
+          rồi chạy lại — làm tiếp từ lượt kế với tất cả dữ liệu đã có. Làm lại từ đầu: xóa thư mục <code>hoc-sau</code>. Cài đặt riêng
+          của bạn để trong <code>hoc-sau-cai-dat.bat</code> cạnh nó (bộ tiếng Anh: <code>brain-settings.bat</code>), như với
+          <code>spsa.bat</code>.</li>
+        <li><b>Bộ não của từng bản mod, dùng được ngay:</b> <code>xoi-&lt;tên&gt;\brain.txt</code>, và <code>&lt;tên&gt;-xoi.zip</code> là bản
+          mod có nó bên trong (<code>xoi/brain.txt</code> cạnh thư mục <code>data</code>, kèm bộ số và bộ nhớ của bản mod nếu đã có).
+          Tải lên relay hay xuất bản thì XOI chơi bản mod ấy với bộ não. Chỉ tải lên khi phần kiểm tra cho XOI có bộ não thắng nhiều
+          hơn XOI không có. <code>spsa.bat</code>, <code>xoi-hoc.bat</code> và <code>xuat-ban.bat</code> cũng đóng gói bộ não khi có
+          <code>xoi-&lt;tên&gt;\brain.txt</code>.</li>
+        <li><b>Gửi <code>hoc-sau\ket-qua.txt</code></b> cho người làm AI: dữ liệu từng lượt, mạng đoán tốt đến đâu (các số <i>corr</i>:
+          lời đoán đi cùng kết quả thật đến mức nào — điểm tự tính của XOI được khoảng 0,2, mạng khoảng 0,45), và phần kiểm tra.</li>
+      </ol>
+      <h3><span class="en">Settings at the top of hoc-sau.bat</span><span class="vi">Các dòng chỉnh ở đầu hoc-sau.bat</span></h3>
+      <ul class="plain en">
+        <li><code>VONG</code> rounds (2), <code>PHUT_GHI</code> minutes of recording a round (20), <code>SONG_SONG</code> processes
+          (every CPU thread; fewer on a PC short of memory, as <code>spsa.bat</code> does), <code>PHUT_KIEM_TRA</code> minutes of the
+          final check (10; 0 skips it), <code>UU_TIEN</code> the processes' priority, <code>HAT_GIONG</code> the seed.</li>
+        <li><code>AN</code> neurons in the middle layer (48) and <code>EPOCH</code> passes over the data (8): enough; more takes longer
+          to train. Training takes about half a GB of memory per million moves (six million: 3 GB) and a few minutes a million
+          moves a pass, one process per mod.</li>
+        <li><b>Disk:</b> a move is a line of about 400 bytes; the gathered data of a run stays in <code>hoc-sau\du-lieu\</code>
+          (about 2.5 GB for 6 million moves) and the training packs are deleted once trained.</li>
+        <li><b>A mod without AI scripts of its own</b> records XOI against a copy of itself (the copy without the brain), as
+          <code>spsa.bat</code> does.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><code>VONG</code> số lượt (2), <code>PHUT_GHI</code> số phút ghi dữ liệu mỗi lượt (20), <code>SONG_SONG</code> số tiến trình
+          (mọi luồng CPU; máy ít bộ nhớ được tự bớt, như <code>spsa.bat</code>), <code>PHUT_KIEM_TRA</code> số phút kiểm tra cuối (10; 0 là
+          bỏ qua), <code>UU_TIEN</code> mức ưu tiên, <code>HAT_GIONG</code> hạt giống.</li>
+        <li><code>AN</code> số nơ-ron lớp giữa (48) và <code>EPOCH</code> số lần học qua toàn bộ dữ liệu (8): đủ dùng; lớn hơn thì huấn
+          luyện lâu hơn. Huấn luyện tốn chừng nửa GB bộ nhớ cho mỗi triệu lần ra đòn (6 triệu: 3 GB) và vài phút cho mỗi triệu mỗi
+          lần học, mỗi bản mod một tiến trình.</li>
+        <li><b>Ổ đĩa:</b> mỗi lần ra đòn là một dòng chừng 400 byte; dữ liệu đã gộp của một lần chạy nằm trong
+          <code>hoc-sau\du-lieu\</code> (chừng 2,5 GB cho 6 triệu lần) và các gói huấn luyện được xóa sau khi học xong.</li>
+        <li><b>Bản mod không có script AI riêng</b> thì XOI ghi dữ liệu khi đánh với một bản sao của chính nó (bản sao không có bộ
+          não), như <code>spsa.bat</code>.</li>
+      </ul>
+    </section>
+
     <section id="share">
       <h2><span class="en">Share what you trained</span><span class="vi">Chia sẻ những gì đã huấn luyện</span></h2>
       <ul class="plain en">
@@ -708,6 +803,10 @@
           <code>&lt;mod&gt;-xoi.zip</code> to the relay (admin page, same id as the mod) — rooms and replays stay in sync. Trained one of
           the site's mods? Send the notes to the owner.</li>
         <li><b>One version of a mod:</b> notes are made of fighter ids and moves. When a mod's fighters change, train it again.</li>
+        <li><b>Numbers and brain too:</b> <code>xoi-&lt;mod&gt;\tune.txt</code> (<code>spsa.bat</code>) and
+          <code>xoi-&lt;mod&gt;\brain.txt</code> (<code>hoc-sau.bat</code>) are shared the same way; dragged onto
+          <code>choi.bat</code> or <code>xuat-ban.bat</code> with the mod, they go in as <code>xoi/tune.txt</code> and
+          <code>xoi/brain.txt</code>.</li>
       </ul>
       <ul class="plain vi">
         <li><b>Bộ nhớ là công sức của bạn:</b> chia sẻ <code>xoi-&lt;tên&gt;\notes.txt</code>, đổi tên thành <code>&lt;tên&gt;-notes.txt</code>,
@@ -718,6 +817,9 @@
           relay (trang admin, cùng id với bản mod) — phòng chơi mạng và bản ghi trận vẫn khớp. Bạn đã huấn luyện một bản mod của trang?
           Gửi bộ nhớ cho chủ trang.</li>
         <li><b>Một phiên bản bản mod:</b> bộ nhớ gắn với id nhân vật và chiêu. Bản mod đổi nhân vật thì huấn luyện lại.</li>
+        <li><b>Bộ số và bộ não cũng vậy:</b> <code>xoi-&lt;tên&gt;\tune.txt</code> (<code>spsa.bat</code>) và
+          <code>xoi-&lt;tên&gt;\brain.txt</code> (<code>hoc-sau.bat</code>) chia sẻ cùng cách; kéo thả vào <code>choi.bat</code> hay
+          <code>xuat-ban.bat</code> cùng bản mod thì vào trong thành <code>xoi/tune.txt</code> và <code>xoi/brain.txt</code>.</li>
       </ul>
     </section>
 
@@ -725,13 +827,13 @@
       <h2><span class="en">Publish your mod with INSANE! and XOI built in</span><span class="vi">Xuất bản bản mod có sẵn INSANE! và XOI</span></h2>
       <p class="lede en">The kit and OpenLF2's installer are for you, who train. Your mod's players need neither:
         <code>xuat-ban.bat</code> gives them your mod's own folder as you share it (<code>bg</code>, <code>bgm</code>,
-        <code>data</code>, <code>sprite</code>… and its own <code>.exe</code>) with OpenLF2 put in it, XOI's notes and numbers in
+        <code>data</code>, <code>sprite</code>… and its own <code>.exe</code>) with OpenLF2 put in it, XOI's notes, numbers and brain in
         <code>xoi\</code>. They extract it and double-click <code>&lt;mod&gt; - INSANE XOI.exe</code> — every level up to INSANE! and
         XOI, no OpenLF2 to install, no kit, no original LF2. OpenLF2 plays the mod folder it lies in by itself (from package 50;
         <code>xuat-ban.bat</code> checks the installed one and says when it is older).</p>
       <p class="lede vi">Bộ XOI và bộ cài OpenLF2 là cho bạn, người huấn luyện. Người chơi bản mod của bạn không cần cả hai:
         <code>xuat-ban.bat</code> đưa họ nguyên thư mục gốc của bản mod như bạn chia sẻ (<code>bg</code>, <code>bgm</code>,
-        <code>data</code>, <code>sprite</code>… và cả file <code>.exe</code> của nó), thêm OpenLF2 vào, bộ nhớ và bộ số của XOI trong
+        <code>data</code>, <code>sprite</code>… và cả file <code>.exe</code> của nó), thêm OpenLF2 vào, bộ nhớ, bộ số và bộ não của XOI trong
         <code>xoi\</code>. Họ giải nén rồi nháy đúp <code>&lt;tên&gt; - INSANE XOI.exe</code> — đủ các mức tới INSANE! và XOI, không
         cài OpenLF2, không cần bộ XOI, không cần LF2 gốc. OpenLF2 tự chơi thư mục bản mod mà nó nằm trong (từ gói 50;
         <code>xuat-ban.bat</code> kiểm tra bản đã cài và báo nếu nó cũ hơn).</p>
@@ -833,6 +935,7 @@
   xoi-hoc.bat           <i>train XOI for a mod</i>
   dau-nhieu.bat         <i>measure: two computer players on every pair</i>
   spsa.bat              <i>tune XOI's numbers by play</i>
+  hoc-sau.bat           <i>XOI learns a brain, a network scoring its moves, from its own games</i>
   xem.bat               <i>watch two computer players in the window, fighters by name (for a clip)</i>
   xuat-ban.bat          <i>publish a mod for its players (its work: xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>the README published mods get: edit it to add your words</i>
@@ -840,7 +943,7 @@
   README.txt            <i>the short version of this page</i>
   version.txt           <i>which INSANE! and OpenLF2 this kit is</i>
   scripts\              <i>the game's scripts with INSANE! and XOI (base\game\smart_ai.lua)</i>
-  tools\ai-bench\       <i>the jobs: learn.lua (training), duel.lua (measuring), brains.lua…</i>
+  tools\ai-bench\       <i>the jobs: learn.lua (training), duel.lua (measuring), record.lua and train.lua (the brain), brains.lua…</i>
 <i>made as you go:</i>
   &lt;mod&gt;.zip             <i>a mod folder zipped by choi.bat</i>
   &lt;mod&gt;-xoi.zip         <i>the mod with xoi\notes.txt inside (xoi-hoc.bat, or choi.bat with notes)</i>
@@ -855,12 +958,15 @@
     goi\xoi\notes.txt   <i>a copy, to put into a zip by hand</i>
   ket-qua-&lt;seed&gt;\       <i>a measurement: cap.txt, run-*.txt</i>
   spsa\                 <i>a tuning: ket-qua.txt (the result), vong-&lt;n&gt;\ (each round), kiem-tra\ (the check)</i>
+  hoc-sau\              <i>a brain's making: ket-qua.txt, du-lieu\ (the recorded moves), luot-&lt;n&gt;\ (each round), kiem-tra\</i>
+    xoi-&lt;mod&gt;\brain.txt  <i>the brain (XOI_BRAIN lines): what spsa.bat, xoi-hoc.bat and xuat-ban.bat pack as xoi\brain.txt</i>
   xuat-ban\             <i>published mods: &lt;mod&gt;.zip to share, &lt;mod&gt;\ unzipped, &lt;mod&gt;-kiem-tra.txt (the trial start)</i></div>
 <div class="tree vi">LF2-XOI-kit\
   choi.bat              <i>chơi bản mod với INSANE! và XOI</i>
   xoi-hoc.bat           <i>huấn luyện XOI cho bản mod</i>
   dau-nhieu.bat         <i>đo: hai loại máy đấu mọi cặp</i>
   spsa.bat              <i>chỉnh các con số của XOI bằng cách cho máy đánh</i>
+  hoc-sau.bat           <i>XOI học bộ não — mạng nơ-ron chấm điểm đòn — từ chính các trận của nó</i>
   xem.bat               <i>xem hai máy đánh nhau trong cửa sổ, chọn nhân vật theo tên (để quay clip)</i>
   xuat-ban.bat          <i>xuất bản bản mod cho người chơi (phần việc nằm trong xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>README của bản xuất bản: sửa để thêm lời của bạn</i>
@@ -868,7 +974,7 @@
   README.txt            <i>bản ngắn của trang này</i>
   version.txt           <i>bộ này là INSANE! và OpenLF2 phiên bản nào</i>
   scripts\              <i>scripts của game có INSANE! và XOI (base\game\smart_ai.lua)</i>
-  tools\ai-bench\       <i>các việc: learn.lua (huấn luyện), duel.lua (đo), brains.lua…</i>
+  tools\ai-bench\       <i>các việc: learn.lua (huấn luyện), duel.lua (đo), record.lua và train.lua (bộ não), brains.lua…</i>
 <i>sinh ra trong lúc dùng:</i>
   &lt;tên&gt;.zip             <i>thư mục bản mod do choi.bat nén lại</i>
   &lt;tên&gt;-xoi.zip         <i>bản mod có xoi\notes.txt bên trong (xoi-hoc.bat, hoặc choi.bat kèm bộ nhớ)</i>
@@ -883,6 +989,8 @@
     goi\xoi\notes.txt   <i>bản sao, để tự đặt vào file zip bằng tay</i>
   ket-qua-&lt;hạt giống&gt;\  <i>một lần đo: cap.txt, run-*.txt</i>
   spsa\                 <i>một lần chỉnh: ket-qua.txt (kết quả), vong-&lt;n&gt;\ (từng vòng), kiem-tra\ (phần kiểm tra)</i>
+  hoc-sau\              <i>một lần học bộ não: ket-qua.txt, du-lieu\ (các lần ra đòn đã ghi), luot-&lt;n&gt;\ (từng lượt), kiem-tra\</i>
+    xoi-&lt;tên&gt;\brain.txt  <i>bộ não (các dòng XOI_BRAIN): spsa.bat, xoi-hoc.bat và xuat-ban.bat đóng gói nó thành xoi\brain.txt</i>
   xuat-ban\             <i>bản xuất bản: &lt;tên&gt;.zip để chia sẻ, &lt;tên&gt;\ đã giải nén, &lt;tên&gt;-kiem-tra.txt (lần mở thử)</i></div>
       <p class="note en"><b>The notes file</b> is plain text, one fact per line, each starting with <code>XOI</code>: <code>G</code> the
         games of a pair, <code>R</code> the opponent's answers to risky moves, <code>M</code> a move's record against an opponent,

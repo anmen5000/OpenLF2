@@ -28,3 +28,5 @@ module=stall|stall.lua
 module=spsa|spsa.lua
 module=names|names.lua
 module=list|list.lua
+module=record|record.lua
+module=train|train.lua

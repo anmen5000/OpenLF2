@@ -114,7 +114,11 @@ Battle), is `scripts/base/game/smart_ai.lua`:
   player, blows started, landed and interrupted, hits taken from a just-risen opponent or at a wall, and trades.
 - Everything depends only on the match's state (no random numbers of its own), so replays and network
   games stay in sync; the learned moves depend only on the fighter's data.
-- Fighters whose mod ships a substantial AI script keep that script at CRAZY!.
+- A mod's own AI scripts play its fighters at CRAZY! and below; INSANE! and XOI play at their levels whatever
+  scripts the mod has (package 67 on; before, a fighter with a script of its own kept it there too).
+- XOI can carry a brain for a mod (`xoi/brain.txt`): a small network, trained on XOI's own games by the kit's
+  `hoc-sau.bat` (`tools/ai-bench/record.lua` and `train.lua`), that predicts what a move will bring; XOI weighs
+  its own score of the move half with that prediction.
 
 `tools/ai-bench/` runs it against the original computer player in bulk, lists what it learned and how
 often it uses each move, and checks determinism; see its README. The web page `dist/pages/insane.html`

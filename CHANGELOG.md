@@ -183,6 +183,34 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- XOI version 41: a brain — a small network (58 inputs: distances, heights, facing, HP, MP, speeds, weapons, ten state
+  slots each for the fighter and the target, the target's wait and blink, frames since the last blow, positions, the
+  move's hit time and hand-made score, its damage, MP, reach, length and kinds; 48 hidden units) that predicts what a
+  move will bring, HP dealt minus HP taken over the 45 frames after its start, learned from XOI's own games as chess
+  engines' NNUE networks are learned from theirs; XOI moves its hand-made score of a move halfway to the prediction
+  (`tune.brain_weight` 0.5). A mod carries its brain as `xoi/brain.txt` beside its data (the match shows "brain"
+  beside XOI; INSANE! plays without one). On Sauce's pack, 55,000 records of 2,000 games gave predictions that go with
+  the outcome at 0.455 where the hand-made score goes at 0.197, and the ten originals won 368 of 720 games against
+  Sauce's AI (version 40 alone 321), 216 to 134 against XOI without it; a second round recorded with that brain
+  (87,000 records) 377 of 720. The same brain did nothing for other mods (208 to 231 over four): a brain is for one pack.
+  Besides: thrown things whose burst differs between throws are measured over six throws and worth their mean (Nya's die
+  in Sauce's pack 35 HP, where one throw said 10); a summon of a move still alive with frames to come is waited for
+  while the move is followed, whatever frames it reaches by way of hits (Nya's coin that becomes a vortex); a jump of
+  position no step accounts for is a teleport; a stream of thrown things (a ball coming behind the one due, or a move
+  that throws several) is met as a heavy blow is — ways out before the guard, a move out of their way worth its MP,
+  the jump toward the thrower (XOI's Julian against Sauce's Julian 32 to 48 of 80 games, 29 to 51 before: a fighter
+  got up in a corner under Sauce's Julian's steered skull blasts still has no step out of them, which is left to do).
+  Against Sauce's AI on the ten originals 160 of 360 games (version 40: 164 on the same seeds); the five
+  mods against version 40, 1,088 to 1,082 of 2,240 — as even as they can tell
+- `windows/hoc-sau.bat` (English kit: `brain.bat`), and the bench jobs `record` and `train` behind it
+  (`tools/ai-bench/record.lua`, `train.lua`): XOI's brain made on a PC — rounds of recording on every CPU thread
+  (XOI against the pack's own AI scripts where it has them, else a copy of itself), the records gathered into a small
+  training pack, one network trained per mod inside the game (LuaJIT, about 150,000 samples a second), the next round
+  recorded with the brain just learned, then a check of XOI with and without it against the same opponent
+  (`hoc-sau\ket-qua.txt`); each mod's brain in `xoi-<mod>\brain.txt` and `<mod>-xoi.zip`. Settings file
+  `hoc-sau-cai-dat.bat` (`brain-settings.bat`); raising VONG and running again learns on. `spsa.bat`, `xoi-hoc.bat` and
+  `xuat-ban.bat` (and their English twins) pack `xoi/brain.txt` too when `xoi-<mod>\brain.txt` exists; `duel`'s and
+  `record`'s `brain = {module, on}` option sets one for a side
 - XOI version 40: its numbers halfway between version 37's and the project owner's second SPSA run against Sauce's
   AI (60 rounds of 15 minutes on 83 threads over the ten original fighters, about 580,000 pairs of games). That run's
   set alone plays the originals better — against Sauce's AI 343 of 720 games to version 37's 308, against version
@@ -560,6 +588,12 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   last five rounds that way. The kit guide and READMEs say so
 
 ### Fixed
+- INSANE! and XOI did not play in a pack whose fighters have AI scripts of their own: since INSANE!'s version 14 a fighter
+  with a substantial script kept it at those levels (made when INSANE! was young and the mod's author knew the
+  fighter better), so in Sauce's "lf2-AI VS and Stage Challenge", whose every fighter has one, the levels named INSANE! and
+  XOI were Sauce's AI — the project owner recognized its spacing by dashes after a knock-down. INSANE! and XOI now
+  play at their levels whatever scripts the pack has; the scripts play at CRAZY! and below, where the mod's own AI
+  belongs (`smart.enabled`)
 - SPSA (`tools/ai-bench/spsa.lua`) drew the Template among the fighters (id 0, not hidden), whom the match seats
   nobody for (as the original: choosing him is watching), so a sixth of its draws played no game — four "SPSA game
   failed: ... (a nil value)" lines an iteration in a chain's log, the chain's time-bound round the shorter for them

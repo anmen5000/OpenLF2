@@ -163,18 +163,20 @@ if not exist "%XOI%\pack\xoi" mkdir "%XOI%\pack\xoi"
 copy /y "%XOI%\notes.txt" "%XOI%\pack\xoi\notes.txt" >nul
 
 rem Packing: a copy of the mod's zip file with xoi/notes.txt added to the game folder (beside the data folder) - and xoi/tune.txt,
-rem the mod's own numbers tuned by spsa.bat (xoi-<mod>\tune.txt), if there are any.
+rem the mod's own numbers tuned by spsa.bat (xoi-<mod>\tune.txt), and xoi/brain.txt, brain.bat's brain, if there are any.
 if not exist "%PACK%" (echo "%PACK%" not found - cannot pack.& pause& exit /b 1)
 set "XPACK=%PACK%"
 set "XOUT=%OUT%"
 set "XNOTES=%XOI%\notes.txt"
 set "XTUNE="
 if exist "%XOI%\tune.txt" set "XTUNE=%XOI%\tune.txt"
+set "XBRAIN="
+if exist "%XOI%\brain.txt" set "XBRAIN=%XOI%\brain.txt"
 rem (The previous packed copy is kept as <name>-xoi-previous.zip, to measure it against the new one.)
 for %%z in ("%PACK%") do set "TRUOC=%%~dpnz-xoi-previous.zip"
 if exist "%OUT%" copy /y "%OUT%" "%TRUOC%" >nul
 del /q "%OUT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Added ' + $name) } } } finally { $z.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Added ' + $name) } } } finally { $z.Dispose() }"
 if not exist "%OUT%" goto khong_goi
 if errorlevel 1 goto khong_goi
 echo.

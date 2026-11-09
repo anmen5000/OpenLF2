@@ -5,7 +5,7 @@ rem .exe too), with OpenLF2 added - every computer level: Easy, Normal, Difficul
 rem extract it and double-click "<name> - INSANE XOI.exe" - no OpenLF2 to install, no XOI kit, no original LF2 needed.
 rem How to use: put this file next to the mod's zip file and double-click it - best of all the <name>-xoi.zip that
 rem train.bat / spsa.bat made (XOI's notes and numbers inside). Or drag onto this file: the mod's zip file, folder or
-rem .exe; with XOI's notes (notes.txt) and numbers (tune.txt), or the xoi-<name> folder holding them, if wanted.
+rem .exe; with XOI's notes (notes.txt), numbers (tune.txt) and brain (brain.txt), or the xoi-<name> folder holding them, if wanted.
 rem Result: publish\<name>.zip next to this file - send it to the players; the folder publish\<name> is the extracted copy.
 rem Needs OpenLF2 installed from package 50 or later (it plays the mod folder it lies in by itself) and publish.ps1 next
 rem to this file.
@@ -17,10 +17,12 @@ rem The installed game. Left empty, it is looked for (Install for me only, all u
 set "GAME="
 rem The mod: zip file or folder. Left empty, the first *-xoi.zip next to this file is used, else the first .zip file.
 set "PACK="
-rem XOI's notes (notes.txt from train.bat) and numbers (tune.txt from spsa.bat). Left empty, they are taken from the
-rem xoi-<mod> folder next to this file - unless the mod is a *-xoi.zip (it has them inside already; they stay as they are).
+rem XOI's notes (notes.txt from train.bat), numbers (tune.txt from spsa.bat) and brain (brain.txt from brain.bat). Left
+rem empty, they are taken from the xoi-<mod> folder next to this file - unless the mod is a *-xoi.zip (it has them inside
+rem already; they stay as they are).
 set "NOTES="
 set "TUNE="
+set "BRAIN="
 rem Lock the hidden fighters for the players: Y = yes (no options button on the title screen, no unlocking, typing lf2.net
 rem does not unlock either - for a mod whose hidden fighters are unbalanced), N = no (as in ordinary OpenLF2). Left empty, it asks when run.
 set "LOCK_HIDDEN="
@@ -29,9 +31,9 @@ rem ({TEN}: the published name, {EXE}: the file the players double-click, {GOC}:
 rem before running, to introduce the mod, name who made it...
 rem =====================================
 
-rem What was dragged onto this file: a folder with data\data.txt is the mod, a folder with notes.txt / tune.txt is XOI's
-rem notes / numbers; a .txt file with "tune" in its name is the numbers, any other .txt file the notes; a .exe file: its
-rem folder; anything else: the mod's zip file.
+rem What was dragged onto this file: a folder with data\data.txt is the mod, a folder with notes.txt / tune.txt / brain.txt
+rem is XOI's notes / numbers / brain; a .txt file with "tune" in its name is the numbers, with "brain" the brain, any other
+rem .txt file the notes; a .exe file: its folder; anything else: the mod's zip file.
 :doc_vao
 if "%~1"=="" goto doc_xong
 if exist "%~1\" (
@@ -40,14 +42,18 @@ if exist "%~1\" (
   ) else if exist "%~1\notes.txt" (
     set "NOTES=%~f1\notes.txt"
     if exist "%~1\tune.txt" set "TUNE=%~f1\tune.txt"
+    if exist "%~1\brain.txt" set "BRAIN=%~f1\brain.txt"
   ) else if exist "%~1\tune.txt" (
     set "TUNE=%~f1\tune.txt"
+    if exist "%~1\brain.txt" set "BRAIN=%~f1\brain.txt"
+  ) else if exist "%~1\brain.txt" (
+    set "BRAIN=%~f1\brain.txt"
   ) else (
     set "PACK=%~f1"
   )
 ) else if /i "%~x1"==".txt" (
   set "TXT=%~n1"
-  if /i not "!TXT:tune=!"=="!TXT!" (set "TUNE=%~f1") else (set "NOTES=%~f1")
+  if /i not "!TXT:tune=!"=="!TXT!" (set "TUNE=%~f1") else if /i not "!TXT:brain=!"=="!TXT!" (set "BRAIN=%~f1") else (set "NOTES=%~f1")
 ) else if /i "%~x1"==".exe" (
   set "PACK=%~dp1"
   set "PACK=!PACK:~0,-1!"
@@ -65,6 +71,7 @@ set "XB_GAME=%GAME%"
 set "XB_PACK=%PACK%"
 set "XB_NOTES=%NOTES%"
 set "XB_TUNE=%TUNE%"
+set "XB_BRAIN=%BRAIN%"
 if not defined LOCK_HIDDEN (
   echo.
   echo Lock the hidden fighters for the players? No options button on the title screen, no unlocking, typing lf2.net does not unlock either.

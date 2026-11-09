@@ -163,18 +163,20 @@ if not exist "%XOI%\goi\xoi" mkdir "%XOI%\goi\xoi"
 copy /y "%XOI%\notes.txt" "%XOI%\goi\xoi\notes.txt" >nul
 
 rem Dong goi: ban sao cua file zip ban mod, them xoi/notes.txt vao thu muc game (canh thu muc data) - va xoi/tune.txt,
-rem bo so rieng cua ban mod ma spsa.bat da chinh (xoi-<ten ban mod>\tune.txt), neu co.
+rem bo so rieng cua ban mod ma spsa.bat da chinh (xoi-<ten ban mod>\tune.txt), cung xoi/brain.txt, bo nao cua hoc-sau.bat, neu co.
 if not exist "%PACK%" (echo Khong thay "%PACK%" de dong goi.& pause& exit /b 1)
 set "XPACK=%PACK%"
 set "XOUT=%OUT%"
 set "XNOTES=%XOI%\notes.txt"
 set "XTUNE="
 if exist "%XOI%\tune.txt" set "XTUNE=%XOI%\tune.txt"
+set "XBRAIN="
+if exist "%XOI%\brain.txt" set "XBRAIN=%XOI%\brain.txt"
 rem (Ban dong goi lan truoc duoc giu lai thanh <ten>-xoi-truoc.zip, de do so sanh voi ban moi.)
 for %%z in ("%PACK%") do set "TRUOC=%%~dpnz-xoi-truoc.zip"
 if exist "%OUT%" copy /y "%OUT%" "%TRUOC%" >nul
 del /q "%OUT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Da them ' + $name) } } } finally { $z.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Da them ' + $name) } } } finally { $z.Dispose() }"
 if not exist "%OUT%" goto khong_goi
 if errorlevel 1 goto khong_goi
 echo.

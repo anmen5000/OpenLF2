@@ -3,7 +3,7 @@
 #
 # The work of publish.bat ("publish", in the XOI kit): a mod made ready for its players. The mod's own folder, as its
 # author shares it (bg, bgm, data, sprite and the rest, its own .exe too), with OpenLF2 put in it: the program as
-# "<name> - INSANE XOI.exe", its libraries, scripts and licences, and XOI's notes and numbers in xoi\. OpenLF2 (package
+# "<name> - INSANE XOI.exe", its libraries, scripts and licences, and XOI's notes, numbers and brain in xoi\. OpenLF2 (package
 # 50 on) plays the game folder it lies in when started without --pack, so a player unpacks the folder and double-clicks
 # the program, with every level up to INSANE! and XOI. The folder is tried once without a window, then zipped for
 # sharing. publish.bat passes its settings and what was dragged onto it as XB_* environment variables. Messages are
@@ -60,6 +60,7 @@ $game = [string]$env:XB_GAME
 $pack = [string]$env:XB_PACK
 $notes = [string]$env:XB_NOTES
 $tune = [string]$env:XB_TUNE
+$brain = [string]$env:XB_BRAIN
 # Hidden fighters locked for the players (Y) or not (N, or not set): openlf2.txt beside the mod's data folder, which
 # OpenLF2 (package 48 on) reads - no options on the title screen, the option to unlock and LF2.NET doing nothing.
 $lock = ([string]$env:XB_KHOA_AN).Trim().ToUpper() -eq 'Y'
@@ -99,9 +100,10 @@ if (-not $isXoiZip) {
     if (-not $notes -and (Test-File (Join-Path $xoiDir 'notes.txt'))) { $notes = Join-Path $xoiDir 'notes.txt' }
     if (-not $notes -and (Test-File (Join-Path $kit ($plain + '-notes.txt')))) { $notes = Join-Path $kit ($plain + '-notes.txt') }
     if (-not $tune -and (Test-File (Join-Path $xoiDir 'tune.txt'))) { $tune = Join-Path $xoiDir 'tune.txt' }
+    if (-not $brain -and (Test-File (Join-Path $xoiDir 'brain.txt'))) { $brain = Join-Path $xoiDir 'brain.txt' }
 }
-foreach ($file in @($notes, $tune)) {
-    if ($file -and -not (Test-File $file)) { Fail ('"' + $file + '" not found - fix the NOTES / TUNE line at the top of publish.bat.') }
+foreach ($file in @($notes, $tune, $brain)) {
+    if ($file -and -not (Test-File $file)) { Fail ('"' + $file + '" not found - fix the NOTES / TUNE / BRAIN line at the top of publish.bat.') }
 }
 
 # The installed game: set, or where the installer puts it (for me only, for all users), or OpenLF2\ beside the kit.
@@ -145,7 +147,7 @@ $script:unfinished = @($out)
 Write-Host 'Copying the mod (its whole folder, as shared) ...'
 function Test-Later([string]$relative) {
     $relative = $relative.Replace('\', '/')
-    return ($notes -and $relative -ieq 'xoi/notes.txt') -or ($tune -and $relative -ieq 'xoi/tune.txt') -or ($relative -ieq 'openlf2.txt')
+    return ($notes -and $relative -ieq 'xoi/notes.txt') -or ($tune -and $relative -ieq 'xoi/tune.txt') -or ($brain -and $relative -ieq 'xoi/brain.txt') -or ($relative -ieq 'openlf2.txt')
 }
 $skipped = 0
 $source = $null
@@ -253,7 +255,7 @@ foreach ($file in @((Join-Path $gameDir 'LICENSE.txt'), (Join-Path $gameDir 'LIC
 }
 
 # XOI's notes and numbers in xoi\ beside the data folder, where the game reads them.
-foreach ($pair in @(@($notes, 'notes.txt'), @($tune, 'tune.txt'))) {
+foreach ($pair in @(@($notes, 'notes.txt'), @($tune, 'tune.txt'), @($brain, 'brain.txt'))) {
     if (-not $pair[0]) { continue }
     $target = Under $out 'xoi' $pair[1]
     [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
@@ -265,6 +267,8 @@ if (Test-File $notesFile) { Write-Host ('XOI notes: yes (' + [math]::Ceiling((Ge
 else { Write-Host 'XOI notes: none - XOI still plays, but without notes of training for this mod (train.bat makes them)' }
 if (Test-File (Under $out 'xoi' 'tune.txt')) { Write-Host 'XOI numbers tuned for this mod: yes' }
 else { Write-Host 'XOI numbers tuned for this mod: none - XOI uses the shared numbers (spsa.bat tunes numbers for a mod)' }
+if (Test-File (Under $out 'xoi' 'brain.txt')) { Write-Host 'XOI brain for this mod: yes' }
+else { Write-Host 'XOI brain for this mod: none - XOI plays without a brain (brain.bat learns one)' }
 # The mod's settings for OpenLF2: its own lines as they came (the lock's two keys taken out when locking), and the
 # lock lines when locking; nothing written for a mod without settings that is not locked (the publisher's choice).
 $settings = ''

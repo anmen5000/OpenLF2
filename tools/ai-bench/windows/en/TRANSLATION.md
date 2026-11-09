@@ -25,6 +25,9 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    | xoi-hoc.bat | train.bat |
    | dau-nhieu.bat | measure.bat |
    | spsa.bat | spsa.bat (same) |
+   | hoc-sau.bat | brain.bat |
+   | hoc-sau-cai-dat.bat / spsa-cai-dat.bat (settings files) | brain-settings.bat / spsa-settings.bat |
+   | hoc-sau\ (folder), luot-N\, du-lieu\, hocN\, nao-N.txt, xong-luot.txt, gop.txt, du-lieu.zip, du-lieu.txt | brain\, round-N\, data\, trainN\, brain-N.txt, round-done.txt, gathered.txt, data.zip, count.txt |
    | xem.bat | watch.bat |
    | xuat-ban.bat | publish.bat |
    | xuat-ban.ps1 | publish.ps1 |
@@ -35,7 +38,7 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    | `<mod>-xoi-truoc.zip` | `<mod>-xoi-previous.zip` |
    | ket-qua.txt / ket-qua-<seed>\ | results.txt / results-<seed>\ |
    | danh-sach.txt | fighters.txt |
-   | `<mod>-xoi.zip`, `xoi-<mod>\notes.txt`, `xoi\notes.txt`, `xoi\tune.txt`, XOI.txt, openlf2.txt, out.txt, config.lua, version.txt | unchanged |
+   | `<mod>-xoi.zip`, `xoi-<mod>\notes.txt`, `xoi\notes.txt`, `xoi\tune.txt`, `xoi\brain.txt`, XOI.txt, openlf2.txt, out.txt, config.lua, version.txt | unchanged |
 
    Other intermediate files that only one .bat uses (bat-dau.lua, k-sau.txt, xong.txt, thoi-gian.txt, tong.txt,
    ban-mod.txt, cap.txt, da-goi.txt, tom-tat.txt, khong-cua-so.txt, tune-truoc.txt, start-sau.lua, xem.txt …):
@@ -45,7 +48,8 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
 4. **Settings variables** in the "CHINH O DAY" (settings) block at the top of each .bat — the ones a user edits —
    get English names, renamed at **every** use in the file (`%X%`, `!X!`, `set X=`, `set /a ...`, `if defined X`,
    `for ... %X%`, `defined`, `echo` lines that print them). Suggested names: VONG→ROUNDS, PHUT_VONG→ROUND_MINUTES,
-   PHUT_KIEM_TRA→CHECK_MINUTES, SONG_SONG→PARALLEL, HAT_GIONG→SEED (if SEED is free), UU_TIEN→PRIORITY,
+   PHUT_KIEM_TRA→CHECK_MINUTES, SONG_SONG→PARALLEL, HAT_GIONG→SEED (if SEED is free; FIRST_SEED in spsa.bat and
+   brain.bat, where SEED is used internally), PHUT_GHI→RECORD_MINUTES, AN→HIDDEN, EPOCH→EPOCHS, UU_TIEN→PRIORITY,
    VE→RENDERER, THU_GIAY→TEST_SECONDS, SO_TRAN/TRAN→GAMES, MUC→LEVEL, NHAN_VAT→FIGHTERS, GAME/PACK/NOTES/BENCH/SCRIPTS
    unchanged. A renamed variable must not collide with an existing one — check the whole file.
 5. The settings block header `rem ============ CHINH O DAY ============` becomes `rem ============ SETTINGS ============`.

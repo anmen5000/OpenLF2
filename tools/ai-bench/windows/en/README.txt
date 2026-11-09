@@ -47,10 +47,22 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    player it has.
    Your own settings (ROUNDS, ROUND_MINUTES, OPPONENT=classic...) are best kept in a file spsa-settings.bat beside
    spsa.bat, one  set "ROUNDS=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
+5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
+   every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
+   else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
+   neural network is trained on the records inside the game and XOI weighs its own score of a move half with
+   the network's prediction. ROUNDS rounds of RECORD_MINUTES minutes (2 x 20 by default, one process per CPU
+   thread; about 2,000 moves a minute a process); from the second round XOI records with the brain it just
+   learned. Then a check: XOI with the brain and XOI without it against the same opponent for CHECK_MINUTES
+   minutes. Result: brain\results.txt - send it to whoever maintains the AI. Each mod's brain:
+   xoi-<mod>\brain.txt, and <mod>-xoi.zip, the mod with xoi\brain.txt (and its numbers and notes) inside: uploaded
+   to the relay or published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod.
+   To pause: close the windows; run it again to go on. To learn further: raise ROUNDS and run again. Settings
+   file: brain-settings.bat. On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
-   .dll files, the scripts and licenses folders, XOI's notes and numbers in xoi\. Players extract it and
+   .dll files, the scripts and licenses folders, XOI's notes, numbers and brain in xoi\. Players extract it and
    double-click "<mod> - INSANE XOI.exe" - nothing to install, no kit, no original LF2. Needs OpenLF2 from
    package 50 (it plays the mod folder it lies in by itself; publish.bat says when the installed one is older).
    Another name: NAME at the top of publish.bat; your words for the players: edit publish-README.txt first
@@ -80,7 +92,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    copy LF2 2.0a's lf2.exe (or a mod's lf2_2.0a.exe, mode Convergence has one) into the mod's folder as
    lf2.exe first.
 
-Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), watch.bat (watch),
+Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch),
 publish.bat (publish; its work is in publish.ps1, the published README comes from publish-README.txt),
 check.bat (check why the game does not open), scripts\ (the game's scripts with the computer players, laid over
 the installed game's), tools\ai-bench\ (the training and measuring jobs), version.txt (which version this kit is).

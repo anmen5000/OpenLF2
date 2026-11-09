@@ -228,6 +228,42 @@ minute; 0: never) ends there: a training dummy that only stands kept its games t
 Tuned numbers are taken into the AI only after they beat its own over the usual measures (`duel` against the
 previous version on the standard pairs of several mods).
 
+## XOI's brain: a learned score (record, train)
+
+Beside its hand-made score of a move (`attack_score`), XOI can weigh a small network's prediction of what the move will
+bring — the HP the target loses minus the HP XOI loses over the 45 frames after the start, in hundreds — trained on
+XOI's own games, the way NNUE networks are trained from engines' games (`smart.brain_kit` in `smart_ai.lua`). The
+inputs are 58 numbers of the situation and the move (`brain_kit.features`: distances, heights, facing, HP, MP, speeds,
+weapons, ten state slots each for the fighter and the target, the target's wait and blink, frames since the last blow,
+positions, the move's hit time and hand-made score, its damage, MP, reach, length and kinds); the network is 58 → H
+(ReLU) → 1, H = 48. `tune.brain_weight` (0.5) says how far the score moves toward the prediction; without a brain the
+score stands alone, and INSANE! plays without one. A brain is a text, `XOI_BRAIN` lines (inputs and hidden, the inputs'
+mean and spread, one line per hidden unit with its weights, bias and output weight, the output bias): a mod carries it
+as `xoi/brain.txt` beside its data (shown as "brain" beside XOI in the match), and the bench sets one with
+`smart.set_brain` (duel's and record's `brain = {module = "<module>", on = {1}}`, the module returning `{text = "..."}`).
+
+```lua
+-- 1. record XOI's moves and what came of them: REC lines (slot, HP dealt, HP taken, the 58 numbers) for brains[1]
+{command = "record", games = 1000000, seconds = 1200, seed = 7001, limit = 9000}           -- against the pack's own AI scripts (Sauce's) when it has them, else XOI itself (alt: a copy of smart_ai.lua as a module, so the opponent plays without the brain)
+{command = "record", brain = {module = "xoi_brain", on = {1}}, alt = "hs_alt", seconds = 1200, seed = 8001}   -- the next round, recorded with the brain learned so far
+-- 2. train on the records: xoi/data_1.txt, xoi/data_2.txt ... in the pack (REC lines, each file under 4 MB), or bench modules rec_data_1 ... returning {text = ...}
+{command = "train", epochs = 8, hidden = 48, weights = true, seed = 7000}
+```
+
+`record` writes `RECH` (the header) and one `REC` line per move started, resolved 45 frames later (or when a fighter
+falls), and a `RECORD` line at the end (games, records, wins and losses); `quiet = true` plays the games without the
+records, for a check. `train` prints `TRAIN` (the counts: every 5th record is held out for the test), `BASE` (the
+mean alone, and how the hand-made score correlates with the outcome: about 0.2), `LINEAR` and `NET<H>` lines per epoch
+(train and test error, the test correlation: about 0.45 for the network), `NET done`, then the `XOI_BRAIN` lines.
+About 150,000 samples a second on LuaJIT; a record takes about 500 bytes of memory (six million: 3 GB). `stride = k`
+keeps every k-th record for a quicker look. `windows/hoc-sau.bat` does all of it on a PC (English kit: `brain.bat`):
+rounds of recording on every CPU thread, the data gathered into a small training pack (data/data.txt, the mod's
+executables and the `xoi/data_N.txt` files), one training per mod, the next round recorded with the new brain, a check
+of XOI with and without it against the same opponent, `hoc-sau\ket-qua.txt`, each mod's brain in `xoi-<mod>\brain.txt`
+and `<mod>-xoi.zip`. On Sauce's pack (two rounds of 1,000 and 600 games, 87,000 records) the brain took XOI from 321 to
+377 games of 720 against Sauce's AI, 216 to 134 against XOI without it; the same brain did nothing for other mods
+(208 to 231 over five), so a brain is made per pack.
+
 ## Jobs
 
 Edit `config.lua` (a Lua table) and set `command` to one of these:
@@ -253,6 +289,8 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
+| `record` | XOI's brain, step one (above): random pairs of the pool on random stages, `brains[1]` (XOI) against `brains[2]` (the pack's own AI scripts when it has them, else `xoi@<alt>`), `games` games or `seconds` seconds; a `REC` line per move started with its outcome `window` frames later; `brain` plays the recorded side with a brain; `quiet` plays without records; `both` records both sides when both are XOI. | `brains`, `alt`, `brain`, `games`, `seconds`, `seed`, `limit`, `window`, `ids`, `difficulty`, `quiet`, `both` |
+| `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines. | `data`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
 | `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows

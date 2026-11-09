@@ -196,6 +196,7 @@ mode_line = function(context, current, replaying)
             local smart = require("base/game/smart_ai")
             local pairs_known = smart.notes_pairs and smart.notes_pairs() or 0
             suffix = suffix:gsub("%)$", " v" .. smart.version .. (smart.mod_tuned and ", mod tuned" or "")
+                .. (smart.brain and ", brain" or "")
                 .. (pairs_known > 0 and (", " .. pairs_known .. " matchups") or ", no notes") .. ")")
         end
         mode_text = i18n.tr(base:sub(1, -2)) .. " " .. suffix

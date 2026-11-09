@@ -44,10 +44,22 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    the strongest player it has.
    Your own settings (VONG, PHUT_VONG, DOI_THU=classic...) are best kept in a file spsa-cai-dat.bat beside
    spsa.bat, one  set "VONG=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
+5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
+   every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
+   else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
+   neural network is trained on the records inside the game and XOI weighs its own score of a move half with
+   the network's prediction. VONG rounds of PHUT_GHI minutes (2 x 20 by default, one process per CPU thread;
+   about 2,000 moves a minute a process); from the second round XOI records with the brain it just learned.
+   Then a check: XOI with the brain and XOI without it against the same opponent for PHUT_KIEM_TRA minutes.
+   Result: hoc-sau\ket-qua.txt - send it to whoever maintains the AI. Each mod's brain: xoi-<mod>\brain.txt,
+   and <mod>-xoi.zip, the mod with xoi\brain.txt (and its numbers and notes) inside: uploaded to the relay or
+   published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod. To pause: close
+   the windows; run it again to go on. To learn further: raise VONG and run again. Settings file: hoc-sau-cai-dat.bat.
+   On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
-   .dll files, the scripts and licenses folders, XOI's notes and numbers in xoi\. Players extract it and
+   .dll files, the scripts and licenses folders, XOI's notes, numbers and brain in xoi\. Players extract it and
    double-click "<mod> - INSANE XOI.exe" - nothing to install, no kit, no original LF2. Needs OpenLF2 from
    package 50 (it plays the mod folder it lies in by itself; xuat-ban.bat says when the installed one is older).
    Another name: TEN at the top of xuat-ban.bat; your words for the players: edit xuat-ban-README.txt first
@@ -76,7 +88,7 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    (moved to its UI folder, as Sauce's) needs OpenLF2 built from package 56 on; with an older one, copy LF2
    2.0a's lf2.exe (or a mod's lf2_2.0a.exe, mode Convergence has one) into the mod's folder as lf2.exe first.
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), xem.bat (watch), xuat-ban.bat (publish;
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), xem.bat (watch), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -125,10 +137,21 @@ chơi được chính các file của bản mod.
    và các bản mod cùng lúc: một bộ số chung cho tất cả, bản nào cũng chỉnh theo đối thủ mạnh nhất nó có.
    Cài đặt riêng của bạn (VONG, PHUT_VONG, DOI_THU=classic...) nên để trong file spsa-cai-dat.bat cạnh spsa.bat,
    mỗi dòng một cài đặt như  set "VONG=60"  : chép đè spsa.bat của bộ mới lên thì cài đặt vẫn còn.
+5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
+   ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
+   nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên
+   dữ liệu ấy ngay trong game, và XOI lấy một nửa điểm tự tính của đòn, một nửa lời đoán của mạng. VONG lượt,
+   mỗi lượt PHUT_GHI phút (mặc định 2 x 20, mỗi luồng CPU một tiến trình; mỗi tiến trình chừng 2.000 lần ra đòn
+   một phút); từ lượt hai XOI ghi với bộ não vừa học. Cuối cùng kiểm tra: XOI có bộ não và XOI không có cùng đánh
+   một đối thủ trong PHUT_KIEM_TRA phút. Kết quả: hoc-sau\ket-qua.txt - gửi file này cho người làm AI. Bộ não của
+   từng bản mod: xoi-<tên>\brain.txt, và <tên>-xoi.zip là bản mod có xoi\brain.txt (cùng bộ số và bộ nhớ) bên trong:
+   tải lên relay hay xuất bản thì XOI chơi bản mod ấy với bộ não (trong trận ghi "brain"). Mỗi bản mod một bộ
+   não. Tạm dừng: đóng các cửa sổ; chạy lại là làm tiếp. Học thêm: tăng VONG rồi chạy lại. File cài đặt riêng:
+   hoc-sau-cai-dat.bat. Trên bản của Sauce, bộ não đưa XOI từ 321 lên 377 trận thắng trong 720 trận đấu AI của Sauce.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các
-   file .dll, thư mục scripts và licenses, bộ nhớ và bộ số của XOI trong thư mục xoi. Người chơi giải nén rồi
+   file .dll, thư mục scripts và licenses, bộ nhớ, bộ số và bộ não của XOI trong thư mục xoi. Người chơi giải nén rồi
    nháy đúp "<tên> - INSANE XOI.exe" - không cài gì, không cần bộ XOI, không cần LF2 gốc. Cần OpenLF2 từ gói 50
    (tự chơi thư mục bản mod mà nó nằm trong; xuat-ban.bat báo nếu bản đã cài cũ hơn). Muốn tên khác: dòng TEN ở
    đầu xuat-ban.bat; lời của bạn cho người chơi: sửa xuat-ban-README.txt trước ({TEN} thành tên bản xuất bản,
@@ -156,7 +179,7 @@ chơi được chính các file của bản mod.
    UI, như bản của Sauce) cần OpenLF2 dựng từ gói 56 trở đi; với bản cũ hơn, chép lf2.exe của LF2 2.0a (hay
    lf2_2.0a.exe của một bản mod, mode Convergence có) vào thư mục bản mod, đặt tên lf2.exe, trước đã.
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), xem.bat (xem), xuat-ban.bat (xuất
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), xem.bat (xem), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

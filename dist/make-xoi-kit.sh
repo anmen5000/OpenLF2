@@ -4,13 +4,15 @@
 #
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
-# spsa.bat (tune XOI's numbers by play), xem.bat (watch two computer players in the window, fighters by name),
+# spsa.bat (tune XOI's numbers by play), hoc-sau.bat (XOI learns a brain, a small network scoring its moves, from its
+# own games), xem.bat (watch two computer players in the window, fighters by name),
 # xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
 # put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
 # kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
 # they lay over the installed game's scripts.
 # make-xoi-kit.sh --en OUT.zip: the English edition (tools/ai-bench/windows/en: the same tools under English names —
-# play.bat, train.bat, measure.bat, spsa.bat, watch.bat, publish.bat, check.bat — with English settings and messages),
+# play.bat, train.bat, measure.bat, spsa.bat, brain.bat, watch.bat, publish.bat, check.bat — with English settings and
+# messages),
 # folder LF2-XOI-kit-en.
 set -euo pipefail
 edition=vi
@@ -39,11 +41,11 @@ def crlf(data):
 
 windows = root / "tools/ai-bench/windows"
 if edition == "vi":
-    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "xem.bat", "xuat-ban.bat", "kiem-tra.bat")
+    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "xem.bat", "xuat-ban.bat", "kiem-tra.bat")
     texts = ("README.txt", "xuat-ban.ps1", "xuat-ban-README.txt")
 else:
     windows = windows / "en"
-    bats = ("play.bat", "train.bat", "measure.bat", "spsa.bat", "watch.bat", "publish.bat", "check.bat")
+    bats = ("play.bat", "train.bat", "measure.bat", "spsa.bat", "brain.bat", "watch.bat", "publish.bat", "check.bat")
     texts = ("README.txt", "publish.ps1", "publish-README.txt")
 for name in bats:
     data = (windows / name).read_bytes()
@@ -68,7 +70,7 @@ names = {name for name, _ in files}
 for needed in (texts[1], texts[2], "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
                "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/list.lua",
                "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
-               "tools/ai-bench/package.manifest"):
+               "tools/ai-bench/record.lua", "tools/ai-bench/train.lua", "tools/ai-bench/package.manifest"):
     if needed not in names:
         sys.exit(f"the kit lacks {needed}")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as kit:

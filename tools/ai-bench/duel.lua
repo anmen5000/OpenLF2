@@ -33,6 +33,31 @@ function duel.run(config)
     local function add(list, key, amount) list[key] = (list[key] or 0) + amount end
     local hp_left = {0, 0}
     local total_ticks = 0
+    -- config.brain = {module = "<bench module returning {text = ...}>", on = {1}}: the learned score (XOI_BRAIN
+    -- lines, smart.set_brain) given to the brains numbered in `on` (1 and/or 2), each side's own copy of the player.
+    if config.brain then
+        local text = require("bench/" .. config.brain.module).text
+        for _, side in ipairs(config.brain.on or {1}) do
+            local name = (config.brains or {})[side] or ""
+            local module = name:match("^[a-z:]+@(.+)$")
+            local player = module and require("bench/" .. module) or require("base/game/smart_ai")
+            assert(player.set_brain and player.brain_kit, "the player of side " .. side .. " has no brain kit")
+            local brain = player.brain_kit.parse(text)
+            assert(brain, "the brain's text does not fit this player (" .. tostring(player.brain_kit.count) .. " inputs)")
+            player.set_brain(brain)
+            engine.log(string.format("brain %s on side %d: %d inputs, %d hidden", config.brain.module, side, brain.inputs, brain.hidden))
+        end
+        for _, side in ipairs({1, 2}) do
+            local on = false
+            for _, k in ipairs(config.brain.on or {1}) do if k == side then on = true end end
+            if not on then
+                local name = (config.brains or {})[side] or ""
+                local module = name:match("^[a-z:]+@(.+)$")
+                local player = module and require("bench/" .. module) or require("base/game/smart_ai")
+                if player.set_brain then player.set_brain(nil) end
+            end
+        end
+    end
     local usage, usage_records = {}, {}
     if config.usage then
         require("base/game/smart_ai").on_start = function(self, move)

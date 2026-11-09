@@ -160,6 +160,8 @@ smart.tune_ranges = {
     -- the second air shot still wants, and the shots a dash takes at most.
     {"kite_far", 110, 40, 220, true}, {"kite_room", 260, 120, 420, true}, {"kite_height", 25, 10, 50, true},
     {"kite_shots", 2, 1, 3, true},
+    -- The share of a move's score that the learned expectation takes, where a mod has a brain (xoi/brain.txt, below).
+    {"brain_weight", 0.5, 0, 1},
 }
 -- XOI's numbers, tuned by play (SPSA, tools/ai-bench/spsa.lua). Version 40's: halfway between version 37's set and
 -- the project owner's second run against Sauce's AI (60 rounds on 83 threads, November 2026, 81 numbers; its set
@@ -188,7 +190,7 @@ smart.xoi_tune = {
     hold_patience = 0.474309, band_near = 53, band_far = 18, step_horizon = 12, run_start = 213, run_stop = 135,
     low_hp = 115, flip_reach = 47, flip_margin = -1, charge_lock = 27, weapon_step = 0.519854, mode_worth = 1.15793,
     loop_calm = 189, loop_free = 3, loop_factor = 0.694546, loop_floor = 0.039918, loop_forget = 111, loop_dodges = 4,
-    heavy_room = 41, kite_far = 104, kite_room = 258, kite_height = 25, kite_shots = 2,
+    heavy_room = 41, kite_far = 104, kite_room = 258, kite_height = 25, kite_shots = 2, brain_weight = 0.5,
 }
 -- `base` (name = number, every number) with `values` laid over it, each kept within its range and whole numbers
 -- rounded: a new table.
@@ -249,11 +251,172 @@ local function use_mod_tune()
     -- (Shown beside XOI in the match.)
     smart.mod_tuned = named
 end
+-- A learned score beside the hand-made one: a small network over the situation and the move about to be started,
+-- trained on what such moves brought in play — the HP the target lost minus the HP the player lost over the 45
+-- frames after the start, in hundreds (tools/ai-bench/record.lua writes the records, train.lua the network, each
+-- from the same numbers: brain_kit.features). A mod carries it as xoi/brain.txt beside its data (XOI_BRAIN lines,
+-- the kit's hoc-sau.bat); the bench sets it with smart.set_brain. best_attack weighs the network's expectation
+-- with its own score by tune.brain_weight; INSANE! plays without it, as without the notes and the numbers.
+smart.brain_kit = {hand = {}} -- (hand: the last hand-made score of each move, for the records)
+do
+    local brain_kit = smart.brain_kit
+    local function clamp(v, lo, hi) if v < lo then return lo elseif v > hi then return hi end return v end
+    -- Ten slots for a frame state: standing/walking, running, airborne, attacking, defending, catching, caught,
+    -- hurt, lying, other.
+    local function state_slots(st, out, at)
+        for i = 0, 9 do out[at + i] = 0 end
+        local slot = 9
+        if st == states.standing or st == states.walking then slot = 0
+        elseif st == states.running then slot = 1
+        elseif st == states.jumping or st == states.dashing or st == states.rowing then slot = 2
+        elseif st == states.attacking or st == states.burning_run then slot = 3
+        elseif st == states.defending or st == states.broken_defend then slot = 4
+        elseif st == states.catching then slot = 5
+        elseif st == states.caught then slot = 6
+        elseif st == states.injured or st == states.falling or st == states.frozen or st == states.burning then slot = 7
+        elseif st == states.lying then slot = 8
+        end
+        out[at + slot] = 1
+        return at + 10
+    end
+    -- The numbers of a situation and a move: 58, in the order of record.lua's header. `calm`: frames since the
+    -- last blow between the two (memory.calm).
+    function brain_kit.features(self, target, move, t, score, calm)
+        local out = {}
+        local face = self.facing == facing_right and 1 or -1
+        local dx = (target.x_int - self.x_int) * face
+        local at = 1
+        out[at] = clamp(dx / 300, -3, 3); at = at + 1
+        out[at] = clamp((target.z_int - self.z_int) / 60, -3, 3); at = at + 1
+        out[at] = clamp(-self.y_int / 100, 0, 3); at = at + 1
+        out[at] = clamp(-target.y_int / 100, 0, 3); at = at + 1
+        local tface = target.facing == facing_right and 1 or -1
+        out[at] = ((self.x_int - target.x_int) * tface > 0) and 1 or 0; at = at + 1
+        out[at] = clamp(self.hp / 500, 0, 1); at = at + 1
+        out[at] = clamp(target.hp / 500, 0, 1); at = at + 1
+        out[at] = clamp(self.mp / 500, 0, 1); at = at + 1
+        out[at] = clamp(target.mp / 500, 0, 1); at = at + 1
+        out[at] = clamp((self.vx or 0) * face / 10, -2, 2); at = at + 1
+        out[at] = clamp((target.vx or 0) * face / 10, -2, 2); at = at + 1
+        out[at] = clamp((target.vz or 0) / 4, -2, 2); at = at + 1
+        out[at] = clamp((target.vy or 0) / 10, -2, 2); at = at + 1
+        out[at] = self.weapon ~= weapon_none and 1 or 0; at = at + 1
+        out[at] = target.weapon ~= weapon_none and 1 or 0; at = at + 1
+        at = state_slots(self.record.frame(self.frame).state, out, at)
+        local tframe = target.record.frame(target.frame)
+        at = state_slots(tframe.state, out, at)
+        out[at] = clamp((target.wait_counter or 0) / 10, 0, 3); at = at + 1
+        out[at] = clamp(((tframe.wait or 0) - (target.wait_counter or 0)) / 10, 0, 3); at = at + 1
+        out[at] = clamp((target.blink or 0) / 30, 0, 2); at = at + 1
+        out[at] = clamp((calm or 0) / 300, 0, 3); at = at + 1
+        out[at] = clamp(self.x_int / 800, 0, 1.5); at = at + 1
+        out[at] = clamp(target.x_int / 800, 0, 1.5); at = at + 1
+        out[at] = clamp((t or 0) / 30, 0, 2); at = at + 1
+        out[at] = clamp((score or 0) / 100, -3, 5); at = at + 1
+        -- The move: first hit, damage, MP, reach, length, kinds.
+        local injury, catch, projectile, own, bdef, fall, air, zw = 0, 0, 0, 0, 0, 0, 0, 0
+        for _, box in ipairs(move.boxes or {}) do
+            if box.own then own = 1 else projectile = 1 end
+            if box.kind == attack_kinds.catch or box.kind == attack_kinds.catch_nearest then catch = 1 end
+            if (box.injury or 0) > injury then injury = box.injury end
+            if (box.bdefend or 0) >= 61 then bdef = 1 end
+            if (box.fall or 0) >= 60 then fall = 1 end
+            if (box.zw or 0) > zw then zw = box.zw end
+            if (box.y1 or 0) < -40 then air = 1 end
+        end
+        out[at] = clamp((move.first or 30) / 30, 0, 2)
+        out[at + 1] = clamp((move.damage or move.catch_damage or injury) / 100, 0, 3)
+        out[at + 2] = clamp((move.mp or 0) / 100, 0, 5)
+        out[at + 3] = clamp((move.reach_x2 or 0) / 300, 0, 3)
+        out[at + 4] = clamp((move.ready or move.length or 30) / 60, 0, 3)
+        out[at + 5] = catch
+        out[at + 6] = projectile
+        out[at + 7] = own
+        out[at + 8] = bdef
+        out[at + 9] = fall
+        out[at + 10] = air
+        out[at + 11] = clamp(zw / 40, 0, 3)
+        local e = move.entry or {}
+        out[at + 12] = (e.basic == "attack" or e.basic == "weapon_attack") and 1 or 0
+        out[at + 13] = (e.basic == "jump_attack" or e.basic == "dash_attack") and 1 or 0
+        out[at + 14] = e.sequence and 1 or 0
+        return out, at + 14
+    end
+    brain_kit.count = 58
+    -- The network from its text: "XOI_BRAIN inputs N hidden H", "XOI_BRAIN mean ...", "XOI_BRAIN sd ...", one
+    -- "XOI_BRAIN w1 <j> <weights...> b <bias> w2 <weight>" a hidden unit, "XOI_BRAIN b2 <bias>". nil when it does
+    -- not fit.
+    function brain_kit.parse(text)
+        local brain = {W1 = {}, b1 = {}, W2 = {}, b2 = 0, scratch = {}}
+        local function numbers(rest)
+            local list = {}
+            for token in rest:gmatch("%S+") do list[#list + 1] = tonumber(token) end
+            return list
+        end
+        for line in text:gmatch("[^\r\n]+") do
+            local kind, rest = line:match("^XOI_BRAIN (%S+)%s*(.*)$")
+            if kind == "inputs" then
+                brain.inputs, brain.hidden = tonumber(rest:match("^(%d+)")), tonumber(rest:match("hidden (%d+)"))
+            elseif kind == "mean" then brain.mean = numbers(rest)
+            elseif kind == "sd" then brain.sd = numbers(rest)
+            elseif kind == "w1" then
+                local j, weights, bias, w2 = rest:match("^(%d+) (.-) b (%S+) w2 (%S+)$")
+                if j then
+                    brain.W1[tonumber(j)] = numbers(weights)
+                    brain.b1[tonumber(j)] = tonumber(bias)
+                    brain.W2[tonumber(j)] = tonumber(w2)
+                end
+            elseif kind == "b2" then brain.b2 = tonumber(rest) or 0
+            end
+        end
+        local n, h = brain.inputs, brain.hidden
+        if n ~= brain_kit.count or not h or h < 1 or not brain.mean or #brain.mean ~= n or not brain.sd or #brain.sd ~= n then return nil end
+        for j = 1, h do
+            if not brain.W1[j] or #brain.W1[j] ~= n or not brain.b1[j] or not brain.W2[j] then return nil end
+        end
+        for i = 1, n do if not brain.sd[i] or brain.sd[i] <= 0 then brain.sd[i] = 1 end end
+        return brain
+    end
+    -- The expectation (HP dealt minus taken, in hundreds) for the numbers `x`. (Standardized inputs are clipped at
+    -- ±6, as train.lua clips them.)
+    function brain_kit.predict(brain, x)
+        local n, h = brain.inputs, brain.hidden
+        local mean, sd, z = brain.mean, brain.sd, brain.scratch
+        for i = 1, n do
+            local v = (x[i] - mean[i]) / sd[i]
+            if v > 6 then v = 6 elseif v < -6 then v = -6 end
+            z[i] = v
+        end
+        local out = brain.b2
+        local W1, b1, W2 = brain.W1, brain.b1, brain.W2
+        for j = 1, h do
+            local w, sum = W1[j], b1[j]
+            for i = 1, n do sum = sum + w[i] * z[i] end
+            if sum > 0 then out = out + W2[j] * sum end
+        end
+        return out
+    end
+end
+-- The bench's: a brain table (brain_kit.parse's), or nil; the mod's file is then left alone (smart.brain_fixed).
+function smart.set_brain(brain)
+    smart.brain = brain
+    smart.brain_fixed = true
+end
+function smart.brain_kit.use_mod()
+    if smart.brain_fixed then return end
+    local kit = smart.brain_kit
+    local ok, found = pcall(engine.read_resource, "xoi/brain.txt")
+    local text = ok and type(found) == "string" and found or ""
+    if text == kit.text then return end
+    kit.text = text
+    smart.brain = text ~= "" and kit.parse(text) or nil
+end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 40
+smart.version = 41
 smart.history = {
+    {41, "2026-11-10", "A brain: a small network beside the hand-made score, learned from XOI's own games as chess engines' NNUE networks are learned from theirs. Before every move XOI works out a score by its rules (attack_score: the blow's worth, its cost, how likely the target answers first); the brain, given 58 numbers of the situation and the move (distances, heights, facing, HP, MP, speeds, weapons, ten state slots each for the fighter and the target, the target's wait and blink, frames since the last blow, positions, the move's hit time and hand-made score, its damage, MP, reach, length and kinds; brain_kit.features), predicts what the move will bring — HP dealt minus HP taken over the 45 frames after its start — and XOI moves its score halfway to that (tune.brain_weight 0.5). A brain is text (XOI_BRAIN lines: 58 inputs, 48 hidden units, the inputs' mean and spread) that a mod carries as xoi/brain.txt beside its data, as its notes and numbers; the match shows 'brain' beside XOI. The kit's hoc-sau.bat (brain.bat) makes one: rounds of recording (tools/ai-bench/record.lua, every move XOI starts with what came of it, XOI against the pack's own AI scripts where it has them, else against a copy of itself), the records trained inside the game (train.lua, LuaJIT, about 150,000 samples a second), the next round recorded with the brain just learned, then XOI with and without it against the same opponent. Tried on Sauce's pack ('lf2-AI VS and Stage Challenge', its AI the opponent): 55,000 records of 2,000 games gave a network whose predictions go with the outcome at 0.455 where the hand-made score goes at 0.197; with it, the ten original fighters won 368 of 720 games against Sauce's AI (version 40 alone 321), and 216 to 134 of 360 against XOI without it; a second round recorded with that brain (87,000 records in all) 377 of 720. The same brain did nothing for other mods (208 to 231 over four), so a brain is made for one pack. Besides: INSANE! and XOI play at their own levels in a pack with AI scripts of its own — up to version 40 a fighter with a script of its own kept it at those levels too, and in Sauce's pack, whose every fighter has one, the levels named INSANE! and XOI were that AI (the project owner saw its spacing by dashes after a knock-down); the scripts play at CRAZY! and below. And the learning of moves meets a mod built on data tricks (Nya of that pack: a thrown die that bursts into 10 to 60 HP by its face, a coin that turns into a vortex a second later by hidden attacks of kind 8 between her own objects, a swap of places with the enemy): a thrown thing whose burst differs between throws is measured over six throws from different points of the game's random sequence and worth their mean (the die 35 HP, where one throw said 10); a summon of the move's still alive with frames to come is waited for while the move is followed anyway, whatever frames it will reach by way of hits; a jump of position no step accounts for (120 pixels in a tick) is a teleport. XOI's Nya, who threw the die once in 40 games, throws it twice a game, beats Sauce's Nya 32 to 8 (version 40 29 to 11) and still loses to Sauce's Davis and Louis 1 to 39 (Sauce's own Nya wins 29 to 11 against them): her strength is the coin and the swap played together, the enemy swapped into the vortex, and the cards — nothing the data says. One more from his clips: a stream of thrown things (Julian's skull blasts in that pack: five 40-HP balls 3 frames apart for 50 MP, each steered onto the enemy's lane by Sauce's AI) was guarded ball by ball until the guard broke in a corner — met now as a heavy blow is, the ways out before the guard, a move out of their way worth its MP, the jump toward the thrower that clears them in the air and comes down nearer (answer: stream, a thing coming behind the one due or a move throwing several). XOI's Julian against Sauce's Julian 32 to 48 of 80 games (29 to 51 before: as even as that tells; the corner itself is not solved — got up in the lane, he still has no step out of balls steered after him, and the two things tried for it, looking past the blink at the ball landing as it ends and a run at the thrower to roll out of, both lost games, 164 to 153 of 360 against Sauce's AI and 13 to 27 against his Julian). Against Sauce's AI on the ten originals 160 of 360 games (version 40 164 on the same seeds); the five mods against version 40, 1,088 to 1,082 of 2,240: as even as they can tell."},
     {40, "2026-11-10", "XOI's numbers: halfway between version 37's and the project owner's second run against Sauce's AI (spsa.bat, DOI_THU=classic, 60 rounds of 15 minutes on 83 threads over the ten original fighters, about 580,000 pairs of games; its last five rounds and its check, the two sets against each other, after the kit's new spsa.bat had reset DOI_THU). That run's set alone plays the originals better — against Sauce's AI 343 of 720 games to version 37's 308 (47.6 to 42.8 percent; Henry 26 of 72, Rudolf 31), against XOI with version 37's numbers 186 to 166 — being bolder (attack_threshold 2.1 to 1.5), guarding faster and striking back from the guard less, keeping a little farther from longer arms and starting to run from farther; but on five mods without numbers of their own it lost a little to version 37's, 2,128 to 2,249 of 4,480 games over four seeds (One Piece 402 to 475, KT 392 to 466), the boldness punished by the mods' heavier moves. XOI being one player for every mod, the mean of the two sets is taken: the mods even (1,083 to 1,101 of 2,240), Sauce's AI 321 of 720, the originals 178 to 166 against version 37's numbers. The whole gain on the originals is there for a pack that carries the run's own numbers (xoi/tune.txt), and a run over Sauce's pack and the mods together — spsa.lua now has the two sets play each other in a pack without AI scripts of its own, under DOI_THU=classic — is the way to one set that has it all."},
     {39, "2026-11-09", "Foresees an enemy's move steered onto its line. A move's frames that take the up and down keys (a frame's dvz, base/game/control: 1 to a few pixels a frame in depth) let the one playing it bend it toward the opponent as it goes — what this player does with its own moves since version 35 (steer_keys), and what Sauce's AI and a person do. The forecast of an enemy's move under way (earliest_threat) took it for going straight: FreezeRV of mode Convergence dashes and grabs (D>J, a catch that takes a standing fighter, six frames of dash at dvz 1), and Freeze played by XOI steered it onto Firen's line while Firen, 20 pixels off that line and the grab 15 wide, saw it passing him by, stood still and was caught — then struck through the hold for most of the damage he took (the project owner's observation: Firen could hardly hurt Freeze). Now the blow is foreseen bent toward the fighter by as much as the move's frames from now to the blow can steer, at worst, and answered as any other: FirenRV against FreezeRV, both XOI with the mod's numbers, 4 of 40 games won up to version 38, now 27 (the two now wary of each other's grabs; Sauce's AI plays the pair 6 to 14). Against Sauce's AI on the ten original fighters 158 of 360 games (version 38 163), and the ten against version 38 itself 176 to 170 of 360: as even as 360 games can tell. Five mods against version 38 (8 fighters each, every pair both ways, 4 games, seeds 12345 and 777, then 4242 and 999): 1,113 to 1,054 and 1,094 to 1,081 — 2,207 to 2,135 over the 4,480 games, as even as they can tell, Convergence 440 to 421."},
     {38, "2026-11-08", "Kites with its shooters. A fighter whose plain attack is a shot — a cheap move from its feet that sends something off 150 pixels and farther, too slow to be fired point-blank (8 frames and more to its first blow; Henry's arrow, Rudolf's star — none of the other eight original fighters has one: Davis's and Deep's blasts, Firen's, Freeze's and John's cost 40 to 100 MP, and Neji's air palm in Naruto 2.4 comes in 6 frames and is fired at arm's length as any blow) — fought a rusher at arm's length up to version 37, where its own arms are the shorter, or walked backward from it at its own walking pace, facing away, and lost: against Sauce's ten, each against every other both ways over four seeds, Henry won 3 of 72 games, Rudolf 7. Now, with the enemy at arm's length (within 110 pixels), on its feet and free, no blow of its on its way and room behind (260 pixels), it takes two steps away and jumps out of the run with the key toward the enemy, which turns the dash round in the air (frame 214) so that it flies away facing the enemy, and shoots out of the dash when its data lets it (Henry's frame 214 takes attack into his jump attack, an arrow sent forward and down; that frame takes the key again, pressed fresh, for a second while he is still 25 pixels up: the two come down on an enemy close behind or following) — what a person does with Henry, and what Sauce's own Henry does (28 back dashes and 38 air arrows in a two-game match, the dashes started from 0 to 100 pixels). Down again 180 pixels off, it shoots from its feet as before (best_attack) and kites again once the enemy is adjacent. Tried and left out: the distance that starts it at 60, 80 and 140 (110 best), three air arrows instead of two (the same), kiting out of the enemy's own moves too (worse: its recovery is the time to shoot it from the feet), a shot from the feet at range whatever the enemy could answer (the same; up to version 37 Henry hardly fired at range, and he still hardly does: the shots that land are the air arrows and those into an enemy busy or down). Against Sauce's AI: Henry 18 of 72 games (version 37 3), Rudolf 15 (7); the ten original fighters 163 of 360 (version 37 150), the other eight playing frame for frame as before; INSANE!'s Henry 5 of 36 (3), Rudolf 8 (5). Over the five mods of the usual check against version 37 (Convergence, Naruto 2.4, One Piece GrandWorld, KT-LF2, Hell; 8 fighters each, every pair both ways, 4 games, two seeds): 1,070 to 1,093, as even as that many games can tell — of their 40 fighters only Deapis of Convergence has such a shot (Neji of Naruto 2.4 kited before the 8-frame rule and did no better for it: 36 games won to the old Neji's 41 over 224). Four of the kite's numbers join those tuned by play (81 now): the distance that starts it, the room it wants behind, the height the second air shot wants and the shots a dash takes; the rest are set by hand (positioning.kite)."},
@@ -280,14 +443,15 @@ smart.history = {
     {15, "2026-10-30", "Stances, defend keys that are moves, moves that start from walking, get-up invulnerability, running, obstacles, no guarding into a break; chosen in Tournament and Battle mode too"},
     {14, "2026-10-30", "INSANE! is born: every fighter's moves learned in a private copy of the match, then prediction of what hits, when the opponent can act, and what each move is worth"},
 }
--- Whether the computer player at `index` plays this way: at INSANE! and XOI, unless its mod gave the fighter an
--- AI script of its own (made for that fighter, which then plays as at CRAZY!). (The bench names the player of each
--- fighter: "smart" plays as at INSANE!, "xoi" as at XOI.)
+-- Whether the computer player at `index` plays this way: at INSANE! and XOI, whatever AI scripts its mod has (up to
+-- version 40 a fighter with a script of its own kept it at these levels too, and in a pack such as Sauce's "lf2-AI
+-- VS and Stage Challenge", whose every fighter has one, the levels named INSANE! and XOI were that AI; the scripts
+-- play at CRAZY! and below, where the mod's own AI belongs). (The bench names the player of each fighter: "smart"
+-- plays as at INSANE!, "xoi" as at XOI.)
 function smart.enabled(state, value, index)
     if value.brain then return value.brain == "smart" or value.brain:sub(1, 3) == "xoi" end
     if state.random_game or state.replay_demo then return false end
-    if smart.levels[state.difficulty] == nil then return false end
-    return not require("base/game/ai_scripts").has(state, index)
+    return smart.levels[state.difficulty] ~= nil
 end
 
 local function trunc(value)
@@ -712,7 +876,9 @@ end
 -- Whether an object in `frame_id` strikes by itself within `ticks` ticks: a frame of the ones it goes on to by
 -- next and wait (no key, no hit) has an attack that hurts (10 HP and more: not a mod's marker of 1 HP, nor a grab).
 -- A frame it only reaches when hit (hit_d), or a loop without one, is not followed.
-local function strikes_later(record, frame_id, ticks)
+-- (With `or_lives`, an object whose own frames go on past a few ticks — not about to vanish by itself — counts
+-- too: it may yet do something by way of frames no reading of its own foresees.)
+local function strikes_later(record, frame_id, ticks, or_lives)
     local current, total = frame_id, 0
     for _ = 1, 40 do
         local frame = record.frames[current]
@@ -721,13 +887,15 @@ local function strikes_later(record, frame_id, ticks)
             if damaging(area) and (area.injury or 0) >= 10 then return true end
         end
         total = total + frame.wait + 1
+        if or_lives and total > 6 then return true end
         if total > ticks then return false end
         local next_id = frame.next
         if next_id < 0 then next_id = -next_id end
-        if next_id == 0 or next_id == 999 or next_id >= 1000 or next_id == current then return false end
+        if next_id == 0 or next_id == 999 or next_id >= 1000 then return false end
+        if next_id == current then return or_lives == true end
         current = next_id
     end
-    return false
+    return or_lives == true
 end
 
 local function play(record, entry, mp, weapon_record, hp)
@@ -835,8 +1003,13 @@ local function play(record, entry, mp, weapon_record, hp)
                 -- ticks alone cut off, and the move was learned as doing nothing). (Not a move whose objects have
                 -- struck: a wave that goes on striking further and later, Jinbei's in One Piece GrandWorld, was
                 -- weighed worse with its late blows counted, 13 to 27 in 40 games.)
+                -- (Or by way of frames no reading of its own frames foresees — a summon that changes into another
+                -- object or is sent into other frames by a hit of its maker's hidden attacks, Nya's coin in Sauce's
+                -- pack that turns into a vortex a second later: one of the move's making still there, no blow struck
+                -- yet, is waited for while the move is followed anyway, so long as it has frames to come.)
                 if move.ready < horizon_ticks and not objects_coming and next(struck) == nil
-                   and strikes_later(value.record, value.frame, move.ready + 45 - t) then
+                   and strikes_later(value.record, value.frame, move.ready + 45 - t,
+                       not weapon_kinds[value.record.kind] and value.record.kind ~= record_kinds.character) then
                     objects_coming = true
                 end
                 if weapon_kinds[value.record.kind] and not move.spawned_weapon then move.spawned_weapon = value.record end
@@ -868,6 +1041,13 @@ local function play(record, entry, mp, weapon_record, hp)
         end
         if me.record ~= start_record and not move.transform then move.transform = me.record end
         if me.record.frame(me.frame).state == states.teleport_to_enemy and not move.teleport then move.teleport = t end
+        -- (A jump of position no step accounts for — 120 pixels and more in one tick, no frame's dvx that size — is a
+        -- teleport too: a mod's own way of moving a fighter, as Nya's swap of places in Sauce's pack, by hidden
+        -- attacks of kind 8.)
+        if not move.teleport and t > 1 and abs(move.traj_x[t] - move.traj_x[t - 1]) >= 120
+           and abs(frame.dvx or 0) < 120 and abs(me.vx) < 40 then
+            move.teleport = t - 1
+        end
         if move.ready == horizon_ticks and t > 1 and is_free(me) and not pending_link then move.ready = t end
         if move.ready < horizon_ticks then
             quiet = (objects_active or objects_coming) and 0 or quiet + 1
@@ -1177,14 +1357,20 @@ local function explore(record, analysis, mode, first_index)
             if seen[signature] then move = nil else seen[signature] = true end
         end
         if ok and move then
-            -- What it throws, measured on a fighter it reaches.
+            -- What it throws, measured on a fighter it reaches — six throws from different points of the game's
+            -- random sequence, their mean: a thing whose burst is a throw of the dice (Nya's in Sauce's pack: 10 to
+            -- 60 HP by the face that comes up) is worth what it brings on average, not what one throw showed.
             for _, box in ipairs(move.boxes) do
                 if not box.own then
                     if box.injury < 30 then
-                        engine.set_random_state(random_table(), 0, 0)
-                        local measured_ok, measured = pcall(measure_hit, record, entry, floor((box.x1 + box.x2) / 2), box.z,
-                            min(box.t + 30, horizon_ticks))
-                        if measured_ok then move.hit_damage = measured end
+                        local total, trials = 0, 0
+                        for _, start in ipairs({0, 7, 13, 29, 41, 53}) do
+                            engine.set_random_state(random_table(), start, 0)
+                            local measured_ok, measured = pcall(measure_hit, record, entry, floor((box.x1 + box.x2) / 2), box.z,
+                                min(box.t + 30, horizon_ticks))
+                            if measured_ok then total, trials = total + measured, trials + 1 end
+                        end
+                        if trials > 0 then move.hit_damage = floor(total / trials) end
                     end
                     break
                 end
@@ -2567,7 +2753,7 @@ end
 -- (`t`, `score`: when the move should land and what it is expected to bring, for a move chosen as an attack; `t`
 -- alone for a follow-up. The bench's hook sees them.)
 local function start(self, move, target, t, score)
-    if smart.on_start then smart.on_start(self, move, t, score) end
+    if smart.on_start then smart.on_start(self, move, t, score, smart.brain_kit.hand[move]) end
     local entry = move.entry
     if entry.parent then
         if entry.link_sequence then
@@ -3931,6 +4117,15 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 if extras and #extras > 0 then score = score + setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger) end
                 if alone then score = score * setup_kit.alone end
                 if flip_risk > 0 and t >= descent then score = score * (1 - flip_risk) end
+                -- (A brain's expectation of the move here, weighed with the score; the score itself kept for the
+                -- records, brain_kit.hand.)
+                local brain = context.brain
+                if brain and score > 0 then
+                    local kit = smart.brain_kit
+                    kit.hand[move] = score
+                    local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm)) * 100
+                    score = score + tune.brain_weight * (expected - score)
+                end
                 if score > best_score then best, best_t, best_score = move, t, score end
             end
         end
@@ -4383,9 +4578,46 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
         memory.note = "keep guard"
         return true
     end
+    -- A stream: more thrown things flying at us along our lane behind this one (Julian's skull blasts in Sauce's
+    -- pack: five 40-HP balls 3 frames apart for 50 MP, burst after burst, steered onto the enemy's lane by Sauce's AI).
+    -- A guard breaks under them (the project owner saw XOI's Julian get up into the stream in a corner, guard, and
+    -- die there, up to version 40), so they are met as a heavy blow is: a way out before the guard, a move out of
+    -- their way worth its MP, and the jump toward the thrower at once, which clears them while the fighter is in the
+    -- air and comes down nearer the thrower, the landing crouch rolled out of (untouchable) when the next is due.
+    local stream = false
+    if source.record.kind == record_kinds.character then
+        -- (The thrower itself, in a move that sends out several things: boxes of the move from more than one object
+        -- of its making.)
+        local where = context.target_where and context.target_where.value == source and context.target_where.move
+        if not where then
+            local found = where_of(source.record, context.analysis_of(source), source)
+            where = found and found.move
+        end
+        if where then
+            local first_spawn
+            for _, box in ipairs(where.boxes) do
+                if not box.own and box.spawn then
+                    if first_spawn and box.spawn ~= first_spawn then stream = true; break end
+                    first_spawn = first_spawn or box.spawn
+                end
+            end
+        end
+    else
+        for other = 0, constants.item_slots - 1 do
+            local value = state.items[other]
+            if value and other ~= index and value ~= source and value.record.kind == record_kinds.ball and value.hp > 0
+               and hostile(state, self, value) then
+                local gap = self.x_int - value.x_int
+                if abs(gap) < 800 and value.vx ~= 0 and (value.vx > 0) == (gap > 0) and abs(value.z_int - self.z_int) < 45 then
+                    stream = true
+                    break
+                end
+            end
+        end
+    end
     -- A heavy blow is better dodged than guarded when there is time (a guard broken by the next one lets a
     -- worse one in); a light one is simply guarded — and a heavy one too, once the ways out of it have failed.
-    local heavy = (threat_box.injury >= tune.heavy_injury or threat_box.bdefend >= 16 or catch)
+    local heavy = (threat_box.injury >= tune.heavy_injury or threat_box.bdefend >= 16 or catch or stream)
         and not (failed("dodge") or failed("jump") or failed("back"))
     if blockable and can_defend and threat_t <= guard and threat_t <= tune.defend_window and not (heavy and threat_t >= 2)
        and not failed("guard") then
@@ -4448,7 +4680,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- thrower's arms, rather than on the spot again (Gaara jumped Itachi's kunai where he stood, for good, in
     -- Naruto: The Setting Dawn).
     if fstate ~= states.running and source.record.kind ~= record_kinds.character and target and not failed("jump")
-       and (memory.dodges or 0) >= tune.loop_dodges and (memory.calm or 0) >= tune.loop_calm then
+       and (stream or ((memory.dodges or 0) >= tune.loop_dodges and (memory.calm or 0) >= tune.loop_calm)) then
         local height, step = movement.jump_height or -16, movement.jump_distance or 0
         local dir = target.x_int >= self.x_int and 1 or -1
         local flight = floor(-height / 0.85)
@@ -4523,7 +4755,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- out of it the roll (defend, free of MP) is the way past a blow that running on or stopping would not clear.
     do
         local escape, strikes = escape_move(state, index, self, frame, fstate, context, level, threat_t, source)
-        if escape and not failed("escape") and (not blockable or strikes or (heavy and self.mp - escape.mp >= special_mp(analysis))
+        if escape and not failed("escape") and (not blockable or strikes or stream or (heavy and self.mp - escape.mp >= special_mp(analysis))
            or (fstate == states.running and escape.mp == 0)) then
             start(self, escape, source)
             dodged(memory, state)
@@ -4864,6 +5096,8 @@ function smart.control(state, index)
         state.smart_context = context
     end
     context.notes, context.notes_situation, context.notes_spots, context.tries = nil, nil, nil, nil
+    context.brain = xoi and smart.brain or nil
+    context.calm = memory.calm
     -- (A blow taken since the last frame: counted against what dealt it, see lesson_kit.)
     lesson_kit.note(state, index, self, memory, context)
     clear_keys(self)
@@ -6174,6 +6408,7 @@ end
 function smart.prepare(state)
     notes_checked = nil
     use_mod_tune()
+    smart.brain_kit.use_mod()
     for index = 0, constants.item_slots - 1 do
         local value = state.items[index]
         if value and value.record.kind == record_kinds.character then learn(value.record) end
