@@ -9,8 +9,9 @@ mkdir -p "$vendor_dir"
 # fetch_source <name> <sha256> <url>...: the archive from the first of its sources that serves it with that digest
 # (the projects' own servers and GitHub both time out now and then: a 504 from a GitHub release download or from
 # download.savannah.gnu.org failed four web builds in a row on November 8, 2026; www.lua.org reset the connection
-# on November 9 — an error curl's --retry alone does not retry, hence --retry-all-errors, and a second source for
-# Lua: Ubuntu's and Debian's pools keep the upstream tarball as it is, checked by the digest all the same).
+# and then timed out on November 9 — errors curl's --retry alone does not retry, hence --retry-all-errors — and
+# other sources for Lua: the BSDs' and Alpine's distfile mirrors keep the upstream tarball as it is, where Debian's
+# and Ubuntu's pools hold a repacked one with another digest; every source is checked by the digest all the same).
 fetch_source() {
     local name=$1 digest=$2 url
     shift 2
@@ -18,7 +19,7 @@ fetch_source() {
     if [[ -f "$path" ]] && ! printf '%s  %s\n' "$digest" "$path" | sha256sum --check --quiet 2>/dev/null; then rm -f "$path"; fi
     for url in "$@"; do
         [[ -f "$path" ]] && break
-        if curl --fail --location --retry 3 --retry-all-errors --retry-delay 10 --connect-timeout 30 --output "$path.part" "$url"; then
+        if curl --fail --location --retry 2 --retry-all-errors --retry-delay 10 --connect-timeout 20 --output "$path.part" "$url"; then
             mv "$path.part" "$path"
             if ! printf '%s  %s\n' "$digest" "$path" | sha256sum --check --quiet; then
                 echo "$name from $url: wrong digest, trying the next source" >&2
@@ -34,8 +35,10 @@ fetch_source() {
 
 fetch_source lua-5.2.4.tar.gz b9e2e4aad6789b3b63a056d442f7b39f0ecfca3ae0f1fc0ae4e9614401b69f4b \
     https://www.lua.org/ftp/lua-5.2.4.tar.gz \
-    http://archive.ubuntu.com/ubuntu/pool/universe/l/lua5.2/lua5.2_5.2.4.orig.tar.gz \
-    http://deb.debian.org/debian/pool/main/l/lua5.2/lua5.2_5.2.4.orig.tar.gz
+    https://distcache.freebsd.org/ports-distfiles/lua-5.2.4.tar.gz \
+    https://cdn.netbsd.org/pub/pkgsrc/distfiles/lua-5.2.4.tar.gz \
+    https://ftp.openbsd.org/pub/OpenBSD/distfiles/lua-5.2.4.tar.gz \
+    https://distfiles.alpinelinux.org/distfiles/edge/lua-5.2.4.tar.gz
 fetch_source SDL3-3.4.14.tar.gz 30d4aa2b3037718142b32dffd4e72f917ebb6cc5227150e7bb9c45efb2153aeb \
     https://github.com/libsdl-org/SDL/releases/download/release-3.4.14/SDL3-3.4.14.tar.gz \
     https://www.libsdl.org/release/SDL3-3.4.14.tar.gz

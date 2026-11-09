@@ -21,6 +21,16 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+      # The libraries' source archives, kept from the last successful build: their servers time out now and then
+      # (www.lua.org on November 9, 2026), and dist/build-web.sh fetches only what is missing or has the wrong digest.
+      - name: Keep the libraries' source archives between runs
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/web/vendor/*.tar.gz
+            build/web/vendor/*.tar.xz
+          key: web-sources-${{ hashFiles('dist/build-web.sh') }}
+          restore-keys: web-sources-
       - name: Build web bundle
         run: bash dist/build-web.sh
       - name: Stage artifact and checksum
