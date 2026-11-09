@@ -212,7 +212,9 @@ thread at below-normal priority, the mods beside it shared among the chains, `VO
 (12 × 5), then the tuned numbers against those it started from for `PHUT_KIEM_TRA` minutes; it writes
 `spsa\ket-qua.txt`, and each mod's numbers to `xoi-<mod>\tune.txt` and into `<mod>-xoi.zip` (the mod with `xoi/tune.txt`,
 and XOI's notes if trained, inside). With one mod beside it, a run starts from that mod's numbers.
-Stopped half way (windows closed, the PC shut down), it goes on when started again: finished rounds stay, and the
+Settings a user changes are best kept in `spsa-cai-dat.bat` (`spsa-settings.bat` in the English kit) beside
+`spsa.bat`, one `set "VONG=60"` line each, which the script calls after its own defaults: a new kit's `spsa.bat`
+copied over the old one then keeps them. Stopped half way (windows closed, the PC shut down), it goes on when started again: finished rounds stay, and the
 round under way keeps what its chains had reported (`spsa\vong-<n>\truoc\<attempt>\p<k>.txt`), merged with what
 a new attempt plays; a round whose chains all finished but whose numbers were not written, or were left full of zeros
 by a PC cut off while writing them (`start-sau.lua` without its `--SPSA_START` line), is merged again from those
@@ -251,7 +253,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
-| `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit` |
+| `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows
 about a fighter and what it actually uses; a move it never starts has a reason worth finding (too slow for the

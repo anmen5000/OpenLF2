@@ -41,7 +41,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    OPPONENT=classic: both nudged sets play the original computer player instead of each other - the mod's
    ai\<id>.as scripts where a fighter has them (Sauce's AI, item 9) - so the numbers move toward what beats that
    opponent; a round costs twice the games, and the check reports the tuned numbers and the original ones against
-   it. For tuning against one particular player; the numbers it finds suit that player first.
+   it. For tuning against one particular player; the numbers it finds suit that player first. A mod with no AI
+   scripts of its own still has the two sets play each other (the CRAZY player is too weak to tune against), so
+   Sauce's pack and the mods can go in together: one set of numbers for all, each pack tuned against the strongest
+   player it has.
+   Your own settings (ROUNDS, ROUND_MINUTES, OPPONENT=classic...) are best kept in a file spsa-settings.bat beside
+   spsa.bat, one  set "ROUNDS=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

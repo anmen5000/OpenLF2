@@ -600,7 +600,11 @@
           the processes run at below-normal priority, so the PC stays usable. After each round <code>spsa.bat</code> says how
           long it took and about how long the rest will take. <b>To pause</b>, close its window and the minimized SPSA windows
           (or shut the PC down); double-click again to go on — finished rounds stay, and so does what the round under way had
-          played, but for its last few pairs.</li>
+          played, but for its last few pairs. A PC cut off just as a round's numbers were written (that round's file left full
+          of zeros) is no loss either: run it again and it merges that round from the processes that played it, then goes on.
+          <b>Your own settings</b> (rounds, minutes, <code>DOI_THU=classic</code>…) are best kept in a file
+          <code>spsa-cai-dat.bat</code> beside <code>spsa.bat</code> (<code>spsa-settings.bat</code> for the English kit), one
+          <code>set "VONG=60"</code> line each: a new kit's <code>spsa.bat</code> copied over the old one then keeps them.</li>
         <li><b>Each mod's numbers, ready to use:</b> at the end, <code>xoi-&lt;mod&gt;\tune.txt</code> holds the tuned numbers and
           <code>&lt;mod&gt;-xoi.zip</code> is the mod with them inside (<code>xoi/tune.txt</code> beside its <code>data</code>
           folder, with XOI's notes if <code>xoi-hoc.bat</code> trained it). Uploaded to the relay in place of the mod, XOI plays that
@@ -625,7 +629,10 @@
           nên máy vẫn dùng được. Hết mỗi vòng <code>spsa.bat</code> in vòng ấy mất bao lâu và còn khoảng bao lâu. <b>Tạm dừng:</b>
           đóng cửa sổ của nó và các cửa sổ SPSA thu nhỏ (hoặc tắt máy); nháy đúp lại là làm tiếp — các vòng đã xong được giữ, và
           cả phần vòng đang dở đã đánh, trừ vài cặp cuối. Máy mất điện đột ngột đúng lúc ghi số cuối vòng (file số của vòng ấy
-          hỏng, toàn số 0) cũng không sao: chạy lại, nó gộp lại vòng ấy từ các tiến trình đã đánh rồi đi tiếp.</li>
+          hỏng, toàn số 0) cũng không sao: chạy lại, nó gộp lại vòng ấy từ các tiến trình đã đánh rồi đi tiếp. <b>Cài đặt riêng của
+          bạn</b> (số vòng, số phút, <code>DOI_THU=classic</code>…) nên để trong file <code>spsa-cai-dat.bat</code> cạnh
+          <code>spsa.bat</code> (bộ tiếng Anh: <code>spsa-settings.bat</code>), mỗi dòng một cài đặt như <code>set "VONG=60"</code>:
+          chép đè <code>spsa.bat</code> của bộ XOI mới lên thì cài đặt vẫn còn.</li>
         <li><b>Bộ số của từng bản mod, dùng được ngay:</b> chạy xong, <code>xoi-&lt;tên&gt;\tune.txt</code> là các số đã chỉnh, và
           <code>&lt;tên&gt;-xoi.zip</code> là bản mod có bộ số ấy bên trong (<code>xoi/tune.txt</code> cạnh thư mục <code>data</code>,
           kèm bộ nhớ XOI nếu <code>xoi-hoc.bat</code> đã huấn luyện). Tải nó lên relay thay cho bản mod: XOI chơi bản mod ấy bằng bộ

@@ -38,7 +38,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    DOI_THU=classic (package 58): both nudged sets play the original computer player instead of each other - the
    mod's ai\<id>.as scripts where a fighter has them (Sauce's AI, item 9) - so the numbers move toward what beats
    that opponent; a round costs twice the games, and the check reports the tuned numbers and the original ones
-   against it. For tuning against one particular player; the numbers it finds suit that player first.
+   against it. For tuning against one particular player; the numbers it finds suit that player first. A mod
+   with no AI scripts of its own still has the two sets play each other (the CRAZY player is too weak to tune
+   against), so Sauce's pack and the mods can go in together: one set of numbers for all, each pack tuned against
+   the strongest player it has.
+   Your own settings (VONG, PHUT_VONG, DOI_THU=classic...) are best kept in a file spsa-cai-dat.bat beside
+   spsa.bat, one  set "VONG=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -115,7 +120,11 @@ chơi được chính các file của bản mod.
    DOI_THU=classic (gói 58): hai bản nhích số cùng đánh với máy gốc của game thay vì đánh nhau - nhân vật nào có script
    ai\<id>.as của bản mod (AI của Sauce, mục 9) thì máy gốc chơi bằng script đó - nên các số dịch về phía thắng được
    đối thủ ấy; mỗi vòng tốn gấp đôi số trận, và phần kiểm tra ghi kết quả của bản đã chỉnh và bản gốc cùng đánh đối thủ
-   ấy. Dùng để chỉnh số cho một đối thủ cụ thể; bộ số tìm được hợp với đối thủ ấy trước hết.
+   ấy. Dùng để chỉnh số cho một đối thủ cụ thể; bộ số tìm được hợp với đối thủ ấy trước hết. Bản mod không có script
+   AI riêng thì hai bản nhích số vẫn đánh nhau ở bản ấy (máy gốc CRAZY quá yếu để chỉnh theo), nên có thể đặt bản Sauce
+   và các bản mod cùng lúc: một bộ số chung cho tất cả, bản nào cũng chỉnh theo đối thủ mạnh nhất nó có.
+   Cài đặt riêng của bạn (VONG, PHUT_VONG, DOI_THU=classic...) nên để trong file spsa-cai-dat.bat cạnh spsa.bat,
+   mỗi dòng một cài đặt như  set "VONG=60"  : chép đè spsa.bat của bộ mới lên thì cài đặt vẫn còn.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

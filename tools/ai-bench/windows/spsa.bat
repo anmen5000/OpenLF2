@@ -38,12 +38,21 @@ rem Doi thu (DOI_THU). De trong: hai ban nhich so danh voi nhau (nhu truoc). Ghi
 rem game (CRAZY; nhan vat nao co script ai\<id>.as cua ban mod - AI cua Sauce - thi may goc choi bang script do), cac so
 rem dich ve phia ban thang doi thu ay nhieu hon; moi vong mat gap doi so tran (ca hai ban deu danh), va phan kiem tra cho
 rem ban da chinh roi ban goc cung danh doi thu ay (ket qua ghi ca hai). Dung de chinh so cho mot doi thu cu the (AI cua
-rem Sauce tren 10 nhan vat goc; dat IDS trong toolsi-bench neu can); voi ban mod khong co script, classic la may CRAZY.
+rem Sauce tren 10 nhan vat goc; dat IDS trong tools\ai-bench neu can). Ban mod khong co script AI rieng thi hai ban nhich so
+rem van danh nhau o ban ay (may goc CRAZY qua yeu de chinh theo) - nen dat ban Sauce va cac ban mod cung luc: mot bo so
+rem chung, moi ban nang nhu nhau, ban nao cung chinh theo doi thu manh nhat no co.
 set "DOI_THU="
 rem Thu muc tools\ai-bench va scripts cua goi ban 32 tro len (de trong thi tu tim canh file .bat nay)
 set "BENCH="
 set "SCRIPTS="
 rem =====================================
+rem Cai dat rieng cua ban, giu qua cac lan cap nhat bo XOI: file spsa-cai-dat.bat canh file nay (tu tao), moi dong
+rem mot cai dat nhu tren, vi du  set "DOI_THU=classic"  va  set "VONG=60"  - chep de spsa.bat moi len thi cai dat
+rem o day van con (dot chay thang 11/2026 mat DOI_THU=classic o 5 vong cuoi vi the).
+if exist "%~dp0spsa-cai-dat.bat" (
+  call "%~dp0spsa-cai-dat.bat"
+  if /i not "%~1"=="chay1" echo Cai dat rieng: spsa-cai-dat.bat
+)
 
 rem (File nay tu goi lai chinh no cho tung tien trinh, trong cua so rieng: cmd /c call "<file nay>" chay1 <vong-N
 rem hoac kiem-tra> <so tien trinh> <hat giong> <so thu tu ban mod>. Ngoai ten file, khong dau ngoac kep nao: khi
@@ -325,6 +334,8 @@ for /L %%k in (1,1,%N%) do (
     set /a BW+=%%a, BL+=%%b, BD+=%%c
     set /a "BW_!PK!+=%%a, BL_!PK!+=%%b, BD_!PK!+=%%c"
   )
+  rem (DOI_THU=classic o ban mod khong co script AI rieng: hai ban danh nhau o ban ay, spsa.lua bao the.)
+  if exist "%K%\p%%k\out.txt" findstr /c:"no AI scripts of the pack's own" "%K%\p%%k\out.txt" >nul 2>nul && set "TU_DANH_!PK!=1"
 )
 set /a TT=TW+TL
 set /a PT=0
@@ -403,10 +414,14 @@ for %%n in ("!TEN!") do set "TEN=%%~nxn"
 set /a "MT=W_%1+L_%1, MP=0"
 if !MT! GTR 0 set /a "MP=W_%1*1000/MT"
 set /a "M1=MP/10, M2=MP %% 10"
-if defined DOI_THU (
+set "KIEU=tu"
+set "GHI_TU="
+if defined DOI_THU if not defined TU_DANH_%1 set "KIEU=doithu"
+if defined DOI_THU if defined TU_DANH_%1 set "GHI_TU= - khong co script AI rieng, hai ban danh nhau"
+if "!KIEU!"=="doithu" (
   >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1! thua !L_%1! hoa !D_%1!; ban goc thang !BW_%1! thua !BL_%1! hoa !BD_%1!
 ) else (
-  >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)
+  >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)!GHI_TU!
 )
 exit /b 0
 

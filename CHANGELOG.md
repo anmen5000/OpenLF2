@@ -183,6 +183,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- XOI version 40: its numbers halfway between version 37's and the project owner's second SPSA run against Sauce's
+  AI (60 rounds of 15 minutes on 83 threads over the ten original fighters, about 580,000 pairs of games). That run's
+  set alone plays the originals better — against Sauce's AI 343 of 720 games to version 37's 308, against version
+  37's numbers 186 to 166 — but lost a little on five mods without numbers of their own (2,128 to 2,249 of 4,480
+  over four seeds; the boldness it learned, attack_threshold 2.1 to 1.5, punished by the mods' heavier moves). XOI
+  being one player for every mod, the mean of the two sets is taken: the mods even (1,083 to 1,101 of 2,240), Sauce's
+  AI 321 of 720, the originals 178 to 166 against version 37's. A pack carrying the run's own numbers
+  (`xoi/tune.txt`) has the whole gain; a run over Sauce's pack and the mods together (below) is the way to one set
+  with it all
 - INSANE!/XOI version 39: foresees an enemy's move steered onto its line. A move's frames that take the up and
   down keys (a frame's dvz, `base/game/control`: 1 to a few pixels a frame in depth) let the one playing it bend the
   move toward the opponent as it goes — what this player does with its own moves since version 35 (steer_keys), and
@@ -538,6 +547,17 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   `xem.bat` pit INSANE!/XOI against it with `NAO2=classic` and `MUC=-1` (the kit's README, item 9). Sauce's AI is
   far stronger than CRAZY!: on the ten original fighters, each against every other both ways, INSANE! v33 won 27 of
   360 games against it (only its Deep holds its own)
+- SPSA's `opponent = "classic"` (`DOI_THU=classic`) now means the original player only where the pack has AI
+  scripts of its own (Sauce's AI); in a pack without them the two nudged sets play each other as without an opponent,
+  since the CRAZY! player is too weak to tune against — so Sauce's pack and the mods can go into one run, each tuned
+  against the strongest player it has, for one set of numbers (`spsa.lua` says so in the chain's log; `spsa.bat`'s
+  per-mod check lines say which mods played themselves). The owner's November 2026 run, Sauce's pack alone, found
+  numbers that beat Sauce's AI more (343 of 720 games on the ten originals, XOI's own 308) but lost a little on the
+  mods (2,128 to 2,249 of 4,480 against XOI's own): one set over all of them is the way to both
+- `windows/spsa.bat` (and the English `en/spsa.bat`) call a settings file beside them, `spsa-cai-dat.bat`
+  (`spsa-settings.bat`), after their own defaults: a user's settings (VONG, PHUT_VONG, DOI_THU=classic…) kept there
+  survive a new kit's `spsa.bat` copied over the old one — the November 2026 run lost its DOI_THU=classic for the
+  last five rounds that way. The kit guide and READMEs say so
 
 ### Fixed
 - SPSA (`tools/ai-bench/spsa.lua`) drew the Template among the fighters (id 0, not hidden), whom the match seats

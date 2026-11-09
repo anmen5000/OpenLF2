@@ -45,6 +45,7 @@
 -- merge prints the new numbers as "return {...} --SPSA_START", a readable list, "SPSA_PAIRS <pairs>", "SPSA_MODS
 -- <mod>:<pairs>/<chains> ..." and "SPSA_K <k>"; the check prints "SPSA_CHECK <tuned wins> <own wins> <draws> <result>".
 local catalog = require("base/game/catalog")
+local ai_scripts = require("base/game/ai_scripts")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
 local brains = require("bench/brains")
@@ -121,6 +122,8 @@ end
 -- seat the match leaves empty as the original does (match.lua, spectator_seat: choosing him is watching the game), and
 -- a fighter whose data the match cannot load. A pair drawn with one of them played no game (before: a sixth of the
 -- draws with the Template among eleven fighters, "SPSA game failed: ... (a nil value)" in the log).
+-- Returns the pool, and whether any fighter of it has a substantial AI script of its own in this pack (ai/<id>.as,
+-- ai_scripts.has: Sauce's AI) — what `opponent = "classic"` is for, see scripted_or_self.
 local function choices(config, fighters, backgrounds)
     local list = {}
     local by_id = {}
@@ -134,13 +137,14 @@ local function choices(config, fighters, backgrounds)
             if not fighter.hidden then list[#list + 1] = index end
         end
     end
-    local seated, left_out = {}, {}
+    local seated, left_out, scripted = {}, {}, false
     for _, index in ipairs(list) do
         local ok, reason = pcall(function()
             local slots = {[0] = {kind = "computer", fighter = index, team = 1}, [1] = {kind = "computer", fighter = index, team = 2}}
             local state = match.create({mode = constants.modes.versus, difficulty = config.difficulty or -2, background = 0,
                 fighters = fighters, backgrounds = backgrounds, slots = slots})
             if not (state.items[10] and state.items[11]) then return "the match seats nobody for him" end
+            if ai_scripts.has(state, 10) then scripted = true end
         end)
         if ok and not reason then
             seated[#seated + 1] = index
@@ -151,7 +155,18 @@ local function choices(config, fighters, backgrounds)
     end
     if #left_out > 0 then engine.log("SPSA pool leaves out " .. table.concat(left_out, "; ")) end
     assert(#seated > 0, "no fighters to draw pairs from")
-    return seated
+    return seated, scripted
+end
+
+-- `opponent = "classic"` means the original player with the pack's own AI scripts (Sauce's AI); in a pack whose
+-- fighters have none, that player is CRAZY!, too weak to tune against, so the two nudged sets play each other there
+-- as without an opponent — several mods in one run (spsa.bat), each tuned against the strongest player it has.
+local function scripted_or_self(config, scripted)
+    if config.opponent == "classic" and not scripted then
+        engine.log("SPSA: no AI scripts of the pack's own, so the two sets play each other instead of the original player")
+        config.opponent = nil
+        config.self_instead = true
+    end
 end
 
 -- One game: "smart" plays fighters[first] (slot 0) against "smart@<alt>" — or config.opponent — with
@@ -189,13 +204,14 @@ local function play(config, fighters, backgrounds, row, first, second, swap)
 end
 
 local function chain(config)
+    local fighters, backgrounds = catalog.load(), catalog.backgrounds()
+    local pool, scripted = choices(config, fighters, backgrounds)
+    scripted_or_self(config, scripted)
     local smart, alt = players(config)
     local list = numbers(config.names)
     local start = config.start and require("bench/" .. config.start) or {}
     local u = {}
     for index, number in ipairs(list) do u[index] = share(number, start[number.name] or number.default) end
-    local fighters, backgrounds = catalog.load(), catalog.backgrounds()
-    local pool = choices(config, fighters, backgrounds)
     local random = generator(config.seed or 1)
     local a, c = config.a or 0.02, config.c or 0.08
     local alpha, gamma = config.alpha or 0.602, config.gamma or 0.101
@@ -318,13 +334,14 @@ local function merge(config)
 end
 
 local function check(config)
+    local fighters, backgrounds = catalog.load(), catalog.backgrounds()
+    local pool, scripted = choices(config, fighters, backgrounds)
+    scripted_or_self(config, scripted)
     local smart, alt = players(config)
     local start = config.start and require("bench/" .. config.start) or {}
     local defaults = {}
     for _, entry in ipairs(smart.tune_ranges) do defaults[entry[1]] = (smart.xoi_own or {})[entry[1]] or entry[2] end
     local base = config.base and require("bench/" .. config.base) or defaults
-    local fighters, backgrounds = catalog.load(), catalog.backgrounds()
-    local pool = choices(config, fighters, backgrounds)
     -- The tuned numbers against the base (alt); or, against a fixed opponent, the tuned numbers and then the base,
     -- on the same pairs, each reported.
     local function run(label, seed)
@@ -346,11 +363,15 @@ local function check(config)
             end
         end
         engine.log(string.format("%s %d %d %d %.3f", label, wins, losses, draws, sum))
+        return wins, losses, draws, sum
     end
     smart.set_tune(start)
     if alt then
         alt.set_tune(base)
-        run("SPSA_CHECK", config.seed or 1)
+        local wins, losses, draws, sum = run("SPSA_CHECK", config.seed or 1)
+        -- (Playing each other where an opponent was asked for: the base's line is the tuned set's, mirrored, so
+        -- that spsa.bat, waiting for it, reads the base as having won what the tuned set lost.)
+        if config.self_instead then engine.log(string.format("SPSA_CHECK_BASE %d %d %d %.3f", losses, wins, draws, -sum)) end
     else
         run("SPSA_CHECK", config.seed or 1)
         smart.set_tune(base)

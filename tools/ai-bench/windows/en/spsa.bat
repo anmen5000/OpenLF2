@@ -40,12 +40,21 @@ rem computer player (CRAZY; a fighter that has the mod's ai\<id>.as script - Sau
 rem the numbers move toward the set that did better against it; a round costs twice the games (both sets play), and the
 rem check plays the tuned numbers and then the original ones against that opponent (both results are written). For
 rem tuning against one particular opponent (Sauce's AI on the ten original fighters; set IDS in tools\ai-bench if
-rem needed); in a mod without scripts, classic is the CRAZY player.
+rem needed). In a mod with no AI scripts of its own the two nudged sets still play each other (the CRAZY player is too
+rem weak to tune against) - so put Sauce's pack and the mods in together: one set of numbers, every pack weighing the
+rem same, each tuned against the strongest player it has.
 set "OPPONENT="
 rem The tools\ai-bench and scripts folders of package 32 or later (left empty, they are looked for next to this .bat file)
 set "BENCH="
 set "SCRIPTS="
 rem =====================================
+rem Your own settings, kept across kit updates: a file spsa-settings.bat beside this one (make it yourself), one
+rem setting a line as above, e.g.  set "OPPONENT=classic"  and  set "ROUNDS=60"  - a new spsa.bat copied over this one
+rem leaves them in place (a run in November 2026 lost OPPONENT=classic for its last five rounds that way).
+if exist "%~dp0spsa-settings.bat" (
+  call "%~dp0spsa-settings.bat"
+  if /i not "%~1"=="chay1" echo Your settings: spsa-settings.bat
+)
 
 rem (This file calls itself again for each process, in its own window: cmd /c call "<this file>" chay1 <round-N or
 rem check> <process number> <seed> <mod number>. No quotes other than around the file name: when the command holds
@@ -329,6 +338,8 @@ for /L %%k in (1,1,%N%) do (
     set /a BW+=%%a, BL+=%%b, BD+=%%c
     set /a "BW_!PK!+=%%a, BL_!PK!+=%%b, BD_!PK!+=%%c"
   )
+  rem (OPPONENT=classic on a mod with no AI scripts of its own: the two sets played each other there, spsa.lua says so.)
+  if exist "%K%\p%%k\out.txt" findstr /c:"no AI scripts of the pack's own" "%K%\p%%k\out.txt" >nul 2>nul && set "TU_DANH_!PK!=1"
 )
 set /a TT=TW+TL
 set /a PT=0
@@ -407,10 +418,14 @@ for %%n in ("!TEN!") do set "TEN=%%~nxn"
 set /a "MT=W_%1+L_%1, MP=0"
 if !MT! GTR 0 set /a "MP=W_%1*1000/MT"
 set /a "M1=MP/10, M2=MP %% 10"
-if defined OPPONENT (
+set "KIEU=tu"
+set "GHI_TU="
+if defined OPPONENT if not defined TU_DANH_%1 set "KIEU=doithu"
+if defined OPPONENT if defined TU_DANH_%1 set "GHI_TU= - no AI scripts of its own, the two sets played each other"
+if "!KIEU!"=="doithu" (
   >>"%K%\totals.txt" echo   %1. !TEN!: tuned won !W_%1! lost !L_%1! drew !D_%1!; original won !BW_%1! lost !BL_%1! drew !BD_%1!
 ) else (
-  >>"%K%\totals.txt" echo   %1. !TEN!: tuned won !W_%1!, original won !L_%1!, drawn !D_%1! ^(!M1!.!M2!%%^)
+  >>"%K%\totals.txt" echo   %1. !TEN!: tuned won !W_%1!, original won !L_%1!, drawn !D_%1! ^(!M1!.!M2!%%^)!GHI_TU!
 )
 exit /b 0
 
