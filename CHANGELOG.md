@@ -183,6 +183,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - spsa.bat: the progress line while a round runs says how long it really has been (by the clock, with the time of
   day): with many processes one pass over the results takes longer than the five seconds between passes, so the
   count of passes ran slow — "waited 4 minutes" at the end of a 10-minute round on 83 threads
+- INSANE!/XOI version 39: foresees an enemy's move steered onto its line. A move's frames that take the up and
+  down keys (a frame's dvz, `base/game/control`: 1 to a few pixels a frame in depth) let the one playing it bend the
+  move toward the opponent as it goes — what this player does with its own moves since version 35 (steer_keys), and
+  what Sauce's AI and a person do. The forecast of an enemy's move under way (earliest_threat) took it for going
+  straight: FreezeRV of mode Convergence dashes and grabs (D>J, a catch that takes a standing fighter, six frames of
+  dash at dvz 1), and Freeze played by XOI steered it onto Firen's line while Firen, 20 pixels off that line and the
+  grab 15 wide, saw it passing him by, stood still and was caught, then struck through the hold for most of the
+  damage he took (the project owner's observation: Firen could hardly hurt Freeze). The blow is now foreseen bent
+  toward the fighter by as much as the move's frames from now to the blow can steer, at worst (`move.steer_z`,
+  `move_hits`' `worst`), and answered as any other. FirenRV against FreezeRV, both XOI with the mod's numbers, 4 of 40
+  games won up to version 38, now 27 (Sauce's AI plays the pair 6 to 14; the versions 37 and 38 play it frame for
+  frame alike, so the change the owner saw between his two clips was the stage, the numbers and chance). Against
+  Sauce's AI on the ten original fighters 158 of 360 games (version 38 163), the ten against version 38 itself 176 to
+  170 of 360; five mods against version 38 (8 fighters each, every pair both ways, 4 games, seeds 12345 and 777)
+  1,113 to 1,054, and 1,094 to 1,081 on fresh seeds (4242 and 999): 2,207 to 2,135 over 4,480 games, as even as they
+  can tell (Convergence 440 to 421)
 - INSANE!/XOI version 38: kiting with the shooters. A fighter whose plain attack is a shot — a cheap move from its
   feet that sends something off 150 pixels and farther, too slow to be fired point-blank (8 frames and more to its
   first blow; Henry's arrow, Rudolf's star — none of the other eight original fighters has one: Davis's and Deep's
