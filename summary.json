@@ -1,0 +1,339 @@
+{
+  "page": "https://anmen5000.github.io/OpenLF2/windows.html",
+  "started": "2026-11-09T13:23:41.531Z",
+  "pack": {
+    "id": "naruto-the-setting-dawn-2-4-ai-xoi",
+    "title": "Naruto The Setting Dawn 2.4 AI XOI (71 MB)"
+  },
+  "samples": [
+    {
+      "seconds": 30,
+      "screenshot": "01-30s.png",
+      "status": "Downloading Naruto The Setting Dawn 2.4 AI XOI: 60.5 / 70.7 MB",
+      "lines": 0,
+      "mips": "",
+      "last": []
+    },
+    {
+      "seconds": 60,
+      "screenshot": "02-60s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 39,
+      "mips": "[MIPS] count=20 raw=34 avg=183 min=34 max=493 warmAvg=34 warmSamples=1",
+      "last": [
+        "0144:fixme:ole:CoCreateInstanceEx no instance created for interface {00000000-0000-0000-c000-000000000046} of class {d51bd5a1-7548-11cf-a520-0080c77ef58a}, hr 0x8007000e.",
+        "00fc:err:quartz:autoplug Failed to create filter for L\"Wave Parser\", hr 0x8007000e.",
+        "[MIPS] count=20 raw=34 avg=183 min=34 max=493 warmAvg=34 warmSamples=1"
+      ]
+    },
+    {
+      "seconds": 90,
+      "screenshot": "03-90s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 42,
+      "mips": "[MIPS] count=50 raw=27 avg=110 min=24 max=1426 warmAvg=86 warmSamples=31",
+      "last": [
+        "[MIPS] count=30 raw=38 avg=96 min=19 max=233 warmAvg=42 warmSamples=11",
+        "[MIPS] count=40 raw=59 avg=111 min=19 max=1426 warmAvg=107 warmSamples=21",
+        "[MIPS] count=50 raw=27 avg=110 min=24 max=1426 warmAvg=86 warmSamples=31"
+      ]
+    },
+    {
+      "seconds": 120,
+      "screenshot": "04-120s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 45,
+      "mips": "[MIPS] count=80 raw=25 avg=50 min=19 max=118 warmAvg=69 warmSamples=61",
+      "last": [
+        "[MIPS] count=60 raw=49 avg=46 min=25 max=102 warmAvg=77 warmSamples=41",
+        "[MIPS] count=70 raw=42 avg=50 min=19 max=102 warmAvg=72 warmSamples=51",
+        "[MIPS] count=80 raw=25 avg=50 min=19 max=118 warmAvg=69 warmSamples=61"
+      ]
+    },
+    {
+      "seconds": 151,
+      "screenshot": "05-151s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 48,
+      "mips": "[MIPS] count=110 raw=38 avg=41 min=15 max=90 warmAvg=60 warmSamples=91",
+      "last": [
+        "[MIPS] count=90 raw=41 avg=48 min=17 max=118 warmAvg=65 warmSamples=71",
+        "[MIPS] count=100 raw=41 avg=45 min=17 max=115 warmAvg=63 warmSamples=81",
+        "[MIPS] count=110 raw=38 avg=41 min=15 max=90 warmAvg=60 warmSamples=91"
+      ]
+    },
+    {
+      "seconds": 181,
+      "screenshot": "06-181s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 51,
+      "mips": "[MIPS] count=140 raw=52 avg=55 min=26 max=121 warmAvg=59 warmSamples=121",
+      "last": [
+        "[MIPS] count=120 raw=38 avg=45 min=15 max=230 warmAvg=59 warmSamples=101",
+        "[MIPS] count=130 raw=121 avg=58 min=23 max=230 warmAvg=59 warmSamples=111",
+        "[MIPS] count=140 raw=52 avg=55 min=26 max=121 warmAvg=59 warmSamples=121"
+      ]
+    },
+    {
+      "seconds": 211,
+      "screenshot": "07-211s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 54,
+      "mips": "[MIPS] count=170 raw=63 avg=36 min=21 max=63 warmAvg=55 warmSamples=151",
+      "last": [
+        "[MIPS] count=150 raw=25 avg=48 min=25 max=88 warmAvg=58 warmSamples=131",
+        "[MIPS] count=160 raw=38 avg=41 min=23 max=75 warmAvg=56 warmSamples=141",
+        "[MIPS] count=170 raw=63 avg=36 min=21 max=63 warmAvg=55 warmSamples=151"
+      ]
+    },
+    {
+      "seconds": 241,
+      "screenshot": "08-241s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 57,
+      "mips": "[MIPS] count=200 raw=41 avg=48 min=32 max=81 warmAvg=53 warmSamples=181",
+      "last": [
+        "[MIPS] count=180 raw=64 avg=40 min=20 max=64 warmAvg=54 warmSamples=161",
+        "[MIPS] count=190 raw=32 avg=46 min=20 max=71 warmAvg=54 warmSamples=171",
+        "[MIPS] count=200 raw=41 avg=48 min=32 max=81 warmAvg=53 warmSamples=181"
+      ]
+    },
+    {
+      "seconds": 271,
+      "screenshot": "09-271s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 60,
+      "mips": "[MIPS] count=230 raw=24 avg=40 min=23 max=63 warmAvg=52 warmSamples=211",
+      "last": [
+        "[MIPS] count=210 raw=27 avg=44 min=26 max=81 warmAvg=53 warmSamples=191",
+        "[MIPS] count=220 raw=63 avg=42 min=26 max=77 warmAvg=52 warmSamples=201",
+        "[MIPS] count=230 raw=24 avg=40 min=23 max=63 warmAvg=52 warmSamples=211"
+      ]
+    },
+    {
+      "seconds": 301,
+      "screenshot": "10-301s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 63,
+      "mips": "[MIPS] count=260 raw=44 avg=42 min=29 max=56 warmAvg=51 warmSamples=241",
+      "last": [
+        "[MIPS] count=240 raw=32 avg=41 min=23 max=95 warmAvg=51 warmSamples=221",
+        "[MIPS] count=250 raw=34 avg=45 min=27 max=95 warmAvg=51 warmSamples=231",
+        "[MIPS] count=260 raw=44 avg=42 min=29 max=56 warmAvg=51 warmSamples=241"
+      ]
+    },
+    {
+      "seconds": 331,
+      "screenshot": "11-331s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 66,
+      "mips": "[MIPS] count=290 raw=32 avg=38 min=18 max=68 warmAvg=50 warmSamples=271",
+      "last": [
+        "[MIPS] count=270 raw=35 avg=47 min=25 max=97 warmAvg=51 warmSamples=251",
+        "[MIPS] count=280 raw=28 avg=46 min=23 max=97 warmAvg=50 warmSamples=261",
+        "[MIPS] count=290 raw=32 avg=38 min=18 max=68 warmAvg=50 warmSamples=271"
+      ]
+    },
+    {
+      "seconds": 361,
+      "screenshot": "12-361s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 69,
+      "mips": "[MIPS] count=320 raw=34 avg=46 min=21 max=127 warmAvg=50 warmSamples=301",
+      "last": [
+        "[MIPS] count=300 raw=24 avg=46 min=18 max=122 warmAvg=50 warmSamples=281",
+        "[MIPS] count=310 raw=37 avg=53 min=21 max=127 warmAvg=50 warmSamples=291",
+        "[MIPS] count=320 raw=34 avg=46 min=21 max=127 warmAvg=50 warmSamples=301"
+      ]
+    },
+    {
+      "seconds": 398,
+      "screenshot": "13-398s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 73,
+      "mips": "[MIPS] count=360 raw=67 avg=44 min=21 max=67 warmAvg=50 warmSamples=341",
+      "last": [
+        "[MIPS] count=340 raw=30 avg=55 min=21 max=164 warmAvg=50 warmSamples=321",
+        "[MIPS] count=350 raw=39 avg=50 min=30 max=96 warmAvg=50 warmSamples=331",
+        "[MIPS] count=360 raw=67 avg=44 min=21 max=67 warmAvg=50 warmSamples=341"
+      ]
+    },
+    {
+      "seconds": 428,
+      "screenshot": "14-428s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 76,
+      "mips": "[MIPS] count=390 raw=33 avg=48 min=28 max=68 warmAvg=49 warmSamples=371",
+      "last": [
+        "[MIPS] count=370 raw=27 avg=40 min=21 max=67 warmAvg=49 warmSamples=351",
+        "[MIPS] count=380 raw=28 avg=42 min=27 max=67 warmAvg=49 warmSamples=361",
+        "[MIPS] count=390 raw=33 avg=48 min=28 max=68 warmAvg=49 warmSamples=371"
+      ]
+    },
+    {
+      "seconds": 459,
+      "screenshot": "15-459s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 79,
+      "mips": "[MIPS] count=420 raw=45 avg=44 min=23 max=133 warmAvg=49 warmSamples=401",
+      "last": [
+        "[MIPS] count=400 raw=25 avg=51 min=25 max=128 warmAvg=49 warmSamples=381",
+        "[MIPS] count=410 raw=23 avg=45 min=23 max=128 warmAvg=49 warmSamples=391",
+        "[MIPS] count=420 raw=45 avg=44 min=23 max=133 warmAvg=49 warmSamples=401"
+      ]
+    },
+    {
+      "seconds": 489,
+      "screenshot": "16-489s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 82,
+      "mips": "[MIPS] count=450 raw=78 avg=45 min=24 max=103 warmAvg=49 warmSamples=431",
+      "last": [
+        "[MIPS] count=430 raw=48 avg=48 min=27 max=133 warmAvg=49 warmSamples=411",
+        "[MIPS] count=440 raw=45 avg=44 min=29 max=65 warmAvg=49 warmSamples=421",
+        "[MIPS] count=450 raw=78 avg=45 min=24 max=103 warmAvg=49 warmSamples=431"
+      ]
+    },
+    {
+      "seconds": 519,
+      "screenshot": "17-519s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 85,
+      "mips": "[MIPS] count=480 raw=51 avg=50 min=27 max=85 warmAvg=49 warmSamples=461",
+      "last": [
+        "[MIPS] count=460 raw=37 avg=47 min=24 max=103 warmAvg=49 warmSamples=441",
+        "[MIPS] count=470 raw=50 avg=48 min=27 max=81 warmAvg=49 warmSamples=451",
+        "[MIPS] count=480 raw=51 avg=50 min=27 max=85 warmAvg=49 warmSamples=461"
+      ]
+    },
+    {
+      "seconds": 549,
+      "screenshot": "18-549s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 88,
+      "mips": "[MIPS] count=510 raw=43 avg=52 min=27 max=118 warmAvg=49 warmSamples=491",
+      "last": [
+        "[MIPS] count=490 raw=45 avg=52 min=29 max=85 warmAvg=49 warmSamples=471",
+        "[MIPS] count=500 raw=100 avg=54 min=29 max=118 warmAvg=49 warmSamples=481",
+        "[MIPS] count=510 raw=43 avg=52 min=27 max=118 warmAvg=49 warmSamples=491"
+      ]
+    },
+    {
+      "seconds": 579,
+      "screenshot": "19-579s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 91,
+      "mips": "[MIPS] count=540 raw=28 avg=50 min=25 max=78 warmAvg=49 warmSamples=521",
+      "last": [
+        "[MIPS] count=520 raw=67 avg=49 min=27 max=82 warmAvg=49 warmSamples=501",
+        "[MIPS] count=530 raw=74 avg=52 min=35 max=82 warmAvg=49 warmSamples=511",
+        "[MIPS] count=540 raw=28 avg=50 min=25 max=78 warmAvg=49 warmSamples=521"
+      ]
+    },
+    {
+      "seconds": 609,
+      "screenshot": "20-609s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 94,
+      "mips": "[MIPS] count=570 raw=60 avg=50 min=26 max=81 warmAvg=49 warmSamples=551",
+      "last": [
+        "[MIPS] count=550 raw=32 avg=48 min=22 max=78 warmAvg=49 warmSamples=531",
+        "[MIPS] count=560 raw=80 avg=49 min=22 max=81 warmAvg=49 warmSamples=541",
+        "[MIPS] count=570 raw=60 avg=50 min=26 max=81 warmAvg=49 warmSamples=551"
+      ]
+    },
+    {
+      "seconds": 639,
+      "screenshot": "21-639s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 97,
+      "mips": "[MIPS] count=600 raw=96 avg=45 min=28 max=96 warmAvg=49 warmSamples=581",
+      "last": [
+        "[MIPS] count=580 raw=67 avg=50 min=26 max=80 warmAvg=49 warmSamples=561",
+        "[MIPS] count=590 raw=36 avg=44 min=28 max=67 warmAvg=49 warmSamples=571",
+        "[MIPS] count=600 raw=96 avg=45 min=28 max=96 warmAvg=49 warmSamples=581"
+      ]
+    },
+    {
+      "seconds": 670,
+      "screenshot": "22-670s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 100,
+      "mips": "[MIPS] count=630 raw=49 avg=51 min=20 max=116 warmAvg=49 warmSamples=611",
+      "last": [
+        "[MIPS] count=610 raw=65 avg=64 min=0 max=385 warmAvg=49 warmSamples=591",
+        "[MIPS] count=620 raw=52 avg=66 min=0 max=385 warmAvg=49 warmSamples=601",
+        "[MIPS] count=630 raw=49 avg=51 min=20 max=116 warmAvg=49 warmSamples=611"
+      ]
+    },
+    {
+      "seconds": 700,
+      "screenshot": "23-700s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 103,
+      "mips": "[MIPS] count=660 raw=61 avg=43 min=22 max=74 warmAvg=49 warmSamples=641",
+      "last": [
+        "[MIPS] count=640 raw=46 avg=45 min=26 max=82 warmAvg=49 warmSamples=621",
+        "[MIPS] count=650 raw=53 avg=42 min=22 max=82 warmAvg=49 warmSamples=631",
+        "[MIPS] count=660 raw=61 avg=43 min=22 max=74 warmAvg=49 warmSamples=641"
+      ]
+    },
+    {
+      "seconds": 730,
+      "screenshot": "24-730s.png",
+      "status": "Naruto The Setting Dawn 2.4 AI XOI is starting in Windows: this takes a while. Click the game to play.",
+      "lines": 106,
+      "mips": "[MIPS] count=690 raw=68 avg=46 min=23 max=84 warmAvg=49 warmSamples=671",
+      "last": [
+        "[MIPS] count=670 raw=35 avg=44 min=24 max=96 warmAvg=49 warmSamples=651",
+        "[MIPS] count=680 raw=67 avg=45 min=25 max=96 warmAvg=49 warmSamples=661",
+        "[MIPS] count=690 raw=68 avg=46 min=23 max=84 warmAvg=49 warmSamples=671"
+      ]
+    }
+  ],
+  "errors": [],
+  "options": [
+    {
+      "id": "dragon-ball-supper",
+      "title": "Dragon Bâll Suppêr (94 MB)"
+    },
+    {
+      "id": "fairy-tail",
+      "title": "Fairy Tail (50 MB)"
+    },
+    {
+      "id": "lf2-mod-convergence-ai-xoi",
+      "title": "LF2 mod CONVERGENCE (AI XOI) (81 MB)"
+    },
+    {
+      "id": "lf2-mod-hell-ai-xoi",
+      "title": "LF2 mod HELL (AI XOI) (103 MB)"
+    },
+    {
+      "id": "lf2-mod-kt-ai-xoi",
+      "title": "LF2 mod KT (AI XOI) (103 MB)"
+    },
+    {
+      "id": "little-fight-2-ai-xoi",
+      "title": "Little Fight 2 (AI XOI) (31 MB)"
+    },
+    {
+      "id": "naruto-the-setting-dawn-2-4-ai-xoi",
+      "title": "Naruto The Setting Dawn 2.4 AI XOI (71 MB)"
+    },
+    {
+      "id": "naruto-the-setting-dawn-2-6",
+      "title": "Naruto The Setting Dawn 2.6 (46 MB)"
+    },
+    {
+      "id": "one-piece-grandworld-no-balance-ai-xoi",
+      "title": "one piece grandWorld (no balance) AI XOI (107 MB)"
+    },
+    {
+      "id": "one-piece-newest-balance",
+      "title": "one piece newest (balance) (259 MB)"
+    }
+  ],
+  "keys": "clicked the game, then pressed Enter, J, J, Enter",
+  "finished": "2026-11-09T13:35:53.057Z"
+}
