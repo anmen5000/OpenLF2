@@ -25,7 +25,8 @@
 --   a, c       gains, as shares of each number's range: a the step size, c the nudge (defaults 0.02 and 0.08),
 --              decaying as a / (total / 10 + k)^0.602 and c / k^0.101 at the chain's k-th iteration
 --   seed       the chain's own random numbers (pairs, stages, nudges)
---   ids        fighter ids to draw pairs from (all a player can choose when absent); limit: frames per game
+--   ids        fighter ids to draw pairs from (all a player can choose when absent, less those the match seats nobody
+--              for: the Template); limit: frames per game
 --   stall      a game in which nobody loses HP for this many frames ends there (default 1800, a minute; 0: never),
 --              scored as at the limit: a mod's training dummy that only stands, or two fighters that cannot reach
 --              each other, says nothing about the numbers and only costs time
@@ -115,8 +116,12 @@ local function players(config)
     return smart, alt
 end
 
--- The fighters pairs are drawn from: config.ids, or every one a player can choose (no hidden ones).
-local function choices(config, fighters)
+-- The fighters pairs are drawn from: config.ids, or every one a player can choose (no hidden ones) — less those the
+-- match seats nobody for, each tried once here: the Template (id 0 in the original and most mods, not hidden), whose
+-- seat the match leaves empty as the original does (match.lua, spectator_seat: choosing him is watching the game), and
+-- a fighter whose data the match cannot load. A pair drawn with one of them played no game (before: a sixth of the
+-- draws with the Template among eleven fighters, "SPSA game failed: ... (a nil value)" in the log).
+local function choices(config, fighters, backgrounds)
     local list = {}
     local by_id = {}
     for index, fighter in ipairs(fighters) do by_id[fighter.id] = by_id[fighter.id] or index end
@@ -129,8 +134,24 @@ local function choices(config, fighters)
             if not fighter.hidden then list[#list + 1] = index end
         end
     end
-    assert(#list > 0, "no fighters to draw pairs from")
-    return list
+    local seated, left_out = {}, {}
+    for _, index in ipairs(list) do
+        local ok, reason = pcall(function()
+            local slots = {[0] = {kind = "computer", fighter = index, team = 1}, [1] = {kind = "computer", fighter = index, team = 2}}
+            local state = match.create({mode = constants.modes.versus, difficulty = config.difficulty or -2, background = 0,
+                fighters = fighters, backgrounds = backgrounds, slots = slots})
+            if not (state.items[10] and state.items[11]) then return "the match seats nobody for him" end
+        end)
+        if ok and not reason then
+            seated[#seated + 1] = index
+        else
+            local fighter = fighters[index]
+            left_out[#left_out + 1] = string.format("%s (id %d): %s", tostring(fighter.name), fighter.id, tostring(reason))
+        end
+    end
+    if #left_out > 0 then engine.log("SPSA pool leaves out " .. table.concat(left_out, "; ")) end
+    assert(#seated > 0, "no fighters to draw pairs from")
+    return seated
 end
 
 -- One game: "smart" plays fighters[first] (slot 0) against "smart@<alt>" — or config.opponent — with
@@ -144,6 +165,7 @@ local function play(config, fighters, backgrounds, row, first, second, swap)
         local state = match.create({mode = constants.modes.versus, difficulty = config.difficulty or -2, background = row,
             fighters = fighters, backgrounds = backgrounds, slots = slots})
         local own, other = state.items[10 + smart_slot], state.items[11 - smart_slot]
+        assert(own and other, "the match seats nobody for a fighter of the pair")
         own.brain, other.brain = "smart", config.opponent or ("smart@" .. (config.alt or "spsa_alt"))
         local held = {functions = "", function_presses = "", keys = {}}
         local stall, quiet, own_hp, other_hp = config.stall or 1800, 0, own.hp, other.hp
@@ -173,7 +195,7 @@ local function chain(config)
     local u = {}
     for index, number in ipairs(list) do u[index] = share(number, start[number.name] or number.default) end
     local fighters, backgrounds = catalog.load(), catalog.backgrounds()
-    local pool = choices(config, fighters)
+    local pool = choices(config, fighters, backgrounds)
     local random = generator(config.seed or 1)
     local a, c = config.a or 0.02, config.c or 0.08
     local alpha, gamma = config.alpha or 0.602, config.gamma or 0.101
@@ -302,7 +324,7 @@ local function check(config)
     for _, entry in ipairs(smart.tune_ranges) do defaults[entry[1]] = (smart.xoi_own or {})[entry[1]] or entry[2] end
     local base = config.base and require("bench/" .. config.base) or defaults
     local fighters, backgrounds = catalog.load(), catalog.backgrounds()
-    local pool = choices(config, fighters)
+    local pool = choices(config, fighters, backgrounds)
     -- The tuned numbers against the base (alt); or, against a fixed opponent, the tuned numbers and then the base,
     -- on the same pairs, each reported.
     local function run(label, seed)

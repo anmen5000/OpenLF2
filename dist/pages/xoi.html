@@ -624,7 +624,8 @@
           trình khoảng 1 đến 3 giây, chỉ dùng CPU (mỗi tiến trình tới khoảng nửa GB bộ nhớ); các tiến trình chạy ở mức ưu tiên thấp
           nên máy vẫn dùng được. Hết mỗi vòng <code>spsa.bat</code> in vòng ấy mất bao lâu và còn khoảng bao lâu. <b>Tạm dừng:</b>
           đóng cửa sổ của nó và các cửa sổ SPSA thu nhỏ (hoặc tắt máy); nháy đúp lại là làm tiếp — các vòng đã xong được giữ, và
-          cả phần vòng đang dở đã đánh, trừ vài cặp cuối.</li>
+          cả phần vòng đang dở đã đánh, trừ vài cặp cuối. Máy mất điện đột ngột đúng lúc ghi số cuối vòng (file số của vòng ấy
+          hỏng, toàn số 0) cũng không sao: chạy lại, nó gộp lại vòng ấy từ các tiến trình đã đánh rồi đi tiếp.</li>
         <li><b>Bộ số của từng bản mod, dùng được ngay:</b> chạy xong, <code>xoi-&lt;tên&gt;\tune.txt</code> là các số đã chỉnh, và
           <code>&lt;tên&gt;-xoi.zip</code> là bản mod có bộ số ấy bên trong (<code>xoi/tune.txt</code> cạnh thư mục <code>data</code>,
           kèm bộ nhớ XOI nếu <code>xoi-hoc.bat</code> đã huấn luyện). Tải nó lên relay thay cho bản mod: XOI chơi bản mod ấy bằng bộ

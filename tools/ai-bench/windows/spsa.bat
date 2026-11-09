@@ -160,18 +160,23 @@ set /a E=1, K_DAU=0
 :vong_tiep
 if %E% GTR %VONG% goto kiem
 set "D=%LV%\vong-%E%"
+rem Vong da gop xong: so cua no o start-sau.lua (dong --SPSA_START). File hong - may tat dot ngot luc ghi, Windows de
+rem lai file toan so 0 - thi bo, gop lai vong ay tu cac tien trinh da danh (khong danh lai).
 if exist "%D%\start-sau.lua" (
-  set "TRUOC=%D%\start-sau.lua"
-  set /a K_DAU+=K_NOM
-  if exist "%D%\k-sau.txt" set /p K_DAU=<"%D%\k-sau.txt"
-  set /a E+=1
-  goto vong_tiep
+  findstr /c:"--SPSA_START" "%D%\start-sau.lua" >nul 2>nul && (
+    set "TRUOC=%D%\start-sau.lua"
+    call :doc_k "%D%"
+    set /a E+=1
+    goto vong_tiep
+  )
+  echo File so cua vong %E% hong ^(may tat giua luc ghi?^): "%D%\start-sau.lua" - gop lai vong %E%.
+  del /q "%D%\start-sau.lua" 2>nul
+  del /q "%D%\k-sau.txt" 2>nul
 )
 call :mot_vong
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-sau.lua"
-set /a K_DAU+=K_NOM
-if exist "%D%\k-sau.txt" set /p K_DAU=<"%D%\k-sau.txt"
+call :doc_k "%D%"
 set /a E+=1
 goto vong_tiep
 
@@ -179,6 +184,25 @@ goto vong_tiep
 echo.
 echo === Vong %E%/%VONG%: %N% tien trinh danh trong %PHUT_VONG% phut ^(%TIME%^) ===
 call :giay BAT_DAU
+set /a FIRST=K_DAU
+set "GHI_CHU="
+rem Cac tien trinh cua vong nay da danh xong lan truoc ma chua co so gop (may tat giua luc gop, hay file so hong): chi
+rem gop lai, khong danh lai.
+if exist "%D%" (
+  set /a XONG_N=0, CHUA_N=0
+  pushd "%D%"
+  for /d %%p in (p*) do if exist "%%p\out.txt" (
+    set "XONG_P="
+    findstr /c:"SPSA chain done" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
+    if defined XONG_P (set /a XONG_N+=1) else set /a CHUA_N+=1
+  )
+  popd
+  if !XONG_N! GEQ 1 if !CHUA_N! EQU 0 (
+    echo   ^(cac tien trinh da danh xong lan truoc: chi gop lai^)
+    set "GHI_CHU= - chi gop lai"
+    goto gop_vong
+  )
+)
 rem Vong nay da chay do lan truoc (dong cua so, tat may): giu phan da danh trong truoc\<lan>, gop chung o cuoi vong.
 rem (Mau tim tep: pushd vao thu muc roi dung duong dan tuong doi - mau co duong dan tuyet doi trong ngoac kep thi Wine
 rem khong tim ra, khi thu file nay.)
@@ -198,9 +222,7 @@ if defined DO_DANG (
   popd
   echo   ^(lam tiep vong do dang: giu phan da danh o lan truoc^)
 )
-if exist "%D%\gop" rmdir /s /q "%D%\gop"
 if not exist "%D%" mkdir "%D%"
-set /a FIRST=K_DAU
 call :chuan_bi "%D%" "%TRUOC%"
 set /a PI=0
 for /L %%k in (1,1,%N%) do (
@@ -211,9 +233,11 @@ for /L %%k in (1,1,%N%) do (
   start "SPSA vong %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 vong-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
+:gop_vong
 rem Gop: buoc dich trung binh moi cap cua cac tien trinh (ca phan cua cac lan truoc trong truoc\, va tien trinh bi
 rem dung giua chung voi phan den lan bao cuoi).
 set "M=%D%\gop"
+if exist "%M%" rmdir /s /q "%M%"
 mkdir "%M%"
 call :ban_bench "%M%"
 copy /y "%TRUOC%" "%M%\spsa_start.lua" >nul
@@ -222,7 +246,7 @@ set /a CO=0
 pushd "%D%"
 for /d %%p in (p*) do (
   call :lay_chuoi "%D%\%%p\out.txt" "%M%\spsa_chains.lua"
-  if exist "%%p\out.txt" findstr /c:"SPSA chain done" "%%p\out.txt" >>tom-tat.txt
+  if not defined GHI_CHU if exist "%%p\out.txt" findstr /c:"SPSA chain done" "%%p\out.txt" >>tom-tat.txt
 )
 if exist truoc (
   pushd truoc
@@ -246,7 +270,7 @@ move /y "%D%\start-sau.tmp" "%D%\start-sau.lua" >nul
 rem Vong nay mat bao lau (theo dong ho; qua nua dem van dung), ca qua trinh con khoang bao lau.
 call :giay XONG_LUC
 set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=VONG-E, CON=CON_V*PHUT_V, CON_G=CON/60, CON_P=CON %% 60"
->>"%LV%\thoi-gian.txt" echo Vong %E%/%VONG%: !CO! chuoi, !CAP_V! cap tran, xong luc %TIME%, mat !PHUT_V! phut
+>>"%LV%\thoi-gian.txt" echo Vong %E%/%VONG%: !CO! chuoi, !CAP_V! cap tran, xong luc %TIME%, mat !PHUT_V! phut!GHI_CHU!
 (
   echo Ket qua sau vong %E%/%VONG% ^(!CO! chuoi, !CAP_V! cap tran^):
   type "%D%\start-sau.lua"
@@ -256,7 +280,7 @@ set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=VONG-E, CON=CON_V*P
   echo.
   echo Cai dat: VONG=%VONG% PHUT_VONG=%PHUT_VONG% SONG_SONG=%N% PHUT_KIEM_TRA=%PHUT_KIEM_TRA% HAT_GIONG=%HAT_GIONG% DOI_THU=%DOI_THU%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
-  type "%LV%\thoi-gian.txt"
+  findstr /c:"Vong " /c:"tien trinh" "%LV%\thoi-gian.txt"
 ) >"%LV%\ket-qua.txt"
 echo Vong %E% xong luc %TIME%: !CO! chuoi, !CAP_V! cap tran, mat !PHUT_V! phut; con !CON_V! vong, khoang !CON_G! gio !CON_P! phut ^(chua ke kiem tra^).
 echo Cac so hien tai: "%LV%\ket-qua.txt"
@@ -384,6 +408,18 @@ if defined DOI_THU (
 ) else (
   >>"%K%\tong.txt" echo   %1. !TEN!: ban da chinh thang !W_%1!, ban goc thang !L_%1!, hoa !D_%1! ^(!M1!.!M2!%%^)
 )
+exit /b 0
+
+rem --- K_DAU sau vong o thu muc %1: so cap moi chuoi da danh den het vong ay, k-sau.txt (SPSA_K cua buoc gop) - file
+rem khong co, hay hong (may tat luc ghi) khong con la mot so nguyen, thi cong uoc chung K_NOM ---
+:doc_k
+set "K_FILE="
+if exist "%~1\k-sau.txt" set /p K_FILE=<"%~1\k-sau.txt"
+set "K_THUA="
+if defined K_FILE for /f "delims=0123456789" %%x in ("!K_FILE!") do set "K_THUA=%%x"
+set "K_HOP_LE="
+if defined K_FILE if not defined K_THUA set "K_HOP_LE=1"
+if defined K_HOP_LE (set /a K_DAU=K_FILE) else set /a K_DAU+=K_NOM
 exit /b 0
 
 rem --- So giay tu nua dem theo dong ho vao bien %1 (%TIME% la gio:phut:giay; gio duoi 10 co dau cach o dau) ---

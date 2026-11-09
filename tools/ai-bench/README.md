@@ -178,8 +178,9 @@ XOI's alone: INSANE! keeps the hand-set ones, so that the last level is plainly 
 the way chess engines tune theirs (SPSA: simultaneous perturbation stochastic approximation): each iteration nudges
 every number at once by the same share of its range, each up or down at random, lets the numbers nudged one way
 (`base/game/smart_ai`) fight those nudged the other way (a copy of the same file in this package as `spsa_alt.lua`) —
-two games on one stage, each version playing each fighter of a random pair — and moves every number toward the
-side that did better, by how much better (a win counts 1 and the HP left above the other's a share of 500).
+two games on one stage, each version playing each fighter of a random pair (drawn among the fighters a player can
+choose, less those the match seats nobody for: the Template) — and moves every number toward the side that did
+better, by how much better (a win counts 1 and the HP left above the other's a share of 500).
 
 ```lua
 -- one chain of 40 iterations from XOI's own numbers (spsa_alt.lua: a copy of scripts/base/game/smart_ai.lua)
@@ -213,7 +214,9 @@ thread at below-normal priority, the mods beside it shared among the chains, `VO
 and XOI's notes if trained, inside). With one mod beside it, a run starts from that mod's numbers.
 Stopped half way (windows closed, the PC shut down), it goes on when started again: finished rounds stay, and the
 round under way keeps what its chains had reported (`spsa\vong-<n>\truoc\<attempt>\p<k>.txt`), merged with what
-a new attempt plays. After each round it gives the round's minutes and about how long the rest will take
+a new attempt plays; a round whose chains all finished but whose numbers were not written, or were left full of zeros
+by a PC cut off while writing them (`start-sau.lua` without its `--SPSA_START` line), is merged again from those
+chains without playing again. After each round it gives the round's minutes and about how long the rest will take
 (`spsa\thoi-gian.txt`), and the check's result comes for each mod as well as in all. A pair takes a process about 1
 to 2 seconds with LuaJIT (Naruto 2.4 1.0, OPLoS 2.1X 1.1, One Piece GrandWorld 1.7, KT-LF2 2.1; PUC Lua 2.5 to 5
 times as long), and a process holds up to about half a GB once it has met its mod's fighters (fewer chains on a PC

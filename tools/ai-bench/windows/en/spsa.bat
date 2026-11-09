@@ -163,18 +163,24 @@ set /a E=1, K_DAU=0
 :vong_tiep
 if %E% GTR %ROUNDS% goto kiem
 set "D=%LV%\round-%E%"
+rem A merged round: its numbers in start-after.lua (the --SPSA_START line). A broken file - the PC cut off while it was
+rem being written, Windows leaves a file of zeros - is dropped, and the round merged again from the processes that
+rem played it (not played again).
 if exist "%D%\start-after.lua" (
-  set "TRUOC=%D%\start-after.lua"
-  set /a K_DAU+=K_NOM
-  if exist "%D%\after.txt" set /p K_DAU=<"%D%\after.txt"
-  set /a E+=1
-  goto vong_tiep
+  findstr /c:"--SPSA_START" "%D%\start-after.lua" >nul 2>nul && (
+    set "TRUOC=%D%\start-after.lua"
+    call :doc_k "%D%"
+    set /a E+=1
+    goto vong_tiep
+  )
+  echo The numbers file of round %E% is broken ^(PC cut off while writing?^): "%D%\start-after.lua" - merging round %E% again.
+  del /q "%D%\start-after.lua" 2>nul
+  del /q "%D%\after.txt" 2>nul
 )
 call :mot_vong
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-after.lua"
-set /a K_DAU+=K_NOM
-if exist "%D%\after.txt" set /p K_DAU=<"%D%\after.txt"
+call :doc_k "%D%"
 set /a E+=1
 goto vong_tiep
 
@@ -182,6 +188,25 @@ goto vong_tiep
 echo.
 echo === Round %E%/%ROUNDS%: %N% processes playing for %ROUND_MINUTES% minutes ^(%TIME%^) ===
 call :giay BAT_DAU
+set /a FIRST=K_DAU
+set "GHI_CHU="
+rem The processes of this round all finished last time but their numbers were not merged (PC cut off during the merge,
+rem or the numbers file is broken): only merge again, do not play again.
+if exist "%D%" (
+  set /a XONG_N=0, CHUA_N=0
+  pushd "%D%"
+  for /d %%p in (p*) do if exist "%%p\out.txt" (
+    set "XONG_P="
+    findstr /c:"SPSA chain done" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
+    if defined XONG_P (set /a XONG_N+=1) else set /a CHUA_N+=1
+  )
+  popd
+  if !XONG_N! GEQ 1 if !CHUA_N! EQU 0 (
+    echo   ^(the processes finished last time: only merging again^)
+    set "GHI_CHU= - merged again only"
+    goto gop_vong
+  )
+)
 rem This round was left half done last time (window closed, PC shut down): what it played is kept in earlier\<n> and
 rem merged in at the end of the round. (File patterns: pushd into the folder, then a relative path - a pattern with a
 rem quoted absolute path is not found by Wine, when this file is tried there.)
@@ -201,9 +226,7 @@ if defined DO_DANG (
   popd
   echo   ^(going on with the unfinished round: keeping what the earlier run played^)
 )
-if exist "%D%\merge" rmdir /s /q "%D%\merge"
 if not exist "%D%" mkdir "%D%"
-set /a FIRST=K_DAU
 call :chuan_bi "%D%" "%TRUOC%"
 set /a PI=0
 for /L %%k in (1,1,%N%) do (
@@ -214,9 +237,11 @@ for /L %%k in (1,1,%N%) do (
   start "SPSA round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
+:gop_vong
 rem Merge: the mean step per pair over the processes (the earlier runs' parts in earlier\ too, and a process stopped
 rem midway with its part up to its last report).
 set "M=%D%\merge"
+if exist "%M%" rmdir /s /q "%M%"
 mkdir "%M%"
 call :ban_bench "%M%"
 copy /y "%TRUOC%" "%M%\spsa_start.lua" >nul
@@ -225,7 +250,7 @@ set /a CO=0
 pushd "%D%"
 for /d %%p in (p*) do (
   call :lay_chuoi "%D%\%%p\out.txt" "%M%\spsa_chains.lua"
-  if exist "%%p\out.txt" findstr /c:"SPSA chain done" "%%p\out.txt" >>summary.txt
+  if not defined GHI_CHU if exist "%%p\out.txt" findstr /c:"SPSA chain done" "%%p\out.txt" >>summary.txt
 )
 if exist earlier (
   pushd earlier
@@ -249,7 +274,7 @@ move /y "%D%\start-after.tmp" "%D%\start-after.lua" >nul
 rem How long this round took (by the clock; right across midnight too), and about how long the whole run has left.
 call :giay XONG_LUC
 set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=ROUNDS-E, CON=CON_V*PHUT_V, CON_G=CON/60, CON_P=CON %% 60"
->>"%LV%\timing.txt" echo Round %E%/%ROUNDS%: !CO! chains, !CAP_V! pairs, finished at %TIME%, took !PHUT_V! minutes
+>>"%LV%\timing.txt" echo Round %E%/%ROUNDS%: !CO! chains, !CAP_V! pairs, finished at %TIME%, took !PHUT_V! minutes!GHI_CHU!
 (
   echo Results after round %E%/%ROUNDS% ^(!CO! chains, !CAP_V! pairs^):
   type "%D%\start-after.lua"
@@ -259,7 +284,7 @@ set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=ROUNDS-E, CON=CON_V
   echo.
   echo Settings: ROUNDS=%ROUNDS% ROUND_MINUTES=%ROUND_MINUTES% PARALLEL=%N% CHECK_MINUTES=%CHECK_MINUTES% FIRST_SEED=%FIRST_SEED% OPPONENT=%OPPONENT%; mods:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
-  type "%LV%\timing.txt"
+  findstr /c:"Round " /c:"process" "%LV%\timing.txt"
 ) >"%LV%\results.txt"
 echo Round %E% finished at %TIME%: !CO! chains, !CAP_V! pairs, took !PHUT_V! minutes; !CON_V! rounds left, about !CON_G! hours !CON_P! minutes ^(the check not counted^).
 echo Current numbers: "%LV%\results.txt"
@@ -387,6 +412,18 @@ if defined OPPONENT (
 ) else (
   >>"%K%\totals.txt" echo   %1. !TEN!: tuned won !W_%1!, original won !L_%1!, drawn !D_%1! ^(!M1!.!M2!%%^)
 )
+exit /b 0
+
+rem --- K_DAU after the round in folder %1: the pairs every chain had played by the end of that round, after.txt (the
+rem merge's SPSA_K) - with no file, or a broken one (PC cut off while writing) that is no whole number, the estimate K_NOM is added ---
+:doc_k
+set "K_FILE="
+if exist "%~1\after.txt" set /p K_FILE=<"%~1\after.txt"
+set "K_THUA="
+if defined K_FILE for /f "delims=0123456789" %%x in ("!K_FILE!") do set "K_THUA=%%x"
+set "K_HOP_LE="
+if defined K_FILE if not defined K_THUA set "K_HOP_LE=1"
+if defined K_HOP_LE (set /a K_DAU=K_FILE) else set /a K_DAU+=K_NOM
 exit /b 0
 
 rem --- Seconds since midnight by the clock into variable %1 (%TIME% is hours:minutes:seconds; an hour under 10 has a leading space) ---

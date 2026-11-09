@@ -524,6 +524,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   360 games against it (only its Deep holds its own)
 
 ### Fixed
+- SPSA (`tools/ai-bench/spsa.lua`) drew the Template among the fighters (id 0, not hidden), whom the match seats
+  nobody for (as the original: choosing him is watching), so a sixth of its draws played no game — four "SPSA game
+  failed: ... (a nil value)" lines an iteration in a chain's log, the chain's time-bound round the shorter for them
+  and the tuned numbers otherwise unharmed. Each fighter is now seated once before the chain, and those the match
+  seats nobody for, or whose data it cannot load, are left out ("SPSA pool leaves out Template (id 0)")
+- `windows/spsa.bat` (and the English `en/spsa.bat`): a PC cut off while a round's numbers were being written
+  (`spsa\vong-<n>\start-sau.lua`, which Windows then leaves full of zeros) stopped every later round at once,
+  "BENCH ERROR: ... bench/spsa_start.lua:1: unexpected symbol" in each process's out.txt and "[LOI] Khong tien
+  trinh nao danh duoc cap nao". The file is now checked when a run goes on (the `--SPSA_START` line), a broken one
+  dropped and its round merged again from the processes that played it, without playing it again; `k-sau.txt` is
+  read only when it still holds a whole number (the estimate otherwise), and `ket-qua.txt` takes only the readable
+  lines of `thoi-gian.txt`
 - The web build (`dist/build-web.sh`) fetches each library's source from the first of several servers that serves
   it with the right digest: a GitHub release download or download.savannah.gnu.org answering 504 failed four web
   builds in a row (the site's and the kit's) on November 8; SDL and SDL_ttf now fall back to libsdl.org, FreeType to

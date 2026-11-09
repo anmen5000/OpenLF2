@@ -27,7 +27,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    A pair is two games, same fighters and stage, sides swapped. In a round every process plays pairs until
    the minutes are up, all stopping together (no thread waits for a slower one); then the mean step per pair
    is taken, every mod weighing the same. To pause: close its window and the minimized SPSA windows; run it
-   again to go on - finished rounds stay, and so does what the round under way had played. Several mods at
+   again to go on - finished rounds stay, and so does what the round under way had played (a PC cut off while
+   a round's numbers were written: that round is merged again, not played again). Several mods at
    once: put their .zip files next to it; the check gives each mod's result too. A game in which nobody
    loses HP for a minute ends there, and a window stuck far longer than the others is stopped.
    Each mod's numbers: at the end it writes xoi-<mod>\tune.txt and <mod>-xoi.zip, the mod with xoi\tune.txt
