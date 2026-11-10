@@ -62,7 +62,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    The original zip or the <mod>-xoi.zip of spsa.bat/train.bat both do (package 68 on): XOI records with the mod's
    numbers and notes (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip),
    a -xoi.zip beside its original is skipped when the folder is scanned, and a -xoi.zip given is updated itself (the
-   earlier one kept as -xoi-previous.zip).
+   earlier one kept as -xoi-previous.zip). OPPONENT=xoi (package 71): XOI records against itself in a mod with an AI
+   of its own too - for mods whose own AI is far weaker than XOI (Dragon Ball Super's loses most of its games to
+   XOI), where a brain would only learn to beat that AI; leave it empty for Sauce's pack. Run spsa.bat first, then
+   brain.bat: the brain learns on top of the numbers (run a few more rounds of brain.bat after a new spsa.bat). The
+   owner's 10 rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI,
+   without 45.8%.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

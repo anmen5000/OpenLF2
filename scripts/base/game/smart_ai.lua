@@ -162,6 +162,17 @@ smart.tune_ranges = {
     {"kite_shots", 2, 1, 3, true},
     -- The share of a move's score that the learned expectation takes, where a mod has a brain (xoi/brain.txt, below).
     {"brain_weight", 0.5, 0, 1},
+    -- Momentum (version 42; the decision's momentum block): the HP the fighter dealt its target lately less the HP it
+    -- took, each fading by half every 60 frames, over 60 HP (at most 1 either way). Ahead, the boldness grows by
+    -- momentum_aggression and the score a move needs and the price of the target's counter shrink by
+    -- momentum_threshold_up and momentum_counter_up (shares, times the momentum); behind, those two grow by
+    -- momentum_threshold_down and momentum_counter_down and the danger kept away from by momentum_keep_down. All 0
+    -- by default — the fighter plays as without them — for a tuning by play to find what each mod wants, either way:
+    -- tried by hand (November 2026: bolder ahead, warier behind, both, the lead in the match instead, only while the
+    -- target is free) nothing beat the fighter without it, the gains of some fighters lost by others.
+    {"momentum_aggression", 0, -1, 1}, {"momentum_threshold_up", 0, -0.5, 0.5}, {"momentum_counter_up", 0, -0.5, 0.5},
+    {"momentum_threshold_down", 0, -0.6, 0.6}, {"momentum_counter_down", 0, -0.6, 0.6},
+    {"momentum_keep_down", 0, -0.6, 0.6},
 }
 -- XOI's numbers, tuned by play (SPSA, tools/ai-bench/spsa.lua). Version 40's: halfway between version 37's set and
 -- the project owner's second run against Sauce's AI (60 rounds on 83 threads, November 2026, 81 numbers; its set
@@ -191,6 +202,8 @@ smart.xoi_tune = {
     low_hp = 115, flip_reach = 47, flip_margin = -1, charge_lock = 27, weapon_step = 0.519854, mode_worth = 1.15793,
     loop_calm = 189, loop_free = 3, loop_factor = 0.694546, loop_floor = 0.039918, loop_forget = 111, loop_dodges = 4,
     heavy_room = 41, kite_far = 104, kite_room = 258, kite_height = 25, kite_shots = 2, brain_weight = 0.5,
+    momentum_aggression = 0, momentum_threshold_up = 0, momentum_counter_up = 0, momentum_threshold_down = 0,
+    momentum_counter_down = 0, momentum_keep_down = 0,
 }
 -- `base` (name = number, every number) with `values` laid over it, each kept within its range and whole numbers
 -- rounded: a new table.
@@ -414,8 +427,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 41
+smart.version = 42
 smart.history = {
+    {42, "2026-11-11", "Momentum, left to the tuning: the HP the fighter dealt its target lately less the HP it took, each fading by half every 60 frames, over 60 HP (at most 1 either way), can make it bolder ahead (momentum_aggression on the boldness; momentum_threshold_up and momentum_counter_up off the score a move needs and the price of the target's counter) or warier behind (momentum_threshold_down and momentum_counter_down on them, momentum_keep_down on the danger it keeps away from) - six numbers SPSA tunes with the others, 88 now, all 0 by default, so that the fighter plays as version 41 frame for frame (Sauce's pack, the ten originals both ways, 180 games, and KT-LF2: the same results game for game). Tried by hand in November 2026 - bolder ahead, warier behind, both, the lead in the match instead, only while the target is free - none beat the fighter without it (321 of 720 against Sauce's AI; the best 326, not confirmed on fresh seeds), Woody's and Freeze's losses eating Henry's and Davis's gains: a mod's own tuning can find what it wants, either way. And the kit's hoc-sau.bat (brain.bat) takes DOI_THU=xoi (OPPONENT=xoi): XOI records against itself in a pack with AI scripts of its own too - those of most mods are far weaker than Sauce's (Dragon Ball Super's loses most of its games to XOI), and a brain learned against them only learns to beat them. The project owner's first full hoc-sau run on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%."},
     {41, "2026-11-10", "A brain: a small network beside the hand-made score, learned from XOI's own games as chess engines' NNUE networks are learned from theirs. Before every move XOI works out a score by its rules (attack_score: the blow's worth, its cost, how likely the target answers first); the brain, given 58 numbers of the situation and the move (distances, heights, facing, HP, MP, speeds, weapons, ten state slots each for the fighter and the target, the target's wait and blink, frames since the last blow, positions, the move's hit time and hand-made score, its damage, MP, reach, length and kinds; brain_kit.features), predicts what the move will bring — HP dealt minus HP taken over the 45 frames after its start — and XOI moves its score halfway to that (tune.brain_weight 0.5). A brain is text (XOI_BRAIN lines: 58 inputs, 48 hidden units, the inputs' mean and spread) that a mod carries as xoi/brain.txt beside its data, as its notes and numbers; the match shows 'brain' beside XOI. The kit's hoc-sau.bat (brain.bat) makes one: rounds of recording (tools/ai-bench/record.lua, every move XOI starts with what came of it, XOI against the pack's own AI scripts where it has them, else against a copy of itself), the records trained inside the game (train.lua, LuaJIT, about 150,000 samples a second), the next round recorded with the brain just learned, then XOI with and without it against the same opponent. Tried on Sauce's pack ('lf2-AI VS and Stage Challenge', its AI the opponent): 55,000 records of 2,000 games gave a network whose predictions go with the outcome at 0.455 where the hand-made score goes at 0.197; with it, the ten original fighters won 368 of 720 games against Sauce's AI (version 40 alone 321), and 216 to 134 of 360 against XOI without it; a second round recorded with that brain (87,000 records in all) 377 of 720. The same brain did nothing for other mods (208 to 231 over four), so a brain is made for one pack. Besides: INSANE! and XOI play at their own levels in a pack with AI scripts of its own — up to version 40 a fighter with a script of its own kept it at those levels too, and in Sauce's pack, whose every fighter has one, the levels named INSANE! and XOI were that AI (the project owner saw its spacing by dashes after a knock-down); the scripts play at CRAZY! and below. And the learning of moves meets a mod built on data tricks (Nya of that pack: a thrown die that bursts into 10 to 60 HP by its face, a coin that turns into a vortex a second later by hidden attacks of kind 8 between her own objects, a swap of places with the enemy): a thrown thing whose burst differs between throws is measured over six throws from different points of the game's random sequence and worth their mean (the die 35 HP, where one throw said 10); a summon of the move's still alive with frames to come is waited for while the move is followed anyway, whatever frames it will reach by way of hits; a jump of position no step accounts for (120 pixels in a tick) is a teleport. XOI's Nya, who threw the die once in 40 games, throws it twice a game, beats Sauce's Nya 32 to 8 (version 40 29 to 11) and still loses to Sauce's Davis and Louis 1 to 39 (Sauce's own Nya wins 29 to 11 against them): her strength is the coin and the swap played together, the enemy swapped into the vortex, and the cards — nothing the data says. One more from his clips: a stream of thrown things (Julian's skull blasts in that pack: five 40-HP balls 3 frames apart for 50 MP, each steered onto the enemy's lane by Sauce's AI) was guarded ball by ball until the guard broke in a corner — met now as a heavy blow is, the ways out before the guard, a move out of their way worth its MP, the jump toward the thrower that clears them in the air and comes down nearer (answer: stream, a thing coming behind the one due or a move throwing several). XOI's Julian against Sauce's Julian 32 to 48 of 80 games (29 to 51 before: as even as that tells; the corner itself is not solved — got up in the lane, he still has no step out of balls steered after him, and the two things tried for it, looking past the blink at the ball landing as it ends and a run at the thrower to roll out of, both lost games, 164 to 153 of 360 against Sauce's AI and 13 to 27 against his Julian). Against Sauce's AI on the ten originals 160 of 360 games (version 40 164 on the same seeds); the five mods against version 40, 1,088 to 1,082 of 2,240: as even as they can tell."},
     {40, "2026-11-10", "XOI's numbers: halfway between version 37's and the project owner's second run against Sauce's AI (spsa.bat, DOI_THU=classic, 60 rounds of 15 minutes on 83 threads over the ten original fighters, about 580,000 pairs of games; its last five rounds and its check, the two sets against each other, after the kit's new spsa.bat had reset DOI_THU). That run's set alone plays the originals better — against Sauce's AI 343 of 720 games to version 37's 308 (47.6 to 42.8 percent; Henry 26 of 72, Rudolf 31), against XOI with version 37's numbers 186 to 166 — being bolder (attack_threshold 2.1 to 1.5), guarding faster and striking back from the guard less, keeping a little farther from longer arms and starting to run from farther; but on five mods without numbers of their own it lost a little to version 37's, 2,128 to 2,249 of 4,480 games over four seeds (One Piece 402 to 475, KT 392 to 466), the boldness punished by the mods' heavier moves. XOI being one player for every mod, the mean of the two sets is taken: the mods even (1,083 to 1,101 of 2,240), Sauce's AI 321 of 720, the originals 178 to 166 against version 37's numbers. The whole gain on the originals is there for a pack that carries the run's own numbers (xoi/tune.txt), and a run over Sauce's pack and the mods together — spsa.lua now has the two sets play each other in a pack without AI scripts of its own, under DOI_THU=classic — is the way to one set that has it all."},
     {39, "2026-11-09", "Foresees an enemy's move steered onto its line. A move's frames that take the up and down keys (a frame's dvz, base/game/control: 1 to a few pixels a frame in depth) let the one playing it bend it toward the opponent as it goes — what this player does with its own moves since version 35 (steer_keys), and what Sauce's AI and a person do. The forecast of an enemy's move under way (earliest_threat) took it for going straight: FreezeRV of mode Convergence dashes and grabs (D>J, a catch that takes a standing fighter, six frames of dash at dvz 1), and Freeze played by XOI steered it onto Firen's line while Firen, 20 pixels off that line and the grab 15 wide, saw it passing him by, stood still and was caught — then struck through the hold for most of the damage he took (the project owner's observation: Firen could hardly hurt Freeze). Now the blow is foreseen bent toward the fighter by as much as the move's frames from now to the blow can steer, at worst, and answered as any other: FirenRV against FreezeRV, both XOI with the mod's numbers, 4 of 40 games won up to version 38, now 27 (the two now wary of each other's grabs; Sauce's AI plays the pair 6 to 14). Against Sauce's AI on the ten original fighters 158 of 360 games (version 38 163), and the ten against version 38 itself 176 to 170 of 360: as even as 360 games can tell. Five mods against version 38 (8 fighters each, every pair both ways, 4 games, seeds 12345 and 777, then 4242 and 999): 1,113 to 1,054 and 1,094 to 1,081 — 2,207 to 2,135 over the 4,480 games, as even as they can tell, Convergence 440 to 421."},
@@ -3933,7 +3947,9 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
     local ready = move.ready + lead
     local knocked = box.fall >= 60 or target.timer_b0 + max(box.fall, 20) > 60
     local back_at = t + (knocked and 30 or stagger) + (context.counter_first or 99)
-    if ready >= back_at - 1 then score = score - (context.counter_damage or 0) * tune.counter_price * 14 / (t + tune.time_bias) * (tune.time_bias / 10) end
+    if ready >= back_at - 1 then
+        score = score - (context.counter_damage or 0) * tune.counter_price * (context.momentum_counter or 1) * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
+    end
     local open = ready - t - (knocked and 30 or stagger)
     if open > 0 then score = score - open * tune.open_cost end
     -- The whole of what the fighter can do gets its turn: a move not yet tried this match is a little more
@@ -5098,6 +5114,11 @@ function smart.control(state, index)
     context.notes, context.notes_situation, context.notes_spots, context.tries = nil, nil, nil, nil
     context.brain = xoi and smart.brain or nil
     context.calm = memory.calm
+    -- (The fighter's own momentum as last worked out, until the decision works it out again below: answering a blow
+    -- comes first. A teammate deciding before it on the same player left its own.)
+    context.momentum_threshold = memory.momentum_threshold or 1
+    context.momentum_counter = memory.momentum_counter or 1
+    context.momentum_keep = memory.momentum_keep or 1
     -- (A blow taken since the last frame: counted against what dealt it, see lesson_kit.)
     lesson_kit.note(state, index, self, memory, context)
     clear_keys(self)
@@ -5466,6 +5487,34 @@ function smart.control(state, index)
     -- taken for passive after a while, its counters no longer expected, and INSANE! started slow moves into them.)
     local passive = target_pressure ~= nil and target_pressure < tune.passive_pressure and (memory.punished or 0) < 2
     if passive then context.aggression = max(context.aggression, tune.passive_aggression) end
+    -- Momentum (the momentum_* numbers, all 0 unless a tuning by play set them): the HP dealt to the target lately
+    -- less the HP taken, each fading by half every 60 frames, over 60 HP; bolder or warier by it.
+    context.momentum_threshold, context.momentum_counter, context.momentum_keep = 1, 1, 1
+    do
+        local now = state.frame_number
+        local fade = 0.5 ^ (max(0, now - (memory.momentum_at or now)) / 60)
+        local dealt, taken = (memory.momentum_dealt or 0) * fade, (memory.momentum_taken or 0) * fade
+        if memory.momentum_target == memory.target and memory.momentum_target_hp then
+            dealt = dealt + max(0, memory.momentum_target_hp - target.hp)
+        end
+        if memory.momentum_hp then taken = taken + max(0, memory.momentum_hp - self.hp) end
+        memory.momentum_dealt, memory.momentum_taken, memory.momentum_at = dealt, taken, now
+        memory.momentum_target, memory.momentum_target_hp, memory.momentum_hp = memory.target, target.hp, self.hp
+        local momentum = min(1, max(-1, (dealt - taken) / 60))
+        if momentum > 0 then
+            if tune.momentum_aggression ~= 0 then
+                context.aggression = min(1, max(0, context.aggression + tune.momentum_aggression * momentum))
+            end
+            context.momentum_threshold = 1 - tune.momentum_threshold_up * momentum
+            context.momentum_counter = 1 - tune.momentum_counter_up * momentum
+        elseif momentum < 0 then
+            context.momentum_threshold = 1 - tune.momentum_threshold_down * momentum
+            context.momentum_counter = 1 - tune.momentum_counter_down * momentum
+            context.momentum_keep = 1 + tune.momentum_keep_down * momentum
+        end
+        memory.momentum_threshold, memory.momentum_counter = context.momentum_threshold, context.momentum_counter
+        memory.momentum_keep = context.momentum_keep
+    end
     -- A target that flips up out of its falls as soon as it may: where its roll takes it is where to strike.
     context.target_path = nil
     if (target.frame == 182 or target.frame == 188) and rare.flips_up(model) then
@@ -5708,8 +5757,10 @@ function smart.control(state, index)
     -- and what they would bring is lost if it waits.)
     local standing_now = own_setups and setup_kit.standing(context, self, context.analysis_of(self)) or nil
     local function threshold(chosen)
-        if chosen and chosen.answers and standing_now and #standing_now > 0 then return tune.attack_threshold * setup_kit.eager end
-        return tune.attack_threshold
+        if chosen and chosen.answers and standing_now and #standing_now > 0 then
+            return tune.attack_threshold * setup_kit.eager * context.momentum_threshold
+        end
+        return tune.attack_threshold * context.momentum_threshold
     end
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
     -- A dizzy target is grabbed (grab_kit: walked into, held, punched and thrown) when the hold is worth more than
@@ -5821,7 +5872,7 @@ function smart.control(state, index)
         local distance = abs(target.x_int - self.x_int)
         if distance > 50 and distance < 460 then
             local jump_move, jump_t, jump_score, lead, flight, flight_frames = approach_attack(context, self, fstate, target, danger)
-            if jump_move and jump_score > tune.attack_threshold then
+            if jump_move and jump_score > tune.attack_threshold * context.momentum_threshold then
                 local dir = target.x_int >= self.x_int and 1 or -1
                 local movement = self.record.movement or {}
                 local speed = fstate == states.running and (movement.dash_distance or 0) or (movement.jump_distance or 0)
@@ -5832,7 +5883,7 @@ function smart.control(state, index)
                 if not passive then
                     local along, along_damage = counter_along(context, target, self, target_lock, flight, flight_frames)
                     if along ~= nil and along <= jump_t then
-                        if worth_the_risk(memory, jump_score, jump_t, along_damage) > tune.attack_threshold then jump_risk = true else met = true end
+                        if worth_the_risk(memory, jump_score, jump_t, along_damage) > tune.attack_threshold * context.momentum_threshold then jump_risk = true else met = true end
                     end
                 end
                 if not met and not earliest_threat(state, index, self, lead + 6, plan, level.reaction, context) then
@@ -5959,7 +6010,7 @@ function smart.control(state, index)
     -- Standing, not turned toward the target either (turning round is a step toward it: into its reach, here).
     local keep_facing = false
     -- How much a free enemy's quick blows must threaten a spot for it to be left (more as a standoff drags on).
-    local keep_out = tune.keep_out_base + tune.keep_out_aggression * context.aggression
+    local keep_out = (tune.keep_out_base + tune.keep_out_aggression * context.aggression) * context.momentum_keep
     -- (Against loops: in a standoff long enough to be one, no spot is left for the enemy's blows — one of the two has
     -- to come in.)
     if (memory.calm or 0) >= tune.loop_calm then keep_out = math.huge end

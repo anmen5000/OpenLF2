@@ -586,6 +586,21 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (`spsa-settings.bat`), after their own defaults: a user's settings (VONG, PHUT_VONG, DOI_THU=classic…) kept there
   survive a new kit's `spsa.bat` copied over the old one — the November 2026 run lost its DOI_THU=classic for the
   last five rounds that way. The kit guide and READMEs say so
+- XOI v42: momentum, left to the tuning. The HP the fighter dealt its target lately less the HP it took (each fading
+  by half every 60 frames, over 60 HP) can make it bolder ahead — `momentum_aggression` on the boldness,
+  `momentum_threshold_up` and `momentum_counter_up` off the score a move needs and the price of the target's counter —
+  or warier behind (`momentum_threshold_down`, `momentum_counter_down`, and `momentum_keep_down` on the danger kept away
+  from): six numbers that SPSA tunes with the others (88 now), all 0 by default, so the fighter plays frame for frame
+  as v41 (Sauce's pack, the ten originals both ways, and KT-LF2: the same results game for game; replays the same under
+  LuaJIT and Lua 5.2). Tried by hand first, nothing beat the fighter without it, some fighters' gains lost by others':
+  each mod's own tuning can find what it wants, either way. A tuning already under way keeps the scripts it started
+  with (`spsa.bat` copies them once): the six join a new run, or the rounds after `spsa\scripts` is deleted
+- `hoc-sau.bat` takes `DOI_THU=xoi` (`brain.bat`: `OPPONENT=xoi`; `record.lua`'s `opponent = "xoi"`): XOI records, and
+  is checked, against itself in a pack with AI scripts of its own too — those of most mods are far weaker than XOI
+  (Dragon Ball Super's loses most of its games to it), and a brain learned against them only learns to beat them; left
+  empty, Sauce's pack keeps Sauce's AI. Any other value stops with a message. The run's line in `ket-qua.txt` names it.
+  The owner's first full run of `hoc-sau.bat` on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million
+  moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%
 
 ### Fixed
 - Sauce's own fighter in "lf2-AI VS and Stage Challenge": D+J+A always left a new shadow where he stood instead of

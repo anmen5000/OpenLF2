@@ -6,7 +6,7 @@ rem that prediction with the score it works out itself when choosing a move. The
 rem every move XOI starts over thousands of games, with the situation, the move and what came of it; then it is
 rem trained inside the game (a few minutes per million moves). (OpenLF2 package 67 or later.)
 rem Each round: the processes record data for RECORD_MINUTES minutes (XOI against the mod's own AI - ai\<id>.as
-rem scripts, Sauce's AI - when it has one, else against itself); the data of every round so far is gathered; one brain
+rem scripts, Sauce's AI - when it has one, else against itself; OPPONENT=xoi: always itself); the data of every round so far is gathered; one brain
 rem is trained per mod; the next round XOI records with the brain just learned. At the end a check: XOI with the brain
 rem and XOI without it play the same opponent, wins/losses go to brain\results.txt (send that file to whoever
 rem maintains the AI). Each mod's brain: xoi-<mod>\brain.txt, and <mod>-xoi.zip = the mod with the brain (and XOI's
@@ -40,6 +40,11 @@ rem Process priority: BELOWNORMAL (the PC stays usable while it runs), LOW, or N
 set "PRIORITY=BELOWNORMAL"
 rem First seed (the same seed replays the same run)
 set "FIRST_SEED=7000"
+rem The opponent (OPPONENT). Empty: XOI plays the mod's own AI when it has one (ai\<id>.as scripts, as Sauce's AI), else
+rem itself (without the brain). xoi: always itself, in a mod with an AI of its own too - for mods whose own AI is far
+rem weaker than XOI (KT-LF2, Dragon Ball Super, One Piece newest...): a brain learned against a weak AI only learns to
+rem beat that AI. It applies to every mod of the run, the check included (run Sauce's pack apart, with it empty).
+set "OPPONENT="
 rem The brain: neurons in the middle layer (HIDDEN) and passes over the whole data (EPOCHS). 48 and 8 are enough;
 rem more takes longer to learn.
 set "HIDDEN=48"
@@ -59,6 +64,13 @@ rem (This file calls itself for each process, in its own window: cmd /c call "<t
 rem <process number> <seed> <mod number>. No quotes beyond the file name: with a path holding spaces, Windows drops
 rem the first and last quote.)
 if /i "%~1"=="chay1" goto chay1
+set "DT_CFG="
+set "DT_GHI="
+if /i "%OPPONENT%"=="xoi" (
+  set DT_CFG=opponent = "xoi",
+  set "DT_GHI=, OPPONENT=xoi"
+)
+if defined OPPONENT if not defined DT_CFG (echo [ERROR] OPPONENT takes xoi ^(or nothing^), not "%OPPONENT%".& pause& exit /b 1)
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -145,6 +157,7 @@ set XS=--scripts "%LV%\scripts"
 echo Mods ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%  [xoi-%%TEN_%%p%%]
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
+if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
 echo To pause: close this window and the minimized ones. Running this file again goes on from there.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
 
@@ -215,7 +228,7 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=FIRST_SEED+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Brain - round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E% %%k !SEED! !PI!
   )
 )
@@ -321,7 +334,7 @@ for /L %%k in (1,1,%N%) do (
       >>"%K%\p%%k\package.manifest" echo module=xoi_brain^|xoi_brain.lua
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
-    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
+    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
     start "Brain - check %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 check %%k !SEED! !PI!
   )
 )
@@ -349,7 +362,7 @@ if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.zip.
 (
-  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%; mods:
+  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%%DT_GHI%; mods:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\timing.txt" findstr /c:"Round " "%LV%\timing.txt"
   if exist "%K%\totals.txt" type "%K%\totals.txt"

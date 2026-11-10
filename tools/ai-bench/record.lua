@@ -4,6 +4,9 @@
 -- target lost and the HP the player lost meanwhile. Random pairs of the pool (as spsa) on random stages.
 --   brains = {"xoi", "classic"} (brains[1] is recorded; "both" records brains[2] too when it is a smart one)
 --   games (default 20), seed, limit (frames a game, 9000), window (45), ids (fighter ids; all seated otherwise)
+--   opponent "xoi": XOI itself (config.alt's copy, without the brain) even in a pack with AI scripts of its own — those
+--   of most mods are far weaker than Sauce's, and a brain learned against them learns to beat a weak player
+--   (hoc-sau.bat's DOI_THU=xoi, brain.bat's OPPONENT=xoi)
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -50,8 +53,12 @@ function job.run(config)
     -- The opponent: the original player with the pack's own AI scripts where it has them (Sauce's AI); else XOI
     -- itself — a copy of the player (config.alt, a bench module copy of smart_ai.lua: hoc-sau.bat makes one) so
     -- that a brain given to the recorded side is not the opponent's too.
-    local names = config.brains or {"xoi", scripted and "classic" or (config.alt and ("xoi@" .. config.alt) or "xoi")}
-    if not config.brains then engine.log("record: opponent " .. names[2] .. (scripted and " (the pack's own AI scripts)" or " (no AI scripts of the pack's own)")) end
+    local own_scripts = scripted and config.opponent ~= "xoi"
+    local names = config.brains or {"xoi", own_scripts and "classic" or (config.alt and ("xoi@" .. config.alt) or "xoi")}
+    if not config.brains then
+        engine.log("record: opponent " .. names[2] .. (own_scripts and " (the pack's own AI scripts)"
+            or scripted and " (XOI itself: opponent = xoi, the pack's own AI scripts left out)" or " (no AI scripts of the pack's own)"))
+    end
     -- config.brain = {module = ..., on = {1}}: the recorded player plays with a brain (as duel's option), the
     -- records then of the play it leads to — the next brain is trained on them.
     local on_list = config.brain and (config.brain.on or {1}) or {}

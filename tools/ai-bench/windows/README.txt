@@ -59,7 +59,11 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    <mod>-xoi.zip of spsa.bat/xoi-hoc.bat both do (package 68 on): XOI records with the mod's numbers and notes
    (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip), a -xoi.zip beside
    its original is skipped when the folder is scanned, and a -xoi.zip given is updated itself (the earlier one kept
-   as -xoi-truoc.zip).
+   as -xoi-truoc.zip). DOI_THU=xoi (package 71): XOI records against itself in a mod with an AI of its own too - for
+   mods whose own AI is far weaker than XOI (Dragon Ball Super's loses most of its games to XOI), where a brain
+   would only learn to beat that AI; leave it empty for Sauce's pack. Run spsa.bat first, then hoc-sau.bat: the
+   brain learns on top of the numbers (run a few more rounds of hoc-sau.bat after a new spsa.bat). The owner's 10
+   rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI, without 45.8%.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -155,7 +159,11 @@ chơi được chính các file của bản mod.
    Bản gốc hay bản <tên>-xoi.zip của spsa.bat/xoi-hoc.bat đều dùng được (từ gói 68): XOI ghi dữ liệu với bộ số và
    bộ nhớ của bản mod (xoi-<tên>\tune.txt và notes.txt cạnh file nếu có, không thì bộ trong file zip); file -xoi.zip
    nằm cạnh bản gốc thì bị bỏ qua khi tự quét thư mục; đưa vào chính bản -xoi.zip thì nó được cập nhật tại chỗ
-   (bản trước giữ ở -xoi-truoc.zip).
+   (bản trước giữ ở -xoi-truoc.zip). DOI_THU=xoi (gói 71): XOI ghi dữ liệu khi đánh với chính nó, kể cả ở bản mod
+   có AI riêng - cho bản mod có AI riêng yếu hơn XOI nhiều (AI của Dragon Ball Super thua XOI phần lớn số trận),
+   nơi bộ não chỉ học cách thắng AI ấy; để trống cho bản Sauce. Chạy spsa.bat trước rồi mới hoc-sau.bat: bộ não học
+   trên nền bộ số (chạy spsa.bat lại thì chạy thêm vài lượt hoc-sau.bat). Lần chạy 10 lượt của chủ dự án trên bản
+   Sauce (80 luồng): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

@@ -5,7 +5,7 @@ rem don ay se mang lai gi (mau gay duoc tru mau mat trong 1,5 giay sau), va XOI 
 rem khi chon don. Bo nao hoc tu du lieu ghi lai: moi lan XOI ra don trong hang nghin tran, ghi tinh huong + don + ket
 rem qua; roi huan luyen ngay trong game (vai phut moi trieu lan ra don). (OpenLF2 ban 67 tro len.)
 rem Moi luot: cac tien trinh ghi du lieu PHUT_GHI phut (XOI danh voi AI cua ban mod - script ai\<id>.as nhu AI cua
-rem Sauce - neu co, khong thi voi chinh no); gop du lieu cua moi luot tu truoc toi gio; huan luyen mot bo nao cho
+rem Sauce - neu co, khong thi voi chinh no; DOI_THU=xoi: luon voi chinh no); gop du lieu cua moi luot tu truoc toi gio; huan luyen mot bo nao cho
 rem tung ban mod; luot sau XOI ghi du lieu voi bo nao vua hoc. Cuoi cung kiem tra: XOI co bo nao va XOI khong co
 rem cung danh doi thu ay, so thang/thua ghi vao hoc-sau\ket-qua.txt (gui file nay cho nguoi lam AI). Bo nao cua moi
 rem ban mod: xoi-<ten>\brain.txt, va <ten>-xoi.zip = ban mod co bo nao (cung bo so va bo nho XOI neu da co) - tai
@@ -35,6 +35,11 @@ rem Muc uu tien cua cac tien trinh: BELOWNORMAL (ban van dung may muot trong luc
 set "UU_TIEN=BELOWNORMAL"
 rem Hat giong dau (cung hat giong thi chay lai y het)
 set "HAT_GIONG=7000"
+rem Doi thu (DOI_THU). De trong: XOI danh voi AI rieng cua ban mod neu co (script ai\<id>.as, nhu AI cua Sauce), khong
+rem thi voi chinh no (khong co bo nao). Ghi xoi: luon danh voi chinh no, ke ca ban mod co AI rieng - cho ban mod co AI
+rem rieng yeu hon XOI nhieu (KT-LF2, Dragon Ball Super, One Piece ban moi...): hoc danh mot AI yeu thi bo nao chi hoc
+rem cach thang AI ay. Ap dung cho moi ban mod cua lan chay, ca phan kiem tra (ban Sauce thi chay rieng, de trong).
+set "DOI_THU="
 rem Bo nao: so no-ron lop giua (AN) va so lan hoc qua toan bo du lieu (EPOCH). 48 va 8 la du; lon hon thi hoc lau hon.
 set "AN=48"
 set "EPOCH=8"
@@ -53,6 +58,13 @@ rem (File nay tu goi lai chinh no cho tung tien trinh, trong cua so rieng: cmd /
 rem <so tien trinh> <hat giong> <so thu tu ban mod>. Ngoai ten file, khong dau ngoac kep nao - duong dan co dau cach
 rem thi Windows bo dau ngoac kep dau va cuoi.)
 if /i "%~1"=="chay1" goto chay1
+set "DT_CFG="
+set "DT_GHI="
+if /i "%DOI_THU%"=="xoi" (
+  set DT_CFG=opponent = "xoi",
+  set "DT_GHI=, DOI_THU=xoi"
+)
+if defined DOI_THU if not defined DT_CFG (echo [LOI] DOI_THU chi nhan xoi ^(hoac de trong^), khong phai "%DOI_THU%".& pause& exit /b 1)
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -139,6 +151,7 @@ set XS=--scripts "%LV%\scripts"
 echo Ban mod ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%  [xoi-%%TEN_%%p%%]
 echo %VONG% luot x %PHUT_GHI% phut ghi du lieu, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
+if defined DT_CFG echo Doi thu: chinh XOI ^(DOI_THU=xoi^), ke ca o ban mod co AI rieng.
 echo Tam dung: dong cua so nay va cac cua so thu nho. Chay lai file nay la lam tiep.
 echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
 
@@ -208,7 +221,7 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=HAT_GIONG+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Hoc sau - luot %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 luot-%E% %%k !SEED! !PI!
   )
 )
@@ -313,7 +326,7 @@ for /L %%k in (1,1,%N%) do (
       >>"%K%\p%%k\package.manifest" echo module=xoi_brain^|xoi_brain.lua
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
-    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
+    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
     start "Hoc sau - kiem tra %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 kiem-tra %%k !SEED! !PI!
   )
 )
@@ -341,7 +354,7 @@ if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem Ket qua, va bo nao cua moi ban mod: xoi-<ten>\brain.txt, goi <ten>-xoi.zip.
 (
-  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%; ban mod:
+  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%%DT_GHI%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\thoi-gian.txt" findstr /c:"Luot " "%LV%\thoi-gian.txt"
   if exist "%K%\tong.txt" type "%K%\tong.txt"

@@ -2,7 +2,8 @@
 setlocal EnableDelayedExpansion
 rem SPSA - tunes XOI's judgement numbers automatically by having XOI fight itself (from package 43 only XOI uses the
 rem tuned numbers; INSANE! keeps the numbers set by hand)
-rem (OpenLF2 package 32 or later). The numbers (77 from package 38: the score of a move, the threshold to use a move,
+rem (OpenLF2 package 32 or later). The numbers (88 from package 71 - six "momentum" ones: how much bolder or warier the
+rem HP just dealt or lost makes XOI, 0 by default; 77 from package 38: the score of a move, the threshold to use a move,
 rem distances, reaction, overlap...) live in scripts\base\game\smart_ai.lua (smart.tune_ranges).
 rem Every round, every process (one CPU thread) has two AI players fight: the "plus" one has its numbers nudged up or
 rem down at random, the "minus" one nudged the other way; the numbers move toward whichever fought better. End of round:
