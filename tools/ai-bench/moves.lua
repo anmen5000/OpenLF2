@@ -21,7 +21,9 @@ function moves.run(config)
                         indent, e.context, how, tostring(e.frame or e.press), tostring(move.first), tostring(move.last), move.ready, move.length, move.mp, move.hp,
                         move.damage, move.fall, move.bdefend, move.reach_x1, move.reach_x2, move.reach_z, #move.boxes,
                         move.teleport and (" teleport@" .. move.teleport) or "", move.transform and " transform" or "", (move.charge and (" charge " .. move.charge) or "") .. (move.hit_damage and (" hit " .. move.hit_damage) or ""),
-                        move.mode and string.format(" MODE item %d code %d rest %d", move.mode.record.id, move.mode.code, move.mode.frame) or ""))
+                        (move.mode and string.format(" MODE item %d code %d rest %d", move.mode.record.id, move.mode.code, move.mode.frame) or "")
+                        .. (move.share and string.format(" share %.2f", move.share) or "") .. (move.teleport_reach and (" reach " .. move.teleport_reach) or "")
+                        .. (move.lasting and " lasting" or "") .. (move.branch_frames and " branch" or "")))
                     if config.boxes and move.mode then
                         for _, box in ipairs(move.boxes) do
                             engine.log(string.format("%s    box t%d own=%s kind %d inj %d fall %d x %d..%d y %d..%d z %d frame %s", indent, box.t, tostring(box.own) .. "(" .. tostring(box.source) .. ")", box.kind, box.injury, box.fall, box.x1, box.x2, box.y1, box.y2, box.z, tostring(move.frames[box.t])))

@@ -610,6 +610,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- XOI v43: long-term value — what a move brings later, or leaves standing, and not only what its blows do at once
+  (the project owner's look at Nya in Sauce's pack). A move that shows nothing on the learning's untouchable dummy is
+  tried again on one it can touch, at four distances and six points of the random sequence: Nya's swap of places
+  (D>J) is learned as a teleport reaching 450 pixels, her coin (D^J) and cards (D+J+A) as moves of random draws (the
+  share that strikes, 0.33 and 0.17; which frames only the striking draws go through; whether the others leave things
+  standing). A late blow about the fighter that knocks down (the coin bursts by her 40 frames on, she is free at 19)
+  is weighed as the space it holds when it does not land on the enemy's way (`zone_sure`); only a mine within 150
+  pixels (`mine_reach`) that knocks down — Kakashi's Uj and Shino's insects in Naruto: The Setting Dawn lost games
+  weighed so. With a swap at hand the coin's burst is brought onto the enemy (the swap once the bursting coin is out
+  and the enemy within reach); the swap is a way out of a thing flying at her with its thrower within reach (who is
+  put in its way: Dennis's own ball struck him in a test), and out of reach only its untouchable frames. Her cards,
+  never used, are drawn with the target beyond 250 pixels, twice a match at most, as Sauce's AI does. The threat
+  forecast follows a thing's `next: 999` to its frame 0, as the game does (Kaktena's trap, quiet until then, was not
+  foreseen). XOI's Nya against Sauce's AI: 293 of 1,200 games with v42, 355 now (Stancher of mode Convergence, whose Dj is such a burst, 109 of 256 against v42,
+  75 before); the five mods against v42 1,096 to 1,088 of 2,240.
+  The bench's `moves` job prints `share`, `lasting`, `branch` and a swap's `reach`
 
 ### Fixed
 - Closing the kit's windows (spsa.bat's, hoc-sau.bat's and brain.bat's, with their minimized process windows) left

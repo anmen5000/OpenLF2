@@ -427,8 +427,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 42
+smart.version = 43
 smart.history = {
+    {43, "2026-11-11", "Long-term value, from the project owner's look at Nya in Sauce's pack: the AI weighed a move by what its blows do at once, and missed what comes later or lasts. (1) A move that shows nothing on the learning's untouchable dummy is tried again on one it can touch, at four distances and from six points of the game's random sequence: a swap of places (Nya's D>J, hidden helpers that grab the enemy and put it where she stood) is learned as a teleport with its reach, 450 pixels; a move of random draws as the share of its draws that strike (her coin, D^J, 0.33: it bursts by her or turns into a whirlwind that stays; her cards, D+J+A, 0.17), with the frames its objects go through only in the striking draws and whether the others leave things standing. (2) A late blow about the fighter that knocks down - the coin bursts 40 frames on, she is free at 19 - is weighed, when it does not land on the enemy's way, as the space it holds about her (zone_sure: 2.5 of its worth): thrown 5 times in 300 games before, where Sauce's own player throws it whenever the enemy is at a distance. Only a mine about the fighter (within 150 pixels, mine_reach) that knocks down: Kakashi's Uj in Naruto: The Setting Dawn 2.6 (fall 2) won 20 of 128 games against version 42 weighed so instead of 74, Shino's insects (out to 331 pixels) lost 16 and 20 of 384 in 2.4 and 2.6; Stancher's Dj in mode Convergence, a burst about him, won 109 of 256 games against version 42 weighed so, 75 before. (3) With a swap at hand, the blow brought onto the enemy: once the coin is the bursting one (its frames say so) and the enemy within the swap's reach, the swap puts the enemy on her spot as it bursts, about 107 HP when it fires. (4) The swap as a way out of a thing flying at her with its thrower within reach, counted as a blow struck back: a swap tried against Dennis's ball put him in its way and his own ball struck him; out of reach the swap is what it does with no one to take, its untouchable frames. (5) Her cards, a move of lasting draws (a heal, a crystal that breaks thrown things, bouncing balls, a burst) never used before: drawn at a fixed score (draw_score 6) with the target beyond 250 pixels, twice a match at most, as Sauce's player draws them. (6) The threat forecast follows a thing's next 999 to its frame 0, as the game does - it stopped there: Kaktena's trap in that pack, quiet in frames that go on by 999 into its biting ones, was not foreseen (its bites, about one a game, stay: they come where no step clears it in time). XOI's Nya against Sauce's AI, 15 opponents, 1,200 games: 293 won with version 42, 355 now (the coin as space alone 333; Louis 1 to 27 of 80, Deep 5 to 14, Rudolf 31 to 42). The five mods against version 42: 1,096 to 1,088 of 2,240 games; the ten originals against Sauce's Kaktena 170 of 400 (168 without the forecast's 999)."},
     {42, "2026-11-11", "Momentum, left to the tuning: the HP the fighter dealt its target lately less the HP it took, each fading by half every 60 frames, over 60 HP (at most 1 either way), can make it bolder ahead (momentum_aggression on the boldness; momentum_threshold_up and momentum_counter_up off the score a move needs and the price of the target's counter) or warier behind (momentum_threshold_down and momentum_counter_down on them, momentum_keep_down on the danger it keeps away from) - six numbers SPSA tunes with the others, 88 now, all 0 by default, so that the fighter plays as version 41 frame for frame (Sauce's pack, the ten originals both ways, 180 games, and KT-LF2: the same results game for game). Tried by hand in November 2026 - bolder ahead, warier behind, both, the lead in the match instead, only while the target is free - none beat the fighter without it (321 of 720 against Sauce's AI; the best 326, not confirmed on fresh seeds), Woody's and Freeze's losses eating Henry's and Davis's gains: a mod's own tuning can find what it wants, either way. And the kit's hoc-sau.bat (brain.bat) takes DOI_THU=xoi (OPPONENT=xoi): XOI records against itself in a pack with AI scripts of its own too - those of most mods are far weaker than Sauce's (Dragon Ball Super's loses most of its games to XOI), and a brain learned against them only learns to beat them. The project owner's first full hoc-sau run on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%."},
     {41, "2026-11-10", "A brain: a small network beside the hand-made score, learned from XOI's own games as chess engines' NNUE networks are learned from theirs. Before every move XOI works out a score by its rules (attack_score: the blow's worth, its cost, how likely the target answers first); the brain, given 58 numbers of the situation and the move (distances, heights, facing, HP, MP, speeds, weapons, ten state slots each for the fighter and the target, the target's wait and blink, frames since the last blow, positions, the move's hit time and hand-made score, its damage, MP, reach, length and kinds; brain_kit.features), predicts what the move will bring — HP dealt minus HP taken over the 45 frames after its start — and XOI moves its score halfway to that (tune.brain_weight 0.5). A brain is text (XOI_BRAIN lines: 58 inputs, 48 hidden units, the inputs' mean and spread) that a mod carries as xoi/brain.txt beside its data, as its notes and numbers; the match shows 'brain' beside XOI. The kit's hoc-sau.bat (brain.bat) makes one: rounds of recording (tools/ai-bench/record.lua, every move XOI starts with what came of it, XOI against the pack's own AI scripts where it has them, else against a copy of itself), the records trained inside the game (train.lua, LuaJIT, about 150,000 samples a second), the next round recorded with the brain just learned, then XOI with and without it against the same opponent. Tried on Sauce's pack ('lf2-AI VS and Stage Challenge', its AI the opponent): 55,000 records of 2,000 games gave a network whose predictions go with the outcome at 0.455 where the hand-made score goes at 0.197; with it, the ten original fighters won 368 of 720 games against Sauce's AI (version 40 alone 321), and 216 to 134 of 360 against XOI without it; a second round recorded with that brain (87,000 records in all) 377 of 720. The same brain did nothing for other mods (208 to 231 over four), so a brain is made for one pack. Besides: INSANE! and XOI play at their own levels in a pack with AI scripts of its own — up to version 40 a fighter with a script of its own kept it at those levels too, and in Sauce's pack, whose every fighter has one, the levels named INSANE! and XOI were that AI (the project owner saw its spacing by dashes after a knock-down); the scripts play at CRAZY! and below. And the learning of moves meets a mod built on data tricks (Nya of that pack: a thrown die that bursts into 10 to 60 HP by its face, a coin that turns into a vortex a second later by hidden attacks of kind 8 between her own objects, a swap of places with the enemy): a thrown thing whose burst differs between throws is measured over six throws from different points of the game's random sequence and worth their mean (the die 35 HP, where one throw said 10); a summon of the move's still alive with frames to come is waited for while the move is followed anyway, whatever frames it will reach by way of hits; a jump of position no step accounts for (120 pixels in a tick) is a teleport. XOI's Nya, who threw the die once in 40 games, throws it twice a game, beats Sauce's Nya 32 to 8 (version 40 29 to 11) and still loses to Sauce's Davis and Louis 1 to 39 (Sauce's own Nya wins 29 to 11 against them): her strength is the coin and the swap played together, the enemy swapped into the vortex, and the cards — nothing the data says. One more from his clips: a stream of thrown things (Julian's skull blasts in that pack: five 40-HP balls 3 frames apart for 50 MP, each steered onto the enemy's lane by Sauce's AI) was guarded ball by ball until the guard broke in a corner — met now as a heavy blow is, the ways out before the guard, a move out of their way worth its MP, the jump toward the thrower that clears them in the air and comes down nearer (answer: stream, a thing coming behind the one due or a move throwing several). XOI's Julian against Sauce's Julian 32 to 48 of 80 games (29 to 51 before: as even as that tells; the corner itself is not solved — got up in the lane, he still has no step out of balls steered after him, and the two things tried for it, looking past the blink at the ball landing as it ends and a run at the thrower to roll out of, both lost games, 164 to 153 of 360 against Sauce's AI and 13 to 27 against his Julian). Against Sauce's AI on the ten originals 160 of 360 games (version 40 164 on the same seeds); the five mods against version 40, 1,088 to 1,082 of 2,240: as even as they can tell."},
     {40, "2026-11-10", "XOI's numbers: halfway between version 37's and the project owner's second run against Sauce's AI (spsa.bat, DOI_THU=classic, 60 rounds of 15 minutes on 83 threads over the ten original fighters, about 580,000 pairs of games; its last five rounds and its check, the two sets against each other, after the kit's new spsa.bat had reset DOI_THU). That run's set alone plays the originals better — against Sauce's AI 343 of 720 games to version 37's 308 (47.6 to 42.8 percent; Henry 26 of 72, Rudolf 31), against XOI with version 37's numbers 186 to 166 — being bolder (attack_threshold 2.1 to 1.5), guarding faster and striking back from the guard less, keeping a little farther from longer arms and starting to run from farther; but on five mods without numbers of their own it lost a little to version 37's, 2,128 to 2,249 of 4,480 games over four seeds (One Piece 402 to 475, KT 392 to 466), the boldness punished by the mods' heavier moves. XOI being one player for every mod, the mean of the two sets is taken: the mods even (1,083 to 1,101 of 2,240), Sauce's AI 321 of 720, the originals 178 to 166 against version 37's numbers. The whole gain on the originals is there for a pack that carries the run's own numbers (xoi/tune.txt), and a run over Sauce's pack and the mods together — spsa.lua now has the two sets play each other in a pack without AI scripts of its own, under DOI_THU=classic — is the way to one set that has it all."},
@@ -912,7 +913,7 @@ local function strikes_later(record, frame_id, ticks, or_lives)
     return or_lives == true
 end
 
-local function play(record, entry, mp, weapon_record, hp)
+local function play(record, entry, mp, weapon_record, hp, touch)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
     if mp then me.mp = mp end
@@ -930,6 +931,18 @@ local function play(record, entry, mp, weapon_record, hp)
     if entry.walking then
         set_keys(me, {right = true}); step()
         if me.record.frame(me.frame).state ~= states.walking then return nil end
+    end
+    -- (touch: the dummy can be touched and stands `touch` pixels in front: a move that works through the enemy
+    -- itself, see the analysis.)
+    local dummy_x
+    if touch then
+        local dummy = state.items[1]
+        dummy.x_int, dummy.y_int, dummy.z_int = me.x_int + touch, 0, me.z_int
+        dummy.x, dummy.y, dummy.z = dummy.x_int, 0.0, dummy.z_int
+        dummy.blink, dummy.frame, dummy.facing = 0, 0, facing_left
+        dummy.hp, dummy.dark_hp, dummy.max_hp = 5000, 5000, 5000
+        state.dummy_hittable = true
+        dummy_x = dummy.x_int
     end
     local start_frame = me.frame
     local origin = {x = me.x_int, y = me.y_int, z = me.z_int, facing = me.facing}
@@ -1005,6 +1018,12 @@ local function play(record, entry, mp, weapon_record, hp)
         for index = 2, constants.item_slots - 1 do
             local value = state.items[index]
             if value and value.owner == me.owner and value ~= armed_item then
+                -- (On a dummy it can touch, the frames its objects went through, by record and frame: which of a
+                -- random move's draws they belong to, see the analysis.)
+                if touch then
+                    move.object_frames = move.object_frames or {}
+                    move.object_frames[value.record.id * 4096 + value.frame] = true
+                end
                 if not spawned[value] then
                     spawned[value] = t
                     -- (A ball, a thrown thing or a missile leaves with the depth its maker's up or down key gives
@@ -1089,8 +1108,14 @@ local function play(record, entry, mp, weapon_record, hp)
     if move.teleport then
         local after = min(move.teleport + 1, move.length)
         local dummy = state.items[1]
-        move.teleport_dx = (move.traj_x[after] or 0) + origin.x - dummy.x_int
+        -- (Against a dummy the move itself puts elsewhere — a swap of places — from where the dummy stood.)
+        move.teleport_dx = (move.traj_x[after] or 0) + origin.x - (dummy_x or dummy.x_int)
         move.teleport_dz = (move.traj_z[after] or 0) + origin.z - dummy.z_int
+    end
+    if touch then
+        local dummy = state.items[1]
+        -- (The dummy put where the fighter stood: a swap of places.)
+        if dummy and abs(dummy.x_int - origin.x) < 80 then move.swap = true end
     end
     -- The move ended with an item of its own making in the fighter's hand: a mode (Luffy's Gear Second, Sanji's
     -- Diable Jambe and Zoro's bandana in One Piece GrandWorld are built on an invisible item picked up), whose
@@ -1339,6 +1364,66 @@ local function explore(record, analysis, mode, first_index)
                 move = again
             end
         end
+        -- Nothing seen against a dummy nothing touches: a move that works through the enemy itself — a swap of places
+        -- by hidden helpers that grab it (Nya's D>J in Sauce's pack: a teleport onto the enemy's spot, the enemy put on
+        -- hers), or one whose blows come only out of a draw of the game's random numbers (her cards, D+J+A) — shows
+        -- only on one it can touch, within its reach, and then only for some draws. Tried at four distances and from
+        -- six points of the random sequence: a teleport is the move with the farthest distance it worked at (its
+        -- reach); otherwise the first blow seen, worth the share of the draws that showed one.
+        if ok and move and not move.first and not move.teleport and not move.transform and not move.mode
+           and move.mp > 0 and entry.sequence and not mode then
+            local found, reach, best_share
+            local good, bad = {}, {} -- (the frames of its objects in the draws that showed a blow, and in the others)
+            local lasting = false -- (a draw that struck nothing but left things of its making standing)
+            for _, gap in ipairs({150, 250, 350, 450}) do
+                local shown, first_seen = 0, nil
+                for _, start in ipairs({0, 7, 13, 29, 41, 53}) do
+                    engine.set_random_state(random_table(), start, 0)
+                    local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap)
+                    if ok_again and again and not again.transform
+                       and (again.teleport or (again.first and max(again.damage or 0, again.hit_damage or 0) > 0)) then
+                        shown = shown + 1
+                        first_seen = first_seen or again
+                        for key in pairs(again.object_frames or {}) do good[key] = true end
+                    elseif ok_again and again then
+                        for key in pairs(again.object_frames or {}) do bad[key] = true end
+                        if again.left_standing then lasting = true end
+                    end
+                end
+                if first_seen then
+                    if first_seen.teleport then
+                        if not found or found.teleport then found, reach = first_seen, gap end
+                    elseif not found then
+                        found, best_share = first_seen, shown / 6
+                    end
+                end
+            end
+            if found then
+                if found.teleport then
+                    -- (A teleport, not a blow: what its helpers did to the dummy on the way — a grab to take it
+                    -- along — is no blow of the fighter's. What the move does when there is no enemy to take — the
+                    -- frames of a swap that fails, untouchable a while all the same — is kept with it: escape_move.)
+                    found.teleport_reach = reach
+                    found.boxes, found.hit_damage = {}, nil
+                    found.fallback = move
+                    summarize(found)
+                elseif best_share < 1 then
+                    found.share = best_share
+                    -- (The frames its objects go through only in the draws that strike — Nya's coin that is to
+                    -- burst, not the one that is not: what tells in a match, once the coin is out, which came up.)
+                    local branch
+                    for key in pairs(good) do
+                        if not bad[key] then branch = branch or {}; branch[key] = true end
+                    end
+                    found.branch_frames = branch
+                    -- (Its other draws leave things that stay — a crystal, balls bouncing about —: what it brings lasts
+                    -- beyond the blows of its striking draws, smart.control's drawing.)
+                    found.lasting = lasting or nil
+                end
+                found.object_frames = nil
+                move = found
+            end
+        end
         -- In a mode, a key that changes nothing (the fighter goes on round its resting frames) is no move.
         if ok and move and mode and not move.first and not move.mode then
             local moved = false
@@ -1534,7 +1619,16 @@ end
 -- the best set-up must bring beyond the price of its MP for the fighter to lay any; any: the others are laid too,
 -- when MP or time is short for the best — Crimson's one shadow as often as MP allows did better than her three
 -- alone, see the version's notes.)
-local setup_kit = {settle = 8, share = 0.25, alone = 0.5, eager = 0.5, min_net = 10, any = true, zero = {[0] = 0}}
+-- (Long-term value, setup_kit.swap_move_of: late_blow, the frames after the fighter is free again from which a move's
+-- blow is a late one; mine_reach, how far from the fighter such a blow may reach to be a mine about it; zone_sure and swap_sure, the share of a late blow's worth that counts when it holds the space
+-- before the fighter or is brought onto the enemy by a swap of places — more than whole: an enemy coming in later
+-- meets it too, as the games showed —; zone_reach, how far the enemy may be for the first; swap_late, the frames
+-- after the swap is done that the enemy stays held where it was put, 10 for Nya's helpers in the copy; draw_far,
+-- draws_per_match and draw_score, how far the target must be for a move of lasting draws, how often a match, and the
+-- score it is drawn at, best_attack.)
+local setup_kit = {settle = 8, share = 0.25, alone = 0.5, eager = 0.5, min_net = 10, any = true, zero = {[0] = 0},
+    swap_sure = 2.5, swap_late = 10, zone_sure = 2.5, zone_reach = 450, late_blow = 12, draw_far = 250, draws_per_match = 2,
+    draw_score = 6, mine_reach = 150}
 
 -- The frames an object of `record` goes through from `first` by their next and wait (no key, no hit), with the
 -- frames each lasts; and whether it goes round them for good.
@@ -2508,9 +2602,14 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                 for k = 1, limit do
                     if left <= 0 then
                         local next_id = frame.next
-                        if next_id == 0 or next_id == 1000 or next_id >= constants.frame_limit or next_id <= -constants.frame_limit then break end
-                        if next_id < 0 then next_id = -next_id end
+                        -- (Next 999 takes a thing that is no fighter to its frame 0, as base/game/animation does: up to
+                        -- version 42 the 999 fell to the frame limit check first — itself 999 — and the forecast stopped
+                        -- there. Kaktena's trap in Sauce's pack lies quiet in frames that go on by 999 into its biting ones,
+                        -- and XOI's fighters walked onto it, foreseeing nothing: about one bite a game.)
                         if next_id == 999 then next_id = 0 end
+                        if next_id == 0 and frame.next ~= 999 then break end
+                        if next_id == 1000 or next_id >= constants.frame_limit or next_id <= -constants.frame_limit then break end
+                        if next_id < 0 then next_id = -next_id end
                         frame_id = next_id
                         frame = record.frame(frame_id)
                         if frame.undefined then break end
@@ -2769,6 +2868,19 @@ end
 local function start(self, move, target, t, score)
     if smart.on_start then smart.on_start(self, move, t, score, smart.brain_kit.hand[move]) end
     local entry = move.entry
+    if move.share and move.lasting and not move.delayed_blow and self.smart_memory then
+        self.smart_memory.draws = (self.smart_memory.draws or 0) + 1
+    end
+    -- (A move whose blow lands where it was started once the fighter is free again, a swap of places at hand: what
+    -- it was started as, from where and when — setup_kit.swap_into brings the enemy onto it.)
+    if move.delayed_blow then
+        local memory = self.smart_memory
+        if memory and memory.now then
+            local face = turns(move) and target and (target.x_int >= self.x_int and 1 or -1)
+                or (self.facing == facing_right and 1 or -1)
+            memory.setup = {move = move, at = memory.now, x = self.x_int, z = self.z_int, face = face}
+        end
+    end
     if entry.parent then
         if entry.link_sequence then
             local sequence = entry.link_sequence
@@ -3939,6 +4051,8 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
         guarded = guard_rate(model_of(context, target)) * min(1, (1 - tune.guard_speed ^ (t - stunned)) * tune.guard_scale) * (1 - tune.guard_aggression * (context.aggression or 0))
     end
     local damage = worth(target, box, false, move) * (1 - guarded) + worth(target, box, true, move) * guarded
+    -- (A move whose blows come only out of some draws of the random numbers is worth that share of them.)
+    if move.share then damage = damage * move.share end
     local score = damage * sure
     if not blocked and guarded > 0 then score = score - guarded * (context.guard_counter or 20) end
     score = score - move.mp * tune.mp_cost - max(move.hp, 0) * tune.hp_cost
@@ -3982,6 +4096,46 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
         else score = score * (notes.factor[note_key(move)] or 1) end
     end
     return score
+end
+
+-- Long-term value (version 43). A move whose blow is struck by a thing of its making a while after the fighter is free
+-- again, where the fighter stands — Nya's coin in Sauce's pack (D^J: free at 19, the coin bursts by her 40 frames on,
+-- or turns into a whirlwind that stays) — was weighed only by whether that blow would land on where the enemy is
+-- going now, and it hardly ever does: the move was all but never used (5 times in 300 games), where Sauce's own
+-- computer player throws it whenever the enemy is at a distance. Such a move is marked (delayed_blow) and weighed,
+-- when its blow does not land, as what it holds: the space about the fighter, where an enemy in front coming in
+-- meets the blow (best_attack; zone_sure, the share of the blow's worth that counts).
+-- With a swap of places at hand (a teleport learned on a dummy it could touch, the dummy put where the fighter
+-- stood: Nya's D>J), the blow lands on the enemy itself: the swap puts it where the fighter stood, by the blow
+-- (setup_kit.swap_into) — what Sauce's player does with her, and the project owner's example.
+-- (Found once per fighter; the swap, or nil.)
+function setup_kit.swap_move_of(analysis)
+    if analysis.swap_move == nil then
+        analysis.swap_move = false
+        for _, move in ipairs(analysis.moves) do
+            if move.swap and move.teleport_reach and move.fallback and not move.entry.parent then
+                analysis.swap_move = move
+                break
+            end
+        end
+        -- (A blow that stays about the fighter, within mine_reach of it either way — a mine, not a swarm or a shot that
+        -- goes off before it to land far away late: Shino's insects in Naruto: The Setting Dawn, out to 331 pixels in
+        -- 2.4 and 198 in 2.6, weighed so, lost him 16 and 20 games of 384 against version 42 — and that knocks down
+        -- what comes in: Kakashi's Uj in 2.6, a late blow about him of fall 2, held the space so badly that he won 20
+        -- of 128 games against version 42 instead of 74.)
+        for _, move in ipairs(analysis.moves) do
+            if move ~= analysis.swap_move and move.first and move.first >= move.ready + setup_kit.late_blow
+               and move.reach_x1 <= 40 and move.reach_x2 >= -40 and max(abs(move.reach_x1), abs(move.reach_x2)) <= setup_kit.mine_reach
+               and move.fall >= 60
+               and not move.entry.parent and not move.transform and not move.mode and not move.teleport then
+                for _, box in ipairs(move.boxes) do
+                    if not box.own then move.delayed_blow = true end
+                    break
+                end
+            end
+        end
+    end
+    return analysis.swap_move or nil
 end
 
 -- The objects of set-up kinds that `self` has standing now (setup_kit.learn), each with the frames until it can
@@ -4095,12 +4249,53 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     -- (Objects of a set-up standing: they strike with the D-moves they answer, see setup_kit.)
     local standing = setup_kit.standing(context, self, analysis)
     if standing and #standing == 0 then standing = nil end
+    local swap = setup_kit.swap_move_of(analysis)
     for _, move in ipairs(analysis.moves) do
         local entry = move.entry
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
            and not (excluded and excluded[move]) and can_start(self, frame, fstate, move) then
             local face = turns(move) and toward or (self.facing == facing_right and 1 or -1)
             local t, box = move_hits(self, face, move, 0, target, target_frame, target_at, horizon, nil, nil, true)
+            -- A blow struck late by a thing of the move's making (setup_kit.swap_move_of), that does not land on the
+            -- enemy's way: with a swap of places at hand, on the enemy the swap puts where the fighter stands once
+            -- free again — an enemy within the swap's reach, MP for both —; otherwise as the space it holds before the
+            -- fighter, for an enemy in front within zone_reach. Not on an enemy down or blinking, nor one that could
+            -- strike before the fighter is free again. (Weighed by when the blow lands; the risk of the wait, by when
+            -- the swap is done or the fighter free.)
+            local combo, combo_sure, combo_mp
+            if not t and move.delayed_blow and target.blink == 0 and tstate ~= states.lying and tstate ~= states.falling
+               and abs(target.z_int - self.z_int) <= 30 and (target.x_int - self.x_int) * face > 0
+               and (not danger or danger > move.ready + 2) then
+                local distance = abs(target.x_int - self.x_int)
+                if swap and self.mp >= move.mp + swap.mp and distance <= swap.teleport_reach then
+                    local ready = move.ready
+                    local sx = self.x_int + (move.traj_x[ready] or 0) * face
+                    local sz = self.z_int + (move.traj_z[ready] or 0)
+                    local tv, tbox = move_hits(self, face, move, 0, target, standing_frame(target.record),
+                        function() return sx, 0, sz end, horizon, true)
+                    if tv and tv >= ready + (swap.teleport or 10) + 2 then
+                        combo, combo_sure = ready + (swap.teleport or 10) + 2, setup_kit.swap_sure
+                        combo_mp = move.mp + swap.mp * (move.share or 1)
+                        t, box = tv, tbox
+                    end
+                end
+                if not combo and distance <= setup_kit.zone_reach and move.first <= horizon then
+                    combo, combo_sure, combo_mp = move.ready, setup_kit.zone_sure, move.mp
+                    t, box = move.first, move.boxes[1]
+                end
+            end
+            -- A move whose outcome is a draw of the game's random numbers, some draws striking and others leaving
+            -- things of its making that stay (learned on a dummy it could touch: Nya's cards in Sauce's pack — a heal,
+            -- a crystal that breaks thrown things, balls bouncing about, a burst) brings more than the blows of the
+            -- draws that strike, all attack_score sees of it (the move was never used): what the others leave lasts.
+            -- With nothing of it landing, drawn at a fixed score (draw_score, what a thrown thing far off scores) as
+            -- Sauce's own player draws them: the target far (draw_far), twice a match at most (draws_per_match).
+            local drawn
+            if not t and move.share and move.lasting and not move.delayed_blow and #move.boxes > 0
+               and abs(target.x_int - self.x_int) > setup_kit.draw_far
+               and ((self.smart_memory or {}).draws or 0) < setup_kit.draws_per_match then
+                t, box, drawn = move.first, move.boxes[1], true
+            end
             -- Attack picks one of two punches: both must land, the later counts.
             if t and entry.basic == "attack" and not entry.chain and analysis.punch2 then
                 local t2, box2 = move_hits(self, face, analysis.punch2, 0, target, target_frame, target_at, horizon, nil, nil, true)
@@ -4128,8 +4323,16 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 end
             end
             -- Landing together with the target's quickest answer is a trade at worst: it has not started it yet.
-            if t and (not danger or t < danger or (t == danger and stunned == 0)) then
-                local score = attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, 0)
+            if t and (combo or not danger or t < danger or (t == danger and stunned == 0)) then
+                local score
+                if drawn then
+                    score = setup_kit.draw_score
+                elseif combo then
+                    score = (worth(target, box, false, move) * (move.share or 1) * combo_sure - combo_mp * tune.mp_cost)
+                        * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
+                else
+                    score = attack_score(context, target, tstate, move, t, box, face, stunned, danger, stagger, 0)
+                end
                 if extras and #extras > 0 then score = score + setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger) end
                 if alone then score = score * setup_kit.alone end
                 if flip_risk > 0 and t >= descent then score = score * (1 - flip_risk) end
@@ -4142,7 +4345,7 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                     local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm)) * 100
                     score = score + tune.brain_weight * (expected - score)
                 end
-                if score > best_score then best, best_t, best_score = move, t, score end
+                if score > best_score then best, best_t, best_score = move, combo or t, score end
             end
         end
     end
@@ -4512,9 +4715,26 @@ local function escape_move(state, index, self, frame, fstate, context, level, th
     local enemy = source.record.kind == record_kinds.character and source or nearest_enemy(state, self)
     if not enemy then return nil end
     local best, best_value, best_strikes
-    for _, move in ipairs(analysis.moves) do
+    for _, learned in ipairs(analysis.moves) do
+        local move = learned
         local entry = move.entry
-        if not entry.parent and not move.charge and not move.transform and not move.mode and not (move.heal and move.weapon)
+        -- (A teleport learned on a dummy it could touch — a swap of places by helpers that grab the enemy, Nya's D>J in
+        -- Sauce's pack — works only on an enemy in front within its reach, in depth too, and not blinking; otherwise the
+        -- move is what it does with no one to take, its untouchable frames all the same: the fallback the analysis
+        -- kept. A swap within reach also puts the enemy where the fighter stood, held there a moment by the helpers —
+        -- in the way of the thing flying at her, its own blow come back on it (a swap tried against Dennis's ball:
+        -- his ball struck him), so long as the thing arrives once the swap is done and before he is let go.)
+        local swapped = false
+        if move.teleport_reach then
+            local dx = enemy.x_int - self.x_int
+            if abs(dx) > move.teleport_reach or abs(enemy.z_int - self.z_int) > 35 or enemy.blink > 0 then
+                move = move.fallback
+            elseif move.swap and source.record.kind ~= record_kinds.character and source.owner == enemy.owner
+                   and threat_t >= (move.teleport or 0) and threat_t <= (move.teleport or 0) + 12 then
+                swapped = true
+            end
+        end
+        if move and not entry.parent and not move.charge and not move.transform and not move.mode and not (move.heal and move.weapon)
            and move.length > 1 and not ((entry.basic == "jump" or entry.basic == "defend") and not entry.chain)
            and can_start(self, frame, fstate, move) then
             local plan, frames_at = move_path(self, move, enemy)
@@ -4527,11 +4747,86 @@ local function escape_move(state, index, self, frame, fstate, context, level, th
                     local t = move_hits(self, face, move, 0, source, sframe, function(k) return predict(source, k, sframe.state) end, 40, nil, nil, true)
                     if t then strikes = true; value = value + 60 - t end
                 end
-                if not best_value or value > best_value then best, best_value, best_strikes = move, value, strikes end
+                if swapped then strikes = true; value = value + 60 end
+                -- (The move learned is what is started: the fallback has the same keys.)
+                if not best_value or value > best_value then best, best_value, best_strikes = learned, value, strikes end
             end
         end
     end
     return best, best_strikes
+end
+
+-- The swap of places into a blow of the fighter's own (setup_kit.swap_move_of): with a move of a delayed blow under
+-- way (memory.setup, start) — and, for a move of random draws, one of its objects in a frame only the striking
+-- draws go through (Nya's coin that is to burst) —, once the fighter is free, the enemy within the swap's reach and
+-- the blow due where the fighter stands just after the swap is done, the swap: the enemy put there takes the blow.
+-- Until then the fighter keeps its place (the blow lands where the move was started). True when it acted.
+function setup_kit.swap_into(state, index, self, frame, fstate, context, memory, target)
+    local setup = memory.setup
+    if not setup then return false end
+    local move = setup.move
+    local elapsed = state.frame_number - setup.at
+    if elapsed > (move.first or 0) or not target then
+        memory.setup = nil
+        return false
+    end
+    local analysis = context.analysis_of(self)
+    local swap = setup_kit.swap_move_of(analysis)
+    if not swap then memory.setup = nil; return false end
+    if move.branch_frames and not setup.armed then
+        for slot = 2, constants.item_slots - 1 do
+            local value = state.items[slot]
+            if value and value.owner == self.owner and value ~= self and value.record.kind ~= record_kinds.character
+               and move.branch_frames[value.record.id * 4096 + value.frame] then
+                setup.armed = true
+                break
+            end
+        end
+        -- (No object of the striking draws by the time the fighter is free again: a draw that does not strike.)
+        if not setup.armed then
+            if elapsed > move.ready + 3 then memory.setup = nil end
+            return false
+        end
+    end
+    if not is_free(self) then return false end
+    local s = swap.teleport or 10
+    -- Where the move's next blow lands, against where the fighter stands now.
+    local due, covers
+    for _, box in ipairs(move.boxes) do
+        local k = box.t - elapsed
+        if k > 0 then
+            local base_x = box.own and self.x_int or setup.x
+            local x1, x2
+            if setup.face == 1 then x1, x2 = base_x + box.x1, base_x + box.x2
+            else x1, x2 = base_x - box.x2, base_x - box.x1 end
+            local depth = setup.z + box.z - self.z_int
+            if self.x_int >= x1 - 10 and self.x_int <= x2 + 10 and depth < box.zw and depth > -box.zw
+               and box.y1 < 0 and box.y2 > -70 then
+                due, covers = k, true
+                break
+            end
+            due = due or k
+        end
+    end
+    if not covers then return false end
+    local dx, dz = target.x_int - self.x_int, target.z_int - self.z_int
+    local tstate = target.record.frame(target.frame).state
+    local reachable = abs(dx) <= swap.teleport_reach and abs(dz) <= 30 and target.blink == 0
+        and tstate ~= states.lying and tstate ~= states.falling
+    if reachable and due >= s + 1 and due <= s + setup_kit.swap_late and self.mp >= swap.mp
+       and can_start(self, frame, fstate, swap) then
+        start(self, swap, target)
+        memory.setup = nil
+        memory.note = string.format("swap into own blow (in %d)", due)
+        return true
+    end
+    -- (Too early yet: the fighter waits where it stands, facing the enemy, the swap ready.)
+    if due > s + setup_kit.swap_late and abs(dx) <= swap.teleport_reach + 150 then
+        if (dx > 0) ~= (self.facing == facing_right) then face(self, target.x_int) end
+        memory.note = string.format("wait for own blow (in %d)", due)
+        return true
+    end
+    return false
 end
 
 -- Against loops: the moves started (by their worth, attack_score) and the dodges begun since the two last exchanged
@@ -5095,6 +5390,7 @@ function smart.control(state, index)
         memory = {target = nil, dodge_dz = 0}
         self.smart_memory = memory
     end
+    memory.now = state.frame_number
     -- A move started at a risk (see answer_chance): struck before it landed, or landed (or came to nothing).
     local risky = memory.risky
     if risky then
@@ -5538,6 +5834,8 @@ function smart.control(state, index)
     if threat_t and answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, threat_source, target) then
         return
     end
+    -- A blow of the fighter's own about to land where it stands, a swap of places at hand: the enemy brought onto it.
+    if memory.setup and setup_kit.swap_into(state, index, self, frame, fstate, context, memory, target) then return end
 
     -- How soon the target could hit back, and what striking back from a guard could cost.
     context.counter_first, context.counter_damage = nil, nil
