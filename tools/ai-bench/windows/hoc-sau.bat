@@ -243,7 +243,10 @@ for /L %%p in (1,1,%NP%) do (
     del /q "!H!\xong.txt" 2>nul
     call :ban_bench "!H!"
     call :goi_du_lieu %%p "!H!\du-lieu.zip"
-    >"!H!\config.lua" echo return {command = "train", epochs = %EPOCH%, hidden = %AN%, weights = true, seed = %HAT_GIONG%}
+    rem (So dong di kem: qua 6 trieu thi train chi lay moi dong thu k - du lieu moi luot van co mat, bo nho vua.)
+    set "DN_="
+    if exist "!H!\du-lieu.txt" for /f %%c in ('type "!H!\du-lieu.txt"') do set "DN_=records = %%c, "
+    >"!H!\config.lua" echo return {command = "train", !DN_!epochs = %EPOCH%, hidden = %AN%, weights = true, seed = %HAT_GIONG%}
   )
   if exist "!H!\du-lieu.txt" for /f %%c in ('type "!H!\du-lieu.txt"') do set /a DONG_%%p=%%c
   set /a DONG_TONG+=DONG_%%p
@@ -382,9 +385,10 @@ rem --- File bo nao %1 (XOI_BRAIN ...) thanh module Lua %2: return {text = [==[ 
 type "%~1" >>"%~2"
 >>"%~2" echo ]==]}
 exit /b 0
-rem --- Goi du lieu cua ban mod %1 thanh goi huan luyen %2: mot file zip nho chi co data\data.txt va cac file .exe o
-rem thu muc goc cua ban mod (du de game mo goi), va xoi\data_<n>.txt = cac dong REC cua moi luot (moi file duoi 3,5
-rem MB - script doc duoc file toi 4 MB). So dong vao du-lieu.txt canh goi. ---
+rem --- Goi du lieu cua ban mod %1 thanh goi huan luyen %2: mot file zip nho chi co data\data.txt, cac file .exe o thu
+rem muc goc cua ban mod va thu muc UI (hinh cua game khi file .exe cua mod khong mang hinh - ban Sauce: lf2-AI VS and
+rem Stage Challenge.exe chi 320 KB, hinh o UI\; thieu no game khong mo goi), va xoi\data_<n>.txt = cac dong REC cua moi
+rem luot (moi file duoi 3,5 MB - script doc duoc file toi 4 MB). So dong vao du-lieu.txt canh goi. ---
 :goi_du_lieu
 set "GD_PACK=!PACK_%1!"
 set "GD_OUT=%~2"
@@ -393,7 +397,7 @@ set "GD_CNT=%~dp2du-lieu.txt"
 set "GD_P=%1"
 del /q "%GD_OUT%" 2>nul
 del /q "%GD_CNT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'luot-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Du lieu ban mod ' + $env:GD_P + ': ' + $count + ' dong, ' + $k + ' file trong ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'luot-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Du lieu ban mod ' + $env:GD_P + ': ' + $count + ' dong, ' + $k + ' file trong ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
 if not exist "%GD_OUT%" echo      [LOI] Khong goi duoc du lieu cua ban mod %1.
 exit /b 0
 rem --- Bo nao cua ban mod thu %1: xoi-<ten>\brain.txt (bo truoc giu o brain-truoc.txt), va <ten>-xoi.zip: ban sao file

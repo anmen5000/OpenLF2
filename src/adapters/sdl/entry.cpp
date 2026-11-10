@@ -82,14 +82,26 @@ bool usable_output_handle(HANDLE handle) {
 class WindowsOutput final {
 public:
     WindowsOutput() {
-        // Explorer has no parent console; terminals and redirected build tools can supply one.
-        AttachConsole(ATTACH_PARENT_PROCESS);
-        if (auto handle = GetStdHandle(STD_OUTPUT_HANDLE); usable_output_handle(handle)) {
-            out_.set_handle(handle);
+        // The handles the parent gave us come first: a batch file's `> out.txt 2>&1` (the XOI kit reads the game's
+        // output from such files), a pipe, or its console. Attaching to the parent console replaces the process's
+        // standard handles with the console's, so a redirected run attached first lost everything written through
+        // std::cout and std::cerr (Lua's print, on the C runtime's stdout, still reached the file) — the kit's
+        // training step failed with an empty out.txt and no word of why. Only a handle that is not usable (Explorer
+        // gives none; a terminal gives a GUI program none either) is taken from the parent console, when there is one.
+        HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+        HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
+        const bool out_usable = usable_output_handle(out);
+        const bool err_usable = usable_output_handle(err);
+        if ((!out_usable || !err_usable) && AttachConsole(ATTACH_PARENT_PROCESS)) {
+            if (!out_usable) out = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (!err_usable) err = GetStdHandle(STD_ERROR_HANDLE);
+        }
+        if (usable_output_handle(out)) {
+            out_.set_handle(out);
             previous_out_ = std::cout.rdbuf(&out_);
         }
-        if (auto handle = GetStdHandle(STD_ERROR_HANDLE); usable_output_handle(handle)) {
-            err_.set_handle(handle);
+        if (usable_output_handle(err)) {
+            err_.set_handle(err);
             previous_err_ = std::cerr.rdbuf(&err_);
         }
     }

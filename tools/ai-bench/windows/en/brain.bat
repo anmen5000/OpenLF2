@@ -250,7 +250,10 @@ for /L %%p in (1,1,%NP%) do (
     del /q "!H!\done.txt" 2>nul
     call :ban_bench "!H!"
     call :goi_du_lieu %%p "!H!\data.zip"
-    >"!H!\config.lua" echo return {command = "train", epochs = %EPOCHS%, hidden = %HIDDEN%, weights = true, seed = %FIRST_SEED%}
+    rem (The line count goes along: over 6 million, train keeps every k-th line - every round still in, memory bounded.)
+    set "DN_="
+    if exist "!H!\count.txt" for /f %%c in ('type "!H!\count.txt"') do set "DN_=records = %%c, "
+    >"!H!\config.lua" echo return {command = "train", !DN_!epochs = %EPOCHS%, hidden = %HIDDEN%, weights = true, seed = %FIRST_SEED%}
   )
   if exist "!H!\count.txt" for /f %%c in ('type "!H!\count.txt"') do set /a DONG_%%p=%%c
   set /a DONG_TONG+=DONG_%%p
@@ -390,9 +393,10 @@ rem --- Brain file %1 (XOI_BRAIN ...) as Lua module %2: return {text = [==[ ... 
 type "%~1" >>"%~2"
 >>"%~2" echo ]==]}
 exit /b 0
-rem --- Mod %1's data packed as training pack %2: a small zip with only data\data.txt and the .exe files at the mod's
-rem root (enough for the game to open the pack), and xoi\data_<n>.txt = the REC lines of every round (each file under
-rem 3.5 MB - a script reads a file of up to 4 MB). The line count goes to count.txt beside the pack. ---
+rem --- Mod %1's data packed as training pack %2: a small zip with only data\data.txt, the .exe files at the mod's root
+rem and its UI folder (the game's pictures when the mod's .exe carries none - Sauce's lf2-AI VS and Stage Challenge.exe
+rem is 320 KB with the pictures in UI\; without them the game does not open the pack), and xoi\data_<n>.txt = the REC
+rem lines of every round (each file under 3.5 MB - a script reads a file of up to 4 MB). The line count goes to count.txt. ---
 :goi_du_lieu
 set "GD_PACK=!PACK_%1!"
 set "GD_OUT=%~2"
@@ -401,7 +405,7 @@ set "GD_CNT=%~dp2count.txt"
 set "GD_P=%1"
 del /q "%GD_OUT%" 2>nul
 del /q "%GD_CNT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'round-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Data of mod ' + $env:GD_P + ': ' + $count + ' lines, ' + $k + ' files in ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'round-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Data of mod ' + $env:GD_P + ': ' + $count + ' lines, ' + $k + ' files in ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
 if not exist "%GD_OUT%" echo      [ERROR] Could not pack the data of mod %1.
 exit /b 0
 rem --- Mod %1's brain: xoi-<mod>\brain.txt (the earlier one kept as brain-previous.txt), and <mod>-xoi.zip: a copy

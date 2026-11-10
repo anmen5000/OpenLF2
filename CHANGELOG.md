@@ -597,6 +597,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Pictures saved as 4-bit run-length BMP files (BI_RLE4: Felix's blood sheets) read, as 8-bit run-length ones did; a
   run-length picture cut short (the Hell mod's `sprite/sys/ad0.bmp` holds a third of its rows) shows what it holds
   instead of being left out, as Windows shows it. Every one of Sauce's 675 pictures now reads
+- `hoc-sau.bat`/`brain.bat` failed at the first training on Sauce's pack — "[LOI] Huan luyen ban mod 1 khong xong" with an
+  empty `out.txt`: the training pack held only `data/data.txt`, the mod's executables and the records, and Sauce's
+  `lf2-AI VS and Stage Challenge.exe` is a 320 KB program without LF2's pictures (the mod keeps them in `UI\`), so the
+  game refused the pack as "packed or protected" the moment it opened. The pack now carries the mod's `UI\` (and
+  `sprite\UI\`) folder too, a few MB. The message itself was lost because of the next item
+- Windows: a run whose output a batch file redirected (`> out.txt 2>&1`, as the XOI kit does) lost everything the program
+  wrote through its own C++ streams — "Game pack …", every error message — because it attached to the parent console
+  first, which replaced the redirected handles with the console's; Lua's `print` (the C runtime's stdout) still reached
+  the file, which is why the records did. Usable handles are kept now, and the parent console is attached only for
+  handles the process was not given (a double-click from Explorer, a terminal)
+- `train` thins a record set over six million (`max_records`) to every k-th record when told how many the files hold
+  (`records`, which `hoc-sau.bat` now passes from its count), so many rounds on many threads train in a few GB of memory
 - `hoc-sau.bat`/`brain.bat`: the original zip or the `<mod>-xoi.zip` that `spsa.bat`/`xoi-hoc.bat` made both do — the name
   less `-xoi` is the mod's, so the brain lands in the same `xoi-<mod>\brain.txt`, a `-xoi.zip` given is updated itself
   (the earlier one kept as `-xoi-truoc.zip`), and a `-xoi.zip` beside its original is skipped when the folder is scanned.

@@ -257,7 +257,9 @@ check against "without" is one. `train` prints `TRAIN` (the counts: every 5th re
 mean alone, and how the hand-made score correlates with the outcome: about 0.2), `LINEAR` and `NET<H>` lines per epoch
 (train and test error, the test correlation: about 0.45 for the network), `NET done`, then the `XOI_BRAIN` lines.
 About 150,000 samples a second on LuaJIT; a record takes about 500 bytes of memory (six million: 3 GB). `stride = k`
-keeps every k-th record for a quicker look. `windows/hoc-sau.bat` does all of it on a PC (English kit: `brain.bat`):
+keeps every k-th record for a quicker look; with `records = N` (how many the files hold: hoc-sau.bat counts them as it
+packs) over `max_records` (6,000,000), the job thins to every k-th record itself, so ten rounds on eighty threads still
+train in a few GB. `windows/hoc-sau.bat` does all of it on a PC (English kit: `brain.bat`):
 rounds of recording on every CPU thread, the data gathered into a small training pack (data/data.txt, the mod's
 executables and the `xoi/data_N.txt` files), one training per mod, the next round recorded with the new brain, a check
 of XOI with and without it against the same opponent, `hoc-sau\ket-qua.txt`, each mod's brain in `xoi-<mod>\brain.txt`

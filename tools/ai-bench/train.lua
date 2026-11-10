@@ -7,7 +7,9 @@
 --   <data> returning {text = "..."} (data = "rec_data").
 --   hidden (48), epochs (8), rate (0.01, times `decay` (0.6) each epoch), holdout (every n-th record kept for the
 --   test: 5), stride (1: every record; k keeps every k-th, for a quicker look at a big set), seed, weights (false:
---   no XOI_BRAIN lines, the figures only). A record takes about 500 bytes of memory: six million, 3 GB.
+--   no XOI_BRAIN lines, the figures only). A record takes about 500 bytes of memory: six million, 3 GB — so with
+--   `records` (how many the files hold, which hoc-sau.bat counts as it packs them) more than `max_records`
+--   (6,000,000) are thinned to every k-th record, the rounds all still represented (`stride` given wins).
 -- Prints TRAIN (counts), BASE (the mean alone, and how the player's own score correlates with the outcome),
 -- LINEAR and NET<H> a line an epoch (train mse, test mse, test correlation), then the network as XOI_BRAIN lines
 -- (the text of xoi/brain.txt: hoc-sau.bat keeps them).
@@ -48,6 +50,12 @@ function job.run(config)
     local X, Y = {}, {}
     local count, dropped, files, bytes, seen = 0, 0, 0, 0, 0
     local stride = config.stride or 1
+    local max_records = config.max_records or 6000000
+    if not config.stride and config.records and config.records > max_records then
+        stride = math.ceil(config.records / max_records)
+        engine.log(string.format("records: %d in the files, every %dth kept (memory: about %d bytes a record)",
+            config.records, stride, 500))
+    end
     local tokens = {}
     local function take(text)
         files, bytes = files + 1, bytes + #text
