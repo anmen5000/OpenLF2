@@ -12,6 +12,7 @@ constexpr std::size_t header_size = 40;
 constexpr std::size_t core_header_size = 12;
 constexpr std::uint32_t uncompressed = 0;
 constexpr std::uint32_t run_length_8 = 1;
+constexpr std::uint32_t run_length_4 = 2;
 constexpr std::uint32_t bit_fields = 3;
 
 // BITMAPINFOHEADER (40 bytes) and the later headers that extend it, the same in their first 40 bytes: V2 and V3
@@ -155,7 +156,8 @@ Bytes convert_core(std::span<const char> dib, std::optional<std::size_t> pixel_o
     return output;
 }
 
-// Expands bottom-up RLE8. Pixels skipped by delta or line escapes stay index 0.
+// Expands bottom-up RLE8. Pixels skipped by delta or line escapes stay index 0; a stream cut short (the Hell mod's
+// sprite/sys/ad0.bmp holds a third of its picture) gives what it holds, the rest index 0, as Windows shows it.
 Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t width,
                   std::size_t height, std::size_t stride) {
     Bytes pixels(stride * height, '\0');
@@ -166,7 +168,7 @@ Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t
         if (y >= height || count > width - x) throw FormatError("RLE8 pixels outside the bitmap");
     };
     for (;;) {
-        if (stream_size - position < 2) throw FormatError("RLE8 data ends without end-of-bitmap");
+        if (stream_size - position < 2) return pixels;
         const std::size_t count = stream.u8(position);
         const auto value = stream.u8(position + 1);
         position += 2;
@@ -189,10 +191,75 @@ Bytes expand_rle8(const BinaryView& stream, std::size_t stream_size, std::size_t
         } else {
             const std::size_t literal = value;
             const auto padded = literal + (literal & 1);
-            if (stream_size - position < padded) throw FormatError("truncated RLE8 literal");
             write_span(literal);
+            if (stream_size - position < padded) {
+                for (std::size_t index = 0; index < literal && position + index < stream_size; ++index) {
+                    pixels[y * stride + x++] = static_cast<char>(stream.u8(position + index));
+                }
+                return pixels;
+            }
             for (std::size_t index = 0; index < literal; ++index) {
                 pixels[y * stride + x++] = static_cast<char>(stream.u8(position + index));
+            }
+            position += padded;
+        }
+    }
+}
+
+// Expands bottom-up RLE4 (4-bit pixels, two to a byte: Windows reads it, and a mod's effect sheets may be saved so —
+// Felix's blood in LF2 AI VS and Stage Challenge). Encoded runs alternate the two nibbles of the value; an absolute
+// run's nibbles are packed two to a byte and padded to a word. Pixels skipped by delta or line escapes stay index 0.
+Bytes expand_rle4(const BinaryView& stream, std::size_t stream_size, std::size_t width,
+                  std::size_t height, std::size_t stride) {
+    Bytes pixels(stride * height, '\0');
+    std::size_t x = 0;
+    std::size_t y = 0;
+    std::size_t position = 0;
+    const auto write_span = [&](std::size_t count) {
+        if (y >= height || count > width - x) throw FormatError("RLE4 pixels outside the bitmap");
+    };
+    const auto put = [&](std::uint8_t index) {
+        auto& byte = pixels[y * stride + x / 2];
+        if (x % 2 == 0) byte = static_cast<char>((static_cast<unsigned char>(byte) & 0x0f) | (index << 4));
+        else byte = static_cast<char>((static_cast<unsigned char>(byte) & 0xf0) | (index & 0x0f));
+        ++x;
+    };
+    for (;;) {
+        if (stream_size - position < 2) return pixels;
+        const std::size_t count = stream.u8(position);
+        const auto value = stream.u8(position + 1);
+        position += 2;
+        if (count != 0) {
+            write_span(count);
+            for (std::size_t index = 0; index < count; ++index) {
+                put(static_cast<std::uint8_t>(index % 2 == 0 ? value >> 4 : value & 0x0f));
+            }
+        } else if (value == 0) {
+            x = 0;
+            ++y;
+        } else if (value == 1) {
+            return pixels;
+        } else if (value == 2) {
+            if (stream_size - position < 2) throw FormatError("truncated RLE4 delta");
+            x += stream.u8(position);
+            y += stream.u8(position + 1);
+            position += 2;
+            if (x > width || y > height) throw FormatError("RLE4 delta outside the bitmap");
+        } else {
+            const std::size_t literal = value;
+            const auto bytes = (literal + 1) / 2;
+            const auto padded = bytes + (bytes & 1);
+            write_span(literal);
+            if (stream_size - position < padded) {
+                for (std::size_t index = 0; index < literal && position + index / 2 < stream_size; ++index) {
+                    const auto byte = stream.u8(position + index / 2);
+                    put(static_cast<std::uint8_t>(index % 2 == 0 ? byte >> 4 : byte & 0x0f));
+                }
+                return pixels;
+            }
+            for (std::size_t index = 0; index < literal; ++index) {
+                const auto byte = stream.u8(position + index / 2);
+                put(static_cast<std::uint8_t>(index % 2 == 0 ? byte >> 4 : byte & 0x0f));
             }
             position += padded;
         }
@@ -222,9 +289,8 @@ Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset
         }
         compression = uncompressed;
     }
-    if (compression != uncompressed && !(compression == run_length_8 && bits == 8)) {
-        throw FormatError("unsupported bitmap compression");
-    }
+    const bool run_length = (compression == run_length_8 && bits == 8) || (compression == run_length_4 && bits == 4);
+    if (compression != uncompressed && !run_length) throw FormatError("unsupported bitmap compression");
     const auto colors = header.u32(32) != 0 ? header.u32(32) : (bits <= 8 ? (1U << bits) : 0U);
     if (colors > 256) throw FormatError("oversized bitmap palette");
     const std::size_t palette_end = palette_start + std::size_t{colors} * 4;
@@ -236,7 +302,7 @@ Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset
     if (width == 0 || width > 8192 || height == 0 || height > 8192) {
         throw FormatError("bitmap dimensions exceed limits");
     }
-    if (top_down && compression == run_length_8) throw FormatError("top-down RLE8 bitmap");
+    if (top_down && run_length) throw FormatError("top-down run-length bitmap");
     const auto stride = static_cast<std::size_t>(((std::uint64_t{width} * bits + 31) / 32) * 4);
     const auto pixel_bytes = stride * static_cast<std::size_t>(height);
     const auto start = pixel_offset.value_or(palette_end);
@@ -246,6 +312,9 @@ Bytes convert(std::span<const char> dib, std::optional<std::size_t> pixel_offset
     if (compression == run_length_8) {
         const auto stream = header.slice(start, dib.size() - start);
         pixels = expand_rle8(BinaryView(stream), stream.size(), width, static_cast<std::size_t>(height), stride);
+    } else if (compression == run_length_4) {
+        const auto stream = header.slice(start, dib.size() - start);
+        pixels = expand_rle4(BinaryView(stream), stream.size(), width, static_cast<std::size_t>(height), stride);
     } else {
         const auto stored = header.slice(start, pixel_bytes);
         pixels.assign(stored.begin(), stored.end());

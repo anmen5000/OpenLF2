@@ -55,7 +55,11 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    and <mod>-xoi.zip, the mod with xoi\brain.txt (and its numbers and notes) inside: uploaded to the relay or
    published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod. To pause: close
    the windows; run it again to go on. To learn further: raise VONG and run again. Settings file: hoc-sau-cai-dat.bat.
-   On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI.
+   On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI. The original zip or the
+   <mod>-xoi.zip of spsa.bat/xoi-hoc.bat both do (package 68 on): XOI records with the mod's numbers and notes
+   (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip), a -xoi.zip beside
+   its original is skipped when the folder is scanned, and a -xoi.zip given is updated itself (the earlier one kept
+   as -xoi-truoc.zip).
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -148,6 +152,10 @@ chơi được chính các file của bản mod.
    tải lên relay hay xuất bản thì XOI chơi bản mod ấy với bộ não (trong trận ghi "brain"). Mỗi bản mod một bộ
    não. Tạm dừng: đóng các cửa sổ; chạy lại là làm tiếp. Học thêm: tăng VONG rồi chạy lại. File cài đặt riêng:
    hoc-sau-cai-dat.bat. Trên bản của Sauce, bộ não đưa XOI từ 321 lên 377 trận thắng trong 720 trận đấu AI của Sauce.
+   Bản gốc hay bản <tên>-xoi.zip của spsa.bat/xoi-hoc.bat đều dùng được (từ gói 68): XOI ghi dữ liệu với bộ số và
+   bộ nhớ của bản mod (xoi-<tên>\tune.txt và notes.txt cạnh file nếu có, không thì bộ trong file zip); file -xoi.zip
+   nằm cạnh bản gốc thì bị bỏ qua khi tự quét thư mục; đưa vào chính bản -xoi.zip thì nó được cập nhật tại chỗ
+   (bản trước giữ ở -xoi-truoc.zip).
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

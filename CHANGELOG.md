@@ -588,6 +588,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   last five rounds that way. The kit guide and READMEs say so
 
 ### Fixed
+- A picture named with two separators in a row in a mod's data (`sprite\\Felix\f.bmp`: Felix of "lf2-AI VS and Stage
+  Challenge", whom the original opens as Windows reads such a path) stopped the game — "unsafe virtual path" — the moment
+  it was to be drawn: scrolling to him in the character selection, or playing him, on Windows and the web alike. Separators
+  in a row are now one (`virtual_path`), and a picture, sound or music whose name the pack cannot hold is left out of the
+  frame with one "Frame: a sprite is left out: ..." line instead of ending the game (`decode_frame`); the bench's
+  headless matches draw nothing and never met it
+- Pictures saved as 4-bit run-length BMP files (BI_RLE4: Felix's blood sheets) read, as 8-bit run-length ones did; a
+  run-length picture cut short (the Hell mod's `sprite/sys/ad0.bmp` holds a third of its rows) shows what it holds
+  instead of being left out, as Windows shows it. Every one of Sauce's 675 pictures now reads
+- `hoc-sau.bat`/`brain.bat`: the original zip or the `<mod>-xoi.zip` that `spsa.bat`/`xoi-hoc.bat` made both do — the name
+  less `-xoi` is the mod's, so the brain lands in the same `xoi-<mod>\brain.txt`, a `-xoi.zip` given is updated itself
+  (the earlier one kept as `-xoi-truoc.zip`), and a `-xoi.zip` beside its original is skipped when the folder is scanned.
+  The recording and check processes play a working copy of the zip with `xoi-<mod>\`'s numbers and notes laid in and the
+  zip's own brain taken out (brains come in through the job's config), so the brain learns the XOI that actually plays the
+  mod — before, a run on the original zip recorded with XOI's default numbers while the published `-xoi.zip` carried the
+  tuned ones, and a brain inside the zip would have played on the check's "without the brain" side (`record` now clears
+  the brain of every side not named in `on`, the player itself included); a brain inside the zip with no `xoi-<mod>\brain.txt`
+  is the starting brain
 - INSANE! and XOI did not play in a pack whose fighters have AI scripts of their own: since INSANE!'s version 14 a fighter
   with a substantial script kept it at those levels (made when INSANE! was young and the mod's author knew the
   fighter better), so in Sauce's "lf2-AI VS and Stage Challenge", whose every fighter has one, the levels named INSANE! and

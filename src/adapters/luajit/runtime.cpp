@@ -221,14 +221,20 @@ public:
     Rectangle area(const char* field) {
         return Rectangle{coordinate(field), coordinate(field), coordinate(field), coordinate(field)};
     }
-    // True once per command whose positions could not be drawn (and forgets it); reports each kind once.
+    // True once per command whose positions could not be drawn, or whose file has no usable name (and forgets it);
+    // reports each kind once (a bad name: once per name).
     bool dropped(const char* command) {
         if (!dropped_) return false;
         dropped_ = false;
         static std::mutex mutex;
         static std::set<std::string> reported;
         const std::lock_guard lock(mutex);
-        if (reported.size() < 64 && reported.insert(std::string(command) + "." + dropped_field_).second) {
+        if (!dropped_text_.empty()) {
+            if (reported.size() < 64 && reported.insert(std::string(command) + ":" + dropped_text_).second) {
+                std::cerr << "Frame: a " << command << " is left out: " << dropped_text_ << '\n';
+            }
+            dropped_text_.clear();
+        } else if (reported.size() < 64 && reported.insert(std::string(command) + "." + dropped_field_).second) {
             std::cerr << "Frame: a " << command << " with " << dropped_field_ << " " << dropped_value_
                       << " (outside -8192..8192) is left out\n";
         }
@@ -255,9 +261,15 @@ public:
         if (size > 1024 || text_bytes_ > 512 * 1024) throw std::runtime_error("frame text limit exceeded");
         return {value, size}; // The input table roots the string throughout decoding.
     }
+    // A file's name in the game pack. One the pack cannot hold (a mod's data may say "sprite\\Felix\..\f.bmp") leaves
+    // the command out (see `dropped`) instead of stopping the game, as a picture that cannot be read is left out.
     std::string resource() {
         auto path = virtual_path(text());
-        if (!path) throw std::runtime_error(path.error().message);
+        if (!path) {
+            if (!dropped_) dropped_field_ = "resource", dropped_text_ = path.error().message;
+            dropped_ = true;
+            return {};
+        }
         return std::move(*path);
     }
     Rectangle rectangle(bool positive = false) {
@@ -276,6 +288,7 @@ private:
     bool dropped_ = false;
     const char* dropped_field_ = "";
     double dropped_value_ = 0;
+    std::string dropped_text_;
 };
 Result<ScriptFrame> decode_frame(lua_State* state, int table, int count) {
     try {
@@ -345,7 +358,7 @@ Result<ScriptFrame> decode_frame(lua_State* state, int table, int count) {
             case FrameOpcode::sound: {
                 SoundCommand sound;
                 sound.resource = reader.resource(); sound.volume = reader.integer(-10000, 0); sound.pan = reader.integer(-10000, 10000);
-                frame.sounds.push_back(std::move(sound));
+                if (!reader.dropped("sound")) frame.sounds.push_back(std::move(sound));
                 break;
             }
             case FrameOpcode::rumble: {
@@ -361,7 +374,7 @@ Result<ScriptFrame> decode_frame(lua_State* state, int table, int count) {
                 if (music.kind == MusicCommand::Kind::play) music.resource = reader.resource();
                 else if (music.kind == MusicCommand::Kind::volume) music.volume = reader.integer(-10000, 0);
                 else if (reader.flag()) throw std::runtime_error("unexpected music payload");
-                frame.music.push_back(std::move(music));
+                if (!reader.dropped("music")) frame.music.push_back(std::move(music));
                 break;
             }
             case FrameOpcode::speed: set_flag(frame.fast); break;

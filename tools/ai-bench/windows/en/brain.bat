@@ -19,8 +19,12 @@ rem records with the brain already in xoi-<mod>, if there is one).
 rem ============ SETTINGS ============
 rem The installed game. Empty: found automatically (Install for me only, all users, or an OpenLF2 folder beside this file).
 set "GAME="
-rem The mod's zip file. Empty: EVERY mod .zip beside this file (except *-xoi.zip, lf2-online-upload packages, xoi-kit),
-rem the processes shared out over the mods (one brain per mod); a zip file dragged onto this file: that mod only.
+rem The mod's zip file. Empty: EVERY mod .zip beside this file (except lf2-online-upload packages, xoi-kit, and
+rem <mod>-xoi.zip when <mod>.zip lies beside it), the processes shared out over the mods (one brain per mod); a zip file
+rem dragged onto this file: that mod only. The original or the <mod>-xoi.zip of spsa.bat/train.bat both do: XOI records
+rem with the numbers (tune.txt) and the notes (notes.txt) of the folder xoi-<mod> beside this file when it exists, else
+rem with those inside the zip; a brain inside the zip (xoi/brain.txt) is the starting brain when xoi-<mod> has none.
+rem Results go to xoi-<mod>\brain.txt and <mod>-xoi.zip (a -xoi zip given is updated itself, the earlier one kept as -xoi-previous.zip).
 set "PACK="
 rem Rounds (ROUNDS) and recording minutes per round (RECORD_MINUTES). Round 1 records with XOI as it is; from round 2
 rem XOI records with the brain just learned, so the brain learns its new play too. One process records about 2,000
@@ -67,15 +71,16 @@ if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" (
 )
 if !NP! EQU 0 if defined PACK (
   set /a NP=1
-  set "PACK_1=!PACK!"
+  for %%z in ("!PACK!") do set "PACK_1=%%~fz"
 )
 if !NP! EQU 0 (
   pushd "%~dp0"
   for %%z in (*.zip) do (
     set "TEN=%%~nz"
     set "BO="
-    if /i "!TEN:~-4!"=="-xoi" set "BO=1"
+    if /i "!TEN:~-4!"=="-xoi" if exist "!TEN:~0,-4!.zip" set "BO=1"
     if /i "!TEN:~-13!"=="-xoi-previous" set "BO=1"
+    if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
     if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
     if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
     if not defined BO (
@@ -86,6 +91,8 @@ if !NP! EQU 0 (
   popd
 )
 if !NP! EQU 0 (echo No mod zip file found: put the mod's zip beside this file, drag it onto this file, or set the PACK line at the top.& pause& exit /b 1)
+rem (The mod's name: the file name less a -xoi ending, so that the <mod>-xoi.zip of spsa.bat/train.bat shares xoi-<mod> with the original.)
+for /L %%p in (1,1,%NP%) do call :ten_mod %%p
 
 rem --- The game, the bench, the scripts ---
 if not defined GAME (
@@ -136,23 +143,26 @@ if not exist "%LV%\scripts\base\game\match.lua" (echo [ERROR] Could not merge th
 set XS=--scripts "%LV%\scripts"
 
 echo Mods ^(%NP%^):
-for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
+for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%  [xoi-%%TEN_%%p%%]
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 echo To pause: close this window and the minimized ones. Running this file again goes on from there.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
-rem (A brain each mod has from an earlier run: round 1 records with it, as later rounds do.)
-rem (Wine's cmd, which tries this file, cannot expand !PACK_%%p!: call set is used for such names throughout.)
-for /L %%p in (1,1,%NP%) do (
-  set "NAO_%%p="
-  call set "PK=%%PACK_%%p%%"
-  for %%z in ("!PK!") do if exist "%KIT%xoi-%%~nz\brain.txt" (
-    set "NAO_%%p=%KIT%xoi-%%~nz\brain.txt"
-    echo Mod %%p starts from its brain so far: "%KIT%xoi-%%~nz\brain.txt"
-  )
+rem Each mod's working copy: brain\mod-<p>.zip = the mod's zip file with xoi-<mod>'s numbers and notes laid in (when it has
+rem them) and the brain inside the zip taken out (a brain comes in through the config only, so that the check's "without
+rem the brain" is without one). The recording and check processes play this copy; it is made anew on every run (new
+rem numbers from spsa.bat count at once).
+rem (Wine's cmd, which tries this file, cannot expand !PACK_%%p!: call set and subroutines are used for such names.)
+set "BM_LOI="
+for /L %%p in (1,1,%NP%) do call :lam_ban_mod %%p
+if defined BM_LOI (
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
 )
+rem (A brain each mod has from an earlier run: round 1 records with it, as later rounds do.)
+for /L %%p in (1,1,%NP%) do call :nao_dau %%p
 
 set /a E=1
 :luot_tiep
@@ -395,15 +405,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='
 if not exist "%GD_OUT%" echo      [ERROR] Could not pack the data of mod %1.
 exit /b 0
 rem --- Mod %1's brain: xoi-<mod>\brain.txt (the earlier one kept as brain-previous.txt), and <mod>-xoi.zip: a copy
-rem of the mod's zip with xoi/brain.txt beside the data folder - and xoi-<mod>'s xoi/tune.txt and xoi/notes.txt, if any ---
+rem of the mod's zip with xoi/brain.txt beside the data folder - and xoi-<mod>'s xoi/tune.txt and xoi/notes.txt, if any.
+rem Given <mod>-xoi.zip itself, it is updated in place (the earlier one kept as <mod>-xoi-previous.zip). ---
 :goi_nao
 if not defined NAO_%1 (echo   %1. ^(no brain yet^)& exit /b 0)
 set "XPACK=!PACK_%1!"
+set "XTEN=!TEN_%1!"
 for %%z in ("!XPACK!") do (
-  set "XDIR=%KIT%xoi-%%~nz"
-  set "XOUT=%%~dpnz-xoi.zip"
-  set "XTRUOC=%%~dpnz-xoi-previous.zip"
+  set "XFULL=%%~fz"
+  set "XDIR=%KIT%xoi-!XTEN!"
+  set "XOUT=%%~dpz!XTEN!-xoi.zip"
+  set "XTRUOC=%%~dpz!XTEN!-xoi-previous.zip"
 )
+set "XTAI_CHO="
+if /i "!XFULL!"=="!XOUT!" set "XTAI_CHO=1"
 if not exist "!XDIR!" mkdir "!XDIR!"
 if exist "!XDIR!\brain.txt" copy /y "!XDIR!\brain.txt" "!XDIR!\brain-previous.txt" >nul
 copy /y "!NAO_%1!" "!XDIR!\brain.txt" >nul
@@ -414,9 +429,41 @@ if exist "!XDIR!\tune.txt" set "XTUNE=!XDIR!\tune.txt"
 set "XNOTES="
 if exist "!XDIR!\notes.txt" set "XNOTES=!XDIR!\notes.txt"
 if exist "!XOUT!" copy /y "!XOUT!" "!XTRUOC!" >nul
-del /q "!XOUT!" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Added ' + $name) } } } finally { $z.Dispose() }" 2>nul
-if exist "!XOUT!" (echo      Packed: "!XOUT!") else (echo      [ERROR] Could not pack it - by hand: open the mod's zip file, go into the folder that holds the data folder, make a folder named xoi, copy "!XDIR!\brain.txt" into it.)
+if not defined XTAI_CHO del /q "!XOUT!" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (-not $env:XTAI_CHO) { Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Added ' + $name) } } } finally { $z.Dispose() }" 2>nul
+set "XLOI="
+if errorlevel 1 set "XLOI=1"
+if not exist "!XOUT!" set "XLOI=1"
+if defined XLOI (echo      [ERROR] Could not pack it - by hand: open the mod's zip file, go into the folder that holds the data folder, make a folder named xoi, copy "!XDIR!\brain.txt" into it.) else if defined XTAI_CHO (echo      Updated: "!XOUT!" - the earlier one: "!XTRUOC!") else (echo      Packed: "!XOUT!")
+exit /b 0
+rem --- Mod %1's name (TEN_<p>): the zip file's name less a -xoi ending ---
+:ten_mod
+for %%z in ("!PACK_%1!") do set "T_=%%~nz"
+if /i "!T_:~-4!"=="-xoi" set "T_=!T_:~0,-4!"
+set "TEN_%1=!T_!"
+exit /b 0
+rem --- Mod %1's starting brain (NAO_<p>): xoi-<mod>\brain.txt; or the folder named after the file name with its -xoi
+rem ending (package 67's brain.bat did so); or the brain inside the zip (lam_ban_mod takes it out as zip-brain-<p>.txt) ---
+:nao_dau
+set "NAO_%1="
+set "ND_=%KIT%xoi-!TEN_%1!\brain.txt"
+if exist "!ND_!" set "NAO_%1=!ND_!"
+if not defined NAO_%1 for %%z in ("!PACK_%1!") do if exist "%KIT%xoi-%%~nz\brain.txt" set "NAO_%1=%KIT%xoi-%%~nz\brain.txt"
+if not defined NAO_%1 if exist "%LV%\zip-brain-%1.txt" set "NAO_%1=%LV%\zip-brain-%1.txt"
+if defined NAO_%1 echo Mod %1 starts from its brain so far: "!NAO_%1!"
+exit /b 0
+rem --- Mod %1's working copy: brain\mod-<p>.zip = a copy of the mod's zip; xoi/tune.txt and xoi/notes.txt replaced by
+rem xoi-<mod>'s when it has them; xoi/brain.txt taken out (kept as zip-brain-<p>.txt when xoi-<mod> has no brain yet) ---
+:lam_ban_mod
+set "BM_PACK=!PACK_%1!"
+set "BM_OUT=%LV%\mod-%1.zip"
+set "BM_DIR=%KIT%xoi-!TEN_%1!"
+set "BM_NAO=%LV%\zip-brain-%1.txt"
+set "BM_P=%1"
+del /q "%BM_OUT%" 2>nul
+del /q "%BM_NAO%" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:BM_PACK -Destination $env:BM_OUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:BM_OUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $what=@(); $kitbrain=Join-Path $env:BM_DIR 'brain.txt'; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq ($root + 'xoi/brain.txt') })) { if (-not (Test-Path -LiteralPath $kitbrain) -and -not (Test-Path -LiteralPath $env:BM_NAO)) { [System.IO.Compression.ZipFileExtensions]::ExtractToFile($old, $env:BM_NAO, $true); $what += 'the brain inside the zip: the starting brain' } else { $what += 'the brain inside the zip: taken out' }; $old.Delete() }; foreach ($f in @(@('tune.txt', 'numbers'), @('notes.txt', 'notes'))) { $src=Join-Path $env:BM_DIR $f[0]; if (Test-Path -LiteralPath $src) { $name=$root + 'xoi/' + $f[0]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $src, $name); $what += ($f[1] + ' of xoi-<mod>') } elseif (@($z.Entries | Where-Object { $_.FullName -ieq ($root + 'xoi/' + $f[0]) }).Count -gt 0) { $what += ($f[1] + ' inside the zip') } }; if ($what.Count -eq 0) { $what += 'no numbers, notes or brain' }; Write-Host ('  Mod ' + $env:BM_P + ': ' + ($what -join ', ')) } finally { $z.Dispose() }"
+if not exist "%BM_OUT%" (echo [ERROR] Could not make mod %1's working copy ^("%BM_PACK%"^) - does the zip file open?& set "BM_LOI=1")
 exit /b 0
 rem --- Seconds since midnight by the clock into variable %1 ---
 :giay
@@ -489,7 +536,7 @@ if /i "%~6"=="hoc" (
   set "P=!DIR!\data.zip"
 ) else (
   set "DIR=%LV%\%~2\p%~3"
-  set "P=!PACK_%~5!"
+  set "P=%LV%\mod-%~5.zip"
 )
 "%GAME_DA_CHON%" --pack "!P!" %XS_DA_CHON% --mod "!DIR!" --seed %~4 --input-trace "" >"!DIR!\out.txt" 2>&1
 >"!DIR!\done.txt" echo done

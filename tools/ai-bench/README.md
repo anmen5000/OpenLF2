@@ -252,7 +252,8 @@ as `xoi/brain.txt` beside its data (shown as "brain" beside XOI in the match), a
 
 `record` writes `RECH` (the header) and one `REC` line per move started, resolved 45 frames later (or when a fighter
 falls), and a `RECORD` line at the end (games, records, wins and losses); `quiet = true` plays the games without the
-records, for a check. `train` prints `TRAIN` (the counts: every 5th record is held out for the test), `BASE` (the
+records, for a check. Every side not named in `on` plays without a brain — the pack's own `xoi/brain.txt` too, so a
+check against "without" is one. `train` prints `TRAIN` (the counts: every 5th record is held out for the test), `BASE` (the
 mean alone, and how the hand-made score correlates with the outcome: about 0.2), `LINEAR` and `NET<H>` lines per epoch
 (train and test error, the test correlation: about 0.45 for the network), `NET done`, then the `XOI_BRAIN` lines.
 About 150,000 samples a second on LuaJIT; a record takes about 500 bytes of memory (six million: 3 GB). `stride = k`
@@ -260,7 +261,9 @@ keeps every k-th record for a quicker look. `windows/hoc-sau.bat` does all of it
 rounds of recording on every CPU thread, the data gathered into a small training pack (data/data.txt, the mod's
 executables and the `xoi/data_N.txt` files), one training per mod, the next round recorded with the new brain, a check
 of XOI with and without it against the same opponent, `hoc-sau\ket-qua.txt`, each mod's brain in `xoi-<mod>\brain.txt`
-and `<mod>-xoi.zip`. On Sauce's pack (two rounds of 1,000 and 600 games, 87,000 records) the brain took XOI from 321 to
+and `<mod>-xoi.zip`. The processes play a working copy of the mod's zip (`hoc-sau\ban-mod-<p>.zip`): the numbers and notes
+of `xoi-<mod>\` laid in when they exist, the zip's own brain taken out (brains come in through the config), so the brain
+learns the XOI that plays the mod; the original or the `-xoi.zip` may be given (the name less `-xoi` is the mod's). On Sauce's pack (two rounds of 1,000 and 600 games, 87,000 records) the brain took XOI from 321 to
 377 games of 720 against Sauce's AI, 216 to 134 against XOI without it; the same brain did nothing for other mods
 (208 to 231 over five), so a brain is made per pack.
 

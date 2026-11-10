@@ -55,27 +55,37 @@ function job.run(config)
     -- config.brain = {module = ..., on = {1}}: the recorded player plays with a brain (as duel's option), the
     -- records then of the play it leads to — the next brain is trained on them.
     local on_list = config.brain and (config.brain.on or {1}) or {}
+    -- A side's smart player: the module named after "@" (a copy of smart_ai.lua), else the player itself; nil for
+    -- a side that is no smart player (classic: the pack's own scripts, or the original computer player).
+    local function player_of(side)
+        local name = names[side] or ""
+        local module = name:match("^[a-z:]+@(.+)$")
+        if module then
+            local ok, found = pcall(require, "bench/" .. module)
+            return ok and type(found) == "table" and found.set_brain and found or nil
+        end
+        return (name:match("^xoi") or name:match("^smart")) and smart or nil
+    end
+    local given = {}
     if config.brain then
         local text = require("bench/" .. config.brain.module).text
         for _, side in ipairs(on_list) do
-            local name = names[side] or ""
-            local module = name:match("^[a-z:]+@(.+)$")
-            local player = module and require("bench/" .. module) or smart
+            local player = assert(player_of(side), "no smart player on side " .. side .. " to give the brain to")
             local brain = player.brain_kit.parse(text)
             assert(brain, "the brain's text does not fit")
             player.set_brain(brain)
+            given[player] = true
             engine.log(string.format("brain %s on side %d", config.brain.module, side))
         end
     end
-    -- (The other side's player, a copy, plays without one.)
+    -- Every other side plays without one — a brain the pack itself carries (xoi/brain.txt, read in every match
+    -- unless set_brain fixed it) too, so that a check of XOI with the brain against XOI without compares what it
+    -- says, and a round recorded without a brain is so. (A player shared by an `on` side keeps its brain.)
     for side = 1, 2 do
         local on = false
         for _, k in ipairs(on_list) do if k == side then on = true end end
-        local module = (names[side] or ""):match("^[a-z:]+@(.+)$")
-        if not on and module then
-            local ok, player = pcall(require, "bench/" .. module)
-            if ok and player.set_brain then player.set_brain(nil) end
-        end
+        local player = not on and player_of(side)
+        if player and not given[player] then player.set_brain(nil) end
     end
     local quiet = config.quiet -- (a check only: games and their winners, no records)
     local random = generator(config.seed or 1)

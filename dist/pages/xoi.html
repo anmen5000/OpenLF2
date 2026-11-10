@@ -721,8 +721,12 @@
         trong 720 trận đấu AI của Sauce, và thắng XOI không có bộ não 216–134; cũng bộ não ấy không giúp gì cho các bản mod khác —
         mỗi bản mod cần bộ não riêng.</p>
       <ol class="steps en">
-        <li><b>Put one or more mods' <code>.zip</code> next to <code>hoc-sau.bat</code></b> (not the <code>*-xoi.zip</code> copies), or
-          drag one onto it. Several mods: the processes are shared among them and each mod gets a brain of its own.</li>
+        <li><b>Put one or more mods' <code>.zip</code> next to <code>hoc-sau.bat</code></b>, or drag one onto it. The original or the
+          <code>&lt;mod&gt;-xoi.zip</code> that <code>spsa.bat</code> or <code>xoi-hoc.bat</code> made both do (package 68 on): XOI records
+          with the mod's numbers and notes — those of <code>xoi-&lt;mod&gt;\</code> beside the file when it exists, else those inside
+          the zip — so the brain learns the XOI that actually plays the mod; a <code>-xoi.zip</code> beside its original is skipped
+          when the folder is scanned, and its brain lands in the same <code>xoi-&lt;mod&gt;\</code>. Several mods: the processes are
+          shared among them and each mod gets a brain of its own.</li>
         <li><b>Double-click.</b> Each round, every process (one per CPU thread) records for <code>PHUT_GHI</code> minutes: XOI against
           the mod's own AI scripts where it has them (Sauce's AI), else against itself; random pairs of the mod's fighters on random
           stages. The data of every round so far is gathered, a brain is trained for each mod, and from the second round XOI records
@@ -736,7 +740,8 @@
           (<code>brain-settings.bat</code> in the English kit), as with <code>spsa.bat</code>.</li>
         <li><b>Each mod's brain, ready to use:</b> <code>xoi-&lt;mod&gt;\brain.txt</code>, and <code>&lt;mod&gt;-xoi.zip</code> is the mod
           with it inside (<code>xoi/brain.txt</code> beside its <code>data</code> folder, with the mod's numbers and notes if it has
-          them). Uploaded to the relay or published, XOI plays that mod with the brain. Upload it only if the check has XOI with
+          them; a <code>-xoi.zip</code> given is updated itself, the earlier one kept as <code>-xoi-truoc.zip</code>). Uploaded to the
+          relay or published, XOI plays that mod with the brain. Upload it only if the check has XOI with
           the brain winning more than XOI without it. <code>spsa.bat</code>, <code>xoi-hoc.bat</code> and <code>xuat-ban.bat</code>
           pack the brain too when <code>xoi-&lt;mod&gt;\brain.txt</code> exists.</li>
         <li><b>Send <code>hoc-sau\ket-qua.txt</code></b> to whoever maintains the AI: the data each round, how well the network
@@ -744,8 +749,11 @@
           about 0.2 and the network about 0.45), and the check.</li>
       </ol>
       <ol class="steps vi">
-        <li><b>Đặt một hay nhiều file <code>.zip</code> bản mod cạnh <code>hoc-sau.bat</code></b> (không phải các bản <code>*-xoi.zip</code>),
-          hoặc kéo thả một file vào nó. Nhiều bản mod: các tiến trình chia nhau, mỗi bản mod một bộ não riêng.</li>
+        <li><b>Đặt một hay nhiều file <code>.zip</code> bản mod cạnh <code>hoc-sau.bat</code></b>, hoặc kéo thả một file vào nó. Bản gốc
+          hay bản <code>&lt;tên&gt;-xoi.zip</code> mà <code>spsa.bat</code>/<code>xoi-hoc.bat</code> làm ra đều được (từ gói 68): XOI ghi dữ
+          liệu với bộ số và bộ nhớ của bản mod — lấy trong <code>xoi-&lt;tên&gt;\</code> cạnh file nếu có, không thì trong file zip — nên
+          bộ não học đúng XOI đang chơi bản mod ấy; file <code>-xoi.zip</code> nằm cạnh bản gốc thì bị bỏ qua khi tự quét thư mục,
+          và bộ não của nó về cùng <code>xoi-&lt;tên&gt;\</code>. Nhiều bản mod: các tiến trình chia nhau, mỗi bản mod một bộ não riêng.</li>
         <li><b>Nháy đúp.</b> Mỗi lượt, mỗi tiến trình (một luồng CPU) ghi dữ liệu trong <code>PHUT_GHI</code> phút: XOI đánh với AI
           riêng của bản mod nếu có (AI của Sauce), không thì với chính nó; các cặp nhân vật ngẫu nhiên trên sân ngẫu nhiên. Dữ liệu
           của mọi lượt từ trước tới giờ được gộp, mỗi bản mod được huấn luyện một bộ não, và từ lượt hai XOI ghi dữ liệu với bộ não vừa
@@ -758,7 +766,8 @@
           của bạn để trong <code>hoc-sau-cai-dat.bat</code> cạnh nó (bộ tiếng Anh: <code>brain-settings.bat</code>), như với
           <code>spsa.bat</code>.</li>
         <li><b>Bộ não của từng bản mod, dùng được ngay:</b> <code>xoi-&lt;tên&gt;\brain.txt</code>, và <code>&lt;tên&gt;-xoi.zip</code> là bản
-          mod có nó bên trong (<code>xoi/brain.txt</code> cạnh thư mục <code>data</code>, kèm bộ số và bộ nhớ của bản mod nếu đã có).
+          mod có nó bên trong (<code>xoi/brain.txt</code> cạnh thư mục <code>data</code>, kèm bộ số và bộ nhớ của bản mod nếu đã có;
+          đưa vào chính bản <code>-xoi.zip</code> thì nó được cập nhật tại chỗ, bản trước giữ ở <code>-xoi-truoc.zip</code>).
           Tải lên relay hay xuất bản thì XOI chơi bản mod ấy với bộ não. Chỉ tải lên khi phần kiểm tra cho XOI có bộ não thắng nhiều
           hơn XOI không có. <code>spsa.bat</code>, <code>xoi-hoc.bat</code> và <code>xuat-ban.bat</code> cũng đóng gói bộ não khi có
           <code>xoi-&lt;tên&gt;\brain.txt</code>.</li>

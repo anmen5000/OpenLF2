@@ -30,6 +30,9 @@ Result<std::string> virtual_path(std::string_view input) {
             return fail(ErrorCode::format, "virtual paths must use printable ASCII without colons");
         }
         const char value = character == '\\' ? '/' : static_cast<char>(character);
+        // Separators in a row are one, as Windows reads them: a mod's data may name a picture "sprite\\Felix\f.bmp"
+        // (LF2 AI VS and Stage Challenge's Felix), which the original opens.
+        if (value == '/' && !normalized.empty() && normalized.back() == '/') continue;
         normalized += value >= 'A' && value <= 'Z' ? static_cast<char>(value + ('a' - 'A')) : value;
     }
     std::size_t start = 0;

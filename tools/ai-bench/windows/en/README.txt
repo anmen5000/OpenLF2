@@ -59,6 +59,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    to the relay or published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod.
    To pause: close the windows; run it again to go on. To learn further: raise ROUNDS and run again. Settings
    file: brain-settings.bat. On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI.
+   The original zip or the <mod>-xoi.zip of spsa.bat/train.bat both do (package 68 on): XOI records with the mod's
+   numbers and notes (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip),
+   a -xoi.zip beside its original is skipped when the folder is scanned, and a -xoi.zip given is updated itself (the
+   earlier one kept as -xoi-previous.zip).
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
