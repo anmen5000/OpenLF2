@@ -43,8 +43,15 @@ local function compile_text(source, name, environment)
     end
     return chunk, message
 end
--- A line in the game's output (the web page's Diagnostic output).
-local function log(text) print_line(tostring(text)) end
+-- A line in the game's output (the web page's Diagnostic output), written out at once. (Print leaves it in the C
+-- runtime's buffer while the game's own messages go straight out — on Windows, since the change that keeps a batch
+-- file's `> out.txt 2>&1` from losing them — so in such a file the game's last message, "screen must declare a
+-- viewport", cut the last line a bench job had printed in two: spsa.bat could not merge its rounds.)
+local standard_output = io and io.stdout
+local function log(text)
+    print_line(tostring(text))
+    if standard_output then standard_output:flush() end
+end
 
 local function copy_library(library)
     local copy = {}

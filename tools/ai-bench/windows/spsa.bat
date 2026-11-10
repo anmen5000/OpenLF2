@@ -147,6 +147,10 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   xcopy /e /i /q /y "%SCRIPTS%" "%LV%\scripts" >nul
 )
 if not exist "%LV%\scripts\base\game\match.lua" (echo [LOI] Khong ghep duoc scripts vao "%LV%\scripts".& pause& exit /b 1)
+rem Lop noi game voi scripts (runtime\bootstrap.lua) thi luon lay cua goi, ca khi lam tiep mot dot cu - no khong doi cach
+rem AI danh. Tu goi 72 no ghi ngay tung dong ra out.txt; truoc do, voi game goi 69-71 tren Windows, dong bao cuoi cua
+rem game chen vao giua dong so cuoi cua tien trinh, va vong khong gop duoc.
+if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.lua" "%LV%\scripts\runtime\bootstrap.lua" >nul 2>nul
 set XS=--scripts "%LV%\scripts"
 rem Diem bat dau: cac so cua XOI (bat-dau.lua rong), hoac dat san mot bat-dau.lua ^(vi du ket qua lan chinh truoc^).
 rem Chi mot ban mod, da co bo so rieng (xoi-<ten>\tune.txt, tu lan chinh truoc): chinh tiep tu bo so ay.
@@ -196,14 +200,15 @@ echo === Vong %E%/%VONG%: %N% tien trinh danh trong %PHUT_VONG% phut ^(%TIME%^) 
 call :giay BAT_DAU
 set /a FIRST=K_DAU
 set "GHI_CHU="
-rem Cac tien trinh cua vong nay da danh xong lan truoc ma chua co so gop (may tat giua luc gop, hay file so hong): chi
-rem gop lai, khong danh lai.
+rem Cac tien trinh cua vong nay da danh xong lan truoc ma chua co so gop (may tat giua luc gop, file so hong, hay gop
+rem bi loi): chi gop lai, khong danh lai. (Da danh xong: co dong "SPSA chain done" hay dong so cuoi --SPSA_END - mot trong
+rem hai co the bi cat, xem :lay_chuoi, nhung khong ca hai.)
 if exist "%D%" (
   set /a XONG_N=0, CHUA_N=0
   pushd "%D%"
   for /d %%p in (p*) do if exist "%%p\out.txt" (
     set "XONG_P="
-    findstr /c:"SPSA chain done" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
+    findstr /c:"SPSA chain done" /c:"--SPSA_END" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
     if defined XONG_P (set /a XONG_N+=1) else set /a CHUA_N+=1
   )
   popd
@@ -378,8 +383,12 @@ rem bao cuoi cung; khong co thi bo qua ---
 :lay_chuoi
 if not exist "%~1" exit /b 0
 set "DONG="
-for /f "delims=" %%l in ('findstr /c:"--SPSA_END" "%~1" 2^>nul') do set "DONG=%%l"
-if not defined DONG for /f "delims=" %%l in ('findstr /c:"--SPSA_STATE" "%~1" 2^>nul') do set "DONG=%%l"
+rem Chi dong so nguyen ven: bat dau bang "{n = " va co dau --SPSA_END (hay --SPSA_STATE). Game goi 69-71 tren Windows ghi
+rem dong bao cuoi cua no (screen must declare a viewport) ngay, con cac dong cua Lua thi qua bo dem 4 KB, nen dong bao ay
+rem hay chen vao giua dong so cuoi, cat no lam hai; gop ca manh sau thi Lua bao loi o dong ay (expected near =). Dong
+rem cuoi bi cat thi lay dong bao gan nhat (moi 10 cap tran mot dong).
+for /f "delims=" %%l in ('findstr /b /c:"{n = " "%~1" 2^>nul ^| findstr /c:"--SPSA_END"') do set "DONG=%%l"
+if not defined DONG for /f "delims=" %%l in ('findstr /b /c:"{n = " "%~1" 2^>nul ^| findstr /c:"--SPSA_STATE"') do set "DONG=%%l"
 if not defined DONG exit /b 0
 >>"%~2" echo !DONG!
 set /a CO+=1

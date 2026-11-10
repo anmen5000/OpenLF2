@@ -150,6 +150,11 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   xcopy /e /i /q /y "%SCRIPTS%" "%LV%\scripts" >nul
 )
 if not exist "%LV%\scripts\base\game\match.lua" (echo [ERROR] Could not assemble the scripts into "%LV%\scripts".& pause& exit /b 1)
+rem The layer between the game and the scripts (runtime\bootstrap.lua) always comes from the package, also when an old run
+rem goes on - it does not change how the AI plays. From package 72 on it writes each line to out.txt at once; before, with
+rem the game of packages 69-71 on Windows, the game's last message landed in the middle of a process's last numbers line,
+rem and the round could not be merged.
+if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.lua" "%LV%\scripts\runtime\bootstrap.lua" >nul 2>nul
 set XS=--scripts "%LV%\scripts"
 rem Starting point: XOI's numbers (an empty start.lua), or a start.lua put there beforehand ^(a previous run's result, say^).
 rem One mod only, with its own numbers already (xoi-<mod>\tune.txt, from a previous run): tuning goes on from them.
@@ -201,13 +206,14 @@ call :giay BAT_DAU
 set /a FIRST=K_DAU
 set "GHI_CHU="
 rem The processes of this round all finished last time but their numbers were not merged (PC cut off during the merge,
-rem or the numbers file is broken): only merge again, do not play again.
+rem the numbers file broken, or the merge failed): only merge again, do not play again. (Finished: a "SPSA chain done"
+rem line or the last numbers line, --SPSA_END - either can be cut, see :lay_chuoi, but not both.)
 if exist "%D%" (
   set /a XONG_N=0, CHUA_N=0
   pushd "%D%"
   for /d %%p in (p*) do if exist "%%p\out.txt" (
     set "XONG_P="
-    findstr /c:"SPSA chain done" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
+    findstr /c:"SPSA chain done" /c:"--SPSA_END" "%%p\out.txt" >nul 2>nul && set "XONG_P=1"
     if defined XONG_P (set /a XONG_N+=1) else set /a CHUA_N+=1
   )
   popd
@@ -382,8 +388,13 @@ rem report; neither there, nothing is added ---
 :lay_chuoi
 if not exist "%~1" exit /b 0
 set "DONG="
-for /f "delims=" %%l in ('findstr /c:"--SPSA_END" "%~1" 2^>nul') do set "DONG=%%l"
-if not defined DONG for /f "delims=" %%l in ('findstr /c:"--SPSA_STATE" "%~1" 2^>nul') do set "DONG=%%l"
+rem Whole numbers lines only: starting with "{n = " and with the mark --SPSA_END (or --SPSA_STATE). The game of packages
+rem 69-71 on Windows writes its last message (screen must declare a viewport) at once, while Lua's lines go through a 4 KB
+rem buffer, so that message often landed in the middle of the last numbers line and cut it in two; merging the second
+rem piece too, Lua stopped at that line (expected near =). With the last line cut, the latest report (one each 10 game
+rem pairs) is taken.
+for /f "delims=" %%l in ('findstr /b /c:"{n = " "%~1" 2^>nul ^| findstr /c:"--SPSA_END"') do set "DONG=%%l"
+if not defined DONG for /f "delims=" %%l in ('findstr /b /c:"{n = " "%~1" 2^>nul ^| findstr /c:"--SPSA_STATE"') do set "DONG=%%l"
 if not defined DONG exit /b 0
 >>"%~2" echo !DONG!
 set /a CO+=1

@@ -152,6 +152,11 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   xcopy /e /i /q /y "%SCRIPTS%" "%LV%\scripts" >nul
 )
 if not exist "%LV%\scripts\base\game\match.lua" (echo [ERROR] Could not merge the scripts into "%LV%\scripts".& pause& exit /b 1)
+rem The layer between the game and the scripts (runtime\bootstrap.lua) always comes from the package, also when an old run
+rem goes on - it does not change how the AI plays. From package 72 on it writes each line to out.txt at once; before, with
+rem the game of packages 69-71 on Windows, the game's last message could land in the middle of a process's last line (the
+rem RECORD line - the check's result).
+if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.lua" "%LV%\scripts\runtime\bootstrap.lua" >nul 2>nul
 set XS=--scripts "%LV%\scripts"
 
 echo Mods ^(%NP%^):

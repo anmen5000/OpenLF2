@@ -607,6 +607,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   folder of an earlier kit is checked against its `thoi-gian.txt` (`timing.txt`)
 
 ### Fixed
+- spsa.bat on Windows could not merge a round — `[LOI] Khong gop duoc vong 1` (`Could not merge round 1`), the merge's
+  out.txt `bench/spsa_chains.lua:7: '<eof>' expected near '='` — with the game of packages 69 to 71. Since 69 the game
+  writes its own messages straight into a batch file's `> out.txt 2>&1`, while what Lua prints waits in the C runtime's
+  4 KB buffer until it fills or the game ends; so the game's last message, "screen must declare a viewport", landed at
+  the last 4096-byte boundary — often in the middle of a process's last numbers line (`--SPSA_END`, 2,100 bytes), cut
+  in two (35 of the 65 lines of the project owner's first round), and the second piece no longer Lua. Now the runtime
+  writes each line out at once (`runtime/bootstrap.lua`, which the kit carries: no reinstall needed), the game writes
+  what Lua left in that buffer before its own messages (Windows), and spsa.bat merges only whole numbers lines (a cut
+  last line: that process's latest report, ten game pairs at most before it), counts a process finished by either of
+  its two last lines, and lays the kit's `runtime/bootstrap.lua` over an older run's scripts (hoc-sau.bat and brain.bat
+  too, whose check results — the RECORD line — could be cut the same way). Run again over the failed round, spsa.bat
+  merges it from what its processes played, without playing it again
 - Sauce's own fighter in "lf2-AI VS and Stage Challenge": D+J+A always left a new shadow where he stood instead of
   going into the one he had left (and the older shadow stayed beside the new one). The pack's lf2.exe, reworked for
   it, makes itr kind 8 — the original's healing, which touches fighters only — a detector, and his shadows are found

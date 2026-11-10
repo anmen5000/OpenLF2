@@ -47,6 +47,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    player it has.
    Your own settings (ROUNDS, ROUND_MINUTES, OPPONENT=classic...) are best kept in a file spsa-settings.bat beside
    spsa.bat, one  set "ROUNDS=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
+   "Could not merge round N" with the game of packages 69-71 on Windows - its last message cut a process's last
+   line of numbers in two: copy the kit of package 72 or later over the old one, keep the spsa folder, and run
+   spsa.bat again; it merges that round from what was played, without playing it again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small

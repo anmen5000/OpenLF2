@@ -3,6 +3,7 @@
 
 #include "openlf2/engine/application.hpp"
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
@@ -34,6 +35,10 @@ public:
 private:
     std::streamsize xsputn(const char* data, std::streamsize count) override {
         if (count <= 0) return 0;
+        // What Lua's print left in the C runtime's buffer goes out first: both often reach one file (a batch file's
+        // `> out.txt 2>&1`), and a message written past that buffer landed in the middle of the line it held — the
+        // game's last message, "screen must declare a viewport", cut a bench job's last line in two.
+        std::fflush(stdout);
         const auto input = std::span(data, static_cast<std::size_t>(count));
         if (!is_console_) return write_bytes(input);
 
@@ -66,7 +71,10 @@ private:
         return xsputn(&byte, 1) == 1 ? value : traits_type::eof();
     }
 
-    int sync() override { return 0; }
+    int sync() override {
+        std::fflush(stdout);
+        return 0;
+    }
 
     HANDLE handle_ = INVALID_HANDLE_VALUE;
     bool is_console_ = false;

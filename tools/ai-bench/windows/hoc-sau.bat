@@ -146,6 +146,10 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   xcopy /e /i /q /y "%SCRIPTS%" "%LV%\scripts" >nul
 )
 if not exist "%LV%\scripts\base\game\match.lua" (echo [LOI] Khong ghep duoc scripts vao "%LV%\scripts".& pause& exit /b 1)
+rem Lop noi game voi scripts (runtime\bootstrap.lua) thi luon lay cua goi, ca khi lam tiep mot dot cu - no khong doi cach
+rem AI danh. Tu goi 72 no ghi ngay tung dong ra out.txt; truoc do, voi game goi 69-71 tren Windows, dong bao cuoi cua
+rem game co the chen vao giua dong cuoi cua tien trinh (dong RECORD - ket qua kiem tra).
+if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.lua" "%LV%\scripts\runtime\bootstrap.lua" >nul 2>nul
 set XS=--scripts "%LV%\scripts"
 
 echo Ban mod ^(%NP%^):

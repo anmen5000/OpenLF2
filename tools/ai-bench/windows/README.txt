@@ -44,6 +44,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    the strongest player it has.
    Your own settings (VONG, PHUT_VONG, DOI_THU=classic...) are best kept in a file spsa-cai-dat.bat beside
    spsa.bat, one  set "VONG=60"  line each: a new kit's spsa.bat copied over the old one keeps them.
+   "Khong gop duoc vong N" (a round not merged) with the game of packages 69-71 on Windows - its last message cut a
+   process's last line of numbers in two: copy the kit of package 72 or later over the old one, keep the spsa
+   folder, and run spsa.bat again; it merges that round from what was played, without playing it again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -147,6 +150,9 @@ chơi được chính các file của bản mod.
    và các bản mod cùng lúc: một bộ số chung cho tất cả, bản nào cũng chỉnh theo đối thủ mạnh nhất nó có.
    Cài đặt riêng của bạn (VONG, PHUT_VONG, DOI_THU=classic...) nên để trong file spsa-cai-dat.bat cạnh spsa.bat,
    mỗi dòng một cài đặt như  set "VONG=60"  : chép đè spsa.bat của bộ mới lên thì cài đặt vẫn còn.
+   Báo "Khong gop duoc vong N" với game gói 69-71 trên Windows (dòng báo cuối của game cắt đôi dòng số cuối của
+   một tiến trình): chép đè bộ XOI từ gói 72 trở lên lên bộ cũ, giữ thư mục spsa, rồi chạy lại spsa.bat - nó gộp
+   vòng ấy từ phần đã đánh, không đánh lại.
 5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
    ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
    nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên
