@@ -605,8 +605,26 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   its original): run with other mods beside the .bat file, it stops and says to rename the folder, where it went on
   before — mod 1's data, of another mod, trained into the new mod 1's brain and the rounds done taken for its own. A
   folder of an earlier kit is checked against its `thoi-gian.txt` (`timing.txt`)
+- spsa.bat's pause timer: `GIO_CHAY` (`RUN_HOURS` in the English kit), the hours to run — `8`, or `7,5` / `7.5` (to a
+  tenth of an hour) — counted by the clock from the start, past midnight too. When the time is up, the processes under
+  way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
+  (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
+  runs to the end as before
 
 ### Fixed
+- Closing the kit's windows (spsa.bat's, hoc-sau.bat's and brain.bat's, with their minimized process windows) left
+  their games running in the background to the end of the round, since package 69: a game whose output goes to a file
+  no longer attached to its window's console, and a process not attached to a console does not end with its window.
+  The game attaches again, keeping its redirected output (Windows), so it ends with its window; and spsa.bat,
+  hoc-sau.bat and brain.bat start a hidden PowerShell that waits for their main window to close — its X in the middle
+  of a round included — and then stops every game of their folder (with the game of packages 69 to 72 too): closing
+  the main window is enough. Their normal end (all rounds, the timer, an error) tells it to stop watching
+  (`canh-xong.txt`, `watch-done.txt`)
+- A run of spsa.bat or hoc-sau.bat begun with a kit older than package 70 stopped at once under a newer kit: every
+  process and the merge `bench/flow.lua:7: attempt to call field 'set_executable_patches' (a nil value)` — such a run
+  keeps the scripts it began with (`spsa\scripts`), the kit's bench of the day laid over them, and the bench's flow now
+  leaves that call out where the scripts have no such function (deleting `spsa\scripts` instead takes the kit's
+  scripts and numbers, the round under way merged with what it played before)
 - spsa.bat on Windows could not merge a round — `[LOI] Khong gop duoc vong 1` (`Could not merge round 1`), the merge's
   out.txt `bench/spsa_chains.lua:7: '<eof>' expected near '='` — with the game of packages 69 to 71. Since 69 the game
   writes its own messages straight into a batch file's `> out.txt 2>&1`, while what Lua prints waits in the C runtime's

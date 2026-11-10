@@ -12,7 +12,7 @@ rem and XOI without it play the same opponent, wins/losses go to brain\results.t
 rem maintains the AI). Each mod's brain: xoi-<mod>\brain.txt, and <mod>-xoi.zip = the mod with the brain (and XOI's
 rem numbers and notes, if it has them) - uploaded to the relay or published, XOI plays that mod with the brain ("brain"
 rem beside XOI in the match).
-rem To pause: close this window and the minimized ones. Running the file again goes on from the unfinished round
+rem To pause: close this window - its games stop with it (package 73 on). Running the file again goes on from the unfinished round
 rem (recorded data is kept). To learn further: raise ROUNDS and run again - it goes on from the next round with all the
 rem data so far, the new round recorded with the newest brain. To start over: delete the brain folder (round 1 then
 rem records with the brain already in xoi-<mod>, if there is one).
@@ -184,8 +184,16 @@ if defined KHAC (
 >"%LV%\mods.txt" echo !DS_MOD!
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
-echo To pause: close this window and the minimized ones. Running this file again goes on from there.
+echo To pause: close this window ^(the games in the background stop with it^). Running this file again goes on from there.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
+rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
+rem stops every game of this brain folder (the game of packages 69-72 does not stop with its cmd window when its output
+rem goes to out.txt, so closing the windows left the games running). When the work ends (all rounds, an error) this file
+rem writes watch-done.txt and the watch ends.
+set "CANH=%LV%\"
+set "CANH_XONG=%LV%\watch-done.txt"
+del /q "%CANH_XONG%" 2>nul
+if not defined THU_WINE start "Brain - window watch" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
@@ -406,10 +414,12 @@ echo.
 echo Send results.txt to whoever maintains the AI. To use the brain now: upload ^<mod^>-xoi.zip to the relay ^(same id as
 echo the old mod^) or publish it - XOI plays that mod with the brain ^("brain" in the match^). If the check has XOI with the
 echo brain winning less than XOI without it, do not upload. To learn further: raise ROUNDS ^(here or in brain-settings.bat^) and run again.
+if defined CANH_XONG >"%CANH_XONG%" echo done
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 :loi
 echo [ERROR] Stopped in round %E%. Fix the error and run this file again to go on.
+if defined CANH_XONG >"%CANH_XONG%" echo done
 if "%KHONG_DUNG%"=="" pause
 exit /b 1
 

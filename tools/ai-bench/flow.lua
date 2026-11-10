@@ -4,7 +4,10 @@
 -- command "show", a match to watch in the window (bench/show).
 local flow = {}
 function flow.create(options)
-    require("base/game/combat").set_executable_patches(options)
+    -- (Scripts older than package 70 have no executable patches: a run of spsa.bat or hoc-sau.bat keeps the scripts it
+    -- began with, under the kit's bench of the day.)
+    local combat = require("base/game/combat")
+    if combat.set_executable_patches then combat.set_executable_patches(options) end
     local config = require("bench/config")
     local state = {options = options, done = false}
     if config.command == "show" then

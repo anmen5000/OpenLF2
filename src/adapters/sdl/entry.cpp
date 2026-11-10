@@ -96,13 +96,16 @@ public:
         // std::cout and std::cerr (Lua's print, on the C runtime's stdout, still reached the file) — the kit's
         // training step failed with an empty out.txt and no word of why. Only a handle that is not usable (Explorer
         // gives none; a terminal gives a GUI program none either) is taken from the parent console, when there is one.
+        // A redirected run still attaches, keeping its own handles: a process attached to a console ends when that
+        // console's window is closed, and without it closing the kit's windows (spsa.bat's, hoc-sau.bat's) left their
+        // games running in the background to the end of the round.
         HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
         HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
         const bool out_usable = usable_output_handle(out);
         const bool err_usable = usable_output_handle(err);
-        if ((!out_usable || !err_usable) && AttachConsole(ATTACH_PARENT_PROCESS)) {
-            if (!out_usable) out = GetStdHandle(STD_OUTPUT_HANDLE);
-            if (!err_usable) err = GetStdHandle(STD_ERROR_HANDLE);
+        if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+            if (out_usable) SetStdHandle(STD_OUTPUT_HANDLE, out); else out = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (err_usable) SetStdHandle(STD_ERROR_HANDLE, err); else err = GetStdHandle(STD_ERROR_HANDLE);
         }
         if (usable_output_handle(out)) {
             out_.set_handle(out);

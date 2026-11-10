@@ -11,7 +11,8 @@ rem cac tien trinh, vong sau bat dau tu do. Het moi vong: cho ban da chinh danh 
 rem spsa\ket-qua.txt (gui file nay cho nguoi lam AI). Bo so cua moi ban mod: xoi-<ten ban mod>\tune.txt, va
 rem <ten ban mod>-xoi.zip = ban mod co bo so ay (va bo nho XOI neu da hoc) - tai len relay thi XOI choi ban
 rem mod ay bang bo so rieng cua no (goi 38 tro len; tu goi 43 INSANE! khong dung bo so nay). Chi mot ban mod: lan sau chinh tiep tu bo so cua no.
-rem Tam dung: dong cua so nay va cac cua so SPSA thu nho (hay tat may). Lam tiep: chay lai file nay - cac vong da xong
+rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73) - hay dat GIO_CHAY, hay tat may. Lam tiep:
+rem chay lai file nay - cac vong da xong
 rem duoc giu, va ca phan da danh cua vong dang do (tru vai cap cuoi). Muon chinh lai tu dau: xoa thu muc spsa (hoac
 rem doi HAT_GIONG va dat ten khac cho thu muc cu).
 rem ============ CHINH O DAY ============
@@ -31,6 +32,9 @@ set "PHUT_VONG=5"
 set "SONG_SONG=%NUMBER_OF_PROCESSORS%"
 rem So phut kiem tra ban da chinh voi ban goc sau vong cuoi (0 = bo qua kiem tra)
 set "PHUT_KIEM_TRA=5"
+rem Hen gio tam dung (GIO_CHAY): chay chung ay gio roi tu dung, vi du 8, hay 7,5 = 7 gio ruoi (de trong: chay den het).
+rem Het gio, cac tien trinh dang danh dung ngay, giu phan da danh; chay lai file nay la lam tiep tu cho do.
+set "GIO_CHAY="
 rem Muc uu tien cua cac tien trinh: BELOWNORMAL (ban van dung may muot trong luc chay), LOW, hoac NORMAL
 set "UU_TIEN=BELOWNORMAL"
 rem Hat giong dau (cac tran va cac lan nhich so deu theo hat giong: cung hat giong thi chay lai y het)
@@ -163,8 +167,33 @@ if not exist "%LV%\bat-dau.lua" (>"%LV%\bat-dau.lua" echo return {})
 echo Ban mod ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
 echo %VONG% vong x %PHUT_VONG% phut, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
-echo Tam dung: dong cua so nay va cac cua so SPSA thu nho. Chay lai file nay la lam tiep, ke ca vong dang do.
+echo Tam dung: dong cua so nay ^(cac game chay ngam tu dung theo^). Chay lai file nay la lam tiep, ke ca vong dang do.
 echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
+rem Hen gio (GIO_CHAY): so giay chay toi da (GIOI_HAN; 0 = khong hen), dem tu luc nay.
+set /a GIOI_HAN=0, DA_CHAY=0
+set "HET_GIO="
+set "GC_H="
+set "GC_T="
+if defined GIO_CHAY for /f "tokens=1,2 delims=.," %%a in ("%GIO_CHAY%") do (
+  set "GC_H=%%a"
+  set "GC_T=%%b"
+)
+if defined GC_H (
+  if not defined GC_T set "GC_T=0"
+  set "GC_T=!GC_T:~0,1!"
+  set /a "GIOI_HAN=GC_H*3600+GC_T*360" 2>nul
+)
+rem (THU_GIOI_HAN: so giay, de thu file nay.)
+if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
+if !GIOI_HAN! GTR 0 echo Hen gio: chay %GIO_CHAY% gio roi tam dung ^(GIO_CHAY^).
+call :giay CHAY_LUC
+rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc spsa
+rem nay (game goi 69-72 khong dung theo cua so cmd cua no khi ket qua ghi vao out.txt, nen dong cac cua so roi game van
+rem chay ngam toi het vong). Xong viec (het cac vong, het gio, bao loi) thi file nay ghi canh-xong.txt va no thoi canh.
+set "CANH=%LV%\"
+set "CANH_XONG=%LV%\canh-xong.txt"
+del /q "%CANH_XONG%" 2>nul
+if not defined THU_WINE start "SPSA - canh cua so" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
@@ -187,7 +216,12 @@ if exist "%D%\start-sau.lua" (
   del /q "%D%\start-sau.lua" 2>nul
   del /q "%D%\k-sau.txt" 2>nul
 )
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! goto het_gio
+)
 call :mot_vong
+if defined HET_GIO goto het_gio
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-sau.lua"
 call :doc_k "%D%"
@@ -248,6 +282,7 @@ for /L %%k in (1,1,%N%) do (
   start "SPSA vong %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 vong-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
+if defined HET_GIO exit /b 0
 :gop_vong
 rem Gop: buoc dich trung binh moi cap cua cac tien trinh (ca phan cua cac lan truoc trong truoc\, va tien trinh bi
 rem dung giua chung voi phan den lan bao cuoi).
@@ -305,6 +340,10 @@ exit /b 0
 if %GIAY_KT% LEQ 0 goto xong
 set "K=%LV%\kiem-tra"
 if exist "%K%\tong.txt" goto xong
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! goto het_gio
+)
 echo.
 echo === Kiem tra: ban da chinh danh voi ban goc, %N% tien trinh trong %PHUT_KIEM_TRA% phut ^(%TIME%^) ===
 if exist "%K%" rmdir /s /q "%K%"
@@ -325,6 +364,7 @@ rem (Co doi thu: ban da chinh danh truoc, ban goc danh sau - dong SPSA_CHECK_BAS
 set "DAU_KT=SPSA_CHECK "
 if defined DOI_THU set "DAU_KT=SPSA_CHECK_BASE"
 call :cho "%K%" "%DAU_KT%"
+if defined HET_GIO goto het_gio
 rem Cong ket qua: ca thay, va tung ban mod (tien trinh k dung ban mod thu ((k-1) chia du cho so ban mod) + 1).
 rem (Co doi thu: ban da chinh - dong "SPSA_CHECK " - va ban goc - dong SPSA_CHECK_BASE - deu danh doi thu ay.)
 set /a TW=0, TL=0, TD=0, CO=0, PK=0, BW=0, BL=0, BD=0
@@ -370,13 +410,24 @@ echo.
 echo Gui file ket-qua.txt cho nguoi lam AI. Hoac dung ngay: tai file ^<ten ban mod^>-xoi.zip len relay ^(cung id voi ban
 echo mod cu^) - XOI choi ban mod ay bang bo so vua chinh ^(trong tran ghi "mod tuned"^), INSANE giu so cua no. Kiem tra o tren ^<50%%
 echo thi dung tai len: bo so moi chua hon bo so cu.
+if defined CANH_XONG >"%CANH_XONG%" echo xong
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 
 :loi
 echo [LOI] Dung o vong %E%. Sua loi roi chay lai file nay de lam tiep.
+if defined CANH_XONG >"%CANH_XONG%" echo xong
 if "%KHONG_DUNG%"=="" pause
 exit /b 1
+
+rem Het gio (GIO_CHAY): cac game da dung, phan da danh cua vong dang do duoc giu - chay lai la lam tiep.
+:het_gio
+echo.
+echo === Da chay du %GIO_CHAY% gio ^(%TIME:~0,8%^): tam dung. Chay lai file nay la lam tiep, ke ca vong dang do. ===
+>>"%LV%\thoi-gian.txt" echo Tam dung luc %TIME:~0,8% sau %GIO_CHAY% gio ^(GIO_CHAY^)
+if defined CANH_XONG >"%CANH_XONG%" echo xong
+if "%KHONG_DUNG%"=="" pause
+exit /b 0
 
 rem --- Them vao file %2 dong cuoi cua mot chuoi trong file %1: dong ket thuc, hay (tien trinh bi dung giua chung) dong
 rem bao cuoi cung; khong co thi bo qua ---
@@ -494,6 +545,15 @@ for /L %%k in (1,1,%N%) do (
   if defined Y set /a TOT+=1
 )
 if !XONG! GEQ %N% exit /b 0
+rem Het gio (GIO_CHAY): dung moi game cua thu muc nay, giu phan da danh (dong bao moi 10 cap tran).
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! (
+    set "HET_GIO=1"
+    call :dung_het "%~1"
+    exit /b 0
+  )
+)
 set /a CHO+=5
 rem Mot nua so tien trinh xong (co dong cuoi) thi dat nhip: tien trinh nao con chay qua 2 lan nhip ay, va qua it
 rem nhat 5 phut (DOI_THEM giay) sau nhip, coi nhu bi treo (game dung o mot cho, hay hop bao loi cua Windows) - dung
@@ -533,6 +593,20 @@ for /L %%k in (1,1,%N%) do (
     powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:TREO + [char]34) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
   )
 )
+exit /b 0
+
+rem --- Dung moi game cua thu muc %1 (het gio: GIO_CHAY) ---
+:dung_het
+set "TREO=%~1\"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:TREO) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+exit /b 0
+
+rem --- Gio da chay tu luc bat dau (DA_CHAY, giay) theo dong ho, ke ca qua nua dem ---
+:dong_ho
+rem (THU_WINE: %TIME% cua cmd trong Wine khong co giay - moi lan goi tinh la 5 giay, mot nhip cho.)
+if defined THU_WINE (set /a DA_CHAY+=5& exit /b 0)
+call :giay BAY_GIO_DH
+set /a "DA_CHAY+=(BAY_GIO_DH-CHAY_LUC+86400) %% 86400, CHAY_LUC=BAY_GIO_DH"
 exit /b 0
 
 rem --- Cho dong %2 xuat hien trong file %1 (toi da khoang mot phut) ---

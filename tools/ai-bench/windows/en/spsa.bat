@@ -11,7 +11,8 @@ rem the processes are merged, the next round starts from there. After the last r
 rem original ones as a check. Result: spsa\results.txt (send this file to whoever maintains the AI). Each mod's numbers:
 rem xoi-<mod>\tune.txt, and <mod>-xoi.zip = the mod with those numbers (and XOI's notes, if trained) - uploaded to the
 rem relay, XOI plays that mod with its own numbers (package 38 on; from package 43 INSANE! does not use them). One mod only: the next run goes on from its numbers.
-rem To pause: close this window and the minimized SPSA windows (or shut the PC down). To go on: run this file again - the
+rem To pause: close this window - its games stop with it (package 73 on) - or set RUN_HOURS, or shut the PC down. To go
+rem on: run this file again - the
 rem finished rounds are kept, and so is what the round under way had played (but the last few pairs). To start over:
 rem delete the spsa folder (or change FIRST_SEED and give the old folder another name).
 rem ============ SETTINGS ============
@@ -32,6 +33,9 @@ set "ROUND_MINUTES=5"
 set "PARALLEL=%NUMBER_OF_PROCESSORS%"
 rem Minutes of the check after the last round, the tuned numbers against the original ones (0 = skip the check)
 set "CHECK_MINUTES=5"
+rem Pause timer (RUN_HOURS): stop after this many hours, e.g. 8, or 7.5 = seven and a half (empty: run to the end). When
+rem the time is up the processes under way stop at once, keeping what they played; run this file again to go on from there.
+set "RUN_HOURS="
 rem Priority of the processes: BELOWNORMAL (the PC stays smooth to use while it runs), LOW, or NORMAL
 set "PRIORITY=BELOWNORMAL"
 rem The first seed (the games and the nudges of the numbers all follow the seed: the same seed replays exactly the same run)
@@ -167,8 +171,34 @@ if not exist "%LV%\start.lua" (>"%LV%\start.lua" echo return {})
 echo Mods ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
 echo %ROUNDS% rounds x %ROUND_MINUTES% minutes, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
-echo To pause: close this window and the minimized SPSA windows. Run this file again to go on, the round under way included.
+echo To pause: close this window ^(the games in the background stop with it^). Run this file again to go on, the round under way included.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
+rem The timer (RUN_HOURS): the most seconds to run (GIOI_HAN; 0 = no timer), counted from now.
+set /a GIOI_HAN=0, DA_CHAY=0
+set "HET_GIO="
+set "GC_H="
+set "GC_T="
+if defined RUN_HOURS for /f "tokens=1,2 delims=.," %%a in ("%RUN_HOURS%") do (
+  set "GC_H=%%a"
+  set "GC_T=%%b"
+)
+if defined GC_H (
+  if not defined GC_T set "GC_T=0"
+  set "GC_T=!GC_T:~0,1!"
+  set /a "GIOI_HAN=GC_H*3600+GC_T*360" 2>nul
+)
+rem (THU_GIOI_HAN: seconds, for trying this file.)
+if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
+if !GIOI_HAN! GTR 0 echo Timer: running %RUN_HOURS% hours, then pausing ^(RUN_HOURS^).
+call :giay CHAY_LUC
+rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
+rem stops every game of this spsa folder (the game of packages 69-72 does not stop with its cmd window when its output
+rem goes to out.txt, so closing the windows left the games running to the end of the round). When the work ends (all
+rem rounds, the time up, an error) this file writes watch-done.txt and the watch ends.
+set "CANH=%LV%\"
+set "CANH_XONG=%LV%\watch-done.txt"
+del /q "%CANH_XONG%" 2>nul
+if not defined THU_WINE start "SPSA - window watch" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
@@ -192,7 +222,12 @@ if exist "%D%\start-after.lua" (
   del /q "%D%\start-after.lua" 2>nul
   del /q "%D%\after.txt" 2>nul
 )
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! goto het_gio
+)
 call :mot_vong
+if defined HET_GIO goto het_gio
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-after.lua"
 call :doc_k "%D%"
@@ -253,6 +288,7 @@ for /L %%k in (1,1,%N%) do (
   start "SPSA round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E% %%k !SEED! !PI!
 )
 call :cho "%D%" "SPSA chain done"
+if defined HET_GIO exit /b 0
 :gop_vong
 rem Merge: the mean step per pair over the processes (the earlier runs' parts in earlier\ too, and a process stopped
 rem midway with its part up to its last report).
@@ -310,6 +346,10 @@ exit /b 0
 if %GIAY_KT% LEQ 0 goto xong
 set "K=%LV%\check"
 if exist "%K%\totals.txt" goto xong
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! goto het_gio
+)
 echo.
 echo === Check: the tuned numbers play the original ones, %N% processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===
 if exist "%K%" rmdir /s /q "%K%"
@@ -330,6 +370,7 @@ rem (With an opponent the tuned numbers play first and the original ones after: 
 set "DAU_KT=SPSA_CHECK "
 if defined OPPONENT set "DAU_KT=SPSA_CHECK_BASE"
 call :cho "%K%" "%DAU_KT%"
+if defined HET_GIO goto het_gio
 rem Adding up the results: all together, and per mod (process k uses mod number ((k-1) mod the number of mods) + 1).
 rem (With an opponent: the tuned numbers - the "SPSA_CHECK " line - and the original - SPSA_CHECK_BASE - both played it.)
 set /a TW=0, TL=0, TD=0, CO=0, PK=0, BW=0, BL=0, BD=0
@@ -375,13 +416,24 @@ echo.
 echo Send results.txt to whoever maintains the AI. Or use it right away: upload ^<mod^>-xoi.zip to the relay ^(same id as the
 echo old mod^) - XOI plays that mod with the numbers just tuned ^("mod tuned" in the match^), INSANE keeps its own. A check above
 echo under 50%% means do not upload: the new numbers are not yet better than the old ones.
+if defined CANH_XONG >"%CANH_XONG%" echo done
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 
 :loi
 echo [ERROR] Stopped at round %E%. Fix the error, then run this file again to go on.
+if defined CANH_XONG >"%CANH_XONG%" echo done
 if "%KHONG_DUNG%"=="" pause
 exit /b 1
+
+rem Time up (RUN_HOURS): the games are stopped, what the round under way played is kept - run again to go on.
+:het_gio
+echo.
+echo === Ran %RUN_HOURS% hours ^(%TIME:~0,8%^): pausing. Run this file again to go on, the round under way included. ===
+>>"%LV%\timing.txt" echo Paused at %TIME:~0,8% after %RUN_HOURS% hours ^(RUN_HOURS^)
+if defined CANH_XONG >"%CANH_XONG%" echo done
+if "%KHONG_DUNG%"=="" pause
+exit /b 0
 
 rem --- Appends to file %2 the last line of a chain in file %1: its end line, or (process stopped midway) its last
 rem report; neither there, nothing is added ---
@@ -500,6 +552,15 @@ for /L %%k in (1,1,%N%) do (
   if defined Y set /a TOT+=1
 )
 if !XONG! GEQ %N% exit /b 0
+rem Time up (RUN_HOURS): every game of this folder is stopped, what it played kept (a report every 10 game pairs).
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! (
+    set "HET_GIO=1"
+    call :dung_het "%~1"
+    exit /b 0
+  )
+)
 set /a CHO+=5
 rem Once half the processes have finished (end line present) the mark is set: a process still running past twice that
 rem mark, and past at least 5 minutes (DOI_THEM seconds) after it, counts as stuck (the game frozen, or a Windows error
@@ -540,6 +601,20 @@ for /L %%k in (1,1,%N%) do (
     powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:TREO + [char]34) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
   )
 )
+exit /b 0
+
+rem --- Stops every game of folder %1 (time up: RUN_HOURS) ---
+:dung_het
+set "TREO=%~1\"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:TREO) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+exit /b 0
+
+rem --- Time run since the start (DA_CHAY, seconds) by the clock, past midnight too ---
+:dong_ho
+rem (THU_WINE: the %TIME% of cmd under Wine has no seconds - each call counts as 5 seconds, one beat of the wait.)
+if defined THU_WINE (set /a DA_CHAY+=5& exit /b 0)
+call :giay BAY_GIO_DH
+set /a "DA_CHAY+=(BAY_GIO_DH-CHAY_LUC+86400) %% 86400, CHAY_LUC=BAY_GIO_DH"
 exit /b 0
 
 rem --- Waits for line %2 to appear in file %1 (about a minute at most) ---

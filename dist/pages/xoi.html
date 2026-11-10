@@ -607,7 +607,11 @@
           of zeros) is no loss either: run it again and it merges that round from the processes that played it, then goes on.
           So is <code>Khong gop duoc vong 1</code> (<code>Could not merge round 1</code>) with the game of packages 69 to 71 on
           Windows, whose last message cut a process's last line of numbers in two: copy the kit of package 72 or later over
-          the old one, keep the <code>spsa</code> folder, and run it again.
+          the old one, keep the <code>spsa</code> folder, and run it again. <b>Pause timer</b> (package 73):
+          <code>set "GIO_CHAY=8"</code> (<code>RUN_HOURS</code> in the English kit; <code>7,5</code> = seven and a half hours) —
+          when the time is up the processes under way stop, keeping what they played, and <code>spsa.bat</code> ends; run it
+          again later to go on. Closing its window stops its games too (package 73 on; before, the games of packages 69–72
+          kept running in the background — <code>taskkill /F /IM openlf2.exe</code> ends them).
           <b>Your own settings</b> (rounds, minutes, <code>DOI_THU=classic</code>…) are best kept in a file
           <code>spsa-cai-dat.bat</code> beside <code>spsa.bat</code> (<code>spsa-settings.bat</code> for the English kit), one
           <code>set "VONG=60"</code> line each: a new kit's <code>spsa.bat</code> copied over the old one then keeps them.</li>
@@ -637,7 +641,11 @@
           cả phần vòng đang dở đã đánh, trừ vài cặp cuối. Máy mất điện đột ngột đúng lúc ghi số cuối vòng (file số của vòng ấy
           hỏng, toàn số 0) cũng không sao: chạy lại, nó gộp lại vòng ấy từ các tiến trình đã đánh rồi đi tiếp. Báo
           <code>Khong gop duoc vong 1</code> với game gói 69 tới 71 trên Windows (dòng báo cuối của game cắt đôi dòng số cuối của
-          một tiến trình) cũng vậy: chép đè bộ XOI từ gói 72 trở lên lên bộ cũ, giữ thư mục <code>spsa</code>, rồi chạy lại. <b>Cài đặt riêng của
+          một tiến trình) cũng vậy: chép đè bộ XOI từ gói 72 trở lên lên bộ cũ, giữ thư mục <code>spsa</code>, rồi chạy lại.
+          <b>Hẹn giờ tạm dừng</b> (gói 73): <code>set "GIO_CHAY=8"</code> (<code>7,5</code> = bảy giờ rưỡi) — hết giờ, các tiến
+          trình đang đánh dừng lại, giữ phần đã đánh, và <code>spsa.bat</code> kết thúc; lúc khác chạy lại là làm tiếp. Đóng
+          cửa sổ của nó thì các game của nó cũng dừng (từ gói 73; trước đó game gói 69–72 vẫn chạy ngầm —
+          <code>taskkill /F /IM openlf2.exe</code> tắt chúng). <b>Cài đặt riêng của
           bạn</b> (số vòng, số phút, <code>DOI_THU=classic</code>…) nên để trong file <code>spsa-cai-dat.bat</code> cạnh
           <code>spsa.bat</code> (bộ tiếng Anh: <code>spsa-settings.bat</code>), mỗi dòng một cài đặt như <code>set "VONG=60"</code>:
           chép đè <code>spsa.bat</code> của bộ XOI mới lên thì cài đặt vẫn còn.</li>

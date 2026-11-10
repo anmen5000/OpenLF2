@@ -50,6 +50,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    "Could not merge round N" with the game of packages 69-71 on Windows - its last message cut a process's last
    line of numbers in two: copy the kit of package 72 or later over the old one, keep the spsa folder, and run
    spsa.bat again; it merges that round from what was played, without playing it again.
+   Pause timer (package 73): set "RUN_HOURS=8" (hours; 7.5 = seven and a half) - after that time the processes under
+   way stop, keeping what they played, and spsa.bat ends; run it again later to go on. Closing spsa.bat's window
+   stops its games too (from package 73: a hidden watcher; before, the games of packages 69-72 kept running in the
+   background after the windows were closed - end them with  taskkill /F /IM openlf2.exe  ). A run begun with an
+   older kit goes on with its own scripts under a newer kit (package 73 on; before, "flow.lua:7 ...
+   set_executable_patches"); delete spsa\scripts to take the new scripts and numbers instead.
 5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small

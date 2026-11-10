@@ -10,7 +10,8 @@ rem tung ban mod; luot sau XOI ghi du lieu voi bo nao vua hoc. Cuoi cung kiem tr
 rem cung danh doi thu ay, so thang/thua ghi vao hoc-sau\ket-qua.txt (gui file nay cho nguoi lam AI). Bo nao cua moi
 rem ban mod: xoi-<ten>\brain.txt, va <ten>-xoi.zip = ban mod co bo nao (cung bo so va bo nho XOI neu da co) - tai
 rem len relay hay xuat ban thi XOI choi ban mod ay voi bo nao (trong tran ghi "brain" canh XOI).
-rem Tam dung: dong cua so nay va cac cua so thu nho. Chay lai la lam tiep tu luot dang do (du lieu da ghi duoc giu).
+rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73). Chay lai la lam tiep tu luot dang do (du lieu
+rem da ghi duoc giu).
 rem Hoc them: tang VONG roi chay lai - lam tiep tu luot ke, voi tat ca du lieu da co, luot moi ghi voi bo nao moi nhat.
 rem Lam lai tu dau: xoa thu muc hoc-sau (luot 1 ghi voi bo nao da co trong xoi-<ten>, neu co).
 rem ============ CHINH O DAY ============
@@ -177,8 +178,15 @@ if defined KHAC (
 >"%LV%\ban-mod.txt" echo !DS_MOD!
 echo %VONG% luot x %PHUT_GHI% phut ghi du lieu, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
 if defined DT_CFG echo Doi thu: chinh XOI ^(DOI_THU=xoi^), ke ca o ban mod co AI rieng.
-echo Tam dung: dong cua so nay va cac cua so thu nho. Chay lai file nay la lam tiep.
+echo Tam dung: dong cua so nay ^(cac game chay ngam tu dung theo^). Chay lai file nay la lam tiep.
 echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
+rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc hoc-sau
+rem nay (game goi 69-72 khong dung theo cua so cmd cua no khi ket qua ghi vao out.txt, nen dong cac cua so roi game van
+rem chay ngam). Xong viec (het cac luot, bao loi) thi file nay ghi canh-xong.txt va no thoi canh.
+set "CANH=%LV%\"
+set "CANH_XONG=%LV%\canh-xong.txt"
+del /q "%CANH_XONG%" 2>nul
+if not defined THU_WINE start "Hoc sau - canh cua so" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
 set "GAME_DA_CHON=%GAME%"
 set XS_DA_CHON=%XS%
@@ -397,10 +405,12 @@ echo.
 echo Gui file ket-qua.txt cho nguoi lam AI. Dung ngay: tai file ^<ten ban mod^>-xoi.zip len relay ^(cung id voi ban mod cu^)
 echo hay xuat ban no - XOI choi ban mod ay voi bo nao ^(trong tran ghi "brain"^). Kiem tra cho XOI co bo nao thang it hon
 echo XOI khong co thi dung tai len. Hoc them: tang VONG ^(trong file nay hay hoc-sau-cai-dat.bat^) roi chay lai.
+if defined CANH_XONG >"%CANH_XONG%" echo xong
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 :loi
 echo [LOI] Dung o luot %E%. Sua loi roi chay lai file nay de lam tiep.
+if defined CANH_XONG >"%CANH_XONG%" echo xong
 if "%KHONG_DUNG%"=="" pause
 exit /b 1
 

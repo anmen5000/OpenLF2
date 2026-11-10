@@ -47,6 +47,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    "Khong gop duoc vong N" (a round not merged) with the game of packages 69-71 on Windows - its last message cut a
    process's last line of numbers in two: copy the kit of package 72 or later over the old one, keep the spsa
    folder, and run spsa.bat again; it merges that round from what was played, without playing it again.
+   Pause timer (package 73): set "GIO_CHAY=8" (hours; 7,5 = seven and a half) - after that time the processes under
+   way stop, keeping what they played, and spsa.bat ends; run it again later to go on. Closing spsa.bat's window
+   stops its games too (from package 73: a hidden watcher; before, the games of packages 69-72 kept running in the
+   background after the windows were closed - end them with  taskkill /F /IM openlf2.exe  ). A run begun with an
+   older kit goes on with its own scripts under a newer kit (package 73 on; before, "flow.lua:7 ...
+   set_executable_patches"); delete spsa\scripts to take the new scripts and numbers instead.
 5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -153,6 +159,12 @@ chơi được chính các file của bản mod.
    Báo "Khong gop duoc vong N" với game gói 69-71 trên Windows (dòng báo cuối của game cắt đôi dòng số cuối của
    một tiến trình): chép đè bộ XOI từ gói 72 trở lên lên bộ cũ, giữ thư mục spsa, rồi chạy lại spsa.bat - nó gộp
    vòng ấy từ phần đã đánh, không đánh lại.
+   Hẹn giờ tạm dừng (gói 73): đặt  set "GIO_CHAY=8"  (số giờ; 7,5 = bảy giờ rưỡi) - hết giờ, các tiến trình đang
+   đánh dừng lại, giữ phần đã đánh, và spsa.bat kết thúc; lúc khác chạy lại là làm tiếp. Đóng cửa sổ spsa.bat thì các
+   game của nó cũng dừng (từ gói 73: một PowerShell ẩn canh cửa sổ; trước đó game gói 69-72 vẫn chạy ngầm sau khi đóng
+   các cửa sổ - tắt chúng bằng  taskkill /F /IM openlf2.exe  ). Đợt chạy bắt đầu bằng bộ XOI cũ vẫn chạy tiếp với
+   scripts của nó dưới bộ mới (từ gói 73; trước đó báo "flow.lua:7 ... set_executable_patches"); muốn dùng scripts và
+   bộ số mới thì xóa thư mục spsa\scripts.
 5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
    ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
    nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên
