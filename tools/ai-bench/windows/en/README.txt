@@ -67,7 +67,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    XOI), where a brain would only learn to beat that AI; leave it empty for Sauce's pack. Run spsa.bat first, then
    brain.bat: the brain learns on top of the numbers (run a few more rounds of brain.bat after a new spsa.bat). The
    owner's 10 rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI,
-   without 45.8%.
+   without 45.8%. The brain folder belongs to the mods it was run with: for other mods, rename it first (brain-sauce,
+   say) - brain.bat stops with a message rather than mix their data.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

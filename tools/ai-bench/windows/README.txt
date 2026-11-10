@@ -64,6 +64,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    would only learn to beat that AI; leave it empty for Sauce's pack. Run spsa.bat first, then hoc-sau.bat: the
    brain learns on top of the numbers (run a few more rounds of hoc-sau.bat after a new spsa.bat). The owner's 10
    rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI, without 45.8%.
+   The hoc-sau folder belongs to the mods it was run with: for other mods, rename it first (hoc-sau-sauce, say) -
+   hoc-sau.bat stops with a message rather than mix their data.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -163,7 +165,9 @@ chơi được chính các file của bản mod.
    có AI riêng - cho bản mod có AI riêng yếu hơn XOI nhiều (AI của Dragon Ball Super thua XOI phần lớn số trận),
    nơi bộ não chỉ học cách thắng AI ấy; để trống cho bản Sauce. Chạy spsa.bat trước rồi mới hoc-sau.bat: bộ não học
    trên nền bộ số (chạy spsa.bat lại thì chạy thêm vài lượt hoc-sau.bat). Lần chạy 10 lượt của chủ dự án trên bản
-   Sauce (80 luồng): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%.
+   Sauce (80 luồng): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%. Thư mục hoc-sau là của
+   các bản mod đã chạy với nó: chạy cho bản mod khác thì đổi tên nó trước (ví dụ hoc-sau-sauce) - hoc-sau.bat dừng và
+   báo thay vì trộn dữ liệu của chúng.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

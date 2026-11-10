@@ -600,7 +600,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   (Dragon Ball Super's loses most of its games to it), and a brain learned against them only learns to beat them; left
   empty, Sauce's pack keeps Sauce's AI. Any other value stops with a message. The run's line in `ket-qua.txt` names it.
   The owner's first full run of `hoc-sau.bat` on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million
-  moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%
+  moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%. And a `hoc-sau` folder
+  belongs to one set of mods (`hoc-sau\ban-mod.txt`, `brain\mods.txt`: the mods' names, a `-xoi` zip the same mod as
+  its original): run with other mods beside the .bat file, it stops and says to rename the folder, where it went on
+  before — mod 1's data, of another mod, trained into the new mod 1's brain and the rounds done taken for its own. A
+  folder of an earlier kit is checked against its `thoi-gian.txt` (`timing.txt`)
 
 ### Fixed
 - Sauce's own fighter in "lf2-AI VS and Stage Challenge": D+J+A always left a new shadow where he stood instead of

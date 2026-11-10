@@ -150,6 +150,27 @@ set XS=--scripts "%LV%\scripts"
 
 echo Ban mod ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%  [xoi-%%TEN_%%p%%]
+rem Thu muc hoc-sau thuoc ve mot bo ban mod: du lieu cua ban mod thu p nam o du-lieu\<p>, nen chay bo ban mod khac trong
+rem cung thu muc se tron du lieu cua chung (va coi cac luot da xong la cua no). Ten cac ban mod (ten file zip bo duoi -xoi,
+rem nen ban goc va ban -xoi la mot) ghi o hoc-sau\ban-mod.txt; thu muc cua goi 70 tro ve truoc (chua co file ay) thi doi
+rem chieu voi cac dong "ban mod <p> (<file>)" cua thoi-gian.txt.
+set "DS_MOD="
+for /L %%p in (1,1,%NP%) do call :them_ten %%p
+set "KHAC="
+if exist "%LV%\ban-mod.txt" (
+  set "DS_CU="
+  set /p DS_CU=<"%LV%\ban-mod.txt"
+  if /i not "!DS_CU!"=="!DS_MOD!" set "KHAC=1"
+) else if exist "%LV%\thoi-gian.txt" (
+  for /L %%p in (1,1,%NP%) do call :doi_chieu %%p
+)
+if defined KHAC (
+  echo [LOI] Thu muc "%LV%" la cua mot lan chay voi bo ban mod khac: chay tiep o day se tron du lieu cua cac ban mod.
+  echo Doi ten thu muc ay ^(vi du hoc-sau-cu^) roi chay lai file nay: lan chay moi bat dau tu dau.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+>"%LV%\ban-mod.txt" echo !DS_MOD!
 echo %VONG% luot x %PHUT_GHI% phut ghi du lieu, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
 if defined DT_CFG echo Doi thu: chinh XOI ^(DOI_THU=xoi^), ke ca o ban mod co AI rieng.
 echo Tam dung: dong cua so nay va cac cua so thu nho. Chay lai file nay la lam tiep.
@@ -444,6 +465,15 @@ set "XLOI="
 if errorlevel 1 set "XLOI=1"
 if not exist "!XOUT!" set "XLOI=1"
 if defined XLOI (echo      [LOI] Khong goi duoc - tu lam: mo file zip ban mod, vao thu muc co thu muc data, tao thu muc xoi, chep "!XDIR!\brain.txt" vao do.) else if defined XTAI_CHO (echo      Da cap nhat: "!XOUT!" - ban truoc: "!XTRUOC!") else (echo      Goi: "!XOUT!")
+exit /b 0
+rem --- Them ten ban mod thu %1 (TEN_<p>) vao DS_MOD (danh sach cac ban mod cua lan chay) ---
+:them_ten
+set "DS_MOD=!DS_MOD!;!TEN_%1!"
+exit /b 0
+rem --- Thu muc cu (khong co ban-mod.txt): thoi-gian.txt khong co dong nao cua ban mod thu %1 voi ten ay (moi luot xong
+rem ghi mot dong cho moi ban mod cua lan chay) thi KHAC=1 ---
+:doi_chieu
+findstr /l /c:"ban mod %1 (!TEN_%1!" "%LV%\thoi-gian.txt" >nul 2>nul || set "KHAC=1"
 exit /b 0
 rem --- Ten ban mod thu %1 (TEN_<p>): ten file zip, bo duoi -xoi ---
 :ten_mod

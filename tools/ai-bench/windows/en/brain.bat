@@ -156,6 +156,27 @@ set XS=--scripts "%LV%\scripts"
 
 echo Mods ^(%NP%^):
 for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%  [xoi-%%TEN_%%p%%]
+rem A brain folder belongs to one set of mods: mod p's data lies in data\<p>, so a run with other mods in the same folder
+rem would mix their data (and take the rounds done for its own). The mods' names (the zip file's name less a -xoi ending,
+rem so the original and its -xoi copy are one) go into brain\mods.txt; a folder of package 70 or earlier (without that
+rem file) is checked against the "mod <p> (<file>)" lines of timing.txt.
+set "DS_MOD="
+for /L %%p in (1,1,%NP%) do call :them_ten %%p
+set "KHAC="
+if exist "%LV%\mods.txt" (
+  set "DS_CU="
+  set /p DS_CU=<"%LV%\mods.txt"
+  if /i not "!DS_CU!"=="!DS_MOD!" set "KHAC=1"
+) else if exist "%LV%\timing.txt" (
+  for /L %%p in (1,1,%NP%) do call :doi_chieu %%p
+)
+if defined KHAC (
+  echo [ERROR] The folder "%LV%" is a run's with another set of mods: going on there would mix the mods' data.
+  echo Rename that folder ^(brain-old, say^) and run this file again: the new run starts from the beginning.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+>"%LV%\mods.txt" echo !DS_MOD!
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
 echo To pause: close this window and the minimized ones. Running this file again goes on from there.
@@ -452,6 +473,15 @@ set "XLOI="
 if errorlevel 1 set "XLOI=1"
 if not exist "!XOUT!" set "XLOI=1"
 if defined XLOI (echo      [ERROR] Could not pack it - by hand: open the mod's zip file, go into the folder that holds the data folder, make a folder named xoi, copy "!XDIR!\brain.txt" into it.) else if defined XTAI_CHO (echo      Updated: "!XOUT!" - the earlier one: "!XTRUOC!") else (echo      Packed: "!XOUT!")
+exit /b 0
+rem --- Mod %1's name (TEN_<p>) added to DS_MOD (the run's list of mods) ---
+:them_ten
+set "DS_MOD=!DS_MOD!;!TEN_%1!"
+exit /b 0
+rem --- An old folder (no mods.txt): timing.txt has no line for mod %1 under that name (every round done writes one for
+rem each mod of the run): KHAC=1 ---
+:doi_chieu
+findstr /l /c:"mod %1 (!TEN_%1!" "%LV%\timing.txt" >nul 2>nul || set "KHAC=1"
 exit /b 0
 rem --- Mod %1's name (TEN_<p>): the zip file's name less a -xoi ending ---
 :ten_mod
