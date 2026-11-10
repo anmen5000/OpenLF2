@@ -100,6 +100,33 @@ end
 
 local function recent_state(value) return value.record.frame(value.state_frame).state end
 
+-- Changes a mod made to its own lf2.exe that the scripts play the same way (combat.set_executable_patches, read from
+-- the executable by the host); none for the original game.
+local patched = {heal_reach = false, heal_moves = false, heal_heavy_whole = false}
+-- Itr kind 8 in a mod whose lf2.exe made it a detector (patched.heal_reach: Sauce's "lf2-AI VS and Stage
+-- Challenge", whose shadows his fighter's D+J+A finds and goes into): the itr's bdefend says what it touches (0 to 6
+-- that kind of object only, 0 the fighters as in the original; 7 weapons and drinks; 8 anything; others nothing),
+-- its respond whom (0 anyone; 1 its team; 2 the other teams; 3 its team, with the same owner; 4 as 3, and the
+-- object touched is its owner; others no one).
+local function heal_reaches(attacker, defender, defender_index, itr)
+    local wanted, kind = itr.bdefend, defender.record.kind
+    if wanted == 7 then
+        if kind ~= record_kinds.light_item and kind ~= record_kinds.heavy_item and kind ~= record_kinds.baseball
+           and kind ~= record_kinds.drink then
+            return false
+        end
+    elseif wanted ~= 8 and (wanted > 8 or kind ~= wanted) then
+        return false
+    end
+    local whom = itr.respond
+    if whom == 0 then return true end
+    if whom < 0 or whom > 4 then return false end
+    if attacker.team ~= defender.team then return whom == 2 end
+    if whom < 3 then return whom == 1 end
+    if attacker.owner ~= defender.owner then return false end
+    return whom == 3 or attacker.owner == defender_index
+end
+
 local function eligible(state, a_entry, b_entry, itr)
     local attacker, defender = a_entry.value, b_entry.value
     local attack_kind = itr.kind
@@ -107,7 +134,13 @@ local function eligible(state, a_entry, b_entry, itr)
     if breakable[attacker.record.id] and defender.record.id == object_freeze_ball and attack_kind ~= attack_kinds.reflect_ball then return false end
     local defender_kind = defender.record.kind
     if attack_kind == attack_kinds.catch and defender_kind ~= record_kinds.character then return false end
-    if attack_kind == attack_kinds.heal and defender_kind ~= record_kinds.character then return false end
+    if attack_kind == attack_kinds.heal then
+        if patched.heal_reach then
+            if not heal_reaches(attacker, defender, b_entry.index, itr) then return false end
+        elseif defender_kind ~= record_kinds.character then
+            return false
+        end
+    end
     if attack_kind == attack_kinds.plain then
         local effect = itr.effect
         if effect == effects.skip_characters and defender_kind == record_kinds.character then return false end
@@ -343,6 +376,15 @@ end
 -- (runtime_settings.armor_by_id, read from the executable); none for the original game.
 local armor_by_id = {}
 function combat.set_armor_by_id(table) armor_by_id = table or {} end
+-- Everything the host read from the mod's lf2.exe (runtime_settings: armor_by_id, heal_reach, heal_moves,
+-- heal_heavy_whole; see `patched` above).
+function combat.set_executable_patches(options)
+    options = options or {}
+    combat.set_armor_by_id(options.armor_by_id)
+    patched.heal_reach = options.heal_reach == true
+    patched.heal_moves = options.heal_moves == true
+    patched.heal_heavy_whole = options.heal_heavy_whole == true
+end
 
 -- Characters that absorb hits while their defense meter is low.
 local function armored(attacker, victim, itr)
@@ -1030,7 +1072,9 @@ function combat.apply(state, p)
                     held.vy = -1.0
                 end
             end
-            if itr and victim.record.kind == record_kinds.heavy_item then
+            -- (A mod's lf2.exe that lets kind 8 touch weapons spares it here: patched.heal_heavy_whole.)
+            if itr and victim.record.kind == record_kinds.heavy_item
+               and not (patched.heal_heavy_whole and itr.kind == attack_kinds.heal) then
                 itr = copy_itr(itr)
                 itr.dvx, itr.dvy = cdiv(itr.dvx, 2), cdiv(itr.dvy, 2)
             end
@@ -1052,6 +1096,19 @@ function combat.apply(state, p)
                 catch(state, p, v, attacker, victim, itr)
             elseif itr.kind == attack_kinds.super_window then
                 victim.super_window = 3
+            elseif itr.kind == attack_kinds.heal and patched.heal_moves then
+                -- A mod's lf2.exe that made kind 8 a detector: no injury no healing, dvx 999 keeps the frame, dvy
+                -- says where the toucher goes (-1 nowhere, 1 to the height and depth of the object touched, 2 to its
+                -- place, height and depth, anything else, as the original, its place and depth).
+                if itr.injury ~= 0 then victim.regen_timer = itr.injury + constants.healing.timer_base end
+                if itr.dvx ~= 999 then attacker.frame = itr.dvx end
+                local where = itr.dvy
+                if where > 2 or where < -1 then where = 0 end
+                if where ~= -1 then
+                    if where ~= 1 then attacker.x = victim.x end
+                    if where ~= 0 then attacker.y = victim.y end
+                    attacker.z = victim.z + 1.0
+                end
             elseif itr.kind == attack_kinds.heal then
                 -- Healing: the victim regenerates, the healer jumps onto it.
                 victim.regen_timer = itr.injury + constants.healing.timer_base

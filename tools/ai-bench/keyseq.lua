@@ -16,7 +16,9 @@ function t.run(config)
         slots = {[0] = {kind = "computer", fighter = find(config.id), team = 1}, [1] = {kind = "computer", fighter = find(config.other or config.id), team = 2}}}
     local state = match.create(options)
     local me, foe = state.items[10], state.items[11]
+    -- No computer player moves either fighter: neither the original's nor a mod's AI scripts (Sauce's pack).
     require("base/game/ai").control = function() end
+    require("base/game/ai_scripts").id = function() return false end
     me.brain = "none"; foe.brain = "none"
     state.weapon_command = 2
     local held = {functions = "", function_presses = "", keys = {}}

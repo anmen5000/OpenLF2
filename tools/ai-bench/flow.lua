@@ -4,7 +4,7 @@
 -- command "show", a match to watch in the window (bench/show).
 local flow = {}
 function flow.create(options)
-    require("base/game/combat").set_armor_by_id(options.armor_by_id)
+    require("base/game/combat").set_executable_patches(options)
     local config = require("bench/config")
     local state = {options = options, done = false}
     if config.command == "show" then

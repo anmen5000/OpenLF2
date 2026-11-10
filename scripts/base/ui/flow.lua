@@ -52,7 +52,7 @@ local function can_drop_replay(state)
         or (state.active == "launch" and state.launch.page == "menu"))
 end
 function flow.create(options)
-    require("base/game/combat").set_armor_by_id(options.armor_by_id)
+    require("base/game/combat").set_executable_patches(options)
     local settings = controls.load(options.default_controller)
     -- OpenLF2's own options (base/game/options), e.g. the unlocked characters.
     user_options.start()

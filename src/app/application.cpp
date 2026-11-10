@@ -1104,19 +1104,22 @@ Result<void> run(const Configuration& config) {
     }
     auto constants = recording_constants(*executable);
     if (!constants) return std::unexpected(constants.error());
-    // Some mods changed how their lf2.exe plays (Dragon Ball Super Edition: armor for some fighters); the scripts
-    // play the same where they know the change.
+    // Some mods changed how their lf2.exe plays (Dragon Ball Super Edition: armor for some fighters; Sauce's
+    // "lf2-AI VS and Stage Challenge": itr kind 8 as a detector); the scripts play the same where they know the change.
     std::string executable_settings;
-    if (auto patches = read_executable_patches(*executable); !patches) {
-        std::cerr << patches.error().message << "; this mod may play differently here\n";
-    } else if (!patches->armor_by_id.empty()) {
-        std::cout << "lf2.exe changes: " << patches->description << '\n';
+    const auto patches = read_executable_patches(*executable);
+    for (const auto& problem : patches.problems) std::cerr << problem << "; this mod may play differently here\n";
+    if (!patches.description.empty()) std::cout << "lf2.exe changes: " << patches.description << '\n';
+    if (!patches.armor_by_id.empty()) {
         executable_settings = ", armor_by_id={";
-        for (const auto& [id, armor] : patches->armor_by_id) {
+        for (const auto& [id, armor] : patches.armor_by_id) {
             executable_settings += "[" + std::to_string(id) + "]=" + std::to_string(armor) + ",";
         }
         executable_settings += "}";
     }
+    if (patches.heal_reach) executable_settings += ", heal_reach=true";
+    if (patches.heal_moves) executable_settings += ", heal_moves=true";
+    if (patches.heal_heavy_whole) executable_settings += ", heal_heavy_whole=true";
     const auto& resources = game_data.attach(std::make_unique<GameResources>(*archive, std::move(*executable), scripts->assets));
     auto bootstrap = read_file(config.scripts / "runtime/bootstrap.lua", 1024 * 1024);
     if (!bootstrap) return std::unexpected(bootstrap.error());

@@ -588,6 +588,19 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   last five rounds that way. The kit guide and READMEs say so
 
 ### Fixed
+- Sauce's own fighter in "lf2-AI VS and Stage Challenge": D+J+A always left a new shadow where he stood instead of
+  going into the one he had left (and the older shadow stayed beside the new one). The pack's lf2.exe, reworked for
+  it, makes itr kind 8 — the original's healing, which touches fighters only — a detector, and his shadows are found
+  that way: the itr's `bdefend` says what kind of object it touches (0 to 6 that kind, 0 the fighters as in the
+  original; 7 weapons and drinks; 8 anything), its `respond` whom (1 its own team, 2 the other teams, 3 its team with
+  the same owner, 4 its owner); an injury of 0 heals nothing, `dvx: 999` keeps the frame, and `dvy` says where the
+  toucher goes (-1 nowhere, 1 to the height and depth of what it touched, 2 to its place, height and depth, otherwise
+  its place and depth as in the original); a heavy weapon touched keeps the itr's dvx and dvy whole. OpenLF2 reads
+  these changes from the mod's own program (`read_executable_patches`, as it reads Dragon Ball Super Edition's
+  armor) and plays them, so D+J+A finds the shadow of each of his moves and goes into it (the dual shot's shadow
+  fires the dual shot again from there), and a newer shadow ends the older one. No other mod's program has the
+  change; the rest play as before (the same results game for game). A pack that holds LF2 2.0a's `lf2.exe` beside the
+  mod's own program plays by that one, the original's rules
 - A picture named with two separators in a row in a mod's data (`sprite\\Felix\f.bmp`: Felix of "lf2-AI VS and Stage
   Challenge", whom the original opens as Windows reads such a path) stopped the game — "unsafe virtual path" — the moment
   it was to be drawn: scrolling to him in the character selection, or playing him, on Windows and the web alike. Separators
