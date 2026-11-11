@@ -270,6 +270,47 @@ learns the XOI that plays the mod; the original or the `-xoi.zip` may be given (
 377 games of 720 against Sauce's AI, 216 to 134 against XOI without it; the same brain did nothing for other mods
 (208 to 231 over five), so a brain is made per pack.
 
+## Fighter balance (balance)
+
+For the people who make mods: how each fighter does against every other one, and what each of its moves brings — the
+numbers, not a verdict. One computer player (`brain`: `"xoi"` by default, `"smart"` for INSANE!, `"classic"` for the
+original player with the mod's own AI scripts) plays both sides of every pair of the chosen fighters, each pair on both
+sides, on the same stage, from the same point of the random sequence (`engine.set_random_state`: about 3.7 million
+starts). Weapons do not fall from the sky unless `weapons = true`; a game ends at `limit` frames (9000) or after `stall`
+frames without anybody losing HP (1800), a draw.
+
+Each blow is credited by the game's own count of damage (`battle.on_damage`, set only by this job: the item that
+struck, and whether the blow was guarded) to the move it came from. A fighter's move runs from where it leaves a free
+stance — standing, walking, running, jumping, dashing, rowing, guarding — to where it is free again or is hit; a frame
+begins one only when its frames strike (an attack that does something, a catch, a whirlwind, an object made, a weapon
+swung) or when a D-sequence leads to it from a free stance; a D-sequence pressed inside a move starts another. What a
+move makes (balls, traps, clones, thrown things) deals damage for it; a held weapon's blow is its holder's move; HP lost
+with no blow behind it (a thrown fighter landing, a whirlwind's grind) goes to the last move that touched the fighter or
+caught it. On LF2 Convergence (12,284 games) 99.8% of the HP dealt went to a move.
+
+```lua
+-- the fighters (BAL_FIGHTER lines, BAL_LEFT_OUT for those the versus match cannot seat, BAL_COUNT <fighters> <pairs>)
+{command = "balance", step = "list", ids = "all", exclude = {"Template"}}
+-- one process's share of the games: `games` games or `seconds` seconds; every `snap` seconds and at the end the totals
+-- so far, as "{<snapshot>,<kind>,...}" lines followed by "BAL_SNAP <snapshot> <games> <seconds>"; "BAL_END <games>"
+{command = "balance", step = "play", ids = "all", brain = "xoi", seconds = 3600, snap = 300, seed = 5001, round = 1, process = 1, processes = 8}
+-- merging: the files handed over as assets of this package (asset=mods/bench/bal_<start>_<n>.txt|..., and
+-- bal_prev.txt, the totals of the rounds before, with prev = true): the new totals ("{0,...}, --BAL_TONG" lines), the
+-- report's data ("B.x(...); //BAL_JS" lines, between balance-report-head.html and balance-report-tail.html it is the
+-- page), the text summary ("| " lines, lang = "en" or "vi") and last "BAL_DONE <games> <seconds> <rounds>"
+{command = "balance", step = "merge", prev = true, lang = "en", mod = "convergence", plan_rounds = 10, plan_games = 200000}
+```
+
+The totals: per pair (games, wins of each side, draws: a minute still, the time limit, both down), per fighter (games,
+wins, losses, draws, frames, HP left in its wins, HP dealt and taken, HP dealt by no move), per move (uses, landed,
+damage, guarded, punished, blows) and per move and opponent (the three that dealt the most, the others summed: frame
+-1). The page (one HTML file, no network) ranks the fighters by win rate (wins plus half the draws) with the 95% margin,
+draws the matchup chart, lists each fighter's moves (with those "worth a look": 30% or more of its damage, landing in
+half its uses or more — not asked of a catch —, punished in 15% at most, used 50 times or more) and its specials never
+started, and the draws. `windows/can-bang.bat` (English kit: `balance.bat`, also on its own as `balance-kit.zip`) runs it
+on a PC: rounds on every CPU thread until `TONG_VAN` games (`TOTAL_GAMES`) or `TONG_GIO` hours (`TOTAL_HOURS`) are
+played, the report updated after every round, a round cut short taken up where it was.
+
 ## Jobs
 
 Edit `config.lua` (a Lua table) and set `command` to one of these:
@@ -297,6 +338,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
 | `record` | XOI's brain, step one (above): random pairs of the pool on random stages, `brains[1]` (XOI) against `brains[2]` (the pack's own AI scripts when it has them, else `xoi@<alt>`; `opponent = "xoi"`: `xoi@<alt>` there too, hoc-sau.bat's `DOI_THU=xoi`), `games` games or `seconds` seconds; a `REC` line per move started with its outcome `window` frames later; `brain` plays the recorded side with a brain; `quiet` plays without records; `both` records both sides when both are XOI. | `brains`, `alt`, `opponent`, `brain`, `games`, `seconds`, `seed`, `limit`, `window`, `ids`, `difficulty`, `quiet`, `both` |
 | `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines. | `data`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
+| `balance` | Fighter balance (above): `step = "list"`, `"play"` or `"merge"`; win rates of every pair of fighters and what each move brings, one computer player on both sides. | `step`, `ids`, `exclude`, `brain`, `weapons`, `limit`, `stall`, `games`, `seconds`, `snap`, `seed`, `round`, `process`, `processes`, `prev`, `lang`, `mod`, `plan_rounds`, `plan_games`, `plan_seconds`, `date`, `kit` |
 | `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows

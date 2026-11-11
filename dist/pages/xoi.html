@@ -163,6 +163,8 @@
           <small>xoi-kit.zip</small></a>
         <a class="btn secondary" href="xoi-kit-en.zip"><span class="en">The kit in English</span><span class="vi">Bộ XOI bản tiếng Anh</span>
           <small>xoi-kit-en.zip</small></a>
+        <a class="btn secondary" href="#balance"><span class="en">Fighter balance, for mod makers</span><span class="vi">Cân bằng nhân vật, cho người làm mod</span>
+          <small>balance-kit.zip</small></a>
         <a class="btn secondary" href="insane.html"><span class="en">How INSANE! and XOI work</span><span class="vi">INSANE! và XOI hoạt động thế nào</span></a>
       </div>
     </div>
@@ -176,6 +178,7 @@
       <a href="#play"><span class="en">Play</span><span class="vi">Chơi</span></a>
       <a href="#train"><span class="en">Train XOI</span><span class="vi">Huấn luyện XOI</span></a>
       <a href="#measure"><span class="en">Measure</span><span class="vi">Đo</span></a>
+      <a href="#balance"><span class="en">Fighter balance</span><span class="vi">Cân bằng nhân vật</span></a>
       <a href="#watch"><span class="en">Watch</span><span class="vi">Xem</span></a>
       <a href="#tune"><span class="en">Tune XOI</span><span class="vi">Chỉnh XOI</span></a>
       <a href="#brain"><span class="en">XOI's brain</span><span class="vi">Bộ não XOI</span></a>
@@ -236,6 +239,10 @@
             their settings and messages in English (its README maps the Vietnamese names of this guide onto them; results in
             <code>results.txt</code>, the earlier notes as <code>&lt;mod&gt;-xoi-previous.zip</code>).</td>
             <td data-label="Where to get it"><a href="xoi-kit-en.zip">This site</a>, or the release</td></tr>
+          <tr><td><code>balance-kit.zip</code></td><td data-label="What it is">For mod makers, in English, on its own: <code>balance.bat</code>
+            measures each fighter's win rate against every other one and what each of its moves brings
+            (<a href="#balance">below</a>; the same tool is in both kits: <code>can-bang.bat</code>, <code>balance.bat</code>).</td>
+            <td data-label="Where to get it"><a href="balance-kit.zip">This site</a>, or the release</td></tr>
           <tr><td>Your mod</td><td data-label="What it is">The mod as a <code>.zip</code> of its game folder — the folder that has <code>data\data.txt</code>
             in it, where the mod's <code>.exe</code> is — or that folder itself. A <code>.rar</code> or <code>.7z</code>: extract it
             first (with 7-Zip).</td><td data-label="Where to get it">Its author, or wherever you got it</td></tr>
@@ -259,6 +266,10 @@
             <code>watch.bat</code> = xem.bat, <code>publish.bat</code> = xuat-ban.bat, <code>check.bat</code> = kiem-tra.bat), dòng chỉnh và thông báo
             bằng tiếng Anh; README của nó ghi tên tương ứng với hướng dẫn này.</td>
             <td data-label="Lấy ở đâu"><a href="xoi-kit-en.zip">Trang này</a>, hoặc trong bản release</td></tr>
+          <tr><td><code>balance-kit.zip</code></td><td data-label="Là gì">Cho người làm mod, bản tiếng Anh, tải riêng: <code>balance.bat</code>
+            đo tỉ lệ thắng của từng nhân vật trước từng nhân vật khác và mỗi chiêu của nó mang lại gì
+            (<a href="#balance">bên dưới</a>; công cụ này có sẵn trong cả hai bộ XOI: <code>can-bang.bat</code>, <code>balance.bat</code>).</td>
+            <td data-label="Lấy ở đâu"><a href="balance-kit.zip">Trang này</a>, hoặc trong bản release</td></tr>
           <tr><td>Bản mod của bạn</td><td data-label="Là gì">Bản mod dạng file <code>.zip</code> của thư mục game — thư mục có <code>data\data.txt</code>
             bên trong, nơi có file <code>.exe</code> của bản mod — hoặc chính thư mục ấy. File <code>.rar</code> hay <code>.7z</code>:
             giải nén trước (bằng 7-Zip).</td><td data-label="Lấy ở đâu">Tác giả bản mod, hoặc nơi bạn tải về</td></tr>
@@ -521,6 +532,71 @@
           khác, chép vào <code>tools\ai-bench\ai_alt.lua</code>).</li>
         <li><b>Hai bộ nhớ</b> (<code>&lt;tên&gt;-xoi.zip</code> và <code>&lt;tên&gt;-xoi-truoc.zip</code>): đo từng bộ đấu INSANE! cùng
           <code>HAT_GIONG_DAU</code>, lần lượt đặt <code>PACK</code> là từng file, rồi so hai tỉ lệ.</li>
+      </ul>
+    </section>
+
+    <section id="balance">
+      <h2><span class="en">Fighter balance: win rates and moves (for mod makers)</span><span class="vi">Cân bằng nhân vật: tỉ lệ thắng và từng chiêu (cho người làm mod)</span></h2>
+      <p class="lede en"><code>can-bang.bat</code> (<code>balance.bat</code> in English) has one computer player — XOI — play both sides of
+        every pair of fighters of a mod, on every CPU thread, again and again: each pair on both sides, on the same stage, from the
+        same point of the random sequence. Then it counts each fighter's win rate against all the others and against each one, and
+        what each of its moves brings. The numbers, not a verdict: what to change is the mod maker's to say.</p>
+      <p class="lede vi"><code>can-bang.bat</code> (bản tiếng Anh: <code>balance.bat</code>) cho một máy — XOI — chơi cả hai bên mọi cặp
+        nhân vật của bản mod, trên mọi luồng CPU, lặp đi lặp lại: mỗi cặp đổi bên đủ hai chiều, cùng sân, cùng điểm xuất phát của dãy
+        số ngẫu nhiên. Rồi nó đếm tỉ lệ thắng của từng nhân vật trước mọi nhân vật khác và trước từng nhân vật, và mỗi chiêu của nó
+        mang lại gì. Báo cáo chỉ ghi số đo được: chỉnh gì là việc của người làm mod.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="balance-kit.zip"><span class="en">Download the balance kit (English)</span><span class="vi">Tải bộ cân bằng (tiếng Anh)</span>
+          <small>balance-kit.zip</small></a>
+      </div>
+      <ol class="steps en">
+        <li><b>Put the mod's <code>.zip</code> next to <code>balance.bat</code></b> (or <code>can-bang.bat</code> in the XOI kit), or drag it
+          onto the file. A mod you trained XOI for: use <code>&lt;mod&gt;-xoi.zip</code> — XOI plays it stronger.</li>
+        <li><b>Say how much</b> (in Notepad, at the top): <code>TOTAL_GAMES</code> (all the games, e.g. <code>200000</code>) or
+          <code>TOTAL_HOURS</code> (all the hours, <code>7.5</code> = seven and a half), split into <code>ROUNDS</code> rounds — after each
+          one the report is updated. In <code>can-bang.bat</code>: <code>TONG_VAN</code>, <code>TONG_GIO</code>, <code>VONG</code>.</li>
+        <li><b>Double-click.</b> Results in <code>balance-&lt;mod&gt;\</code> (<code>can-bang-&lt;mod&gt;\</code>): <code>report.html</code>
+          (<code>bao-cao.html</code>) to open in a browser, and a text summary <code>results.txt</code> (<code>ket-qua.txt</code>). After every
+          round the file also shows the games per hour, to size the next run.</li>
+        <li><b>Pause and go on:</b> close the window (or set <code>RUN_HOURS</code>), run the file again later — the round under way goes
+          on. To measure more: raise the total and run it again; the new games add up.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt file <code>.zip</code> bản mod cạnh <code>can-bang.bat</code></b> (trong bộ XOI; bộ tiếng Anh: <code>balance.bat</code>),
+          hoặc kéo thả nó vào file. Bản mod đã huấn luyện XOI: dùng <code>&lt;tên&gt;-xoi.zip</code> — XOI chơi mạnh hơn.</li>
+        <li><b>Chỉnh bao nhiêu</b> (mở bằng Notepad, ở đầu file): <code>TONG_VAN</code> (tổng số ván, ví dụ <code>200000</code>) hoặc
+          <code>TONG_GIO</code> (tổng số giờ, <code>7,5</code> = 7 giờ rưỡi), chia làm <code>VONG</code> vòng — hết mỗi vòng báo cáo được
+          cập nhật.</li>
+        <li><b>Nháy đúp.</b> Kết quả ở <code>can-bang-&lt;tên&gt;\</code>: <code>bao-cao.html</code> mở bằng trình duyệt, và bản tóm tắt
+          <code>ket-qua.txt</code>. Hết mỗi vòng file còn báo số ván một giờ, để tính cho lần sau.</li>
+        <li><b>Tạm dừng và làm tiếp:</b> đóng cửa sổ (hoặc đặt <code>GIO_CHAY</code>), lúc khác chạy lại — vòng đang dở được làm tiếp. Đo
+          thêm: tăng tổng rồi chạy lại, các ván mới cộng dồn vào.</li>
+      </ol>
+      <ul class="plain en">
+        <li><b>The report</b> (English or Vietnamese at a click): the ranking with each rate's 95% margin; the matchup chart (each
+          fighter against each other one); each fighter's moves — how often each is used, how often it lands, is guarded, the HP it
+          takes off (the balls, traps, clones and thrown things it makes included), how often its user is hit in it — with the
+          ones <i>worth a look</i> marked; the draws; tables to download as CSV. A move is named by its keys, its frame's name and the
+          frame number in the fighter's <code>.dat</code> file.</li>
+        <li><b>How many games:</b> for 21 fighters (210 pairs), about ±1% on each fighter's rate takes some 100,000 games; ±3% on each
+          cell of the chart, some 230,000. Two fighters closer than their margins cannot be told apart yet.</li>
+        <li><b>Other players:</b> <code>BRAIN</code> (<code>NAO</code>) = <code>smart</code> (INSANE!) or <code>classic</code> (the original
+          computer player, which plays a mod's own AI scripts) — each gets its own folder. A fighter strong with every player is almost
+          surely strong.</li>
+        <li><b>The limits:</b> this is how the AI plays the fighters. It reacts almost at once and does not find combos the way a good
+          player does; about a move it never used, the report says nothing. Check what you conclude with real players.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b>Báo cáo</b> (bấm một nút là chuyển tiếng Anh/tiếng Việt): xếp hạng kèm khoảng sai số 95%; bảng đối đầu (từng nhân vật
+          trước từng nhân vật); các chiêu của từng nhân vật — dùng bao nhiêu, trúng bao nhiêu, bị đỡ, gây bao nhiêu máu (kể cả chưởng,
+          bẫy, phân thân, vật ném do chiêu tạo ra), người dùng bị đánh trả bao nhiêu — có đánh dấu chiêu <i>nên xem lại</i>; các ván
+          hòa; bảng tải về dạng CSV. Tên chiêu gồm phím bấm, tên frame và số frame trong file <code>.dat</code> của nhân vật.</li>
+        <li><b>Bao nhiêu ván:</b> 21 nhân vật (210 cặp): sai số khoảng ±1% cho tỉ lệ của mỗi nhân vật cần chừng 100.000 ván; ±3% cho
+          mỗi ô của bảng đối đầu, chừng 230.000. Hai nhân vật chênh nhau ít hơn sai số thì chưa nói được ai hơn ai.</li>
+        <li><b>Máy khác:</b> <code>NAO</code> = <code>smart</code> (INSANE!) hay <code>classic</code> (máy gốc, chơi bằng script AI riêng
+          của bản mod nếu có) — mỗi máy một thư mục riêng. Nhân vật mạnh với mọi máy thì gần như chắc là mạnh thật.</li>
+        <li><b>Giới hạn:</b> đây là cách AI chơi các nhân vật. AI phản ứng gần như tức thì và không tự tìm combo như người chơi giỏi;
+          chiêu AI chưa dùng thì báo cáo không nói được gì. Kết luận nên kiểm tra thêm bằng người chơi thật.</li>
       </ul>
     </section>
 
@@ -991,13 +1067,14 @@
   spsa.bat              <i>tune XOI's numbers by play</i>
   hoc-sau.bat           <i>XOI learns a brain, a network scoring its moves, from its own games</i>
   xem.bat               <i>watch two computer players in the window, fighters by name (for a clip)</i>
+  can-bang.bat          <i>fighter balance: win rates and what each move brings</i>
   xuat-ban.bat          <i>publish a mod for its players (its work: xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>the README published mods get: edit it to add your words</i>
   kiem-tra.bat          <i>the game does not open: find out why (kiem-tra.txt)</i>
   README.txt            <i>the short version of this page</i>
   version.txt           <i>which INSANE! and OpenLF2 this kit is</i>
   scripts\              <i>the game's scripts with INSANE! and XOI (base\game\smart_ai.lua)</i>
-  tools\ai-bench\       <i>the jobs: learn.lua (training), duel.lua (measuring), record.lua and train.lua (the brain), brains.lua…</i>
+  tools\ai-bench\       <i>the jobs: learn.lua (training), duel.lua (measuring), record.lua and train.lua (the brain), balance.lua (balance)…</i>
 <i>made as you go:</i>
   &lt;mod&gt;.zip             <i>a mod folder zipped by choi.bat</i>
   &lt;mod&gt;-xoi.zip         <i>the mod with xoi\notes.txt inside (xoi-hoc.bat, or choi.bat with notes)</i>
@@ -1014,6 +1091,7 @@
   spsa\                 <i>a tuning: ket-qua.txt (the result), vong-&lt;n&gt;\ (each round), kiem-tra\ (the check)</i>
   hoc-sau\              <i>a brain's making: ket-qua.txt, du-lieu\ (the recorded moves), luot-&lt;n&gt;\ (each round), kiem-tra\</i>
     xoi-&lt;mod&gt;\brain.txt  <i>the brain (XOI_BRAIN lines): what spsa.bat, xoi-hoc.bat and xuat-ban.bat pack as xoi\brain.txt</i>
+  can-bang-&lt;mod&gt;\      <i>a balance measurement: bao-cao.html (the report), ket-qua.txt, vong-&lt;n&gt;\ (each round)</i>
   xuat-ban\             <i>published mods: &lt;mod&gt;.zip to share, &lt;mod&gt;\ unzipped, &lt;mod&gt;-kiem-tra.txt (the trial start)</i></div>
 <div class="tree vi">LF2-XOI-kit\
   choi.bat              <i>chơi bản mod với INSANE! và XOI</i>
@@ -1022,13 +1100,14 @@
   spsa.bat              <i>chỉnh các con số của XOI bằng cách cho máy đánh</i>
   hoc-sau.bat           <i>XOI học bộ não — mạng nơ-ron chấm điểm đòn — từ chính các trận của nó</i>
   xem.bat               <i>xem hai máy đánh nhau trong cửa sổ, chọn nhân vật theo tên (để quay clip)</i>
+  can-bang.bat          <i>cân bằng nhân vật: tỉ lệ thắng và mỗi chiêu mang lại gì</i>
   xuat-ban.bat          <i>xuất bản bản mod cho người chơi (phần việc nằm trong xuat-ban.ps1)</i>
   xuat-ban-README.txt   <i>README của bản xuất bản: sửa để thêm lời của bạn</i>
   kiem-tra.bat          <i>game không mở được: tìm lý do (kiem-tra.txt)</i>
   README.txt            <i>bản ngắn của trang này</i>
   version.txt           <i>bộ này là INSANE! và OpenLF2 phiên bản nào</i>
   scripts\              <i>scripts của game có INSANE! và XOI (base\game\smart_ai.lua)</i>
-  tools\ai-bench\       <i>các việc: learn.lua (huấn luyện), duel.lua (đo), record.lua và train.lua (bộ não), brains.lua…</i>
+  tools\ai-bench\       <i>các việc: learn.lua (huấn luyện), duel.lua (đo), record.lua và train.lua (bộ não), balance.lua (cân bằng)…</i>
 <i>sinh ra trong lúc dùng:</i>
   &lt;tên&gt;.zip             <i>thư mục bản mod do choi.bat nén lại</i>
   &lt;tên&gt;-xoi.zip         <i>bản mod có xoi\notes.txt bên trong (xoi-hoc.bat, hoặc choi.bat kèm bộ nhớ)</i>
@@ -1045,6 +1124,7 @@
   spsa\                 <i>một lần chỉnh: ket-qua.txt (kết quả), vong-&lt;n&gt;\ (từng vòng), kiem-tra\ (phần kiểm tra)</i>
   hoc-sau\              <i>một lần học bộ não: ket-qua.txt, du-lieu\ (các lần ra đòn đã ghi), luot-&lt;n&gt;\ (từng lượt), kiem-tra\</i>
     xoi-&lt;tên&gt;\brain.txt  <i>bộ não (các dòng XOI_BRAIN): spsa.bat, xoi-hoc.bat và xuat-ban.bat đóng gói nó thành xoi\brain.txt</i>
+  can-bang-&lt;tên&gt;\      <i>một lần đo cân bằng: bao-cao.html (báo cáo), ket-qua.txt, vong-&lt;n&gt;\ (từng vòng)</i>
   xuat-ban\             <i>bản xuất bản: &lt;tên&gt;.zip để chia sẻ, &lt;tên&gt;\ đã giải nén, &lt;tên&gt;-kiem-tra.txt (lần mở thử)</i></div>
       <p class="note en"><b>The notes file</b> is plain text, one fact per line, each starting with <code>XOI</code>: <code>G</code> the
         games of a pair, <code>R</code> the opponent's answers to risky moves, <code>M</code> a move's record against an opponent,

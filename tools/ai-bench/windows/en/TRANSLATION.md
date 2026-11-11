@@ -26,6 +26,9 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    | dau-nhieu.bat | measure.bat |
    | spsa.bat | spsa.bat (same) |
    | hoc-sau.bat | brain.bat |
+   | can-bang.bat | balance.bat |
+   | can-bang-cai-dat.bat (settings file) | balance-settings.bat |
+   | can-bang-<mod>\ (folder), vong-N\, gop\, truoc\, danh-sach\, bao-cao.html, du-lieu.js, nhan-vat.txt, cai-dat-do.txt, nhat-ky.txt, tong.txt, phan.txt | balance-<mod>\, round-N\, merge\, before\, list\, report.html, data.js, fighters.txt, settings-used.txt, log.txt, totals.txt, part.txt |
    | hoc-sau-cai-dat.bat / spsa-cai-dat.bat (settings files) | brain-settings.bat / spsa-settings.bat |
    | hoc-sau\ (folder), luot-N\, du-lieu\, hocN\, nao-N.txt, xong-luot.txt, gop.txt, du-lieu.zip, du-lieu.txt | brain\, round-N\, data\, trainN\, brain-N.txt, round-done.txt, gathered.txt, data.zip, count.txt |
    | xem.bat | watch.bat |
@@ -51,7 +54,9 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    PHUT_KIEM_TRA→CHECK_MINUTES, SONG_SONG→PARALLEL, HAT_GIONG→SEED (if SEED is free; FIRST_SEED in spsa.bat and
    brain.bat, where SEED is used internally), PHUT_GHI→RECORD_MINUTES, AN→HIDDEN, EPOCH→EPOCHS, UU_TIEN→PRIORITY,
    VE→RENDERER, THU_GIAY→TEST_SECONDS, SO_TRAN/TRAN→GAMES, MUC→LEVEL, NHAN_VAT→FIGHTERS, GAME/PACK/NOTES/BENCH/SCRIPTS
-   unchanged. A renamed variable must not collide with an existing one — check the whole file.
+   unchanged; in can-bang.bat: NAO→BRAIN, BO_NHAN_VAT→EXCLUDE, TONG_VAN→TOTAL_GAMES, TONG_GIO→TOTAL_HOURS,
+   VU_KHI→WEAPONS, PHUT_VAN→GAME_MINUTES, GIAY_DUNG_IM→STILL_SECONDS, GIO_CHAY→RUN_HOURS, THU_TONG_GIAY→TEST_TOTAL_SECONDS,
+   THU_SNAP→TEST_SNAP. A renamed variable must not collide with an existing one — check the whole file.
 5. The settings block header `rem ============ CHINH O DAY ============` becomes `rem ============ SETTINGS ============`.
 
 ## What does not change

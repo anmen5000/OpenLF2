@@ -610,6 +610,19 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- Fighter balance, for the people who make mods (package 77): `can-bang.bat` in the XOI kit, `balance.bat` in its
+  English edition and on its own as `balance-kit.zip` (xoi.html#balance), on the bench's new `balance` job. One
+  computer player (XOI by default; INSANE! or the original player with the mod's own AI scripts) plays both sides of
+  every pair of fighters, each pair on both sides from the same point of the random sequence, on every CPU thread;
+  the report — one HTML page, English or Vietnamese at a click, and a text summary — ranks the fighters by win rate
+  with a 95% margin, draws the matchup chart, and gives each fighter's moves: how often each is used, lands, is
+  guarded, the HP it takes off (the balls, traps, clones and thrown things it makes included) and how often its user
+  is hit in it, marking those worth a look. The numbers, not a verdict. The runner's settings: `VONG` (`ROUNDS`) and
+  `TONG_VAN` (`TOTAL_GAMES`) or `TONG_GIO` (`TOTAL_HOURS`); the report is updated after every round, a round cut
+  short (the window closed, `GIO_CHAY`) goes on where it was, a total raised later adds rounds, and each round says
+  the games played an hour. Each blow is credited by the game's own count of damage (`battle.on_damage`, which only
+  this job sets: play is unchanged — 16 replay tests and duels over three mods the same, game for game). On mode
+  Convergence, 40 minutes on two threads: 12,284 games, margins of 2 to 3%, 99.8% of the HP dealt credited to a move
 - XOI v45: standoffs that someone has to end, the weapon in hand, and the same on every computer of a room (the
   project owner's clip from Sauce's pack: XOI's Nya and XOI's Felix face to face, Felix jabbing into her guard,
   then both standing for good). In a standoff long enough to be a loop the target's quickest answer rules a slower

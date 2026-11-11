@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fighter balance</title>
+<!-- The balance report of LF2 Online's AI bench (tools/ai-bench/balance.lua): this head, then the data lines a merge
+     wrote (B.meta, B.f, B.p, B.m, B.v, B.u), then balance-report-tail.html, which draws the page. One file, no network. -->
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1f2328; --muted: #646b73; --line: #e2e0d9; --soft: #efede7;
+  --accent: #2f5bd3; --good: 37, 99, 235; --bad: 214, 51, 51; --flag: #b45309; --flag-bg: #fdf3e2;
+  --bar: #2f5bd3; --bar-track: #e8e6df; --mid: #9aa0a6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a; --panel: #1d2024; --ink: #e8e6e3; --muted: #9aa0a6; --line: #30343a; --soft: #24282d;
+    --accent: #7ea2ff; --good: 96, 145, 255; --bad: 240, 98, 98; --flag: #f0b25a; --flag-bg: #3a2c16;
+    --bar: #7ea2ff; --bar-track: #2c3036; --mid: #6b7178;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --panel: #1d2024; --ink: #e8e6e3; --muted: #9aa0a6; --line: #30343a; --soft: #24282d;
+  --accent: #7ea2ff; --good: 96, 145, 255; --bad: 240, 98, 98; --flag: #f0b25a; --flag-bg: #3a2c16;
+  --bar: #7ea2ff; --bar-track: #2c3036; --mid: #6b7178;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+header.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+h1 small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-bottom: 4px; }
+h2 { font-size: 18px; margin: 28px 0 10px; }
+h3 { font-size: 15px; margin: 20px 0 8px; }
+p { margin: 8px 0; }
+.muted { color: var(--muted); }
+.meta { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
+.chip { background: var(--soft); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 13px; }
+.lang { display: flex; gap: 4px; }
+button { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 5px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.card b { display: block; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.card span { font-size: 13px; color: var(--muted); }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: none; position: sticky; top: 0; background: var(--panel); z-index: 1; }
+th.sort { cursor: pointer; user-select: none; }
+th.sort:hover { color: var(--ink); }
+td.l, th.l { text-align: left; }
+tr:hover td { background: var(--soft); }
+a.name { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--muted); cursor: pointer; }
+a.name:hover { color: var(--accent); border-color: var(--accent); }
+.rate { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.track { position: relative; width: 150px; height: 10px; background: var(--bar-track); border-radius: 5px; flex: none; }
+.track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); border-radius: 5px; opacity: .85; }
+.track .ci { position: absolute; top: 4px; height: 2px; background: var(--ink); opacity: .55; }
+.track .half { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--mid); }
+.matrix td, .matrix th { padding: 4px 5px; border: 1px solid var(--line); text-align: center; min-width: 38px; font-size: 13px; }
+.matrix th.col { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; height: 120px; vertical-align: bottom; padding: 6px 3px; }
+.matrix th.row { text-align: left; position: sticky; left: 0; background: var(--panel); z-index: 2; }
+.matrix td.self { color: var(--muted); }
+.matrix td.few { opacity: .45; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin: 10px 0; }
+.swatch { display: inline-block; width: 28px; height: 14px; border-radius: 3px; border: 1px solid var(--line); vertical-align: middle; }
+.flag { color: var(--flag); background: var(--flag-bg); border-radius: 6px; padding: 1px 6px; font-size: 12px; font-weight: 600; }
+select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; max-width: 100%; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .row2 { grid-template-columns: 1fr; } .track { width: 90px; } h1 { font-size: 22px; } }
+ul.plain { margin: 6px 0; padding-left: 20px; }
+.note { font-size: 13px; color: var(--muted); }
+.err { color: rgb(var(--bad)); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+footer { margin-top: 40px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="muted">…</p></div>
+<script>
+var B = {d: {meta: null, f: [], p: [], m: [], v: [], u: []}};
+B.meta = function (x) { B.d.meta = x; };
+B.f = function (x) { B.d.f.push(x); };
+B.p = function (x) { B.d.p.push(x); };
+B.m = function (x) { B.d.m.push(x); };
+B.v = function (x) { B.d.v.push(x); };
+B.u = function (x) { B.d.u.push(x); };
+</script>
+<script>

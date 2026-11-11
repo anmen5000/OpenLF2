@@ -111,8 +111,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    fighters (Sauce's ten original ones: 1 2 4 5 6 7 8 9 10 11). A mod whose own .exe has none of LF2's pictures
    (moved to its UI folder, as Sauce's) needs OpenLF2 built from package 56 on; with an older one, copy LF2
    2.0a's lf2.exe (or a mod's lf2_2.0a.exe, mode Convergence has one) into the mod's folder as lf2.exe first.
+10. Fighter balance (package 77): put the mod's .zip (better: <mod>-xoi.zip) next to can-bang.bat and
+   double-click it. One computer player (XOI) plays both sides of every pair of fighters, on every CPU thread,
+   and counts each fighter's win rate against every other one and what each of its moves brings (how often it
+   is used, lands, is guarded, how much HP it takes off, how often its user is hit in it). Settings at the top:
+   VONG rounds, and TONG_VAN (total games) or TONG_GIO (total hours); NHAN_VAT, BO_NHAN_VAT the fighters; NAO the
+   player (xoi, smart, classic). Results in can-bang-<mod>\: bao-cao.html (open it in a browser: the ranking,
+   the matchup chart, every move of every fighter; English or Vietnamese at a click) and ket-qua.txt,
+   updated after every round. Close the window to pause, run it again to go on; raise TONG_VAN or TONG_GIO
+   to measure more. The numbers only - what to change is the mod maker's to say. (In English: balance.bat,
+   also as balance-kit.zip on the guide's page.)
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), xem.bat (watch), xuat-ban.bat (publish;
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -226,8 +236,17 @@ chơi được chính các file của bản mod.
    nhân vật gốc của Sauce: 1 2 4 5 6 7 8 9 10 11). Bản mod mà file .exe không còn hình của LF2 (dời ra thư mục
    UI, như bản của Sauce) cần OpenLF2 dựng từ gói 56 trở đi; với bản cũ hơn, chép lf2.exe của LF2 2.0a (hay
    lf2_2.0a.exe của một bản mod, mode Convergence có) vào thư mục bản mod, đặt tên lf2.exe, trước đã.
+10. Cân bằng nhân vật (gói 77): đặt file .zip bản mod (tốt hơn: <tên>-xoi.zip) cạnh can-bang.bat rồi nháy đúp.
+   Một máy (XOI) chơi cả hai bên mọi cặp nhân vật, trên mọi luồng CPU, rồi đếm tỉ lệ thắng của từng nhân vật
+   trước từng nhân vật khác và mỗi chiêu của nó mang lại gì (dùng bao nhiêu, trúng bao nhiêu, bị đỡ, gây bao
+   nhiêu máu, người dùng bị đánh trả bao nhiêu). Chỉnh ở đầu file: VONG (số vòng), và TONG_VAN (tổng số ván)
+   hoặc TONG_GIO (tổng số giờ); NHAN_VAT, BO_NHAN_VAT là các nhân vật; NAO là máy (xoi, smart, classic). Kết
+   quả ở can-bang-<tên>\: bao-cao.html (mở bằng trình duyệt: xếp hạng, bảng đối đầu, từng chiêu của từng nhân
+   vật; bấm một nút là chuyển tiếng Anh/tiếng Việt) và ket-qua.txt, cập nhật sau mỗi vòng. Đóng cửa sổ để tạm
+   dừng, chạy lại là làm tiếp; tăng TONG_VAN hay TONG_GIO để đo thêm. Báo cáo chỉ ghi số đo được - chỉnh gì là
+   việc của người làm mod. (Bản tiếng Anh: balance.bat, có cả gói riêng balance-kit.zip ở trang hướng dẫn.)
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), xem.bat (xem), xuat-ban.bat (xuất
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

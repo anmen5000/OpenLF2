@@ -48,11 +48,16 @@ function battle.count_kill(state, victim)
         run.deaths[victim.battle_side] = run.deaths[victim.battle_side] + 1
     end
 end
-function battle.count_damage(state, victim, damage)
+-- (`attacker`: the item whose blow it was; `defended`: a guarded blow's chip; `contact`: a blow that touched without
+-- taking HP off yet — a whirlwind's, whose HP goes later, a little at a time. battle.on_damage, when a bench job sets
+-- it — the balance job, tools/ai-bench/balance.lua, crediting each blow to the move that dealt it — sees every blow;
+-- it changes nothing.)
+function battle.count_damage(state, victim, damage, attacker, defended, contact)
     local run = state.battle_run
     if run and victim.battle_side > 0 and victim.battle_side < 3 then
         run.damage[victim.battle_side] = run.damage[victim.battle_side] + damage
     end
+    if battle.on_damage then battle.on_damage(state, victim, contact and 0 or damage, attacker, defended == true, contact == true) end
 end
 
 local function caption(run, side)

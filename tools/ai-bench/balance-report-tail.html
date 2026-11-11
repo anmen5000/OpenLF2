@@ -1,0 +1,474 @@
+</script>
+<script>
+(function () {
+  "use strict";
+  var D = B.d;
+  var app = document.getElementById("app");
+  var T = {
+    vi: {
+      title: "Cân bằng nhân vật", kicker: "LF2 Online · AI đánh với AI",
+      games: "ván", rounds: "vòng", cpu: "giờ CPU", fighters: "nhân vật", pairs: "cặp", played: "ván đã đánh",
+      drawsCard: "ván hòa", avgLen: "trung bình một ván", seconds: "giây",
+      limit: "Tối đa {n} phút mỗi ván", stall: "Hòa khi {n} giây không ai mất máu", weaponsOn: "Vũ khí rơi từ trời: bật",
+      weaponsOff: "Vũ khí rơi từ trời: tắt", brain: "Máy chơi cả hai bên: {b}",
+      planGames: "Kế hoạch: {r}, {g} ván", planHours: "Kế hoạch: {r}, {h} giờ", round1: "vòng", roundN: "vòng",
+      aiClassic: "CRAZY! (máy gốc; nhân vật có script AI riêng của bản mod thì chơi bằng script đó)",
+      aiTuned: "thang số riêng của bản mod", aiBrain: "bộ não", aiNotes: "bộ nhớ {n} cặp", aiNoNotes: "chưa có bộ nhớ",
+      tabRank: "Xếp hạng", tabMatrix: "Đối đầu", tabFighter: "Từng nhân vật", tabDraws: "Ván hòa", tabRead: "Cách đọc",
+      rankIntro: "Tỉ lệ thắng = (thắng + nửa số hòa) / số ván, trước mọi nhân vật khác. Vạch giữa là 50%; đoạn kẻ ngang là khoảng sai số 95%.",
+      cRank: "#", cName: "Nhân vật", cRate: "Tỉ lệ thắng", cMargin: "±", cWins: "Thắng", cDraws: "Hòa", cLosses: "Thua",
+      cGames: "Ván", cDealt: "Gây / ván", cTaken: "Mất / ván", cHpWin: "Máu còn khi thắng", cLen: "Dài / ván (giây)",
+      matrixIntro: "Mỗi ô: tỉ lệ thắng của nhân vật ở hàng trước nhân vật ở cột (hòa tính nửa). Di chuột lên ô để xem số ván. Ô mờ: dưới {n} ván.",
+      lose: "thua nhiều", even: "ngang", win: "thắng nhiều", csvMatrix: "Tải bảng đối đầu (CSV)", csvMoves: "Tải bảng chiêu (CSV)",
+      pick: "Nhân vật", easiest: "Dễ thắng nhất", hardest: "Khó thắng nhất", moves: "Các chiêu", perOpp: "Từng đối thủ",
+      unused: "Chiêu đặc biệt AI chưa dùng lần nào (báo cáo không nói được gì về chúng)", none: "Không có.",
+      mMove: "Chiêu", mUse: "Dùng / ván", mLand: "Trúng", mDmg: "Sát thương / lần", mDmgLand: "/ lần trúng", mShare: "Phần sát thương",
+      mGuard: "Bị đỡ", mPun: "Bị đánh trả", mUses: "Số lần", flag: "nên xem lại", catchTag: "bắt/ôm", other: "Không gắn được với chiêu nào",
+      oName: "Đối thủ", oRate: "Tỉ lệ thắng", oGames: "Ván", oTop: "Chiêu gây nhiều nhất trước đối thủ này", oShare: "Phần",
+      drawsIntro: "Ván hòa: một phút liền không ai mất máu, hết giờ, hoặc cả hai cùng gục. Nhiều ván hòa ở một cặp thường là dạng bất tử, hai quân không chạm được nhau, hoặc AI chưa biết đánh quân đó.",
+      dPair: "Cặp", dDraws: "Hòa", dGames: "Ván", dStall: "Đứng im 1 phút", dLimit: "Hết giờ", dBoth: "Cùng gục",
+      noData: "Chưa có ván nào trong báo cáo này.", badData: "Không đọc được dữ liệu của báo cáo (file bị cắt?).",
+      transformed: "khi biến hình: ", frame: "frame",
+      read: [
+        "Mỗi ván do cùng một máy điều khiển cả hai bên ({b}). Mỗi cặp nhân vật đánh hai ván liền: đổi bên, cùng sân, cùng điểm xuất phát của dãy số ngẫu nhiên.",
+        "Tỉ lệ thắng = (thắng + nửa số hòa) / số ván. Dấu ± là khoảng sai số 95%: đo lại với hạt giống khác, con số thường nằm trong khoảng đó. Hai nhân vật chênh nhau ít hơn khoảng sai số thì chưa nói được ai hơn ai; muốn chắc hơn thì đánh thêm ván (sai số giảm theo căn bậc hai số ván).",
+        "Một chiêu = từ lúc nhân vật rời thế tự do (đứng, đi, chạy, nhảy, lướt, đỡ) tới lúc tự do trở lại hoặc bị đánh. Bấm một chuỗi D (D>A, D^J…) giữa chiêu là sang chiêu khác; bấm A, J nối tiếp là vẫn trong chiêu đó. Sát thương của những gì chiêu tạo ra (chưởng, bẫy, phân thân, vật ném) tính cho chiêu ấy; máu mất khi bị ném xuống đất hay bị lốc cuốn tính cho chiêu đã chạm vào.",
+        "Tên chiêu: phím bấm (nếu là chiêu bấm), tên frame và số frame đầu tiên trong file .dat của nhân vật — tìm số frame đó trong file để sửa.",
+        "Trúng = số lần dùng có ít nhất một đòn trúng mà không bị đỡ. Bị đỡ = số lần dùng có đòn bị đỡ. Bị đánh trả = số lần người dùng bị đánh trúng khi đang ra chiêu. Bắt/ôm luôn bắt đầu bằng va chạm nên không tính tỉ lệ trúng; một nhân vật bắt/ôm nhiều (xem cột Dùng / ván) thường là nhờ các chiêu làm đối thủ choáng trước đó — xem cả các chiêu ấy.",
+        "“Nên xem lại”: chiêu chiếm từ 30% sát thương của nhân vật, trúng từ 50% số lần dùng (bắt/ôm thì không xét), bị đánh trả tối đa 15%, đã dùng từ 50 lần. Đó là dấu hiệu để xem, không phải kết luận: người làm mod quyết định.",
+        "Giới hạn: đây là cách AI chơi nhân vật. AI phản ứng gần như ngay khung hình đầu và không tự tìm combo như người chơi giỏi; chiêu AI chưa dùng thì báo cáo không nói được gì. Kết luận cuối cùng nên kiểm tra thêm bằng người chơi thật.",
+        "Vũ khí rơi từ trời đang {w}: {wd}"
+      ],
+      wOff: "tắt", wOn: "bật", wOffD: "chỉ đo nhân vật và những gì nó tự tạo ra.", wOnD: "kết quả có cả việc nhặt và dùng vũ khí.",
+      footer: "Tạo bởi bộ XOI của LF2 Online (tools/ai-bench/balance.lua)."
+    },
+    en: {
+      title: "Fighter balance", kicker: "LF2 Online · AI against AI",
+      games: "games", rounds: "rounds", cpu: "CPU hours", fighters: "fighters", pairs: "pairs", played: "games played",
+      drawsCard: "draws", avgLen: "average game", seconds: "s",
+      limit: "At most {n} minutes a game", stall: "A draw after {n} seconds without damage", weaponsOn: "Weapons falling from the sky: on",
+      weaponsOff: "Weapons falling from the sky: off", brain: "Both sides played by: {b}",
+      planGames: "Plan: {r}, {g} games", planHours: "Plan: {r}, {h} hours", round1: "round", roundN: "rounds",
+      aiClassic: "CRAZY! (the original computer player; the mod's own AI scripts where it has them)",
+      aiTuned: "the mod's own numbers", aiBrain: "brain", aiNotes: "notes on {n} pairs", aiNoNotes: "no notes",
+      tabRank: "Ranking", tabMatrix: "Matchups", tabFighter: "Each fighter", tabDraws: "Draws", tabRead: "How to read",
+      rankIntro: "Win rate = (wins + half the draws) / games, against every other fighter. The middle mark is 50%; the line is the 95% margin.",
+      cRank: "#", cName: "Fighter", cRate: "Win rate", cMargin: "±", cWins: "Won", cDraws: "Drew", cLosses: "Lost",
+      cGames: "Games", cDealt: "Dealt / game", cTaken: "Taken / game", cHpWin: "HP left in wins", cLen: "Length (s)",
+      matrixIntro: "Each cell: the win rate of the row's fighter against the column's (a draw counts half). Hover a cell for its games. Faded: under {n} games.",
+      lose: "loses more", even: "even", win: "wins more", csvMatrix: "Download matchups (CSV)", csvMoves: "Download moves (CSV)",
+      pick: "Fighter", easiest: "Easiest opponents", hardest: "Hardest opponents", moves: "Moves", perOpp: "Each opponent",
+      unused: "Specials the AI never used (the report says nothing about them)", none: "None.",
+      mMove: "Move", mUse: "Uses / game", mLand: "Lands", mDmg: "Damage / use", mDmgLand: "/ landing", mShare: "Share of damage",
+      mGuard: "Guarded", mPun: "Punished", mUses: "Uses", flag: "worth a look", catchTag: "catch", other: "Not tied to any move",
+      oName: "Opponent", oRate: "Win rate", oGames: "Games", oTop: "The move dealing most against this opponent", oShare: "Share",
+      drawsIntro: "A draw: a minute without anybody losing HP, the time limit, or both down at once. Many draws in a pair often mean an invulnerable form, two fighters who cannot reach each other, or a fighter the AI does not play well.",
+      dPair: "Pair", dDraws: "Draws", dGames: "Games", dStall: "A minute still", dLimit: "Time limit", dBoth: "Both down",
+      noData: "No games in this report yet.", badData: "The report's data could not be read (a cut file?).",
+      transformed: "transformed: ", frame: "frame",
+      read: [
+        "Every game is played by the same computer player on both sides ({b}). Every pair of fighters plays two games in a row: sides swapped, same stage, from the same point of the random sequence.",
+        "Win rate = (wins + half the draws) / games. The ± is the 95% margin: measured again with another seed, the figure usually falls inside it. Two fighters closer than their margins cannot be told apart yet; more games make the margin smaller (it shrinks with the square root of the games).",
+        "A move = from where a fighter leaves a free stance (standing, walking, running, jumping, dashing, guarding) to where it is free again or hit. A D-sequence (D>A, D^J…) pressed inside a move starts another move; A or J pressed to go on stays in the same one. What a move makes (balls, traps, clones, thrown things) deals damage for that move; HP lost when thrown to the ground or caught in a whirlwind goes to the move that touched.",
+        "Move names: the keys (for a pressed move), the frame's name and the first frame's number in the fighter's .dat file — look that number up in the file to change it.",
+        "Lands = uses with at least one blow that hit and was not guarded. Guarded = uses with a blow guarded. Punished = uses during which the user was hit. A catch always begins by touching, so it has no landing rate; a fighter that catches a lot (see Uses / game) usually owes it to the moves that leave the opponent dazed first — look at those too.",
+        "“Worth a look”: a move with 30% or more of the fighter's damage, landing in 50% or more of its uses (not asked of a catch), punished in 15% at most, used 50 times or more. A sign to look at, not a verdict: the mod's maker decides.",
+        "The limits: this is how the AI plays each fighter. It reacts almost from a move's first frame and does not find combos the way a good player does; about a move it never used the report says nothing. Check the conclusions with real players.",
+        "Weapons falling from the sky are {w}: {wd}"
+      ],
+      wOff: "off", wOn: "on", wOffD: "the fighters, and what they make themselves, alone.", wOnD: "picking weapons up and using them is part of the results.",
+      footer: "Made by LF2 Online's XOI kit (tools/ai-bench/balance.lua)."
+    }
+  };
+  var meta = D.meta;
+  var lang = meta && T[meta.lang] ? meta.lang : "en";
+  var tab = "rank";
+  var picked = null;
+  var FEW = 20;
+
+  function t(key, values) {
+    var s = T[lang][key];
+    if (values) Object.keys(values).forEach(function (k) { s = s.split("{" + k + "}").join(values[k]); });
+    return s;
+  }
+  function el(tag, attrs, kids) {
+    var node = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "text") node.textContent = attrs[k];
+      else if (k === "on") Object.keys(attrs.on).forEach(function (e) { node.addEventListener(e, attrs.on[e]); });
+      else if (k === "style") node.setAttribute("style", attrs[k]);
+      else node.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (kid) {
+      if (kid == null) return;
+      node.appendChild(typeof kid === "string" || typeof kid === "number" ? document.createTextNode(String(kid)) : kid);
+    });
+    return node;
+  }
+  function num(x, digits) {
+    var locale = lang === "vi" ? "vi-VN" : "en-US";
+    return Number(x).toLocaleString(locale, {minimumFractionDigits: digits || 0, maximumFractionDigits: digits || 0});
+  }
+  function pct(x, digits) { return num(x * 100, digits == null ? 1 : digits) + "%"; }
+  function roundsText(n) { return num(n) + " " + (n === 1 ? t("round1") : t("roundN")); }
+  // The computer player, in the page's language (meta.ai: kind xoi/smart/classic, version, and for XOI what the mod
+  // brings for it).
+  function aiLabel() {
+    var ai = meta.ai || {kind: "xoi", version: 0};
+    if (ai.kind === "classic") return t("aiClassic");
+    if (ai.kind === "smart") return "INSANE! v" + ai.version;
+    var bits = ["XOI v" + ai.version];
+    if (ai.tuned) bits.push(t("aiTuned"));
+    if (ai.brain) bits.push(t("aiBrain"));
+    bits.push(ai.notes > 0 ? t("aiNotes", {n: num(ai.notes)}) : t("aiNoNotes"));
+    return bits.join(", ");
+  }
+  function rate(w, d, g) {
+    if (!g) return {p: 0, m: 0};
+    var p = (w + d / 2) / g, sq = (w + d / 4) / g;
+    return {p: p, m: 1.96 * Math.sqrt(Math.max(0, sq - p * p) / g)};
+  }
+
+  if (!meta) { app.textContent = ""; app.appendChild(el("p", {"class": "err", text: T.vi.badData + " / " + T.en.badData})); return; }
+
+  // The data, by fighter.
+  var fighters = D.f.map(function (r) {
+    var s = rate(r[3], r[5], r[2]);
+    return {id: r[0], name: r[1], games: r[2], wins: r[3], losses: r[4], draws: r[5], ticks: r[6], hpwin: r[7],
+      dealt: r[8], taken: r[9], other: r[10], p: s.p, m: s.m};
+  });
+  var byId = {};
+  fighters.forEach(function (f) { byId[f.id] = f; });
+  var ranked = fighters.filter(function (f) { return f.games > 0; }).sort(function (a, b) { return b.p - a.p || a.id - b.id; });
+  var pairs = {};
+  D.p.forEach(function (r) { pairs[r[0] + " " + r[1]] = r; });
+  function matchup(x, y) {
+    var a = Math.min(x, y), b = Math.max(x, y), r = pairs[a + " " + b];
+    if (!r) return null;
+    var w = x === a ? r[3] : r[4], l = x === a ? r[4] : r[3];
+    var s = rate(w, r[5], r[2]);
+    return {games: r[2], wins: w, losses: l, draws: r[5], stalls: r[6], limits: r[7], p: s.p, m: s.m};
+  }
+  var movesOf = {};
+  D.m.forEach(function (r) {
+    var mv = {f: r[0], r: r[1], e: r[2], keys: r[3], frame: r[4], rec: r[5], uses: r[6], landed: r[7], damage: r[8],
+      guarded: r[9], punished: r[10], blows: r[11], isCatch: r[12] === "catch"};
+    (movesOf[mv.f] = movesOf[mv.f] || []).push(mv);
+  });
+  var versusOf = {};
+  D.v.forEach(function (r) {
+    var key = r[0] + " " + r[1];
+    (versusOf[key] = versusOf[key] || []).push({r: r[2], e: r[3], uses: r[4], damage: r[5]});
+  });
+  var unusedOf = {};
+  D.u.forEach(function (r) { (unusedOf[r[0]] = unusedOf[r[0]] || []).push({keys: r[3], frame: r[4], e: r[2]}); });
+  function moveName(mv) {
+    var parts = [];
+    if (mv.rec) parts.push("[" + T[lang].transformed + mv.rec + "]");
+    if (mv.keys) parts.push(mv.keys);
+    parts.push((mv.frame || T[lang].frame) + " (" + mv.e + ")");
+    return parts.join(" ");
+  }
+  function moveKey(f, r, e) { return f + " " + r + " " + e; }
+  var moveIndex = {};
+  Object.keys(movesOf).forEach(function (f) { movesOf[f].forEach(function (mv) { moveIndex[moveKey(mv.f, mv.r, mv.e)] = mv; }); });
+  function flagged(mv, share) {
+    return share >= 0.3 && mv.uses >= 50 && (mv.isCatch || mv.landed / mv.uses >= 0.5) && mv.punished / mv.uses <= 0.15;
+  }
+
+  function download(name, rows) {
+    var text = rows.map(function (row) {
+      return row.map(function (cell) {
+        var s = String(cell == null ? "" : cell);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(",");
+    }).join("\r\n");
+    var blob = new Blob(["﻿" + text], {type: "text/csv;charset=utf-8"});
+    var link = el("a", {href: URL.createObjectURL(blob), download: name});
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function () { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
+  }
+
+  // Sortable tables: columns {label, value(row), show(row) -> node or text, cls, sort}.
+  function table(columns, rows, initial) {
+    var state = {col: initial == null ? -1 : initial, dir: -1};
+    var wrap = el("div", {"class": "scroll"});
+    function draw() {
+      var list = rows.slice();
+      if (state.col >= 0) {
+        var c = columns[state.col];
+        list.sort(function (a, b) {
+          var x = c.value(a), y = c.value(b);
+          var order = typeof x === "string" ? (x < y ? -1 : x > y ? 1 : 0) : x - y;
+          return state.dir < 0 ? -order : order;
+        });
+      }
+      var head = el("tr", null, columns.map(function (c, i) {
+        return el("th", {"class": (c.cls || "") + (c.value ? " sort" : ""), title: c.title || "",
+          on: c.value ? {click: function () {
+            state.dir = state.col === i ? -state.dir : (rows.length && typeof c.value(rows[0]) === "string" ? 1 : -1);
+            state.col = i;
+            draw();
+          }} : {}},
+          [c.label + (state.col === i ? (state.dir < 0 ? " ▾" : " ▴") : "")]);
+      }));
+      var body = list.map(function (row) {
+        return el("tr", null, columns.map(function (c) {
+          var shown = c.show ? c.show(row) : c.value(row);
+          return el("td", {"class": c.cls || ""}, [shown]);
+        }));
+      });
+      wrap.textContent = "";
+      wrap.appendChild(el("table", null, [el("thead", null, [head]), el("tbody", null, body)]));
+    }
+    draw();
+    return wrap;
+  }
+  function nameLink(f) {
+    return el("a", {"class": "name", on: {click: function () { picked = f.id; tab = "fighter"; render(); window.scrollTo(0, 0); }}}, [f.name]);
+  }
+  function rateBar(p, m) {
+    var track = el("span", {"class": "track"}, [
+      el("span", {"class": "fill", style: "width:" + (p * 100).toFixed(1) + "%"}),
+      el("span", {"class": "half"}),
+      el("span", {"class": "ci", style: "left:" + (Math.max(0, p - m) * 100).toFixed(1) + "%;width:" + ((Math.min(1, p + m) - Math.max(0, p - m)) * 100).toFixed(1) + "%"})
+    ]);
+    return el("span", {"class": "rate"}, [track, el("span", null, [pct(p)])]);
+  }
+  function tint(p, games) {
+    var a = Math.min(1, Math.abs(p - 0.5) * 1.8) * 0.85;
+    var rgb = p >= 0.5 ? "var(--good)" : "var(--bad)";
+    return "background: rgba(" + rgb + "," + a.toFixed(2) + ")";
+  }
+
+  function header() {
+    var cpuHours = meta.cpu / 3600;
+    var chips = [
+      el("span", {"class": "chip"}, [t("brain", {b: aiLabel()})]),
+      el("span", {"class": "chip"}, [t("limit", {n: num(meta.limit / 1800, 0)})]),
+      el("span", {"class": "chip"}, [t("stall", {n: num(meta.stall / 30, 0)})]),
+      el("span", {"class": "chip"}, [meta.weapons ? t("weaponsOn") : t("weaponsOff")])
+    ];
+    var plan = meta.plan || {};
+    if (plan.rounds > 0 && plan.games > 0) chips.push(el("span", {"class": "chip"}, [t("planGames", {r: roundsText(plan.rounds), g: num(plan.games)})]));
+    else if (plan.rounds > 0 && plan.seconds > 0) {
+      var hours = plan.seconds / 3600;
+      chips.push(el("span", {"class": "chip"}, [t("planHours", {r: roundsText(plan.rounds), h: num(hours, hours === Math.floor(hours) ? 0 : 1)})]));
+    }
+    var langs = el("div", {"class": "lang"}, ["vi", "en"].map(function (l) {
+      return el("button", {"class": lang === l ? "on" : "", on: {click: function () { lang = l; document.documentElement.lang = l; render(); }}}, [l.toUpperCase()]);
+    }));
+    return el("div", null, [
+      el("header", {"class": "top"}, [
+        el("h1", null, [el("small", null, [t("kicker")]), t("title") + " — " + meta.mod]),
+        langs
+      ]),
+      el("p", {"class": "meta"}, [num(meta.games) + " " + t("games") + " · " + roundsText(meta.rounds) + " · " +
+        num(cpuHours, cpuHours < 10 ? 1 : 0) + " " + t("cpu") + (meta.date ? " · " + meta.date : "")]),
+      el("div", {"class": "chips"}, chips)
+    ]);
+  }
+  function cards() {
+    var draws = 0, ticks = 0, games = 0;
+    D.p.forEach(function (r) { draws += r[5]; ticks += r[8]; games += r[2]; });
+    return el("div", {"class": "cards"}, [
+      el("div", {"class": "card"}, [el("b", null, [num(fighters.length)]), el("span", null, [t("fighters")])]),
+      el("div", {"class": "card"}, [el("b", null, [num(D.p.length)]), el("span", null, [t("pairs")])]),
+      el("div", {"class": "card"}, [el("b", null, [num(meta.games)]), el("span", null, [t("played")])]),
+      el("div", {"class": "card"}, [el("b", null, [games ? pct(draws / games) : "—"]), el("span", null, [t("drawsCard")])]),
+      el("div", {"class": "card"}, [el("b", null, [games ? num(ticks / games / 30, 0) + " " + t("seconds") : "—"]), el("span", null, [t("avgLen")])])
+    ]);
+  }
+  function tabs() {
+    var list = [["rank", "tabRank"], ["matrix", "tabMatrix"], ["fighter", "tabFighter"], ["draws", "tabDraws"], ["read", "tabRead"]];
+    return el("nav", {"class": "tabs"}, list.map(function (x) {
+      return el("button", {"class": tab === x[0] ? "on" : "", on: {click: function () { tab = x[0]; render(); }}}, [t(x[1])]);
+    }));
+  }
+
+  function rankView() {
+    var columns = [
+      {label: t("cRank"), value: function (f) { return ranked.indexOf(f) + 1; }},
+      {label: t("cName"), cls: "l", value: function (f) { return f.name.toLowerCase(); }, show: nameLink},
+      {label: t("cRate"), value: function (f) { return f.p; }, show: function (f) { return rateBar(f.p, f.m); }},
+      {label: t("cMargin"), value: function (f) { return f.m; }, show: function (f) { return "±" + num(f.m * 100, 1); }},
+      {label: t("cWins"), value: function (f) { return f.wins; }, show: function (f) { return num(f.wins); }},
+      {label: t("cDraws"), value: function (f) { return f.draws; }, show: function (f) { return num(f.draws); }},
+      {label: t("cLosses"), value: function (f) { return f.losses; }, show: function (f) { return num(f.losses); }},
+      {label: t("cGames"), value: function (f) { return f.games; }, show: function (f) { return num(f.games); }},
+      {label: t("cDealt"), value: function (f) { return f.dealt / f.games; }, show: function (f) { return num(f.dealt / f.games); }},
+      {label: t("cTaken"), value: function (f) { return f.taken / f.games; }, show: function (f) { return num(f.taken / f.games); }},
+      {label: t("cHpWin"), value: function (f) { return f.wins ? f.hpwin / f.wins : 0; }, show: function (f) { return f.wins ? num(f.hpwin / f.wins) : "—"; }},
+      {label: t("cLen"), value: function (f) { return f.ticks / f.games; }, show: function (f) { return num(f.ticks / f.games / 30, 0); }}
+    ];
+    return el("div", null, [el("p", {"class": "muted"}, [t("rankIntro")]), el("div", {"class": "panel"}, [table(columns, ranked, 2)])]);
+  }
+
+  function matrixView() {
+    var order = ranked;
+    var head = el("tr", null, [el("th", {"class": "row"}, [""])].concat(order.map(function (f) {
+      return el("th", {"class": "col", title: f.name}, [f.name]);
+    })));
+    var rows = order.map(function (x) {
+      return el("tr", null, [el("th", {"class": "row"}, [nameLink(x)])].concat(order.map(function (y) {
+        if (x.id === y.id) return el("td", {"class": "self"}, ["·"]);
+        var mu = matchup(x.id, y.id);
+        if (!mu || !mu.games) return el("td", {"class": "self"}, ["—"]);
+        var title = x.name + " — " + y.name + ": " + pct(mu.p) + " ±" + num(mu.m * 100, 1) + " (" + t("cWins") + " " + mu.wins +
+          ", " + t("cDraws") + " " + mu.draws + ", " + t("cLosses") + " " + mu.losses + "; " + mu.games + " " + t("games") + ")";
+        return el("td", {"class": mu.games < FEW ? "few" : "", style: tint(mu.p, mu.games), title: title}, [num(mu.p * 100, 0)]);
+      })));
+    });
+    var legend = el("div", {"class": "legend"}, [
+      el("span", {"class": "swatch", style: tint(0.15)}), t("lose"),
+      el("span", {"class": "swatch", style: "background:transparent"}), t("even"),
+      el("span", {"class": "swatch", style: tint(0.85)}), t("win")
+    ]);
+    var csv = el("button", {on: {click: function () {
+      var rows2 = [["fighter", "opponent", "win_rate", "margin", "won", "drew", "lost", "games"]];
+      order.forEach(function (x) { order.forEach(function (y) {
+        if (x.id === y.id) return;
+        var mu = matchup(x.id, y.id);
+        if (mu) rows2.push([x.name, y.name, mu.p.toFixed(4), mu.m.toFixed(4), mu.wins, mu.draws, mu.losses, mu.games]);
+      }); });
+      download("matchups.csv", rows2);
+    }}}, [t("csvMatrix")]);
+    return el("div", null, [
+      el("p", {"class": "muted"}, [t("matrixIntro", {n: FEW})]), legend, el("div", {"class": "tools"}, [csv]),
+      el("div", {"class": "panel scroll"}, [el("table", {"class": "matrix"}, [el("thead", null, [head]), el("tbody", null, rows)])])
+    ]);
+  }
+
+  function fighterView() {
+    if (picked == null || !byId[picked]) picked = ranked.length ? ranked[0].id : (fighters[0] && fighters[0].id);
+    var f = byId[picked];
+    if (!f) return el("p", null, [t("noData")]);
+    var select = el("select", {on: {change: function (e) { picked = Number(e.target.value); render(); }}},
+      ranked.map(function (x) {
+        var o = el("option", {value: x.id}, [x.name + " — " + pct(x.p)]);
+        if (x.id === f.id) o.selected = true;
+        return o;
+      }));
+    var opponents = ranked.filter(function (y) { return y.id !== f.id; }).map(function (y) {
+      return {y: y, mu: matchup(f.id, y.id)};
+    }).filter(function (o) { return o.mu && o.mu.games; });
+    var byRate = opponents.slice().sort(function (a, b) { return b.mu.p - a.mu.p; });
+    function list(items) {
+      if (!items.length) return el("p", {"class": "muted"}, [t("none")]);
+      return el("ul", {"class": "plain"}, items.map(function (o) {
+        return el("li", null, [nameLink(o.y), ": " + pct(o.mu.p) + " (" + num(o.mu.games) + " " + t("games") + ")"]);
+      }));
+    }
+    var own = (movesOf[f.id] || []).slice();
+    var dealt = 0;
+    own.forEach(function (mv) { dealt += mv.damage; });
+    var moveRows = own.filter(function (mv) { return mv.uses > 0; });
+    var columns = [
+      {label: t("mMove"), cls: "l", value: function (mv) { return moveName(mv); }, show: function (mv) {
+        var share = dealt ? mv.damage / dealt : 0;
+        var bits = [moveName(mv)];
+        if (mv.isCatch) bits.push(" ", el("span", {"class": "chip"}, [t("catchTag")]));
+        if (flagged(mv, share)) bits.push(" ", el("span", {"class": "flag"}, [t("flag")]));
+        return el("span", null, bits);
+      }},
+      {label: t("mShare"), value: function (mv) { return dealt ? mv.damage / dealt : 0; }, show: function (mv) { return dealt ? pct(mv.damage / dealt) : "—"; }},
+      {label: t("mUse"), value: function (mv) { return mv.uses / f.games; }, show: function (mv) { return num(mv.uses / f.games, 1); }},
+      {label: t("mLand"), value: function (mv) { return mv.isCatch ? -1 : mv.landed / mv.uses; }, show: function (mv) { return mv.isCatch ? "—" : pct(mv.landed / mv.uses, 0); }},
+      {label: t("mDmg"), value: function (mv) { return mv.damage / mv.uses; }, show: function (mv) { return num(mv.damage / mv.uses, 1); }},
+      {label: t("mDmgLand"), value: function (mv) { return mv.landed ? mv.damage / mv.landed : 0; }, show: function (mv) { return mv.landed ? num(mv.damage / mv.landed, 0) : "—"; }},
+      {label: t("mGuard"), value: function (mv) { return mv.guarded / mv.uses; }, show: function (mv) { return pct(mv.guarded / mv.uses, 0); }},
+      {label: t("mPun"), value: function (mv) { return mv.punished / mv.uses; }, show: function (mv) { return pct(mv.punished / mv.uses, 0); }},
+      {label: t("mUses"), value: function (mv) { return mv.uses; }, show: function (mv) { return num(mv.uses); }}
+    ];
+    var csv = el("button", {on: {click: function () {
+      var rows2 = [["fighter", "move", "keys", "frame_name", "first_frame", "record", "uses", "landed", "damage", "guarded", "punished", "blows", "catch"]];
+      fighters.forEach(function (x) { (movesOf[x.id] || []).forEach(function (mv) {
+        rows2.push([x.name, moveName(mv), mv.keys, mv.frame, mv.e, mv.rec, mv.uses, mv.landed, mv.damage, mv.guarded, mv.punished, mv.blows, mv.isCatch ? 1 : 0]);
+      }); });
+      download("moves.csv", rows2);
+    }}}, [t("csvMoves")]);
+    var oppRows = opponents.map(function (o) {
+      // (Frame -1: the other moves against this opponent, summed.)
+      var list2 = (versusOf[f.id + " " + o.y.id] || []).slice().sort(function (a, b) { return b.damage - a.damage; });
+      var total = 0;
+      list2.forEach(function (x) { total += x.damage; });
+      var top = list2.filter(function (x) { return x.e >= 0; })[0];
+      var mv = top ? moveIndex[moveKey(f.id, top.r, top.e)] : null;
+      return {y: o.y, mu: o.mu, top: top && mv ? moveName(mv) : "—", share: top && total ? top.damage / total : 0};
+    });
+    var oppColumns = [
+      {label: t("oName"), cls: "l", value: function (o) { return o.y.name.toLowerCase(); }, show: function (o) { return nameLink(o.y); }},
+      {label: t("oRate"), value: function (o) { return o.mu.p; }, show: function (o) { return rateBar(o.mu.p, o.mu.m); }},
+      {label: t("oGames"), value: function (o) { return o.mu.games; }, show: function (o) { return num(o.mu.games); }},
+      {label: t("oTop"), cls: "l", value: function (o) { return o.top; }},
+      {label: t("oShare"), value: function (o) { return o.share; }, show: function (o) { return o.share ? pct(o.share, 0) : "—"; }}
+    ];
+    var unused = unusedOf[f.id] || [];
+    var otherDealt = f.dealt - dealt;
+    return el("div", null, [
+      el("div", {"class": "tools"}, [el("label", null, [t("pick") + " "]), select]),
+      el("div", {"class": "cards"}, [
+        el("div", {"class": "card"}, [el("b", null, [pct(f.p)]), el("span", null, [t("cRate") + " ±" + num(f.m * 100, 1)])]),
+        el("div", {"class": "card"}, [el("b", null, [num(f.wins) + " / " + num(f.draws) + " / " + num(f.losses)]), el("span", null, [t("cWins") + " / " + t("cDraws") + " / " + t("cLosses")])]),
+        el("div", {"class": "card"}, [el("b", null, [num(f.dealt / Math.max(1, f.games))]), el("span", null, [t("cDealt")])]),
+        el("div", {"class": "card"}, [el("b", null, [num(f.taken / Math.max(1, f.games))]), el("span", null, [t("cTaken")])])
+      ]),
+      el("div", {"class": "row2"}, [
+        el("div", null, [el("h3", null, [t("easiest")]), list(byRate.slice(0, 5))]),
+        el("div", null, [el("h3", null, [t("hardest")]), list(byRate.slice(-5).reverse())])
+      ]),
+      el("h2", null, [t("moves")]),
+      el("div", {"class": "tools"}, [csv]),
+      el("div", {"class": "panel"}, [table(columns, moveRows, 1)]),
+      otherDealt > 0 ? el("p", {"class": "note"}, [t("other") + ": " + num(otherDealt) + " (" + pct(otherDealt / Math.max(1, f.dealt)) + ")"]) : null,
+      el("h2", null, [t("perOpp")]),
+      el("div", {"class": "panel"}, [table(oppColumns, oppRows, 1)]),
+      el("h3", null, [t("unused")]),
+      unused.length ? el("ul", {"class": "plain"}, unused.map(function (u) { return el("li", null, [(u.keys ? u.keys + " " : "") + (u.frame || t("frame")) + " (" + u.e + ")"]); }))
+        : el("p", {"class": "muted"}, [t("none")])
+    ]);
+  }
+
+  function drawsView() {
+    var rows = D.p.filter(function (r) { return r[5] > 0; }).map(function (r) {
+      return {a: byId[r[0]], b: byId[r[1]], games: r[2], draws: r[5], stalls: r[6], limits: r[7], both: r[5] - r[6] - r[7]};
+    }).filter(function (r) { return r.a && r.b; });
+    var columns = [
+      {label: t("dPair"), cls: "l", value: function (r) { return r.a.name + " " + r.b.name; }, show: function (r) { return el("span", null, [nameLink(r.a), " — ", nameLink(r.b)]); }},
+      {label: t("dDraws"), value: function (r) { return r.draws / r.games; }, show: function (r) { return pct(r.draws / r.games) + " (" + num(r.draws) + ")"; }},
+      {label: t("dGames"), value: function (r) { return r.games; }, show: function (r) { return num(r.games); }},
+      {label: t("dStall"), value: function (r) { return r.stalls; }, show: function (r) { return num(r.stalls); }},
+      {label: t("dLimit"), value: function (r) { return r.limits; }, show: function (r) { return num(r.limits); }},
+      {label: t("dBoth"), value: function (r) { return r.both; }, show: function (r) { return num(r.both); }}
+    ];
+    return el("div", null, [el("p", {"class": "muted"}, [t("drawsIntro")]),
+      rows.length ? el("div", {"class": "panel"}, [table(columns, rows, 1)]) : el("p", null, [t("none")])]);
+  }
+
+  function readView() {
+    var items = T[lang].read.map(function (s) {
+      return s.split("{b}").join(aiLabel()).split("{w}").join(meta.weapons ? t("wOn") : t("wOff"))
+        .split("{wd}").join(meta.weapons ? t("wOnD") : t("wOffD"));
+    });
+    return el("div", {"class": "panel"}, items.map(function (s) { return el("p", null, [s]); }));
+  }
+
+  function render() {
+    app.textContent = "";
+    app.appendChild(header());
+    if (!meta.games) { app.appendChild(el("p", null, [t("noData")])); return; }
+    app.appendChild(cards());
+    app.appendChild(tabs());
+    var view = tab === "matrix" ? matrixView() : tab === "fighter" ? fighterView() : tab === "draws" ? drawsView()
+      : tab === "read" ? readView() : rankView();
+    app.appendChild(view);
+    app.appendChild(el("footer", null, [t("footer") + (meta.kit ? " " + meta.kit : "")]));
+    document.title = t("title") + " — " + meta.mod;
+  }
+  document.documentElement.lang = lang;
+  render();
+})();
+</script>
+</body>
+</html>

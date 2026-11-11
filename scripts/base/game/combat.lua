@@ -524,7 +524,7 @@ local function plain_hit(state, p, v, attacker, victim, itr)
         victim.hp = victim.hp - damage
         victim.dark_hp = victim.dark_hp + cdiv(damage, -damage_dark_hp_divisor)
         victim.hp_spent = victim.hp_spent + damage
-        battle.count_damage(state, victim, damage)
+        battle.count_damage(state, victim, damage, attacker, false)
         if counted then
             local owner = state.items[attacker.owner]
             if owner then owner.damage_dealt = owner.damage_dealt + damage end
@@ -717,7 +717,7 @@ local function defended_hit(state, p, attacker, victim, itr)
     victim.hp = victim.hp - damage
     victim.dark_hp = victim.dark_hp + cdiv(damage, -damage_dark_hp_divisor)
     victim.hp_spent = victim.hp_spent + damage
-    battle.count_damage(state, victim, damage)
+    battle.count_damage(state, victim, damage, attacker, true)
     if victim.follow == -1 then
         local owner = state.items[attacker.owner]
         if owner then owner.damage_dealt = owner.damage_dealt + damage end
@@ -919,7 +919,7 @@ local function whirl(state, p, attacker, victim)
             local owner = state.items[attacker.owner]
             if owner then owner.damage_dealt = owner.damage_dealt + 11 end
         end
-        battle.count_damage(state, victim, 11)
+        battle.count_damage(state, victim, 11, attacker, false, true)
         victim.impulse_x = victim.vx / 1.07
         victim.vx = victim.impulse_x
         victim.impulse_z = victim.vz / 1.07
@@ -984,7 +984,7 @@ local function freeze_hit(state, p, v, attacker, victim, itr)
     victim.dark_hp = victim.dark_hp + cdiv(damage, -damage_dark_hp_divisor)
     victim.hp_spent = victim.hp_spent + damage
     if victim.follow == -1 and owner then owner.damage_dealt = owner.damage_dealt + damage end
-    battle.count_damage(state, victim, damage)
+    battle.count_damage(state, victim, damage, attacker, false)
     victim.frame = character_frames.ice
     victim.wait_counter = 0
     sounds.effect(state, victim.x_int, 14)

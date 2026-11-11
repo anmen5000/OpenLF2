@@ -170,7 +170,7 @@ function grab.place_victims(state)
                         target.hit_lag = -3
                         target.hp_spent = target.hp_spent + damage
                         if owner then owner.damage_dealt = owner.damage_dealt + damage end
-                        battle.count_damage(state, target, damage)
+                        battle.count_damage(state, target, damage, holder, false)
                     else
                         target.hp = target.hp + hit.injury
                         target.dark_hp = target.dark_hp + cdiv(hit.injury, damage_dark_hp_divisor)

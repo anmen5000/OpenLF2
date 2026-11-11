@@ -115,11 +115,20 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    pictures (moved to its UI folder, as Sauce's) needs OpenLF2 built from package 56 on; with an older one,
    copy LF2 2.0a's lf2.exe (or a mod's lf2_2.0a.exe, mode Convergence has one) into the mod's folder as
    lf2.exe first.
+10. Fighter balance (package 77): put the mod's .zip (better: <mod>-xoi.zip) next to balance.bat and
+   double-click it. One computer player (XOI) plays both sides of every pair of fighters, on every CPU thread,
+   and counts each fighter's win rate against every other one and what each of its moves brings (how often it
+   is used, lands, is guarded, how much HP it takes off, how often its user is hit in it). Settings at the top:
+   ROUNDS, and TOTAL_GAMES or TOTAL_HOURS; FIGHTERS, EXCLUDE the fighters; BRAIN the player (xoi, smart,
+   classic). Results in balance-<mod>\: report.html (open it in a browser: the ranking, the matchup chart,
+   every move of every fighter) and results.txt, updated after every round. Close the window to pause, run it
+   again to go on; raise TOTAL_GAMES or TOTAL_HOURS to measure more. The numbers only - what to change is the
+   mod maker's to say. (Also on its own, as balance-kit.zip on the guide's page.)
 
-Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch),
+Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch), balance.bat (balance),
 publish.bat (publish; its work is in publish.ps1, the published README comes from publish-README.txt),
 check.bat (check why the game does not open), scripts\ (the game's scripts with the computer players, laid over
 the installed game's), tools\ai-bench\ (the training and measuring jobs), version.txt (which version this kit is).
 The Vietnamese kit's names, for the guide: choi.bat = play.bat, xoi-hoc.bat = train.bat, dau-nhieu.bat =
-measure.bat, xem.bat = watch.bat, xuat-ban.bat = publish.bat, kiem-tra.bat = check.bat; ket-qua.txt = results.txt,
+measure.bat, xem.bat = watch.bat, can-bang.bat = balance.bat, xuat-ban.bat = publish.bat, kiem-tra.bat = check.bat; ket-qua.txt = results.txt,
 danh-sach.txt = fighters.txt, <mod>-xoi-truoc.zip = <mod>-xoi-previous.zip, kiem-tra.txt = check.txt.

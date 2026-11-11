@@ -30,3 +30,4 @@ module=names|names.lua
 module=list|list.lua
 module=record|record.lua
 module=train|train.lua
+module=balance|balance.lua
