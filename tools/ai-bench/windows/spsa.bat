@@ -15,6 +15,9 @@ rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73) - hay d
 rem chay lai file nay - cac vong da xong
 rem duoc giu, va ca phan da danh cua vong dang do (tru vai cap cuoi). Muon chinh lai tu dau: xoa thu muc spsa (hoac
 rem doi HAT_GIONG va dat ten khac cho thu muc cu).
+rem Chinh tiep mot dot da xong (tu goi 75), vi du sau khi cap nhat game va bo XOI: tang VONG (60 len 80 la them 20
+rem vong) roi chay lai file nay. Cac vong them bat dau tu cac so cua vong cuoi, buoc dich nho dan tiep nhu cu, va dung
+rem scripts cua bo XOI nay (AI ban moi); cuoi dot kiem tra va goi so lai.
 rem ============ CHINH O DAY ============
 rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
 set "GAME="
@@ -144,6 +147,19 @@ set /a K_NOM=GIAY_VONG/2, TONG=VONG*(GIAY_VONG/2)
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 
 if not exist "%LV%" mkdir "%LV%"
+rem Chinh tiep mot dot da xong (tu goi 75): dot truoc da kiem tra hay da goi so, ma VONG bay gio lon hon so vong da
+rem danh. Cac vong them dung scripts cua bo XOI nay (AI ban moi - mot dot dang do thi giu scripts cua no cho toi het),
+rem va cuoi dot kiem tra, goi so lai: bo ban sao scripts, phan kiem tra va dau "da goi" cua dot truoc.
+set "DA_XONG="
+if exist "%LV%\kiem-tra\tong.txt" set "DA_XONG=1"
+if exist "%LV%\da-goi.txt" set "DA_XONG=1"
+if defined DA_XONG if not exist "%LV%\vong-%VONG%\start-sau.lua" (
+  echo Dot truoc da xong, VONG=%VONG% lon hon so vong da danh: chinh tiep cac vong con lai voi scripts cua bo XOI nay.
+  if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
+  if exist "%LV%\kiem-tra" rmdir /s /q "%LV%\kiem-tra"
+  del /q "%LV%\da-goi.txt" 2>nul
+  >>"%LV%\thoi-gian.txt" echo Chinh tiep dot da xong: VONG=%VONG%, scripts cua bo XOI hien tai
+)
 rem Scripts cua game da cai, cap nhat bang scripts cua goi (goi co the chi chua file da doi): khoi cai lai game.
 if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   for %%g in ("%GAME%") do set "CAI=%%~dpgscripts"

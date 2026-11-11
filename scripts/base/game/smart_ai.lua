@@ -427,8 +427,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 43
+smart.version = 44
 smart.history = {
+    {44, "2026-11-11", "What the draws of a random move leave, known for what it is: the project owner's follow-up on Nya's cards in Sauce's pack (the crystal that stops thrown things and the heart were not weighed). Measured game by game — the bench's card watch starts every game from its own point of the random sequence, so two versions play the same game until one of them chooses otherwise: 1,200 games of XOI's Nya against Sauce's AI, 15 opponents. (1) The spade. Drawn, it leaves her changed (a catch on a hidden copy of herself, cpoint throwinjury -1), and D+J+A then changes her back with a burst about her (her frame 245: no MP, a start nothing touches). Version 43 drew it and never let it off: 0 bursts in 1,200 games, the games with a spade its worst (15% won). The change back is learned as the move of a fighter that has changed (analysis.back_move, apart from the moves its reach and worth are judged by) and chosen like any other: 143 bursts, 67 HP each, those games 21% won. (2) The diamond. Her crystal breaks every plain ball of the enemy's as it appears (a blow over the whole stage that touches no fighter). Learned by trying: after a draw that leaves things standing, the game's first plain ball is put into the copy twice, 600 pixels before the fighter and as far behind it, off its line; what breaks both at once, with a blow that wide, is a shield, kept with the frames it is up in (smart.shield_kit) — not a thing with a body that a ball runs into (Crimson's shadows in mode Convergence, which a single ball thrown from in front took for one). While a shield of a fighter's side stands, plain balls land nowhere on that fighter (move_hits): those flying at it are no threat, the enemy's ball moves no danger, and a fighter facing an enemy's shield throws none. (3) The crystal holds a hidden copy of Nya, a character without a body and with 500 HP, for as long as it stands. It is no fighter but a thing of its holder's (smart.shield_kit.prop): up to version 43 it was a target like any other (nearer than Nya, it was the one the fighter went for), and with Nya beaten and her crystal standing the round went on for good — 7 of 1,120 games of XOI's fighters against Sauce's Nya ran to the bench's three minutes so. It is no target now, and with nothing else left to fight its holder is walked up to and struck until it breaks, as Sauce's own computer players do (smart.shield_kit.clear). (4) The heart gives back 104 HP of the HP that can come back, and did so already: 110 HP a game in the games with a heart, a draw coming once the fighter has been hurt. Weighing a draw by what its kinds are worth at the moment (the heal by the HP to come back, the shield by the enemy's balls, the burst, the strikes) was tried against version 43's plain rule (the target beyond 250 pixels, twice a match): 411 wins to 415 over the same games, no better, so the plain rule stays, and so does its distance (from 200 pixels 418 to 417, from 330 pixels 379). (5) A brain's expectation looks 45 frames ahead and is no longer weighed into what comes later than that (a draw, a late blow the enemy is put into or walks into): with the project owner's numbers and brain for Sauce's pack 435 wins to 423. Results: XOI's Nya against Sauce's AI 406 of 1,200 with version 43, 418 now (HP margin +9.7 a game), with the owner's numbers and brain 409 and 435; XOI's fighters against Sauce's Nya 798 of 1,120 and 801, none left standing by a crystal at the three minutes. Seven other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell, Dragon Ball Super: 824 games of XOI against itself) play as with version 43, game for game."},
     {43, "2026-11-11", "Long-term value, from the project owner's look at Nya in Sauce's pack: the AI weighed a move by what its blows do at once, and missed what comes later or lasts. (1) A move that shows nothing on the learning's untouchable dummy is tried again on one it can touch, at four distances and from six points of the game's random sequence: a swap of places (Nya's D>J, hidden helpers that grab the enemy and put it where she stood) is learned as a teleport with its reach, 450 pixels; a move of random draws as the share of its draws that strike (her coin, D^J, 0.33: it bursts by her or turns into a whirlwind that stays; her cards, D+J+A, 0.17), with the frames its objects go through only in the striking draws and whether the others leave things standing. (2) A late blow about the fighter that knocks down - the coin bursts 40 frames on, she is free at 19 - is weighed, when it does not land on the enemy's way, as the space it holds about her (zone_sure: 2.5 of its worth): thrown 5 times in 300 games before, where Sauce's own player throws it whenever the enemy is at a distance. Only a mine about the fighter (within 150 pixels, mine_reach) that knocks down: Kakashi's Uj in Naruto: The Setting Dawn 2.6 (fall 2) won 20 of 128 games against version 42 weighed so instead of 74, Shino's insects (out to 331 pixels) lost 16 and 20 of 384 in 2.4 and 2.6; Stancher's Dj in mode Convergence, a burst about him, won 109 of 256 games against version 42 weighed so, 75 before. (3) With a swap at hand, the blow brought onto the enemy: once the coin is the bursting one (its frames say so) and the enemy within the swap's reach, the swap puts the enemy on her spot as it bursts, about 107 HP when it fires. (4) The swap as a way out of a thing flying at her with its thrower within reach, counted as a blow struck back: a swap tried against Dennis's ball put him in its way and his own ball struck him; out of reach the swap is what it does with no one to take, its untouchable frames. (5) Her cards, a move of lasting draws (a heal, a crystal that breaks thrown things, bouncing balls, a burst) never used before: drawn at a fixed score (draw_score 6) with the target beyond 250 pixels, twice a match at most, as Sauce's player draws them. (6) The threat forecast follows a thing's next 999 to its frame 0, as the game does - it stopped there: Kaktena's trap in that pack, quiet in frames that go on by 999 into its biting ones, was not foreseen (its bites, about one a game, stay: they come where no step clears it in time). XOI's Nya against Sauce's AI, 15 opponents, 1,200 games: 293 won with version 42, 355 now (the coin as space alone 333; Louis 1 to 27 of 80, Deep 5 to 14, Rudolf 31 to 42). The five mods against version 42: 1,096 to 1,088 of 2,240 games; the ten originals against Sauce's Kaktena 170 of 400 (168 without the forecast's 999)."},
     {42, "2026-11-11", "Momentum, left to the tuning: the HP the fighter dealt its target lately less the HP it took, each fading by half every 60 frames, over 60 HP (at most 1 either way), can make it bolder ahead (momentum_aggression on the boldness; momentum_threshold_up and momentum_counter_up off the score a move needs and the price of the target's counter) or warier behind (momentum_threshold_down and momentum_counter_down on them, momentum_keep_down on the danger it keeps away from) - six numbers SPSA tunes with the others, 88 now, all 0 by default, so that the fighter plays as version 41 frame for frame (Sauce's pack, the ten originals both ways, 180 games, and KT-LF2: the same results game for game). Tried by hand in November 2026 - bolder ahead, warier behind, both, the lead in the match instead, only while the target is free - none beat the fighter without it (321 of 720 against Sauce's AI; the best 326, not confirmed on fresh seeds), Woody's and Freeze's losses eating Henry's and Davis's gains: a mod's own tuning can find what it wants, either way. And the kit's hoc-sau.bat (brain.bat) takes DOI_THU=xoi (OPPONENT=xoi): XOI records against itself in a pack with AI scripts of its own too - those of most mods are far weaker than Sauce's (Dragon Ball Super's loses most of its games to XOI), and a brain learned against them only learns to beat them. The project owner's first full hoc-sau run on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%."},
     {41, "2026-11-10", "A brain: a small network beside the hand-made score, learned from XOI's own games as chess engines' NNUE networks are learned from theirs. Before every move XOI works out a score by its rules (attack_score: the blow's worth, its cost, how likely the target answers first); the brain, given 58 numbers of the situation and the move (distances, heights, facing, HP, MP, speeds, weapons, ten state slots each for the fighter and the target, the target's wait and blink, frames since the last blow, positions, the move's hit time and hand-made score, its damage, MP, reach, length and kinds; brain_kit.features), predicts what the move will bring — HP dealt minus HP taken over the 45 frames after its start — and XOI moves its score halfway to that (tune.brain_weight 0.5). A brain is text (XOI_BRAIN lines: 58 inputs, 48 hidden units, the inputs' mean and spread) that a mod carries as xoi/brain.txt beside its data, as its notes and numbers; the match shows 'brain' beside XOI. The kit's hoc-sau.bat (brain.bat) makes one: rounds of recording (tools/ai-bench/record.lua, every move XOI starts with what came of it, XOI against the pack's own AI scripts where it has them, else against a copy of itself), the records trained inside the game (train.lua, LuaJIT, about 150,000 samples a second), the next round recorded with the brain just learned, then XOI with and without it against the same opponent. Tried on Sauce's pack ('lf2-AI VS and Stage Challenge', its AI the opponent): 55,000 records of 2,000 games gave a network whose predictions go with the outcome at 0.455 where the hand-made score goes at 0.197; with it, the ten original fighters won 368 of 720 games against Sauce's AI (version 40 alone 321), and 216 to 134 of 360 against XOI without it; a second round recorded with that brain (87,000 records in all) 377 of 720. The same brain did nothing for other mods (208 to 231 over four), so a brain is made for one pack. Besides: INSANE! and XOI play at their own levels in a pack with AI scripts of its own — up to version 40 a fighter with a script of its own kept it at those levels too, and in Sauce's pack, whose every fighter has one, the levels named INSANE! and XOI were that AI (the project owner saw its spacing by dashes after a knock-down); the scripts play at CRAZY! and below. And the learning of moves meets a mod built on data tricks (Nya of that pack: a thrown die that bursts into 10 to 60 HP by its face, a coin that turns into a vortex a second later by hidden attacks of kind 8 between her own objects, a swap of places with the enemy): a thrown thing whose burst differs between throws is measured over six throws from different points of the game's random sequence and worth their mean (the die 35 HP, where one throw said 10); a summon of the move's still alive with frames to come is waited for while the move is followed anyway, whatever frames it will reach by way of hits; a jump of position no step accounts for (120 pixels in a tick) is a teleport. XOI's Nya, who threw the die once in 40 games, throws it twice a game, beats Sauce's Nya 32 to 8 (version 40 29 to 11) and still loses to Sauce's Davis and Louis 1 to 39 (Sauce's own Nya wins 29 to 11 against them): her strength is the coin and the swap played together, the enemy swapped into the vortex, and the cards — nothing the data says. One more from his clips: a stream of thrown things (Julian's skull blasts in that pack: five 40-HP balls 3 frames apart for 50 MP, each steered onto the enemy's lane by Sauce's AI) was guarded ball by ball until the guard broke in a corner — met now as a heavy blow is, the ways out before the guard, a move out of their way worth its MP, the jump toward the thrower that clears them in the air and comes down nearer (answer: stream, a thing coming behind the one due or a move throwing several). XOI's Julian against Sauce's Julian 32 to 48 of 80 games (29 to 51 before: as even as that tells; the corner itself is not solved — got up in the lane, he still has no step out of balls steered after him, and the two things tried for it, looking past the blink at the ball landing as it ends and a run at the thrower to roll out of, both lost games, 164 to 153 of 360 against Sauce's AI and 13 to 27 against his Julian). Against Sauce's AI on the ten originals 160 of 360 games (version 40 164 on the same seeds); the five mods against version 40, 1,088 to 1,082 of 2,240: as even as they can tell."},
@@ -644,7 +645,9 @@ local function add_box(list, t, value, frame, area, origin, own, me)
     else base_x, base_y, base_z = origin.x, origin.y, origin.z end
     list[#list + 1] = {t = t, x1 = x - base_x, x2 = x - base_x + area.width, y1 = y - base_y, y2 = y - base_y + area.height,
         z = value.z_int - base_z, zw = zw, injury = area.injury or 0, fall = area.fall or 0, bdefend = area.bdefend or 0,
-        dvx = area.dvx or 0, kind = area.kind, effect = area.effect or 0, own = own, source = value.record.id}
+        dvx = area.dvx or 0, kind = area.kind, effect = area.effect or 0, own = own, source = value.record.id,
+        -- (The blow of a plain ball with a body: what a shield breaks on its way, smart.shield_kit.)
+        ball = not own and value.record.kind == record_kinds.ball and frame.state == states.flying_ball and #frame.bodies > 0 or nil}
 end
 
 -- One frame of the private copy: the match's frame (base/game/match) without what cannot happen there (weapons
@@ -913,7 +916,123 @@ local function strikes_later(record, frame_id, ticks, or_lives)
     return or_lives == true
 end
 
-local function play(record, entry, mp, weapon_record, hp, touch)
+-- Shields (version 44). A thing a move leaves standing may break what is thrown at its fighter: Nya's crystal in
+-- Sauce's pack (the diamond of her cards) carries a blow over the whole stage that touches no fighter (effect 4)
+-- and breaks every plain ball of the enemy's (state 3000, with a body) as it appears, for as long as it stands —
+-- twelve balls, or four blows on the crystal itself. Nothing in a move's own blows says so; learned by trying: once
+-- a draw of a random move has left things standing, the game's first plain ball with a blow of its own is put into
+-- the copy twice — probe_gap pixels before the fighter and as far behind it, probe_depth off its line to either side:
+-- far from the fighter and from each other — and is seen to fly on or to break within probe_ticks frames
+-- (smart.shield_kit.throw; with nothing standing both must fly on: smart.shield_kit.control). Both broken, what
+-- stood there with a blow that wide (smart.shield_kit.wide) is a shield over the whole ground — not a thing with a
+-- body that a ball runs into, nor a wall on one side: Crimson's shadows in mode Convergence, standing before him,
+-- broke a single ball thrown from 250 pixels in front, and were shields to a first version of this. Its records are
+-- remembered by their data, each with the frames a shield is up in (smart.shield_kit.records: {id, frames}; frames_of),
+-- and while one of a fighter's side stands the plain balls thrown at that fighter land nowhere: those flying at it
+-- are no threat (earliest_threat), and those of a move's making strike nothing — the enemy's moves to come as its own
+-- (move_hits).
+smart.shield_kit = {records = {}, probe_gap = 600, probe_depth = 90, probe_ticks = 10, lead = 12}
+
+-- A blow wide enough to reach both spots the balls are put at.
+function smart.shield_kit.wide(area)
+    return (area.width or 0) >= 2 * smart.shield_kit.probe_gap and (area.zwidth or 0) >= smart.shield_kit.probe_depth
+end
+
+-- The frames a shield is up in: those that carry a wide blow of the kind and effect it was seen standing with (in
+-- frame `frame_id`), and those that lead to one within `lead` steps — what it goes through as it breaks a ball or is
+-- struck (the crystal's frames 10 to 13 and 25 to 27, back into its round) —, not those of its end, nor those other
+-- things of the same record are in (the balls of Nya's club make one of the crystal's record, in its frame 79, gone
+-- the frame after).
+function smart.shield_kit.frames_of(record, frame_id)
+    local wide = smart.shield_kit.wide
+    local seen = record.frame(frame_id).interactions
+    local function carries(frame)
+        for _, area in ipairs(frame.interactions) do
+            if wide(area) then
+                for _, other in ipairs(seen) do
+                    if wide(other) and area.kind == other.kind and area.effect == other.effect then return true end
+                end
+            end
+        end
+        return false
+    end
+    local up = {}
+    for id = 0, constants.frame_limit - 1 do
+        local at = id
+        for _ = 0, smart.shield_kit.lead do
+            local frame = record.frame(at)
+            if carries(frame) then up[id] = true; break end
+            local following = abs(frame.next)
+            if following == constants.frame_selectors.return_to_standing then following = frames.standing end
+            if frame.next == 0 or following == at or following >= constants.frame_limit then break end
+            at = following
+        end
+    end
+    return up
+end
+
+-- The thing to throw: {id, frame, speed, the blow, the frame's centre height}, or nil in a game without one.
+function smart.shield_kit.probe_ball(state)
+    if smart.shield_kit.ball ~= nil then return smart.shield_kit.ball or nil end
+    smart.shield_kit.ball = false
+    for _, entry in ipairs(require("base/game/catalog").objects().list) do
+        if entry.kind == record_kinds.ball then
+            local record = objects.record(state, entry.id)
+            for frame_id = 0, 3 do
+                local frame = record and record.frame(frame_id)
+                if frame and not frame.undefined and frame.state == states.flying_ball and #frame.bodies > 0 and (frame.dvx or 0) > 0 then
+                    for _, area in ipairs(frame.interactions) do
+                        if area.kind == attack_kinds.plain and (area.injury or 0) > 0 and area.effect ~= constants.effects.skip_characters then
+                            smart.shield_kit.ball = {id = entry.id, frame = frame_id, speed = frame.dvx, area = area, center_y = frame.center_y}
+                            return smart.shield_kit.ball
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Puts it into the copy at the two spots, one after the other, each flying toward the fighter, and steps on: true
+-- when both broke (or were gone) within probe_ticks frames, false when one flew on, nil when it could not be made.
+function smart.shield_kit.throw(state, me, ball, step, set_keys)
+    local kit = smart.shield_kit
+    -- (Its blow at the height of a standing fighter's middle.)
+    local y = -40 + ball.center_y - ball.area.y - floor(ball.area.height / 2)
+    for side = 1, -1, -2 do
+        local slot = objects.create(state, ball.id, 1, ball.frame, state.items[1].team, me.x_int + side * kit.probe_gap, y,
+            me.z_int + side * kit.probe_depth, -side * ball.speed, 0, 0, side == 1 and facing_left or facing_right)
+        if slot == -1 then return nil end
+        local thrown = state.items[slot]
+        local broke = false
+        for _ = 1, kit.probe_ticks do
+            set_keys(me, nil)
+            step()
+            if state.items[slot] ~= thrown or thrown.record.frame(thrown.frame).state ~= states.flying_ball then
+                broke = true
+                break
+            end
+        end
+        if not broke then return false end
+    end
+    return true
+end
+
+-- With nothing standing both balls must fly on, or the throws tell nothing (once per fighter).
+function smart.shield_kit.control(record)
+    local known = smart.shield_kit.controls and smart.shield_kit.controls[record.data]
+    if known ~= nil then return known end
+    local state, me = new_sandbox(record)
+    state.dummy_hittable = true
+    local ball = smart.shield_kit.probe_ball(state)
+    local flies = ball ~= nil and smart.shield_kit.throw(state, me, ball, function() sandbox_step(state) end, set_keys) == false
+    smart.shield_kit.controls = smart.shield_kit.controls or {}
+    smart.shield_kit.controls[record.data] = flies
+    return flies
+end
+
+local function play(record, entry, mp, weapon_record, hp, touch, probe)
     smart.plays = smart.plays + 1
     local state, me = new_sandbox(record)
     if mp then me.mp = mp end
@@ -950,6 +1069,8 @@ local function play(record, entry, mp, weapon_record, hp, touch)
     local move = {entry = entry, boxes = {}, traj_x = {[0] = 0}, traj_y = {[0] = 0}, traj_z = {[0] = 0},
         vel_x = {[0] = me.vx}, vel_y = {[0] = me.vy}, steer_z = {[0] = 0}, frames = {}, ready = horizon_ticks, mp = 0, hp = 0}
     set_keys(me, nil)
+    -- (Changing back: the fighter has changed — into itself, as Nya's spade leaves her.)
+    if entry.back then me.transform = me.record.id end
     if entry.sequence then
         me.sequences[entry.sequence] = complete
     elseif entry.press then
@@ -1072,7 +1193,10 @@ local function play(record, entry, mp, weapon_record, hp, touch)
                 end
             end
         end
-        if me.record ~= start_record and not move.transform then move.transform = me.record end
+        -- (Changing back ends in the fighter's own record again — the same one, read anew by the game: no form.)
+        if me.record ~= start_record and not move.transform and not (entry.back and me.record.id == start_record.id) then
+            move.transform = me.record
+        end
         if me.record.frame(me.frame).state == states.teleport_to_enemy and not move.teleport then move.teleport = t end
         -- (A jump of position no step accounts for — 120 pixels and more in one tick, no frame's dvx that size — is a
         -- teleport too: a mod's own way of moving a fighter, as Nya's swap of places in Sauce's pack, by hidden
@@ -1100,8 +1224,18 @@ local function play(record, entry, mp, weapon_record, hp, touch)
         if value and spawned[value] and not struck[value] and value ~= armed_item and not weapon_kinds[value.record.kind]
            and value.record.kind ~= record_kinds.character then
             move.left_standing = move.left_standing or {}
-            move.left_standing[#move.left_standing + 1] = {data = value.record.data, frame = value.frame}
+            local left = {data = value.record.data, frame = value.frame, record = value.record}
+            -- (With a blow wide enough for a shield's: smart.shield_kit.)
+            for _, area in ipairs(value.record.frame(value.frame).interactions) do
+                if smart.shield_kit.wide(area) then left.wide = true end
+            end
+            move.left_standing[#move.left_standing + 1] = left
         end
+    end
+    -- (probe: with things left standing, the two balls of smart.shield_kit.)
+    if probe and move.left_standing then
+        local ball = smart.shield_kit.probe_ball(state)
+        if ball then move.probe = smart.shield_kit.throw(state, me, ball, step, set_keys) end
     end
     -- A teleport to the enemy (state 400) lands beside it: in front, or behind when the move turns the fighter
     -- round first (Kuma). Where, against the enemy (the copy's dummy), in the direction the fighter set off in.
@@ -1340,6 +1474,23 @@ local function explore(record, analysis, mode, first_index)
                 end
             end
         end
+        -- Changing back (version 44): D+J+A of a fighter that has changed into another by a catch (cpoint throwinjury
+        -- -1: Rudolf) takes it to frame 245 of its own record, whatever frame it is in on the ground. A mod makes a
+        -- move of that: Nya of Sauce's pack, drawing the spade, catches a hidden copy of herself and "changes" into
+        -- it — herself still, D+J+A now a burst about her with no MP and a start nothing touches (her frame 245),
+        -- kept until used. Learned for a fighter whose own frames change it, as the move of a fighter that has; kept
+        -- when its blows do damage (Rudolf's only changes him back; Keny's in mode Convergence pushes away without
+        -- hurting). (Last: it takes no other move's place.)
+        if data.frames[245] then
+            local ids = sorted_frame_ids(data)
+            for _, frame_id in ipairs(ids) do
+                local frame = data.frames[frame_id]
+                if frame.cpoint and frame.cpoint.throwinjury == -1 then
+                    want({context = "ground", sequence = combo.jump_attack, field = "ja", frame = 245, back = true})
+                    break
+                end
+            end
+        end
     end
     local weapon_record = mode and mode.record or nil
     local index = 1
@@ -1347,6 +1498,7 @@ local function explore(record, analysis, mode, first_index)
         local entry = entries[index]
         engine.set_random_state(random_table(), 0, 0)
         local ok, move = pcall(play, record, entry, nil, weapon_record)
+        if ok and move and entry.back and not (move.first and max(move.damage or 0, move.hit_damage or 0) > 0) then move = nil end
         if ok and move and not move.first and move.mp == 0 and not move.transform and not move.teleport and not move.mode then
             -- Nothing seen with MP full: a move that fills MP (a chakra charge in Naruto: The Setting Dawn) only
             -- shows when there is room for it.
@@ -1375,11 +1527,27 @@ local function explore(record, analysis, mode, first_index)
             local found, reach, best_share
             local good, bad = {}, {} -- (the frames of its objects in the draws that showed a blow, and in the others)
             local lasting = false -- (a draw that struck nothing but left things of its making standing)
-            for _, gap in ipairs({150, 250, 350, 450}) do
+            -- (At the first distance, with things left standing, two balls are put far off after the draw: what broke
+            -- them both is a shield, smart.shield_kit. Six draws more when the first six differed, left things
+            -- standing, and none of them a shield: Nya's four cards came 3, 1, 5 and 3 times in twelve draws.)
+            local shields, stood, drawn_kind, varied = {}, false, nil, false
+            local function probed(again)
+                local left = again.left_standing
+                if left then stood = true end
+                local kind = tostring(again.first) .. "/" .. tostring(again.self_heal) .. "/" .. (left and #left or 0) .. "/" .. (left and left[1].record.id or 0)
+                if drawn_kind and kind ~= drawn_kind then varied = true end
+                drawn_kind = drawn_kind or kind
+                if again.probe == true then
+                    for _, left in ipairs(again.left_standing) do
+                        if left.wide then shields[left.record] = left.frame end
+                    end
+                end
+            end
+            for gap_index, gap in ipairs({150, 250, 350, 450}) do
                 local shown, first_seen = 0, nil
                 for _, start in ipairs({0, 7, 13, 29, 41, 53}) do
                     engine.set_random_state(random_table(), start, 0)
-                    local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap)
+                    local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap, gap_index == 1)
                     if ok_again and again and not again.transform
                        and (again.teleport or (again.first and max(again.damage or 0, again.hit_damage or 0) > 0)) then
                         shown = shown + 1
@@ -1388,6 +1556,14 @@ local function explore(record, analysis, mode, first_index)
                     elseif ok_again and again then
                         for key in pairs(again.object_frames or {}) do bad[key] = true end
                         if again.left_standing then lasting = true end
+                    end
+                    if ok_again and again and gap_index == 1 then probed(again) end
+                end
+                if gap_index == 1 and stood and varied and next(shields) == nil then
+                    for _, start in ipairs({3, 17, 23, 37, 47, 59}) do
+                        engine.set_random_state(random_table(), start, 0)
+                        local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap, true)
+                        if ok_again and again then probed(again) end
                     end
                 end
                 if first_seen then
@@ -1422,6 +1598,13 @@ local function explore(record, analysis, mode, first_index)
                 end
                 found.object_frames = nil
                 move = found
+            end
+            -- (The shields seen, each with the frames it is up in — where the balls fly on with nothing standing.)
+            if next(shields) ~= nil and smart.shield_kit.control(record) then
+                for shield, frame_id in pairs(shields) do
+                    smart.shield_kit.records[shield.data] = {id = shield.id, frames = smart.shield_kit.frames_of(shield, frame_id)}
+                end
+                move.shield = true
             end
         end
         -- In a mode, a key that changes nothing (the fighter goes on round its resting frames) is no move.
@@ -1497,8 +1680,15 @@ local function explore(record, analysis, mode, first_index)
                     move.mp = max(0, move.mp - floor(mode.drain * resting + 0.5))
                 end
             end
-            move.index = first_index + #analysis.moves
-            analysis.moves[#analysis.moves + 1] = move
+            if entry.back then
+                -- (The change back is a move only of a fighter that has changed: kept apart from the others, which
+                -- are what the fighter can do as it is and what its reach is judged by; setup_kit.moves_of.)
+                move.index = 0
+                analysis.back_move = move
+            else
+                move.index = first_index + #analysis.moves
+                analysis.moves[#analysis.moves + 1] = move
+            end
             if entry.chain then
                 local part = continuation(data, move)
                 if part then
@@ -1516,7 +1706,7 @@ local function explore(record, analysis, mode, first_index)
             end
         end
         local explored = move or guard_move
-        if ok and explored then
+        if ok and explored and not entry.back then
             -- Pressing attack, jump or defend in one of its frames continues into another move: that move from
             -- the frame (when the fighter is already there) and the whole sequence from this move's start. A frame
             -- with a pick-up zone, in a move that laid down an item, is tried with attack as well (pick-up).
@@ -2477,6 +2667,8 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
         if dx < move.reach_x1 - 150 or dx > move.reach_x2 + 150 then return nil end
         if abs(victim.z_int - az) > move.reach_z + 60 then return nil end
     end
+    -- (A shield of the victim's side standing: the move's plain balls break as they appear, smart.shield_kit.)
+    local shielded = smart.shield_kit.list and smart.shield_kit.guards(victim)
     local last_n, px, py, pz = -1, 0, 0, 0
     for index = 1, #boxes do
         local box = boxes[index]
@@ -2486,7 +2678,7 @@ local function move_hits(attacker, face, move, from_t, victim, vframe, victim_at
         -- A move in progress hits already in this frame's combat (k = 0); one started now, from its first frame.
         -- (What the move spawns counts from its record until it is in the world — it spawns after the frame's
         -- control, so at the spawning step itself too; from the next, its own frames are followed instead.)
-        if k >= (from_t > 0 and 0 or 1) and (box.own or box.spawn >= from_t) then
+        if k >= (from_t > 0 and 0 or 1) and (box.own or box.spawn >= from_t) and not (shielded and box.ball) then
             -- (n: the steps both take from now until this blow.)
             local n = k + lag
             local ox, oy, oz
@@ -2551,6 +2743,39 @@ end
 -- are with the move families below, lesson_kit.find and after).
 local lesson_kit = {margin_step = 3, margin_cap = 9, fails = 2, fail_share = 0.5, min_damage = 5, window = 24}
 
+-- The shields standing now (smart.shield_kit), looked up as a player's turn starts (smart.control): its list, or none.
+function smart.shield_kit.look(state)
+    local kit = smart.shield_kit
+    kit.list, kit.state = nil, state
+    if next(kit.records) == nil then return end
+    for slot = 0, constants.item_slots - 1 do
+        local value = state.items[slot]
+        local known = value and kit.records[value.record.data]
+        if known and known.frames[value.frame] and value.hp > 0 and value.record.kind ~= record_kinds.character then
+            kit.list = kit.list or {}
+            kit.list[#kit.list + 1] = value
+        end
+    end
+end
+-- Whether one of them is of `value`'s side: the plain balls thrown at it break on their way.
+function smart.shield_kit.guards(value)
+    local kit = smart.shield_kit
+    if not value.team then return false end
+    for _, shield in ipairs(kit.list) do
+        if not hostile(kit.state, value, shield) then return true end
+    end
+    return false
+end
+-- A character held as an item, in a frame without a body, is no fighter but a thing of its holder's: its holder, or
+-- nil for a fighter. (In Sauce's pack Nya's crystal holds a hidden copy of her — her frame 380, state 9997, HP 500 —
+-- for as long as it stands: no blow touches it, it keeps the round going once she is beaten, and it is what Sauce's
+-- own computer players walk up to and strike, breaking the crystal beside it. Up to version 43 it was a target like
+-- any other: nearer than Nya, it was the one the fighter went for.)
+function smart.shield_kit.prop(state, value)
+    if value.weapon >= 0 or #value.record.frame(value.frame).bodies > 0 then return nil end
+    return objects.lookup(state, value.holder or -1) or nil
+end
+
 -- The earliest hit on `self` within `horizon` frames, when it stays where it is or moves by plan(k) -> dx, dy, dz
 -- (in its present frame, or in frame_at(k) when given): frames, box, source. Enemies' moves in progress (answered
 -- once they have run `reaction` frames) and flying attacks.
@@ -2588,7 +2813,10 @@ local function earliest_threat(state, index, self, horizon, plan, reaction, cont
                     end
                 end
             elseif abs(value.x_int - sx) < 1200 and abs(value.z_int - sz) < 300
-                   and not resting_states[value.record.frame(value.frame).state] and not (value.weapon < 0) then
+                   and not resting_states[value.record.frame(value.frame).state] and not (value.weapon < 0)
+                   -- (Not a plain ball while a shield of ours stands: it breaks on its way, smart.shield_kit.)
+                   and not (value.record.kind == record_kinds.ball and value.record.frame(value.frame).state == states.flying_ball
+                       and #value.record.frame(value.frame).bodies > 0 and smart.shield_kit.list and smart.shield_kit.guards(self)) then
                 -- Something flying (not a weapon lying on the ground or held in a hand: a held one strikes as
                 -- its holder's move): the attack boxes of its frames to come, carried along by its speed.
                 local record = value.record
@@ -2832,6 +3060,10 @@ local function can_start(self, frame, fstate, move)
         return fstate == states.standing or fstate == states.walking
     end
     if entry.parent then return frame.hits[entry.key] == entry.frame end
+    -- (Changing back: a fighter that has changed, on the ground, in the frames that take a D-sequence.)
+    if entry.back then
+        return self.transform ~= -1 and self.y_int == 0 and (fstate == states.standing or fstate == states.walking)
+    end
     if entry.sequence then
         if self.weapon == record_kinds.heavy_item then return false end
         -- D+J+A of a transformed fighter changes it back instead.
@@ -3038,7 +3270,8 @@ local function enemy_reach(context, other, self, horizon, lock, plan, frames_at)
     local steps = (lock == 0 and (ostate == states.standing or ostate == states.walking)) and tune.enemy_steps or 0
     local walk = steps > 0 and ((other.record.movement or {}).walking_speed or 4) or 0
     local virtual = steps > 0 and {x_int = other.x_int, y_int = other.y_int, z_int = other.z_int, vx = 0, vy = 0, facing = other.facing} or nil
-    for _, move in ipairs(analysis.moves) do
+    -- (An enemy that has changed has its change back as well: Nya's burst, the spade drawn.)
+    for _, move in ipairs(setup_kit.moves_of(analysis, starter)) do
         if move.first and move.first <= horizon and (not best or move.first < best) and can_start(starter, oframe, ostate, move) then
             local own_face = turns(move) and face or (other.facing == facing_right and 1 or -1)
             local k, box = move_hits(other, own_face, move, 0, self, vframe, self_at, best and best - 1 or horizon, plan ~= nil)
@@ -4138,6 +4371,21 @@ function setup_kit.swap_move_of(analysis)
     return analysis.swap_move or nil
 end
 
+-- The moves `value` can choose from: those of its analysis, and for a fighter that has changed (transform set: Nya
+-- with the spade drawn, in Sauce's pack) the change back with them (analysis.back_move, learned in explore).
+function setup_kit.moves_of(analysis, value)
+    local back = analysis.back_move
+    if not back or value.transform == -1 then return analysis.moves end
+    local list = analysis.moves_back
+    if not list then
+        list = {}
+        for position, move in ipairs(analysis.moves) do list[position] = move end
+        list[#list + 1] = back
+        analysis.moves_back = list
+    end
+    return list
+end
+
 -- The objects of set-up kinds that `self` has standing now (setup_kit.learn), each with the frames until it can
 -- answer and until it no longer can; nil for a fighter without set-ups. (Worked out once a frame.)
 function setup_kit.standing(context, self, analysis)
@@ -4250,7 +4498,7 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local standing = setup_kit.standing(context, self, analysis)
     if standing and #standing == 0 then standing = nil end
     local swap = setup_kit.swap_move_of(analysis)
-    for _, move in ipairs(analysis.moves) do
+    for _, move in ipairs(setup_kit.moves_of(analysis, self)) do
         local entry = move.entry
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
            and not (excluded and excluded[move]) and can_start(self, frame, fstate, move) then
@@ -4337,13 +4585,17 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 if alone then score = score * setup_kit.alone end
                 if flip_risk > 0 and t >= descent then score = score * (1 - flip_risk) end
                 -- (A brain's expectation of the move here, weighed with the score; the score itself kept for the
-                -- records, brain_kit.hand.)
+                -- records, brain_kit.hand. Not for what a move brings later than a brain looks, the 45 frames after its
+                -- start — the things a draw leaves, a late blow the enemy is put into or walks into: with the project
+                -- owner's brain for Sauce's pack, XOI's Nya won 435 of 1,200 games against Sauce's AI so, 423 weighed.)
                 local brain = context.brain
                 if brain and score > 0 then
                     local kit = smart.brain_kit
                     kit.hand[move] = score
-                    local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm)) * 100
-                    score = score + tune.brain_weight * (expected - score)
+                    if not drawn and not combo then
+                        local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm)) * 100
+                        score = score + tune.brain_weight * (expected - score)
+                    end
                 end
                 if score > best_score then best, best_t, best_score = move, combo or t, score end
             end
@@ -4393,6 +4645,7 @@ local function starts_airborne(self, move, air_frame)
         return entry.press == "attack" and not entry.chain and memory and memory.held_record ~= nil
             and memory.held_record.data == entry.mode.record.data and self.weapon ~= record_kinds.heavy_item
     end
+    if entry.back then return false end
     if entry.sequence then
         if self.weapon == record_kinds.heavy_item then return false end
         if entry.field == "ja" and self.transform ~= -1 then return false end
@@ -4642,12 +4895,68 @@ local function worth_the_risk(memory, score, t, damage)
     return score * (1 - chance) - chance * (damage or 0) * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
 end
 
+-- Nothing left to fight while the round goes on: an enemy that is no fighter (smart.shield_kit.prop) still counts as
+-- alive. What holds it is walked up to and struck with the blow that costs least, until it breaks — as Sauce's own
+-- computer players do with Nya's crystal. (Up to version 43 the fighter stood by for good: Nya beaten and her crystal
+-- standing, 7 of 1,120 games of XOI's fighters against Sauce's Nya ran to the bench's three minutes.) True when
+-- there is such a holder.
+function smart.shield_kit.clear(state, self, frame, fstate, memory, context)
+    local holder
+    for slot = 0, constants.item_slots - 1 do
+        local value = state.items[slot]
+        if value and value ~= self and value.hp > 0 and value.record.kind == record_kinds.character and hostile(state, self, value) then
+            local held_by = smart.shield_kit.prop(state, value)
+            if held_by and #held_by.record.frame(held_by.frame).bodies > 0 then holder = held_by; break end
+        end
+    end
+    if not holder then return false end
+    if self.y_int ~= 0 then return true end
+    local dx, dz = holder.x_int - self.x_int, holder.z_int - self.z_int
+    if fstate == states.running then
+        -- (A run is stopped near it, or when it leads away: the key against the run.)
+        if abs(dx) < 120 or (dx > 0) ~= (self.facing == facing_right) then press(self, self.facing == facing_right and "left" or "right") end
+        memory.note = "to holder"
+        return true
+    end
+    local hframe = holder.record.frame(holder.frame)
+    local function at() return holder.x_int, holder.y_int, holder.z_int end
+    local toward = dx >= 0 and 1 or -1
+    -- (The move that lands on it for the least MP — a punch, a swing of what is in hand —, the soonest of those.)
+    local best
+    for _, move in ipairs(context.analysis_of(self).moves) do
+        local entry = move.entry
+        if move.first and entry.context == "ground" and not entry.parent and not entry.chain and not move.transform and not move.mode
+           and not move.teleport and (not best or move.mp < best.mp or (move.mp == best.mp and move.first < best.first))
+           and can_start(self, frame, fstate, move) then
+            local own_face = turns(move) and toward or (self.facing == facing_right and 1 or -1)
+            if move_hits(self, own_face, move, 0, holder, hframe, at, 30, nil, nil, true) then best = move end
+        end
+    end
+    if best then
+        -- (No move against a fighter: none of the bench's records of a move started, smart.on_start.)
+        local hook = smart.on_start
+        smart.on_start = nil
+        start(self, best, holder)
+        smart.on_start = hook
+        memory.note = "strike holder"
+        return true
+    end
+    -- (Onto its line and up to it — the blow is struck from where it first lands —, and a step off it again from on
+    -- top of it.)
+    if abs(dz) > 3 then press(self, dz > 0 and "down" or "up") end
+    if abs(dx) > 16 then press(self, dx > 0 and "right" or "left") else press(self, dx > 0 and "left" or "right") end
+    memory.note = "to holder"
+    return true
+end
+
 local function choose_target(state, index, self, memory)
     local items = state.items
     local best, best_score
     for other = 0, constants.item_slots - 1 do
         local value = items[other]
-        if value and other ~= index and value.hp > 0 and value.record.kind == record_kinds.character and hostile(state, self, value) then
+        -- (Not what is no fighter: smart.shield_kit.prop.)
+        if value and other ~= index and value.hp > 0 and value.record.kind == record_kinds.character and hostile(state, self, value)
+           and not smart.shield_kit.prop(state, value) then
             local distance = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int) * 2
             if other == memory.target then distance = distance - 80 end
             local tstate = value.record.frame(value.frame).state
@@ -4698,7 +5007,8 @@ local function nearest_enemy(state, self)
     local best, distance
     for other = 0, constants.item_slots - 1 do
         local value = state.items[other]
-        if value and value ~= self and value.record.kind == record_kinds.character and value.hp > 0 and value.team ~= self.team then
+        if value and value ~= self and value.record.kind == record_kinds.character and value.hp > 0 and value.team ~= self.team
+           and not smart.shield_kit.prop(state, value) then
             local next = abs(value.z_int - self.z_int) + abs(value.x_int - self.x_int)
             if not distance or next < distance then best, distance = value, next end
         end
@@ -4715,7 +5025,7 @@ local function escape_move(state, index, self, frame, fstate, context, level, th
     local enemy = source.record.kind == record_kinds.character and source or nearest_enemy(state, self)
     if not enemy then return nil end
     local best, best_value, best_strikes
-    for _, learned in ipairs(analysis.moves) do
+    for _, learned in ipairs(setup_kit.moves_of(analysis, self)) do
         local move = learned
         local entry = move.entry
         -- (A teleport learned on a dummy it could touch — a swap of places by helpers that grab the enemy, Nya's D>J in
@@ -5385,6 +5695,7 @@ function smart.control(state, index)
     local brain = self.brain
     local xoi = (brain and brain:sub(1, 3) == "xoi") or (brain == nil and level.notes) or false
     use_numbers(xoi and xoi_numbers or insane_numbers)
+    smart.shield_kit.look(state)
     local memory = self.smart_memory
     if not memory then
         memory = {target = nil, dodge_dz = 0}
@@ -5746,7 +6057,11 @@ function smart.control(state, index)
         end
         return
     end
-    if not target then return end
+    if not target then
+        -- (No enemy left to fight: what keeps the round going is struck, smart.shield_kit.clear.)
+        if free then smart.shield_kit.clear(state, self, frame, fstate, memory, context) end
+        return
+    end
 
     local tframe = target.record.frame(target.frame)
     local target_lock = target_lock_of(context, target, tframe)

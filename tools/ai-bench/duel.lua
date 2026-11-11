@@ -412,6 +412,8 @@ function duel.run(config)
                 end
             end
             show(analysis.moves)
+            -- (The change back of a fighter that has changed, a move apart: its index is 0.)
+            if analysis.back_move then show({analysis.back_move}) end
             for _, mode in pairs(analysis.modes or {}) do
                 local armed = smart.internals.armed_analysis(record, mode.record, #analysis.moves + 1)
                 local mused = 0

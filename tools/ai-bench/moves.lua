@@ -23,7 +23,7 @@ function moves.run(config)
                         move.teleport and (" teleport@" .. move.teleport) or "", move.transform and " transform" or "", (move.charge and (" charge " .. move.charge) or "") .. (move.hit_damage and (" hit " .. move.hit_damage) or ""),
                         (move.mode and string.format(" MODE item %d code %d rest %d", move.mode.record.id, move.mode.code, move.mode.frame) or "")
                         .. (move.share and string.format(" share %.2f", move.share) or "") .. (move.teleport_reach and (" reach " .. move.teleport_reach) or "")
-                        .. (move.lasting and " lasting" or "") .. (move.branch_frames and " branch" or "")))
+                        .. (move.lasting and " lasting" or "") .. (move.branch_frames and " branch" or "") .. (move.shield and " shield" or "")))
                     if config.boxes and move.mode then
                         for _, box in ipairs(move.boxes) do
                             engine.log(string.format("%s    box t%d own=%s kind %d inj %d fall %d x %d..%d y %d..%d z %d frame %s", indent, box.t, tostring(box.own) .. "(" .. tostring(box.source) .. ")", box.kind, box.injury, box.fall, box.x1, box.x2, box.y1, box.y2, box.z, tostring(move.frames[box.t])))
@@ -32,6 +32,8 @@ function moves.run(config)
                 end
             end
             show(analysis.moves, "  ")
+            -- (The change back of a fighter that has changed — a move apart, version 44.)
+            if analysis.back_move then show({analysis.back_move}, "  back: ") end
             -- Its modes (an item of its own making in hand): what it does in each.
             for _, mode in pairs(analysis.modes or {}) do
                 local armed = smart.internals.armed_analysis(record, mode.record, #analysis.moves + 1)
@@ -42,6 +44,24 @@ function moves.run(config)
                 show(armed.moves, "     ")
             end
         end
+    end
+    -- The shields learned on the way (version 44: what a move leaves standing that breaks the plain balls thrown at
+    -- its fighter), each with the frames it is up in.
+    local shields = {}
+    for _, known in pairs(smart.shield_kit.records) do shields[#shields + 1] = known end
+    table.sort(shields, function(a, b) return a.id < b.id end)
+    for _, known in ipairs(shields) do
+        local ids = {}
+        for frame_id in pairs(known.frames) do ids[#ids + 1] = frame_id end
+        table.sort(ids)
+        local parts, i = {}, 1
+        while i <= #ids do
+            local j = i
+            while j < #ids and ids[j + 1] == ids[j] + 1 do j = j + 1 end
+            parts[#parts + 1] = i == j and tostring(ids[i]) or (ids[i] .. "-" .. ids[j])
+            i = j + 1
+        end
+        engine.log(string.format("== shield: record %d, up in frames %s", known.id, table.concat(parts, " ")))
     end
 end
 return moves

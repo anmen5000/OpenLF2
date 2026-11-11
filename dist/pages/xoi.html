@@ -614,7 +614,12 @@
           kept running in the background — <code>taskkill /F /IM openlf2.exe</code> ends them).
           <b>Your own settings</b> (rounds, minutes, <code>DOI_THU=classic</code>…) are best kept in a file
           <code>spsa-cai-dat.bat</code> beside <code>spsa.bat</code> (<code>spsa-settings.bat</code> for the English kit), one
-          <code>set "VONG=60"</code> line each: a new kit's <code>spsa.bat</code> copied over the old one then keeps them.</li>
+          <code>set "VONG=60"</code> line each: a new kit's <code>spsa.bat</code> copied over the old one then keeps them.
+          <b>Going on from a finished run</b> (package 75), after updating the game and the kit, say: raise <code>VONG</code>
+          (<code>ROUNDS</code>; 60 to 80 adds 20 rounds) and run it again — the added rounds start from the last round's numbers,
+          the steps go on shrinking as before, they use the new kit's scripts (the new AI), and the run ends with a new check and
+          new packages. Better than starting over: the numbers found still fit, and a new run begins with large steps again.
+          (A run paused half way keeps the scripts it began with to its end.)</li>
         <li><b>Each mod's numbers, ready to use:</b> at the end, <code>xoi-&lt;mod&gt;\tune.txt</code> holds the tuned numbers and
           <code>&lt;mod&gt;-xoi.zip</code> is the mod with them inside (<code>xoi/tune.txt</code> beside its <code>data</code>
           folder, with XOI's notes if <code>xoi-hoc.bat</code> trained it). Uploaded to the relay in place of the mod, XOI plays that
@@ -648,7 +653,11 @@
           <code>taskkill /F /IM openlf2.exe</code> tắt chúng). <b>Cài đặt riêng của
           bạn</b> (số vòng, số phút, <code>DOI_THU=classic</code>…) nên để trong file <code>spsa-cai-dat.bat</code> cạnh
           <code>spsa.bat</code> (bộ tiếng Anh: <code>spsa-settings.bat</code>), mỗi dòng một cài đặt như <code>set "VONG=60"</code>:
-          chép đè <code>spsa.bat</code> của bộ XOI mới lên thì cài đặt vẫn còn.</li>
+          chép đè <code>spsa.bat</code> của bộ XOI mới lên thì cài đặt vẫn còn.
+          <b>Chỉnh tiếp một đợt đã xong</b> (gói 75), ví dụ sau khi cập nhật game và bộ XOI: tăng <code>VONG</code> (60 lên 80 là
+          thêm 20 vòng) rồi chạy lại — các vòng thêm bắt đầu từ bộ số của vòng cuối, bước dịch nhỏ dần tiếp như cũ, dùng scripts
+          của bộ XOI mới (AI bản mới), và cuối đợt kiểm tra, gói số lại. Tốt hơn chỉnh lại từ đầu: bộ số đã tìm vẫn dùng được,
+          còn một đợt mới thì bắt đầu lại bằng bước dịch lớn. (Một đợt đang tạm dừng giữa chừng thì giữ scripts của nó cho tới hết.)</li>
         <li><b>Bộ số của từng bản mod, dùng được ngay:</b> chạy xong, <code>xoi-&lt;tên&gt;\tune.txt</code> là các số đã chỉnh, và
           <code>&lt;tên&gt;-xoi.zip</code> là bản mod có bộ số ấy bên trong (<code>xoi/tune.txt</code> cạnh thư mục <code>data</code>,
           kèm bộ nhớ XOI nếu <code>xoi-hoc.bat</code> đã huấn luyện). Tải nó lên relay thay cho bản mod: XOI chơi bản mod ấy bằng bộ
@@ -750,7 +759,8 @@
         <li><b>The check:</b> at the end, half the processes play XOI with the brain against the opponent, the other half XOI
           without it, for <code>PHUT_KIEM_TRA</code> minutes, same seeds: the win rates stand side by side in
           <code>hoc-sau\ket-qua.txt</code>. <b>To pause</b>, close the windows; double-click again to go on (recorded data is kept).
-          <b>To learn further</b>, raise <code>VONG</code> and run again: it goes on from the next round with all the data so far.
+          <b>To learn further</b>, raise <code>VONG</code> and run again: it goes on from the next round with all the data so far
+          (package 75: after a finished run, the added rounds record with the new kit's scripts — the new AI).
           Start over by deleting the <code>hoc-sau</code> folder. Your own settings go in <code>hoc-sau-cai-dat.bat</code> beside it
           (<code>brain-settings.bat</code> in the English kit), as with <code>spsa.bat</code>.</li>
         <li><b>Each mod's brain, ready to use:</b> <code>xoi-&lt;mod&gt;\brain.txt</code>, and <code>&lt;mod&gt;-xoi.zip</code> is the mod
@@ -777,7 +787,8 @@
         <li><b>Kiểm tra:</b> cuối cùng, một nửa số tiến trình cho XOI có bộ não đánh đối thủ, nửa kia cho XOI không có, trong
           <code>PHUT_KIEM_TRA</code> phút, cùng hạt giống: hai tỉ lệ thắng đứng cạnh nhau trong <code>hoc-sau\ket-qua.txt</code>.
           <b>Tạm dừng:</b> đóng các cửa sổ; nháy đúp lại là làm tiếp (dữ liệu đã ghi được giữ). <b>Học thêm:</b> tăng <code>VONG</code>
-          rồi chạy lại — làm tiếp từ lượt kế với tất cả dữ liệu đã có. Làm lại từ đầu: xóa thư mục <code>hoc-sau</code>. Cài đặt riêng
+          rồi chạy lại — làm tiếp từ lượt kế với tất cả dữ liệu đã có (gói 75: đợt trước đã xong thì các lượt thêm ghi dữ liệu với
+          scripts của bộ XOI mới, AI bản mới). Làm lại từ đầu: xóa thư mục <code>hoc-sau</code>. Cài đặt riêng
           của bạn để trong <code>hoc-sau-cai-dat.bat</code> cạnh nó (bộ tiếng Anh: <code>brain-settings.bat</code>), như với
           <code>spsa.bat</code>.</li>
         <li><b>Bộ não của từng bản mod, dùng được ngay:</b> <code>xoi-&lt;tên&gt;\brain.txt</code>, và <code>&lt;tên&gt;-xoi.zip</code> là bản

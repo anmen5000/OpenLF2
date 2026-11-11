@@ -56,6 +56,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    background after the windows were closed - end them with  taskkill /F /IM openlf2.exe  ). A run begun with an
    older kit goes on with its own scripts under a newer kit (package 73 on; before, "flow.lua:7 ...
    set_executable_patches"); delete spsa\scripts to take the new scripts and numbers instead.
+   Going on from a finished run (package 75), after updating the game and the kit, say: raise ROUNDS (60 to 80 adds
+   20 rounds) and run spsa.bat again - the added rounds start from the last round's numbers, the steps go on
+   shrinking as before, they use the new kit's scripts (the new AI), and the run ends with a new check and new
+   packages. Better than starting over: the numbers found still fit, and a new run begins with large steps again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -66,7 +70,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    minutes. Result: brain\results.txt - send it to whoever maintains the AI. Each mod's brain:
    xoi-<mod>\brain.txt, and <mod>-xoi.zip, the mod with xoi\brain.txt (and its numbers and notes) inside: uploaded
    to the relay or published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod.
-   To pause: close the windows; run it again to go on. To learn further: raise ROUNDS and run again. Settings
+   To pause: close the windows; run it again to go on. To learn further: raise ROUNDS and run again (package 75:
+   after a finished run, the added rounds record with the new kit's scripts, the new AI). Settings
    file: brain-settings.bat. On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI.
    The original zip or the <mod>-xoi.zip of spsa.bat/train.bat both do (package 68 on): XOI records with the mod's
    numbers and notes (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip),

@@ -14,7 +14,8 @@ rem numbers and notes, if it has them) - uploaded to the relay or published, XOI
 rem beside XOI in the match).
 rem To pause: close this window - its games stop with it (package 73 on). Running the file again goes on from the unfinished round
 rem (recorded data is kept). To learn further: raise ROUNDS and run again - it goes on from the next round with all the
-rem data so far, the new round recorded with the newest brain. To start over: delete the brain folder (round 1 then
+rem data so far, the new round recorded with the newest brain (and, package 75 on, with this kit's scripts - the new
+rem AI - when the run before was finished). To start over: delete the brain folder (round 1 then
 rem records with the brain already in xoi-<mod>, if there is one).
 rem ============ SETTINGS ============
 rem The installed game. Empty: found automatically (Install for me only, all users, or an OpenLF2 folder beside this file).
@@ -145,6 +146,17 @@ if defined TEST_SECONDS set /a GIAY_GHI=TEST_SECONDS, GIAY_KT=TEST_SECONDS
 if %GIAY_GHI% LSS 10 set /a GIAY_GHI=10
 if not defined PRIORITY set "PRIORITY=NORMAL"
 if not exist "%LV%" mkdir "%LV%"
+rem Learning further after a finished run (package 75 on): the run before was checked or packed, and ROUNDS is now more
+rem than the rounds learned. The added rounds record with this kit's scripts (the new AI - a run under way keeps its own
+rem to its end): the old copy of the scripts goes.
+set "DA_XONG="
+if exist "%LV%\check\totals.txt" set "DA_XONG=1"
+if exist "%LV%\packed.txt" set "DA_XONG=1"
+if defined DA_XONG if not exist "%LV%\round-%ROUNDS%\round-done.txt" (
+  echo The run before is finished, ROUNDS=%ROUNDS% is more than the rounds learned: the added rounds use this kit's scripts.
+  if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
+  >>"%LV%\timing.txt" echo Learning further after a finished run: ROUNDS=%ROUNDS%, this kit's scripts
+)
 rem The installed game's scripts, updated with the package's (a package may hold only the changed files): no reinstall.
 if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   for %%g in ("%GAME%") do set "CAI=%%~dpgscripts"

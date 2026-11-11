@@ -53,6 +53,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    background after the windows were closed - end them with  taskkill /F /IM openlf2.exe  ). A run begun with an
    older kit goes on with its own scripts under a newer kit (package 73 on; before, "flow.lua:7 ...
    set_executable_patches"); delete spsa\scripts to take the new scripts and numbers instead.
+   Going on from a finished run (package 75), after updating the game and the kit, say: raise VONG (60 to 80 adds
+   20 rounds) and run spsa.bat again - the added rounds start from the last round's numbers, the steps go on
+   shrinking as before, they use the new kit's scripts (the new AI), and the run ends with a new check and new
+   packages. Better than starting over: the numbers found still fit, and a new run begins with large steps again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -63,7 +67,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    Result: hoc-sau\ket-qua.txt - send it to whoever maintains the AI. Each mod's brain: xoi-<mod>\brain.txt,
    and <mod>-xoi.zip, the mod with xoi\brain.txt (and its numbers and notes) inside: uploaded to the relay or
    published, XOI plays that mod with the brain ("brain" in the match). A brain is for one mod. To pause: close
-   the windows; run it again to go on. To learn further: raise VONG and run again. Settings file: hoc-sau-cai-dat.bat.
+   the windows; run it again to go on. To learn further: raise VONG and run again (package 75: after a
+   finished run, the added rounds record with the new kit's scripts, the new AI). Settings file: hoc-sau-cai-dat.bat.
    On Sauce's pack the brain took XOI from 321 to 377 games of 720 against Sauce's AI. The original zip or the
    <mod>-xoi.zip of spsa.bat/xoi-hoc.bat both do (package 68 on): XOI records with the mod's numbers and notes
    (xoi-<mod>\tune.txt and notes.txt beside the file when they exist, else those inside the zip), a -xoi.zip beside
@@ -165,6 +170,10 @@ chơi được chính các file của bản mod.
    các cửa sổ - tắt chúng bằng  taskkill /F /IM openlf2.exe  ). Đợt chạy bắt đầu bằng bộ XOI cũ vẫn chạy tiếp với
    scripts của nó dưới bộ mới (từ gói 73; trước đó báo "flow.lua:7 ... set_executable_patches"); muốn dùng scripts và
    bộ số mới thì xóa thư mục spsa\scripts.
+   Chỉnh tiếp một đợt đã xong (gói 75), ví dụ sau khi cập nhật game và bộ XOI: tăng VONG (60 lên 80 là thêm 20 vòng)
+   rồi chạy lại spsa.bat - các vòng thêm bắt đầu từ bộ số của vòng cuối, bước dịch nhỏ dần tiếp như cũ, dùng scripts
+   của bộ XOI mới (AI bản mới), và cuối đợt kiểm tra, gói số lại. Tốt hơn chỉnh lại từ đầu: bộ số đã tìm vẫn dùng
+   được, còn một đợt mới thì bắt đầu lại bằng bước dịch lớn.
 5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
    ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
    nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên
@@ -174,7 +183,8 @@ chơi được chính các file của bản mod.
    một đối thủ trong PHUT_KIEM_TRA phút. Kết quả: hoc-sau\ket-qua.txt - gửi file này cho người làm AI. Bộ não của
    từng bản mod: xoi-<tên>\brain.txt, và <tên>-xoi.zip là bản mod có xoi\brain.txt (cùng bộ số và bộ nhớ) bên trong:
    tải lên relay hay xuất bản thì XOI chơi bản mod ấy với bộ não (trong trận ghi "brain"). Mỗi bản mod một bộ
-   não. Tạm dừng: đóng các cửa sổ; chạy lại là làm tiếp. Học thêm: tăng VONG rồi chạy lại. File cài đặt riêng:
+   não. Tạm dừng: đóng các cửa sổ; chạy lại là làm tiếp. Học thêm: tăng VONG rồi chạy lại (gói 75: đợt trước đã xong
+   thì các lượt thêm ghi dữ liệu với scripts của bộ XOI mới, AI bản mới). File cài đặt riêng:
    hoc-sau-cai-dat.bat. Trên bản của Sauce, bộ não đưa XOI từ 321 lên 377 trận thắng trong 720 trận đấu AI của Sauce.
    Bản gốc hay bản <tên>-xoi.zip của spsa.bat/xoi-hoc.bat đều dùng được (từ gói 68): XOI ghi dữ liệu với bộ số và
    bộ nhớ của bản mod (xoi-<tên>\tune.txt và notes.txt cạnh file nếu có, không thì bộ trong file zip); file -xoi.zip

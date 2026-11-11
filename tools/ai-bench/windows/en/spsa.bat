@@ -15,6 +15,9 @@ rem To pause: close this window - its games stop with it (package 73 on) - or se
 rem on: run this file again - the
 rem finished rounds are kept, and so is what the round under way had played (but the last few pairs). To start over:
 rem delete the spsa folder (or change FIRST_SEED and give the old folder another name).
+rem To go on from a finished run (package 75 on), after updating the game and the kit, say: raise ROUNDS (60 to 80 adds
+rem 20 rounds) and run this file again. The added rounds start from the last round's numbers, the steps go on
+rem shrinking as before, and they use this kit's scripts (the new AI); the run ends with a new check and new packages.
 rem ============ SETTINGS ============
 rem The installed game. Left empty, it is looked for (Install for me only, all users, or an OpenLF2 folder next to this file).
 set "GAME="
@@ -147,6 +150,19 @@ set /a K_NOM=GIAY_VONG/2, TONG=ROUNDS*(GIAY_VONG/2)
 if not defined PRIORITY set "PRIORITY=NORMAL"
 
 if not exist "%LV%" mkdir "%LV%"
+rem Going on from a finished run (package 75 on): the run before was checked or packed, and ROUNDS is now more than the
+rem rounds played. The added rounds use this kit's scripts (the new AI - a run under way keeps its own to its end), and
+rem the run ends with a new check and new packages: the old copy of the scripts, the old check and the "packed" mark go.
+set "DA_XONG="
+if exist "%LV%\check\totals.txt" set "DA_XONG=1"
+if exist "%LV%\packed.txt" set "DA_XONG=1"
+if defined DA_XONG if not exist "%LV%\round-%ROUNDS%\start-after.lua" (
+  echo The run before is finished, ROUNDS=%ROUNDS% is more than the rounds played: going on with this kit's scripts.
+  if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
+  if exist "%LV%\check" rmdir /s /q "%LV%\check"
+  del /q "%LV%\packed.txt" 2>nul
+  >>"%LV%\timing.txt" echo Going on from a finished run: ROUNDS=%ROUNDS%, this kit's scripts
+)
 rem The installed game's scripts, updated with the package's (which may hold only the changed files): no reinstall needed.
 if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   for %%g in ("%GAME%") do set "CAI=%%~dpgscripts"

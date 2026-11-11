@@ -12,7 +12,8 @@ rem ban mod: xoi-<ten>\brain.txt, va <ten>-xoi.zip = ban mod co bo nao (cung bo 
 rem len relay hay xuat ban thi XOI choi ban mod ay voi bo nao (trong tran ghi "brain" canh XOI).
 rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73). Chay lai la lam tiep tu luot dang do (du lieu
 rem da ghi duoc giu).
-rem Hoc them: tang VONG roi chay lai - lam tiep tu luot ke, voi tat ca du lieu da co, luot moi ghi voi bo nao moi nhat.
+rem Hoc them: tang VONG roi chay lai - lam tiep tu luot ke, voi tat ca du lieu da co, luot moi ghi voi bo nao moi nhat
+rem (va, tu goi 75, voi scripts cua bo XOI nay - AI ban moi - khi dot truoc da xong).
 rem Lam lai tu dau: xoa thu muc hoc-sau (luot 1 ghi voi bo nao da co trong xoi-<ten>, neu co).
 rem ============ CHINH O DAY ============
 rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
@@ -140,6 +141,17 @@ if defined THU_GIAY set /a GIAY_GHI=THU_GIAY, GIAY_KT=THU_GIAY
 if %GIAY_GHI% LSS 10 set /a GIAY_GHI=10
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 if not exist "%LV%" mkdir "%LV%"
+rem Hoc them sau mot dot da xong (tu goi 75): dot truoc da kiem tra hay da goi, ma VONG bay gio lon hon so luot da hoc.
+rem Cac luot them ghi du lieu voi scripts cua bo XOI nay (AI ban moi - mot dot dang do thi giu scripts cua no cho toi
+rem het): bo ban sao scripts cua dot truoc.
+set "DA_XONG="
+if exist "%LV%\kiem-tra\tong.txt" set "DA_XONG=1"
+if exist "%LV%\da-goi.txt" set "DA_XONG=1"
+if defined DA_XONG if not exist "%LV%\luot-%VONG%\xong-luot.txt" (
+  echo Dot truoc da xong, VONG=%VONG% lon hon so luot da hoc: cac luot them dung scripts cua bo XOI nay.
+  if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
+  >>"%LV%\thoi-gian.txt" echo Hoc them sau dot da xong: VONG=%VONG%, scripts cua bo XOI hien tai
+)
 rem Scripts cua game da cai, cap nhat bang scripts cua goi (goi co the chi chua file da doi): khoi cai lai game.
 if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   for %%g in ("%GAME%") do set "CAI=%%~dpgscripts"

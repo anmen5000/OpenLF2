@@ -610,6 +610,28 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- XOI v44: what the draws of a random move leave, known for what it is (the project owner's follow-up on Nya's
+  cards in Sauce's pack). Her spade leaves her changed, and D+J+A then changes her back with a burst: learned as the
+  move of a fighter that has changed (`analysis.back_move`) — v43 drew the spade and never let it off (0 bursts in
+  1,200 games; 143 now, 67 HP each). Her crystal is learned as a shield by putting two balls far from the fighter
+  in the learning's copy, both broken at once (`smart.shield_kit`): while a shield of a fighter's side stands, plain balls land nowhere on it —
+  those flying are no threat, the enemy's ball moves no danger, and a fighter facing an enemy's shield throws none. The
+  hidden copy of Nya that the crystal holds (a character without a body, HP 500) is no target any more, and with
+  nothing else left to fight its holder is struck until it breaks: Nya beaten and her crystal standing, the round went
+  on for good (7 of 1,120 games ran to the bench's three minutes so; none now). The heart's heal was collected already
+  (110 HP a game with a heart); weighing a draw by what its kinds are worth was no better than v43's plain rule (411
+  wins to 415 over the same games) and is left out. A brain's expectation (45 frames ahead) is no longer weighed into
+  what comes later (a draw, a late blow): 435 wins to 423 with the project owner's brain. Game by game over the same
+  1,200 games, XOI's Nya against Sauce's AI: 406 with v43, 418 now (with the owner's numbers and brain 409 and
+  435); XOI's fighters against Sauce's Nya 798 of 1,120 and 801; seven other mods play as with v43, game for
+  game (824 games of XOI against itself). The bench's `moves` job prints `shield`, a `back:` line and the shields
+  learned
+- spsa.bat and hoc-sau.bat (brain.bat): going on from a finished run. Run again with `VONG` (`ROUNDS`) raised after
+  the run has finished, the added rounds start from the last round's numbers (the brain so far), the steps go on
+  shrinking, and they use the kit's present scripts — the new AI after an update; a run under way keeps the scripts
+  it began with — with a new check and new packages at the end. Before, the copy of the scripts made when the run
+  began stayed for good (`spsa\scripts`), so a run taken up after an update tuned the old AI, and spsa.bat neither
+  checked nor packed again
 - XOI v43: long-term value — what a move brings later, or leaves standing, and not only what its blows do at once
   (the project owner's look at Nya in Sauce's pack). A move that shows nothing on the learning's untouchable dummy is
   tried again on one it can touch, at four distances and six points of the random sequence: Nya's swap of places
