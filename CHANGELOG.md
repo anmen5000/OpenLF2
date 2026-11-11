@@ -610,6 +610,29 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- XOI v45: standoffs that someone has to end, the weapon in hand, and the same on every computer of a room (the
+  project owner's clip from Sauce's pack: XOI's Nya and XOI's Felix face to face, Felix jabbing into her guard,
+  then both standing for good). In a standoff long enough to be a loop the target's quickest answer rules a slower
+  blow out no more (her punch lands in 4 frames, his in 3: she had nothing she might start), and its chance fades
+  to nothing at twice `loop_calm`; past that the score a move needs comes down with every frame until the best move
+  that lands is started, in frames of the fighter's own (one in eight by its slot: two of XOI's else start in the
+  same frame every time, and where their punches carry them through each other both miss, every time — Stancher and
+  Crimson in mode Convergence); a standoff is timed by the clock (`memory.quiet`), not by the frames a fighter was
+  free to decide in; steps in depth that move nothing go round the obstacle along x. The weapon in hand strikes
+  again: from v21 to v44 the learning left it out altogether — no swing and no throw was learned to do anything, in
+  any game, and a fighter that had picked a stick up was left with its D-moves alone (two of them, short of MP,
+  stood face to face for good: Deep and John in KT-LF2). What is learned of a frame during play (a fighter on
+  fire) no longer depends on the matches played before: two computers of a network room that had not played the same
+  matches could decide differently, which ends the room's game with "Network HP synchronization mismatch". Game by
+  game from the same points of the random sequence — Nya against Felix, 40 games of XOI against itself: 17 stood to
+  the bench's three minutes with the owner's numbers for the pack and 6 with the default ones, none now; all 210
+  pairs of the pack's fighters twice: 17 and 16 of 420 at three minutes, 2 and 4 now, fights with blows to the end;
+  six other mods, 672 games: 13 at three minutes and 5 of them standing, 6 now and none standing. Against Sauce's AI
+  over the same games: Nya 418 of 1,200 with v44 and 436 now (with the owner's numbers and brain 435 and 470), XOI's
+  fighters against Sauce's Nya 801 of 1,120 and 823, all 210 pairs 212 of 420 and 210. Five
+  other mods against v44: 1,139 to 1,087 of 2,240 games, 14 drawn (56 with v43 against v42); six mods game by game
+  against v44, 672 games: 342 won and 319 lost where v44 itself wins 330 and loses 325. A game played alone and the
+  same game after others: the same, 112 of 112
 - XOI v44: what the draws of a random move leave, known for what it is (the project owner's follow-up on Nya's
   cards in Sauce's pack). Her spade leaves her changed, and D+J+A then changes her back with a burst: learned as the
   move of a fighter that has changed (`analysis.back_move`) — v43 drew the spade and never let it off (0 bursts in

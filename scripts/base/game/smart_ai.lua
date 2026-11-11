@@ -427,8 +427,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 44
+smart.version = 45
 smart.history = {
+    {45, "2026-11-11", "Standoffs that someone has to end, the weapon in hand, and the same on every computer of a room. The project owner's clip from Sauce's pack: XOI's Nya and XOI's Felix face to face, Felix jabbing into her guard for twenty seconds, then both standing for good. (1) Her punch lands in 4 frames, his in 3: a move slower than the target's quickest answer was no candidate at all, so she had nothing to start, while his jab, met by her guard every time (a guarded blow does not end the calm), was worth less with every try by the rule against loops (version 30) until it was not worth starting either. In a standoff long enough to be a loop that answer rules a slower blow out no more — it has not come for as long — and its chance, in what a move at risk is worth, fades with every further frame, to nothing at twice loop_calm. (2) Past that the standoff is overdue: the score a move needs comes down with every frame (0.1 a frame, below nothing if need be), and the best move that lands is started whatever it is thought to cost — in frames of the fighter's own, one in eight by its slot: two of XOI's else start in the same frame every time. (3) A standoff is timed by the clock (memory.quiet). The calm counts the frames a fighter is free to decide in, and two that keep each other busy to no avail let it run at a fraction of the time going by: Stancher and Crimson in mode Convergence, each punch carrying them through the other, punched past each other for 44 seconds before their 189 frames of calm were up, then stood — for good in three games of four. (4) The weapon in hand. From version 21, which told a move's own items from the weapon a fighter holds, the learning left that weapon out altogether: no swing and no throw was learned to do anything, in any game, for 24 versions. A fighter still walked to a stick and picked it up, and was left with its D-moves alone: short of MP it stood before its enemy, and two of them so stood for good (Deep and John in KT-LF2, a stick each). The weapon strikes again — in the hand by the holder's strength entry, thrown by its own frames from the tick it leaves the hand: against an opponent that never moves, Deapis with a stick in mode Convergence had not won after 900 frames and now has within 540. (5) Steps in depth alone that move nothing — a heavy item lying on the way to the target's line, which stops whoever walks into it — go round it along x, as steps along x went round in depth: Sanji walked into one for two minutes with Ace behind it, in One Piece GrandWorld. (6) What is learned of a frame of no known move during play (a fighter on fire) is kept by the frame and by whether the fighter is in the air, each frame from a play of its own. It was kept as played from wherever the fighter was when the frame was first met, the play's later frames with it: what a fighter knew depended on the matches played since the game was opened — Louis on fire was judged otherwise, three minutes into a game, when a game against Firen had been played before it — and two computers of a network room that had not played the same matches could decide differently, which ends the room's game (the HP check). Results, game by game from the same points of the random sequence. Nya against Felix, XOI against itself, 40 games: 17 stood to the bench's three minutes with the owner's numbers for the pack (18 with version 43), 6 with the default ones; none now, the longest 68 seconds (with the owner's brain none did: the clip's match ran without it — the game says ', brain' beside the version when one is loaded). All 210 ordered pairs of the pack's 15 fighters twice, XOI against itself: 17 of 420 games at three minutes with the owner's numbers and 16 with the default ones; 2 and 4 now, all of Louis's, with blows to the end (11 seconds at most without one). Six other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell), 672 games of XOI against itself: 13 at three minutes, 5 of them standing; 6 now, none standing. Against Sauce's AI over the same games: Nya 418 of 1,200 with version 44 and 436 now (HP margin +12.7 a game), with the owner's numbers and brain 435 and 470; XOI's fighters against Sauce's Nya 801 of 1,120 and 823; all 210 pairs 212 of 420 and 210. Five other mods against version 44: 1,139 to 1,087 of 2,240 games, 14 drawn (56 with version 43 against 42); six mods game by game against version 44, 672 games: 342 won and 319 lost where version 44 itself wins 330 and loses 325 (HP margin +16 a game). A game played alone and the same game after others: the same, 112 of 112."},
     {44, "2026-11-11", "What the draws of a random move leave, known for what it is: the project owner's follow-up on Nya's cards in Sauce's pack (the crystal that stops thrown things and the heart were not weighed). Measured game by game — the bench's card watch starts every game from its own point of the random sequence, so two versions play the same game until one of them chooses otherwise: 1,200 games of XOI's Nya against Sauce's AI, 15 opponents. (1) The spade. Drawn, it leaves her changed (a catch on a hidden copy of herself, cpoint throwinjury -1), and D+J+A then changes her back with a burst about her (her frame 245: no MP, a start nothing touches). Version 43 drew it and never let it off: 0 bursts in 1,200 games, the games with a spade its worst (15% won). The change back is learned as the move of a fighter that has changed (analysis.back_move, apart from the moves its reach and worth are judged by) and chosen like any other: 143 bursts, 67 HP each, those games 21% won. (2) The diamond. Her crystal breaks every plain ball of the enemy's as it appears (a blow over the whole stage that touches no fighter). Learned by trying: after a draw that leaves things standing, the game's first plain ball is put into the copy twice, 600 pixels before the fighter and as far behind it, off its line; what breaks both at once, with a blow that wide, is a shield, kept with the frames it is up in (smart.shield_kit) — not a thing with a body that a ball runs into (Crimson's shadows in mode Convergence, which a single ball thrown from in front took for one). While a shield of a fighter's side stands, plain balls land nowhere on that fighter (move_hits): those flying at it are no threat, the enemy's ball moves no danger, and a fighter facing an enemy's shield throws none. (3) The crystal holds a hidden copy of Nya, a character without a body and with 500 HP, for as long as it stands. It is no fighter but a thing of its holder's (smart.shield_kit.prop): up to version 43 it was a target like any other (nearer than Nya, it was the one the fighter went for), and with Nya beaten and her crystal standing the round went on for good — 7 of 1,120 games of XOI's fighters against Sauce's Nya ran to the bench's three minutes so. It is no target now, and with nothing else left to fight its holder is walked up to and struck until it breaks, as Sauce's own computer players do (smart.shield_kit.clear). (4) The heart gives back 104 HP of the HP that can come back, and did so already: 110 HP a game in the games with a heart, a draw coming once the fighter has been hurt. Weighing a draw by what its kinds are worth at the moment (the heal by the HP to come back, the shield by the enemy's balls, the burst, the strikes) was tried against version 43's plain rule (the target beyond 250 pixels, twice a match): 411 wins to 415 over the same games, no better, so the plain rule stays, and so does its distance (from 200 pixels 418 to 417, from 330 pixels 379). (5) A brain's expectation looks 45 frames ahead and is no longer weighed into what comes later than that (a draw, a late blow the enemy is put into or walks into): with the project owner's numbers and brain for Sauce's pack 435 wins to 423. Results: XOI's Nya against Sauce's AI 406 of 1,200 with version 43, 418 now (HP margin +9.7 a game), with the owner's numbers and brain 409 and 435; XOI's fighters against Sauce's Nya 798 of 1,120 and 801, none left standing by a crystal at the three minutes. Seven other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell, Dragon Ball Super: 824 games of XOI against itself) play as with version 43, game for game."},
     {43, "2026-11-11", "Long-term value, from the project owner's look at Nya in Sauce's pack: the AI weighed a move by what its blows do at once, and missed what comes later or lasts. (1) A move that shows nothing on the learning's untouchable dummy is tried again on one it can touch, at four distances and from six points of the game's random sequence: a swap of places (Nya's D>J, hidden helpers that grab the enemy and put it where she stood) is learned as a teleport with its reach, 450 pixels; a move of random draws as the share of its draws that strike (her coin, D^J, 0.33: it bursts by her or turns into a whirlwind that stays; her cards, D+J+A, 0.17), with the frames its objects go through only in the striking draws and whether the others leave things standing. (2) A late blow about the fighter that knocks down - the coin bursts 40 frames on, she is free at 19 - is weighed, when it does not land on the enemy's way, as the space it holds about her (zone_sure: 2.5 of its worth): thrown 5 times in 300 games before, where Sauce's own player throws it whenever the enemy is at a distance. Only a mine about the fighter (within 150 pixels, mine_reach) that knocks down: Kakashi's Uj in Naruto: The Setting Dawn 2.6 (fall 2) won 20 of 128 games against version 42 weighed so instead of 74, Shino's insects (out to 331 pixels) lost 16 and 20 of 384 in 2.4 and 2.6; Stancher's Dj in mode Convergence, a burst about him, won 109 of 256 games against version 42 weighed so, 75 before. (3) With a swap at hand, the blow brought onto the enemy: once the coin is the bursting one (its frames say so) and the enemy within the swap's reach, the swap puts the enemy on her spot as it bursts, about 107 HP when it fires. (4) The swap as a way out of a thing flying at her with its thrower within reach, counted as a blow struck back: a swap tried against Dennis's ball put him in its way and his own ball struck him; out of reach the swap is what it does with no one to take, its untouchable frames. (5) Her cards, a move of lasting draws (a heal, a crystal that breaks thrown things, bouncing balls, a burst) never used before: drawn at a fixed score (draw_score 6) with the target beyond 250 pixels, twice a match at most, as Sauce's player draws them. (6) The threat forecast follows a thing's next 999 to its frame 0, as the game does - it stopped there: Kaktena's trap in that pack, quiet in frames that go on by 999 into its biting ones, was not foreseen (its bites, about one a game, stay: they come where no step clears it in time). XOI's Nya against Sauce's AI, 15 opponents, 1,200 games: 293 won with version 42, 355 now (the coin as space alone 333; Louis 1 to 27 of 80, Deep 5 to 14, Rudolf 31 to 42). The five mods against version 42: 1,096 to 1,088 of 2,240 games; the ten originals against Sauce's Kaktena 170 of 400 (168 without the forecast's 999)."},
     {42, "2026-11-11", "Momentum, left to the tuning: the HP the fighter dealt its target lately less the HP it took, each fading by half every 60 frames, over 60 HP (at most 1 either way), can make it bolder ahead (momentum_aggression on the boldness; momentum_threshold_up and momentum_counter_up off the score a move needs and the price of the target's counter) or warier behind (momentum_threshold_down and momentum_counter_down on them, momentum_keep_down on the danger it keeps away from) - six numbers SPSA tunes with the others, 88 now, all 0 by default, so that the fighter plays as version 41 frame for frame (Sauce's pack, the ten originals both ways, 180 games, and KT-LF2: the same results game for game). Tried by hand in November 2026 - bolder ahead, warier behind, both, the lead in the match instead, only while the target is free - none beat the fighter without it (321 of 720 against Sauce's AI; the best 326, not confirmed on fresh seeds), Woody's and Freeze's losses eating Henry's and Davis's gains: a mod's own tuning can find what it wants, either way. And the kit's hoc-sau.bat (brain.bat) takes DOI_THU=xoi (OPPONENT=xoi): XOI records against itself in a pack with AI scripts of its own too - those of most mods are far weaker than Sauce's (Dragon Ball Super's loses most of its games to XOI), and a brain learned against them only learns to beat them. The project owner's first full hoc-sau run on Sauce's pack (10 rounds of 20 minutes on 80 threads, 29 million moves): XOI with the brain won 57.4% of its games against Sauce's AI, without it 45.8%."},
@@ -1087,6 +1088,7 @@ local function play(record, entry, mp, weapon_record, hp, touch, probe)
     local spawned, steerable = {}, {}
     local struck = {} -- the objects of its making that have struck in the move already
     local armed_item = weapon_record and state.items[me.held_item] or nil
+    local thrown_at, thrown_steer -- (the tick the weapon in hand left it, and how it can be steered in depth: see below)
     for t = 1, horizon_ticks do
         step()
         set_keys(me, nil)
@@ -1138,7 +1140,41 @@ local function play(record, entry, mp, weapon_record, hp, touch, probe)
         local objects_active, objects_coming = false, false
         for index = 2, constants.item_slots - 1 do
             local value = state.items[index]
-            if value and value.owner == me.owner and value ~= armed_item then
+            if value and value == armed_item then
+                -- The weapon the copy's fighter began with in its hand is no thing of the move's making — nothing below
+                -- counts it among what the move makes, leaves standing or turns the fighter into — but it is what the
+                -- move strikes with: in the hand by the holder's strength entry (base/game/combat weapon_strike; it
+                -- moves with the holder, so its box is the holder's own), and thrown by its own frames, from the tick
+                -- it left the hand.
+                -- (From version 21, which told a move's own items from it, to version 44 the weapon was left out of
+                -- this loop altogether: no swing and no throw was learned to do anything, in any game, and a fighter
+                -- that had picked a stick up was left with its D-moves alone. Short of MP it stood before its enemy
+                -- with nothing to start, and two of them so stood for good — Deep and John in KT-LF2, a stick each.)
+                local in_hand = value.holder == me.slot and me.held_item == index and value.weapon < 0
+                if not in_hand and not thrown_at then
+                    thrown_at, thrown_steer = t, steer_speed_of(value.record, value.frame)
+                end
+                if value.frame_at_pass then
+                    local object_frame = value.record.frame(value.frame_at_pass)
+                    for _, area in ipairs(object_frame.interactions) do
+                        if thrown_at and thrown_at < t and damaging(area) then
+                            add_box(move.boxes, t, value, object_frame, area, origin, false, me)
+                            move.boxes[#move.boxes].spawn = thrown_at
+                            move.boxes[#move.boxes].steer = thrown_steer
+                            objects_active = true
+                        elseif in_hand and area.kind == attack_kinds.held_item then
+                            local strike = me.record.frame(at_pass).wpoint.attacking
+                            local strength = strike > 0 and value.record.data.strengths[strike]
+                            if strength and (strength.injury or 0) > 0 then
+                                add_box(move.boxes, t, value, object_frame, {x = area.x, y = area.y, width = area.width,
+                                    height = area.height, zwidth = strength.zwidth or 0, injury = strength.injury or 0,
+                                    fall = strength.fall or 0, bdefend = strength.bdefend or 0, dvx = strength.dvx or 0,
+                                    kind = attack_kinds.plain, effect = strength.effect or 0}, origin, true, me)
+                            end
+                        end
+                    end
+                end
+            elseif value and value.owner == me.owner then
                 -- (On a dummy it can touch, the frames its objects went through, by record and frame: which of a
                 -- random move's draws they belong to, see the analysis.)
                 if touch then
@@ -2405,14 +2441,23 @@ local function may_attack(record, frame_id)
 end
 
 -- The move a fighter is in and how far into it: from what was learned, or else learned now from its present
--- frame (moves reached in ways the analysis does not try, as a mod's AI script or the super punch may). The
--- result only depends on the fighter's data, so it does not matter when or on which computer it is learned.
+-- frame (moves reached in ways the analysis does not try, as a mod's AI script or the super punch may; a fighter on
+-- fire). The result only depends on the fighter's data, so it does not matter when or on which computer it is
+-- learned: it is kept by the frame and by whether the fighter is in the air, the two things the play starts from.
+-- (Up to version 44 it was kept by the frame alone, as played from wherever the fighter was when the frame was first
+-- met, on the ground or in the air, and the later frames of a play were kept with it unless met before: what a
+-- fighter knew of such a frame depended on the matches played since the game was opened. Louis on fire was judged
+-- otherwise, three minutes into a game, when a game against Firen had been played before it — and two computers of
+-- a network room that had not played the same matches could come to decide differently, which the room's check
+-- ends the game for.)
 local function where_of(record, analysis, value)
     local frame_id = value.frame
     local where = analysis.frames[frame_id]
     if where then return where end
     analysis.extra = analysis.extra or {}
-    local known = analysis.extra[frame_id]
+    local air = value.y_int < 0
+    local key = air and -frame_id - 1 or frame_id
+    local known = analysis.extra[key]
     if known ~= nil then return known or nil end
     local frame = record.frame(frame_id)
     local result = false
@@ -2423,19 +2468,13 @@ local function where_of(record, analysis, value)
         local saved_self_o, saved_self_n = runtime.self.o, runtime.self.n
         local saved_target_o, saved_target_n = runtime.target.o, runtime.target.n
         engine.set_random_state(random_table(), 0, 0)
-        local ok, move = pcall(play, record, {context = value.y_int < 0 and "air" or "ground", frame = frame_id, basic = "frame"})
+        local ok, move = pcall(play, record, {context = air and "air" or "ground", frame = frame_id, basic = "frame"})
         engine.set_random_state(saved_table, saved_index, saved_sequence)
         runtime.self.o, runtime.self.n = saved_self_o, saved_self_n
         runtime.target.o, runtime.target.n = saved_target_o, saved_target_n
-        if ok and move and move.first then
-            result = {move = move, t = 1}
-            for t = 2, move.length do
-                local id = move.frames[t]
-                if id and not analysis.frames[id] and analysis.extra[id] == nil then analysis.extra[id] = {move = move, t = t} end
-            end
-        end
+        if ok and move and move.first then result = {move = move, t = 1} end
     end
-    analysis.extra[frame_id] = result
+    analysis.extra[key] = result
     return result or nil
 end
 
@@ -4473,11 +4512,12 @@ end
 
 -- The best move to start now against `target`: move, frames until it hits, score. Moves that would land only
 -- after the target could have hit back (`danger` frames) are left out.
-local function best_attack(context, self, frame, fstate, target, horizon, danger, excluded)
+-- (`floor`: the score a move must beat to be the best — 0, or less in a standoff overdue, see smart.control.)
+local function best_attack(context, self, frame, fstate, target, horizon, danger, excluded, floor)
     local analysis = context.analysis_of(self)
     local tframe = target.record.frame(target.frame)
     local tstate = tframe.state
-    local best, best_t, best_score = nil, nil, 0
+    local best, best_t, best_score = nil, nil, floor or 0
     local stunned = context.target_lock or 0
     local untouchable = untouchable_for(context, target, tstate, stunned)
     local toward = target.x_int >= self.x_int and 1 or -1
@@ -4571,7 +4611,13 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 end
             end
             -- Landing together with the target's quickest answer is a trade at worst: it has not started it yet.
-            if t and (combo or not danger or t < danger or (t == danger and stunned == 0)) then
+            -- (In a standoff long enough to be a loop — context.tries: no blow between the two for loop_calm frames
+            -- by the clock — that answer has not come for as long, and rules a slower blow out no more; what
+            -- starting it may cost is weighed as for any move, see worth_the_risk. Face to face, the slower of two
+            -- fighters had nothing it might start, while the quicker one's jabs met its guard every time and were
+            -- worth less with every try: the two stood there for good — XOI's Nya, whose punch lands in 4 frames,
+            -- and XOI's Felix, whose lands in 3, in Sauce's pack: the project owner's clip.)
+            if t and (combo or not danger or t < danger or (t == danger and stunned == 0) or context.tries) then
                 local score
                 if drawn then
                     score = setup_kit.draw_score
@@ -4703,7 +4749,8 @@ local function approach_attack(context, self, fstate, target, danger)
                 local t, box = move_hits(virtual, dir, move, 0, target, frame_at, target_at, 30, nil, nil, true)
                 if t then
                     local total = offset + t
-                    if total > untouchable and (not danger or total < danger) then
+                    -- (Or in a loop, as best_attack.)
+                    if total > untouchable and (not danger or total < danger or context.tries) then
                         local score = attack_score(context, target, tstate, move, total, box, dir, stunned, danger, stagger, offset)
                         if score > best_score then best, best_t, best_score = move, total, score end
                     end
@@ -4885,8 +4932,13 @@ end
 -- (counted around a hopeful start, so that the first rushes are tried at all). A target that waits for us and
 -- punishes is soon not rushed at; one that does not is.
 -- (At XOI the start is what training saw this opponent do: memory.risk_prior.)
+-- (In a loop the answer feared has not come for loop_calm frames and more: its chance fades with every further
+-- frame of the standoff, to nothing at twice loop_calm — by then someone has to start, whatever the other could do.)
 local function answer_chance(memory)
-    return ((memory.risk_hits or 0) + tune.risk_weight * (memory.risk_prior or tune.risk_prior)) / ((memory.risk_starts or 0) + tune.risk_weight)
+    local chance = ((memory.risk_hits or 0) + tune.risk_weight * (memory.risk_prior or tune.risk_prior)) / ((memory.risk_starts or 0) + tune.risk_weight)
+    local quiet = memory.quiet or 0
+    if quiet > tune.loop_calm then chance = chance * max(0, 1 - (quiet - tune.loop_calm) / tune.loop_calm) end
+    return chance
 end
 -- What a move scored `score`, landing in `t` frames, is worth when the target's answer (`damage`) may beat it
 -- on the way: the move lands only if the answer does not come, and the answer's damage is the price if it does.
@@ -5301,7 +5353,7 @@ local function answer(state, index, self, frame, fstate, context, memory, level,
     -- thrower's arms, rather than on the spot again (Gaara jumped Itachi's kunai where he stood, for good, in
     -- Naruto: The Setting Dawn).
     if fstate ~= states.running and source.record.kind ~= record_kinds.character and target and not failed("jump")
-       and (stream or ((memory.dodges or 0) >= tune.loop_dodges and (memory.calm or 0) >= tune.loop_calm)) then
+       and (stream or ((memory.dodges or 0) >= tune.loop_dodges and (memory.quiet or 0) >= tune.loop_calm)) then
         local height, step = movement.jump_height or -16, movement.jump_distance or 0
         local dir = target.x_int >= self.x_int and 1 or -1
         local flight = floor(-height / 0.85)
@@ -5685,7 +5737,10 @@ local rare = {tried = tried, recovery_paths = recovery_paths, path_plan = path_p
     recovery_horizon = recovery_horizon, flips_up = flips_up, stance_exit = stance_exit, key_names = key_names,
     over_weapon = over_weapon, weapon_to_take = weapon_to_take, mate_on_side = mate_on_side, pair_notes = pair_notes,
     armed_analysis = armed_analysis, analyze = analyze, special_mp = special_mp, view_of = view_of, grab = grab_kit,
-    steer = steer_keys}
+    steer = steer_keys,
+    -- (How much the bar a move must clear comes down for every frame a standoff is overdue, and the frames a
+    -- fighter may start such a move in, one in so many: see smart.control.)
+    overdue_bar = 0.1, overdue_turn = 8}
 -- One frame of control for the computer player at `index`.
 function smart.control(state, index)
     local items = state.items
@@ -6084,12 +6139,26 @@ function smart.control(state, index)
     -- ever attacks when it could (nothing to bait, everything to walk up to).
     -- (A guarded blow's tenth does not count: a guard that only soaks up jabs is a standoff too.)
     local hp_sum = self.hp + target.hp
-    if memory.hp_sum and hp_sum < memory.hp_sum - tune.calm_damage then memory.calm = 0 else memory.calm = (memory.calm or 0) + 1 end
+    if memory.hp_sum and hp_sum < memory.hp_sum - tune.calm_damage then
+        memory.calm, memory.blow_at = 0, state.frame_number
+    else
+        memory.calm = (memory.calm or 0) + 1
+    end
     memory.hp_sum = hp_sum
+    -- (Against loops, the same by the clock — memory.quiet, the frames gone by since that blow. memory.calm counts
+    -- the frames the fighter was free to decide in, and two fighters that keep each other busy to no avail let it
+    -- run at a fraction of the time that goes by: Stancher and Crimson in mode Convergence, each punch carrying
+    -- them through the other, punched past each other for 44 seconds before their 189 frames of calm were up — and
+    -- Felix jabbed into Nya's guard for 20, in the project owner's clip. A standoff is as long as it looks.)
+    memory.since = memory.since or state.frame_number
+    local quiet = state.frame_number - (memory.blow_at or memory.since)
+    memory.quiet = quiet
     -- (Against loops: the moves tried and the dodges since then, see tried; weighed once the standoff is long.)
     if memory.calm == 0 or not memory.tries then memory.tries, memory.dodges = {}, 0 end
-    local looping = memory.calm >= tune.loop_calm
+    local looping = quiet >= tune.loop_calm
     context.tries = looping and memory.tries or nil
+    -- (And overdue, at twice that: by how many frames. See the bar a move must clear, below.)
+    context.overdue = quiet > 2 * tune.loop_calm and quiet - 2 * tune.loop_calm or nil
     context.aggression = min(1, max(0, (memory.calm - tune.calm_start) / tune.calm_span))
     local target_pressure = pressure(model)
     -- Passive: it hardly ever attacks when it could — and has not punished us either (a blow landed on us in a move
@@ -6369,13 +6438,26 @@ function smart.control(state, index)
     -- (With objects of a set-up standing, a D-move they answer is taken at a lower score: they will not stand long,
     -- and what they would bring is lost if it waits.)
     local standing_now = own_setups and setup_kit.standing(context, self, context.analysis_of(self)) or nil
+    -- (A standoff overdue — context.overdue, the frames beyond twice loop_calm without a blow: the bar comes down
+    -- with every one of them, rare.overdue_bar a frame, below nothing if need be, and the best move that lands is
+    -- started whatever it is thought to cost. Something has to happen: Crimson with a wall behind him and Stancher
+    -- before him, in mode Convergence, each with nothing worth starting, stood there for the rest of the game —
+    -- three games of four.
+    -- In frames of its own, one in rare.overdue_turn by the fighter's slot: two fighters as slow to lose patience
+    -- as each other — two of XOI's — else start in the same frame every time, and those two, each carried through
+    -- the other by its punch, both missed, every time, for as long as the game went on. One at a time, the blow
+    -- lands on a fighter that stands.)
+    local overdue = context.overdue
+    if overdue and (state.frame_number + index) % rare.overdue_turn ~= 0 then overdue = nil end
+    local floor = overdue and -math.huge or nil
     local function threshold(chosen)
+        if overdue then return tune.attack_threshold * context.momentum_threshold - overdue * rare.overdue_bar end
         if chosen and chosen.answers and standing_now and #standing_now > 0 then
             return tune.attack_threshold * setup_kit.eager * context.momentum_threshold
         end
         return tune.attack_threshold * context.momentum_threshold
     end
-    local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger)
+    local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger, nil, floor)
     -- A dizzy target is grabbed (grab_kit: walked into, held, punched and thrown) when the hold is worth more than
     -- the best blow at it, there is time to walk up before it comes round, and nothing else reaches us on the way.
     if tframe.state == states.dizzy and self.y_int == 0 and self.weapon == weapon_none
@@ -6415,7 +6497,7 @@ function smart.control(state, index)
         if smart.on_exclude then smart.on_exclude(self, move, reason, t) end
         excluded = excluded or {}
         excluded[move] = true
-        move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger, excluded)
+        move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger, excluded, floor)
     end
     if move and not checked then move = nil end
     if smart.trace then
@@ -6626,7 +6708,7 @@ function smart.control(state, index)
     local keep_out = (tune.keep_out_base + tune.keep_out_aggression * context.aggression) * context.momentum_keep
     -- (Against loops: in a standoff long enough to be one, no spot is left for the enemy's blows — one of the two has
     -- to come in.)
-    if (memory.calm or 0) >= tune.loop_calm then keep_out = math.huge end
+    if (memory.quiet or 0) >= tune.loop_calm then keep_out = math.huge end
     local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
     -- Both pressed against the same wall at the same x (the stage's edge holds them both there): dx 0 reads as the
     -- target to the left, so at the right wall a step back for room is a step into the wall, and two such fighters
@@ -6959,6 +7041,17 @@ function smart.control(state, index)
     else
         memory.blocked = 0
     end
+    -- (And the other way: steps in depth alone that moved nothing — a heavy item lying between the fighter and its
+    -- target's line, which stops whoever walks into it (attack kind 14) — → around it along x, toward the target.
+    -- Sanji walked into one for two minutes with Ace behind it, in One Piece GrandWorld, neither with a blow that
+    -- reached the other.)
+    if want_dx == 0 and want_dz ~= 0 and grounded and fstate ~= states.running and memory.step_z == want_dz
+       and memory.step_at_x == self.x_int and memory.step_at_z == self.z_int then
+        memory.blocked_z = (memory.blocked_z or 0) + 1
+    else
+        memory.blocked_z = 0
+    end
+    memory.step_z = want_dx == 0 and want_dz or 0
     memory.step_x, memory.step_at_x, memory.step_at_z = want_dx, self.x_int, self.z_int
     if memory.detour_until and state.frame_number < memory.detour_until then
         want_dz = memory.detour
@@ -6968,6 +7061,15 @@ function smart.control(state, index)
         memory.detour_until = state.frame_number + 14
         memory.blocked = 0
         want_dz = memory.detour
+    end
+    if memory.detour_x_until and state.frame_number < memory.detour_x_until then
+        want_dx = memory.detour_x
+    elseif memory.blocked_z >= 2 then
+        if dx ~= 0 then memory.detour_x = dx > 0 and 1 or -1
+        else memory.detour_x = self.x_int < width / 2 and 1 or -1 end
+        memory.detour_x_until = state.frame_number + 14
+        memory.blocked_z = 0
+        want_dx = memory.detour_x
     end
     if want_dz < 0 and self.z_int - near < 6 then want_dz = 0 end
     if want_dz > 0 and far - self.z_int < 6 then want_dz = 0 end
