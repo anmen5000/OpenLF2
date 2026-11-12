@@ -22,16 +22,18 @@ rem (ten nhu trong game, hoa thuong deu duoc).
 set "NHAN_VAT=all"
 rem Bo bot nhan vat (id hay ten), vi du bao tap hay boss: Dummy 40
 set "BO_NHAN_VAT="
-rem May choi ca hai ben: xoi (XOI, dung bo so va bo nao cua ban mod neu co), smart (INSANE!), classic (may goc; nhan vat
-rem co script AI rieng cua ban mod - nhu AI cua Sauce - thi may goc choi bang script do). Do ca ba roi so voi nhau: mot
-rem nhan vat manh voi moi may thi gan nhu chac la manh that.
+rem May choi ca hai ben (de trong = xoi): xoi (XOI; khong can file gi them - ban mod chua co thang so, bo nao, bo nho
+rem XOI thi XOI choi bang so mac dinh, co thi dung ca nhung thu do), smart (INSANE!), classic (may goc; nhan vat co script
+rem AI rieng cua ban mod - file ai\<id>.as, nhu AI cua Sauce - thi may goc choi bang script do). Do ca ba roi so voi
+rem nhau: mot nhan vat manh voi moi may thi gan nhu chac la manh that.
 set "NAO=xoi"
 rem Bao nhieu: tong so van (TONG_VAN, vi du 200000), hoac tong so gio (TONG_GIO, dung khi TONG_VAN de trong; 7,5 = 7 gio
-rem ruoi). Chia lam VONG vong: het moi vong bao cao duoc cap nhat (mo xem duoc ngay giua chung).
+rem ruoi). Chia lam VONG vong: het moi vong bao cao duoc cap nhat (mo xem duoc ngay giua chung). De trong VONG: tu chia,
+rem moi vong tu 10 phut toi 1 gio (theo TONG_GIO: thuong la 10 vong; 20 gio thanh 20 vong), hoac 10 vong (theo TONG_VAN).
 rem Vi du: 21 nhan vat (210 cap), sai so khoang +-1%% cho moi nhan vat: chung 100000 van; +-3%% cho moi o cua bang doi
 rem dau: chung 230000 van. Toc do tuy ban mod va may (mot luong CPU: tu vai tram toi chung 9000 van mot gio); het moi
 rem vong file nay bao so van mot gio, de tinh TONG_VAN hay TONG_GIO cho lan sau.
-set "VONG=10"
+set "VONG="
 set "TONG_VAN="
 set "TONG_GIO=2"
 rem Vu khi roi tu troi: 0 = tat (chi do nhan vat va nhung gi no tu tao ra), 1 = bat
@@ -176,7 +178,18 @@ if "!CHE_DO!"=="gio" (
 rem (THU_TONG_GIAY: so giay tong cong, de thu file nay.)
 if defined THU_TONG_GIAY set /a TONG_GIAY=THU_TONG_GIAY
 if "!CHE_DO!"=="gio" if !TONG_GIAY! LEQ 0 (echo Dat TONG_VAN ^(so van^) hay TONG_GIO ^(so gio^) o dau file.& pause& exit /b 1)
-set /a VONG_N=VONG
+rem VONG de trong: chung 10 vong, moi vong tu 10 phut toi 1 gio (theo TONG_GIO), hoac 10 vong (theo TONG_VAN).
+set /a VONG_N=0
+if defined VONG set /a VONG_N=VONG 2>nul
+if !VONG_N! LSS 1 (
+  set /a VONG_N=10
+  if "!CHE_DO!"=="gio" (
+    set /a "DAI_V=TONG_GIAY/10"
+    if !DAI_V! LSS 600 set /a DAI_V=600
+    if !DAI_V! GTR 3600 set /a DAI_V=3600
+    set /a "VONG_N=(TONG_GIAY+DAI_V-1)/DAI_V"
+  )
+)
 if !VONG_N! LSS 1 set /a VONG_N=1
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 set "KIT_VER="

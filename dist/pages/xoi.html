@@ -135,9 +135,33 @@
     table.stack td:first-child code { white-space: normal; }
     table.stack td[data-label]::before { content: attr(data-label) ": "; color: var(--accent); font-size: .82rem; font-weight: 600; }
   }
+  /* The bar on top of every page of the guide, wherever one has scrolled to: back to the game, and the other pages. */
+  .site-bar { position: sticky; top: 0; z-index: 50; background: rgba(13, 18, 38, .9); border-bottom: 1px solid var(--card-border);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .site-bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 3.1rem; }
+  .site-bar a { text-decoration: none; color: var(--text-dim); font-size: .93rem; white-space: nowrap; }
+  .site-bar a:hover { color: var(--text); }
+  .site-bar .home { display: inline-flex; align-items: center; gap: .5rem; color: var(--text); font-weight: 700; }
+  .site-bar .home img { width: 24px; height: 24px; border-radius: 6px; box-shadow: none; }
+  .site-bar .go { display: flex; align-items: center; gap: 1rem; }
+  .site-bar .go a[aria-current="page"] { color: var(--text); font-weight: 600; border-bottom: 2px solid var(--accent); }
+  .site-bar .go a.play { background: var(--accent-2); color: #3a2900; font-weight: 700; padding: .32rem .95rem; border-radius: 999px; }
+  .site-bar .go a.play:hover { background: #ffe07a; color: #3a2900; }
+  [id] { scroll-margin-top: 3.8rem; }
+  @media (max-width: 360px) { .site-bar .home span { display: none; } .site-bar .go { gap: .8rem; } }
 </style>
 </head>
 <body>
+  <nav class="site-bar" aria-label="LF2 Online">
+    <div class="wrap">
+      <a class="home" href="./"><img src="icon.svg" alt=""><span>LF2 Online</span></a>
+      <div class="go">
+        <a href="insane.html">INSANE!</a>
+        <a href="xoi.html" aria-current="page">XOI</a>
+        <a class="play" href="./"><span class="en">Play &#9656;</span><span class="vi">Chơi &#9656;</span></a>
+      </div>
+    </div>
+  </nav>
   <header class="hero">
     <div class="wrap">
       <div class="lang-bar">
@@ -554,7 +578,8 @@
           onto the file. A mod you trained XOI for: use <code>&lt;mod&gt;-xoi.zip</code> — XOI plays it stronger.</li>
         <li><b>Say how much</b> (in Notepad, at the top): <code>TOTAL_GAMES</code> (all the games, e.g. <code>200000</code>) or
           <code>TOTAL_HOURS</code> (all the hours, <code>7.5</code> = seven and a half), split into <code>ROUNDS</code> rounds — after each
-          one the report is updated. In <code>can-bang.bat</code>: <code>TONG_VAN</code>, <code>TONG_GIO</code>, <code>VONG</code>.</li>
+          one the report is updated; left empty, the rounds are split for you, each from 10 minutes to an hour. In
+          <code>can-bang.bat</code>: <code>TONG_VAN</code>, <code>TONG_GIO</code>, <code>VONG</code>.</li>
         <li><b>Double-click.</b> Results in <code>balance-&lt;mod&gt;\</code> (<code>can-bang-&lt;mod&gt;\</code>): <code>report.html</code>
           (<code>bao-cao.html</code>) to open in a browser, and a text summary <code>results.txt</code> (<code>ket-qua.txt</code>). After every
           round the file also shows the games per hour, to size the next run.</li>
@@ -566,7 +591,7 @@
           hoặc kéo thả nó vào file. Bản mod đã huấn luyện XOI: dùng <code>&lt;tên&gt;-xoi.zip</code> — XOI chơi mạnh hơn.</li>
         <li><b>Chỉnh bao nhiêu</b> (mở bằng Notepad, ở đầu file): <code>TONG_VAN</code> (tổng số ván, ví dụ <code>200000</code>) hoặc
           <code>TONG_GIO</code> (tổng số giờ, <code>7,5</code> = 7 giờ rưỡi), chia làm <code>VONG</code> vòng — hết mỗi vòng báo cáo được
-          cập nhật.</li>
+          cập nhật; để trống <code>VONG</code> thì tự chia, mỗi vòng từ 10 phút tới 1 giờ.</li>
         <li><b>Nháy đúp.</b> Kết quả ở <code>can-bang-&lt;tên&gt;\</code>: <code>bao-cao.html</code> mở bằng trình duyệt, và bản tóm tắt
           <code>ket-qua.txt</code>. Hết mỗi vòng file còn báo số ván một giờ, để tính cho lần sau.</li>
         <li><b>Tạm dừng và làm tiếp:</b> đóng cửa sổ (hoặc đặt <code>GIO_CHAY</code>), lúc khác chạy lại — vòng đang dở được làm tiếp. Đo
@@ -580,9 +605,10 @@
           frame number in the fighter's <code>.dat</code> file.</li>
         <li><b>How many games:</b> for 21 fighters (210 pairs), about ±1% on each fighter's rate takes some 100,000 games; ±3% on each
           cell of the chart, some 230,000. Two fighters closer than their margins cannot be told apart yet.</li>
-        <li><b>Other players:</b> <code>BRAIN</code> (<code>NAO</code>) = <code>smart</code> (INSANE!) or <code>classic</code> (the original
-          computer player, which plays a mod's own AI scripts) — each gets its own folder. A fighter strong with every player is almost
-          surely strong.</li>
+        <li><b>The player:</b> <code>BRAIN</code> (<code>NAO</code>) = <code>xoi</code>, the default (or left empty) — XOI needs no file of the
+          XOI kit: a mod without XOI's numbers or brain is played with its default numbers; <code>smart</code> (INSANE!);
+          <code>classic</code> (the original computer player, which plays a mod's own AI scripts, <code>ai\&lt;id&gt;.as</code>). Each gets its
+          own folder. A fighter strong with every player is almost surely strong.</li>
         <li><b>The limits:</b> this is how the AI plays the fighters. It reacts almost at once and does not find combos the way a good
           player does; about a move it never used, the report says nothing. Check what you conclude with real players.</li>
       </ul>
@@ -593,8 +619,10 @@
           hòa; bảng tải về dạng CSV. Tên chiêu gồm phím bấm, tên frame và số frame trong file <code>.dat</code> của nhân vật.</li>
         <li><b>Bao nhiêu ván:</b> 21 nhân vật (210 cặp): sai số khoảng ±1% cho tỉ lệ của mỗi nhân vật cần chừng 100.000 ván; ±3% cho
           mỗi ô của bảng đối đầu, chừng 230.000. Hai nhân vật chênh nhau ít hơn sai số thì chưa nói được ai hơn ai.</li>
-        <li><b>Máy khác:</b> <code>NAO</code> = <code>smart</code> (INSANE!) hay <code>classic</code> (máy gốc, chơi bằng script AI riêng
-          của bản mod nếu có) — mỗi máy một thư mục riêng. Nhân vật mạnh với mọi máy thì gần như chắc là mạnh thật.</li>
+        <li><b>Máy chơi:</b> <code>NAO</code> = <code>xoi</code>, mặc định (để trống cũng vậy) — XOI không cần file gì của bộ XOI: bản mod
+          chưa có thang số hay bộ não thì XOI chơi bằng số mặc định; <code>smart</code> (INSANE!); <code>classic</code> (máy gốc, chơi bằng
+          script AI riêng của bản mod nếu có, <code>ai\&lt;id&gt;.as</code>). Mỗi máy một thư mục riêng. Nhân vật mạnh với mọi máy thì gần
+          như chắc là mạnh thật.</li>
         <li><b>Giới hạn:</b> đây là cách AI chơi các nhân vật. AI phản ứng gần như tức thì và không tự tìm combo như người chơi giỏi;
           chiêu AI chưa dùng thì báo cáo không nói được gì. Kết luận nên kiểm tra thêm bằng người chơi thật.</li>
       </ul>

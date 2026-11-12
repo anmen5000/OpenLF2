@@ -26,19 +26,20 @@ rem (names as in the game, any case).
 set "FIGHTERS=all"
 rem Fighters to leave out (ids or names), e.g. a training dummy or a boss: Dummy 40
 set "EXCLUDE="
-rem The computer player on both sides: xoi (XOI, with the mod's own numbers and brain if it has them), smart (INSANE!),
-rem classic (the original computer player; a fighter with its own AI script in the mod - like Sauce's AI - is played by
-rem that script). Measure with all three and compare: a fighter that is strong with every player is almost surely
-rem strong.
+rem The computer player on both sides (empty = xoi): xoi (XOI; it needs nothing more - a mod without XOI's numbers, brain
+rem or notes is played with its default numbers, and with them when it has them), smart (INSANE!), classic (the original
+rem computer player; a fighter with its own AI script in the mod - a file ai\<id>.as, like Sauce's AI - is played by that
+rem script). Measure with all three and compare: a fighter that is strong with every player is almost surely strong.
 set "BRAIN=xoi"
 rem How much: the total number of games (TOTAL_GAMES, e.g. 200000), or the total hours (TOTAL_HOURS, used when
 rem TOTAL_GAMES is empty; 7.5 = seven and a half hours). Split into ROUNDS rounds: after every round the report is updated
-rem (it can be opened while the rest runs).
+rem (it can be opened while the rest runs). ROUNDS left empty: split for you, each round from 10 minutes to an hour (with
+rem TOTAL_HOURS: mostly 10 rounds; 20 hours make 20), or 10 rounds (with TOTAL_GAMES).
 rem For example: 21 fighters (210 pairs), a margin of about +-1%% for each fighter: about 100000 games; +-3%% for each
 rem cell of the matchup chart: about 230000 games. The speed depends on the mod and the PC (one CPU thread: from a few
 rem hundred to about 9000 games an hour); after every round this file shows the games per hour, to size TOTAL_GAMES or
 rem TOTAL_HOURS next time.
-set "ROUNDS=10"
+set "ROUNDS="
 set "TOTAL_GAMES="
 set "TOTAL_HOURS=2"
 rem Weapons falling from the sky: 0 = off (only the fighters and what they make themselves are measured), 1 = on
@@ -183,7 +184,18 @@ if "!CHE_DO!"=="gio" (
 rem (TEST_TOTAL_SECONDS: the total in seconds, for trying this file.)
 if defined TEST_TOTAL_SECONDS set /a TONG_GIAY=TEST_TOTAL_SECONDS
 if "!CHE_DO!"=="gio" if !TONG_GIAY! LEQ 0 (echo Set TOTAL_GAMES ^(the games^) or TOTAL_HOURS ^(the hours^) at the top of the file.& pause& exit /b 1)
-set /a VONG_N=ROUNDS
+rem ROUNDS left empty: about 10 rounds, each from 10 minutes to an hour (with TOTAL_HOURS), or 10 rounds (with TOTAL_GAMES).
+set /a VONG_N=0
+if defined ROUNDS set /a VONG_N=ROUNDS 2>nul
+if !VONG_N! LSS 1 (
+  set /a VONG_N=10
+  if "!CHE_DO!"=="gio" (
+    set /a "DAI_V=TONG_GIAY/10"
+    if !DAI_V! LSS 600 set /a DAI_V=600
+    if !DAI_V! GTR 3600 set /a DAI_V=3600
+    set /a "VONG_N=(TONG_GIAY+DAI_V-1)/DAI_V"
+  )
+)
 if !VONG_N! LSS 1 set /a VONG_N=1
 if not defined PRIORITY set "PRIORITY=NORMAL"
 set "KIT_VER="

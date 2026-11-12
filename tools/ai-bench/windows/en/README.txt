@@ -119,8 +119,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    double-click it. One computer player (XOI) plays both sides of every pair of fighters, on every CPU thread,
    and counts each fighter's win rate against every other one and what each of its moves brings (how often it
    is used, lands, is guarded, how much HP it takes off, how often its user is hit in it). Settings at the top:
-   ROUNDS, and TOTAL_GAMES or TOTAL_HOURS; FIGHTERS, EXCLUDE the fighters; BRAIN the player (xoi, smart,
-   classic). Results in balance-<mod>\: report.html (open it in a browser: the ranking, the matchup chart,
+   TOTAL_GAMES or TOTAL_HOURS, split into ROUNDS rounds (left empty: split for you, each round from 10 minutes to
+   an hour); FIGHTERS, EXCLUDE the fighters; BRAIN the player (xoi - the default, also when left empty: it needs
+   no file of the kit -, smart, classic). Results in balance-<mod>\: report.html (open it in a browser: the ranking, the matchup chart,
    every move of every fighter) and results.txt, updated after every round. Close the window to pause, run it
    again to go on; raise TOTAL_GAMES or TOTAL_HOURS to measure more. The numbers only - what to change is the
    mod maker's to say. (Also on its own, as balance-kit.zip on the guide's page.)

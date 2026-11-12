@@ -610,6 +610,10 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- The guide pages (xoi.html, insane.html) keep a bar on top while scrolling: back to the game (Play), INSANE!, XOI
+  (package 78). The balance runners: `VONG` / `ROUNDS` left empty splits the run for you (rounds of 10 minutes to an
+  hour: two hours make 10, twenty make 20; 10 rounds with a total of games); `NAO` / `BRAIN` left empty is XOI, which
+  needs no file of the XOI kit (a mod without XOI's numbers or brain is played with its default numbers)
 - Fighter balance, for the people who make mods (package 77): `can-bang.bat` in the XOI kit, `balance.bat` in its
   English edition and on its own as `balance-kit.zip` (xoi.html#balance), on the bench's new `balance` job. One
   computer player (XOI by default; INSANE! or the original player with the mod's own AI scripts) plays both sides of

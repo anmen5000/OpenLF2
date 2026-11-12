@@ -80,7 +80,8 @@
   .path span { color: var(--text-dim); }
   ul.plain { color: var(--text-dim); font-size: .93rem; padding-left: 1.2rem; }
   ul.plain li { margin: .3rem 0; }
-  @media (max-width: 640px) { .path { grid-template-columns: 1fr; } .path span { margin-bottom: .4rem; } .hero h1 { font-size: 2.2rem; } }
+  @media (max-width: 640px) { .path { grid-template-columns: 1fr; } .path span { margin-bottom: .4rem; } .hero h1 { font-size: 2.2rem; }
+    .path code { white-space: normal; overflow-wrap: anywhere; } }
   .badge { display: inline-block; margin-top: .9rem; padding: .35rem .9rem; border-radius: 999px; background: rgba(80,200,239,.15); border: 1px solid rgba(80,200,239,.45);
     color: var(--accent); font-weight: 600; font-size: .9rem; letter-spacing: .02em; }
   .badge[hidden] { display: none; }
@@ -95,9 +96,33 @@
   @media (max-width: 640px) { .history li { grid-template-columns: 1fr; gap: .2rem; } }
   footer { padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; margin-top: 2rem; }
   footer .links { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .6rem; }
+  /* The bar on top of every page of the guide, wherever one has scrolled to: back to the game, and the other pages. */
+  .site-bar { position: sticky; top: 0; z-index: 50; background: rgba(13, 18, 38, .9); border-bottom: 1px solid var(--card-border);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .site-bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 3.1rem; }
+  .site-bar a { text-decoration: none; color: var(--text-dim); font-size: .93rem; white-space: nowrap; }
+  .site-bar a:hover { color: var(--text); }
+  .site-bar .home { display: inline-flex; align-items: center; gap: .5rem; color: var(--text); font-weight: 700; }
+  .site-bar .home img { width: 24px; height: 24px; border-radius: 6px; box-shadow: none; }
+  .site-bar .go { display: flex; align-items: center; gap: 1rem; }
+  .site-bar .go a[aria-current="page"] { color: var(--text); font-weight: 600; border-bottom: 2px solid var(--accent); }
+  .site-bar .go a.play { background: var(--accent-2); color: #3a2900; font-weight: 700; padding: .32rem .95rem; border-radius: 999px; }
+  .site-bar .go a.play:hover { background: #ffe07a; color: #3a2900; }
+  [id] { scroll-margin-top: 3.8rem; }
+  @media (max-width: 360px) { .site-bar .home span { display: none; } .site-bar .go { gap: .8rem; } }
 </style>
 </head>
 <body>
+  <nav class="site-bar" aria-label="LF2 Online">
+    <div class="wrap">
+      <a class="home" href="./"><img src="icon.svg" alt=""><span>LF2 Online</span></a>
+      <div class="go">
+        <a href="insane.html" aria-current="page">INSANE!</a>
+        <a href="xoi.html">XOI</a>
+        <a class="play" href="./">Play &#9656;</a>
+      </div>
+    </div>
+  </nav>
   <header class="hero">
     <div class="wrap">
       <img src="icon.svg" alt="">

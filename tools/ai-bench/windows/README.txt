@@ -115,8 +115,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    double-click it. One computer player (XOI) plays both sides of every pair of fighters, on every CPU thread,
    and counts each fighter's win rate against every other one and what each of its moves brings (how often it
    is used, lands, is guarded, how much HP it takes off, how often its user is hit in it). Settings at the top:
-   VONG rounds, and TONG_VAN (total games) or TONG_GIO (total hours); NHAN_VAT, BO_NHAN_VAT the fighters; NAO the
-   player (xoi, smart, classic). Results in can-bang-<mod>\: bao-cao.html (open it in a browser: the ranking,
+   TONG_VAN (total games) or TONG_GIO (total hours), split into VONG rounds (left empty: split for you, each round
+   from 10 minutes to an hour); NHAN_VAT, BO_NHAN_VAT the fighters; NAO the player (xoi - the default, also when
+   left empty: it needs no file of the kit -, smart, classic). Results in can-bang-<mod>\: bao-cao.html (open it in a browser: the ranking,
    the matchup chart, every move of every fighter; English or Vietnamese at a click) and ket-qua.txt,
    updated after every round. Close the window to pause, run it again to go on; raise TONG_VAN or TONG_GIO
    to measure more. The numbers only - what to change is the mod maker's to say. (In English: balance.bat,
@@ -239,8 +240,9 @@ chơi được chính các file của bản mod.
 10. Cân bằng nhân vật (gói 77): đặt file .zip bản mod (tốt hơn: <tên>-xoi.zip) cạnh can-bang.bat rồi nháy đúp.
    Một máy (XOI) chơi cả hai bên mọi cặp nhân vật, trên mọi luồng CPU, rồi đếm tỉ lệ thắng của từng nhân vật
    trước từng nhân vật khác và mỗi chiêu của nó mang lại gì (dùng bao nhiêu, trúng bao nhiêu, bị đỡ, gây bao
-   nhiêu máu, người dùng bị đánh trả bao nhiêu). Chỉnh ở đầu file: VONG (số vòng), và TONG_VAN (tổng số ván)
-   hoặc TONG_GIO (tổng số giờ); NHAN_VAT, BO_NHAN_VAT là các nhân vật; NAO là máy (xoi, smart, classic). Kết
+   nhiêu máu, người dùng bị đánh trả bao nhiêu). Chỉnh ở đầu file: TONG_VAN (tổng số ván) hoặc TONG_GIO (tổng
+   số giờ), chia làm VONG vòng (để trống: tự chia, mỗi vòng từ 10 phút tới 1 giờ); NHAN_VAT, BO_NHAN_VAT là các
+   nhân vật; NAO là máy (xoi - mặc định, để trống cũng vậy, không cần file gì của bộ XOI -, smart, classic). Kết
    quả ở can-bang-<tên>\: bao-cao.html (mở bằng trình duyệt: xếp hạng, bảng đối đầu, từng chiêu của từng nhân
    vật; bấm một nút là chuyển tiếng Anh/tiếng Việt) và ket-qua.txt, cập nhật sau mỗi vòng. Đóng cửa sổ để tạm
    dừng, chạy lại là làm tiếp; tăng TONG_VAN hay TONG_GIO để đo thêm. Báo cáo chỉ ghi số đo được - chỉnh gì là

@@ -15,13 +15,16 @@ The numbers, not a verdict: what to change is the mod maker's to say.
 2. Unzip this kit into a folder you can write to (Documents, say) and put your mod's .zip next to balance.bat.
    A mod you trained XOI for with the XOI kit: use <mod>-xoi.zip - XOI plays it stronger.
 3. Open balance.bat in Notepad to change its settings (at the top), or leave them as they are:
-     ROUNDS=10          rounds: after each one the report is updated (open it while the rest runs)
      TOTAL_GAMES=       the games to play in all (e.g. 200000), or
      TOTAL_HOURS=2      the hours to run in all, used when TOTAL_GAMES is empty (7.5 = seven and a half)
+     ROUNDS=            rounds: after each one the report is updated (open it while the rest runs); left
+                        empty, split for you - each round from 10 minutes to an hour (10 rounds with TOTAL_GAMES)
      FIGHTERS=all       or some ids or names: 8 25 Crimson Deep
      EXCLUDE=           fighters to leave out (a training dummy, a boss)
-     BRAIN=xoi          the player: xoi (XOI), smart (INSANE!), classic (the original LF2 computer player,
-                        which plays a mod's own AI scripts where it has them)
+     BRAIN=xoi          the player (empty = xoi): xoi (XOI - it needs no file of the XOI kit: a mod without
+                        XOI's numbers or brain is played with its default numbers), smart (INSANE!), classic
+                        (the original LF2 computer player, which plays a mod's own AI scripts, ai\<id>.as, where
+                        it has them)
      WEAPONS=0          weapons falling from the sky: 0 off, 1 on
      GAME_MINUTES=5     a game's longest; STILL_SECONDS=60: a minute without damage ends it, a draw
      PARALLEL, RUN_HOURS, PRIORITY, FIRST_SEED: processes at once, a pause timer, their priority, the seed
