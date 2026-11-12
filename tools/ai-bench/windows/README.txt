@@ -207,6 +207,17 @@ chơi được chính các file của bản mod.
    Sauce (80 luồng): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%. Thư mục hoc-sau là của
    các bản mod đã chạy với nó: chạy cho bản mod khác thì đổi tên nó trước (ví dụ hoc-sau-sauce) - hoc-sau.bat dừng và
    báo thay vì trộn dữ liệu của chúng.
+   Gói 79, sửa lỗi: từ gói 67 tới 78, khi XOI ghi dữ liệu và kiểm tra với chính nó (bản mod không có AI riêng, hay
+   DOI_THU=xoi), bản sao làm đối thủ lại chơi cùng bộ não - phần kiểm tra là bộ não đấu với chính bộ não, gần như hòa
+   dù bộ não tốt hay dở, và từ lượt 2 dữ liệu được ghi khi bộ não đấu với chính nó. Bộ não đã học vẫn dùng được; muốn
+   biết nó đáng bao nhiêu: xóa thư mục hoc-sau\kiem-tra rồi chạy hoc-sau.bat của bộ mới - chỉ phần kiểm tra chạy lại.
+   Đo lại trên Convergence (1 lượt 25 phút trên 2 luồng, 250.000 lần ra đòn; 2.000 ván, mỗi ván chơi hai lần): XOI có
+   bộ não thắng nhiều hơn XOI không có 2,9 trận mỗi 100 trận.
+   Gói 79, THU_DON=4: khi ghi dữ liệu XOI thỉnh thoảng thử một đòn khác với đòn nó cho là tốt nhất (đòn điểm gần bằng
+   thì hay được thử, đòn kém xa thì gần như không), để bộ não biết cả những đòn XOI ít chọn mang lại gì. Cùng 1 lượt
+   như trên mà có thử đòn: bộ não thắng nhiều hơn 6,5 trận mỗi 100. Với AI của Sauce thì như nhau (thử đòn hay không,
+   bộ não đều thắng hơn chừng 8 trận mỗi 100): một đối thủ khác XOI đã cho bộ não đủ điều để học. 0 = tắt; phần kiểm
+   tra không bao giờ thử đòn.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

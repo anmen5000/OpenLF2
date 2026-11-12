@@ -7,10 +7,12 @@
 --   opponent "xoi": XOI itself (config.alt's copy, without the brain) even in a pack with AI scripts of its own — those
 --   of most mods are far weaker than Sauce's, and a brain learned against them learns to beat a weak player
 --   (hoc-sau.bat's DOI_THU=xoi, brain.bat's OPPONENT=xoi)
+--   explore (beta; nil or 0: off): the recorded player tries other moves now and then (below)
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
 local ai_scripts = require("base/game/ai_scripts")
+local brains = require("bench/brains")
 local job = {}
 
 local function clock_seconds() local clock = engine.network_time; return clock and clock() / 1000 or nil end
@@ -59,6 +61,13 @@ function job.run(config)
         engine.log("record: opponent " .. names[2] .. (own_scripts and " (the pack's own AI scripts)"
             or scripted and " (XOI itself: opponent = xoi, the pack's own AI scripts left out)" or " (no AI scripts of the pack's own)"))
     end
+    -- A side named "xoi@<module>" is played by that copy, with a context of its own (brains.load sets the match's
+    -- routing up, as duel's does). Up to package 78 nothing did so here, and the match handed every "xoi..."
+    -- fighter to the player itself, the brain given to side 1 with it: in a pack without AI scripts of its own,
+    -- or with DOI_THU=xoi, the check of XOI with the brain against XOI without it set the brain against itself
+    -- (and no brain against no brain) — about even whatever the brain was worth — and the rounds from the second
+    -- recorded the brain against itself.
+    for _, name in ipairs(names) do brains.load(name) end
     -- config.brain = {module = ..., on = {1}}: the recorded player plays with a brain (as duel's option), the
     -- records then of the play it leads to — the next brain is trained on them.
     local on_list = config.brain and (config.brain.on or {1}) or {}
@@ -105,6 +114,28 @@ function job.run(config)
     local count = 0
     local width = 0
     assert(smart.brain_kit, "scripts/base/game/smart_ai.lua has no brain kit (older than the recorder)")
+    -- config.explore = beta (hoc-sau.bat's THU_DON, brain.bat's EXPLORE; 0 or nil: off): the recorded player tries
+    -- other moves now and then. Each move it finds worth starting gets a shift of its score drawn for the frame and
+    -- the move (Gumbel noise of scale beta, less its mean), so that moves that score close to the best one are
+    -- sometimes started instead and ones far below it almost never: the records then tell what moves the player
+    -- would not have chosen bring too, not only those it picks every time (smart.explore, read in best_attack).
+    -- The opponent never explores, nor does any player in a check (quiet). Mode Convergence, XOI against itself,
+    -- one round of 25 minutes on 2 threads: the brain learned with beta 4 won 6.5 games in 100 more than XOI
+    -- without a brain, the brain learned without exploring 2.9 (the same 2,000 games).
+    local explore = not quiet and config.explore and config.explore > 0 and config.explore or nil
+    if explore then
+        local salt = (config.seed or 1) % 100000
+        smart.explore = function(self, move)
+            local state = state_now
+            if not state or self ~= state.items[10] then return nil end
+            local h = (state.frame_number * 7919 + (move.index or 0) * 104729 + salt * 15485863) % 2147483647
+            if h <= 0 then h = h + 2147483646 end
+            for _ = 1, 3 do h = (h * 48271) % 2147483647 end
+            local u = (h + 0.5) / 2147483647
+            return explore * (-math.log(-math.log(u)) - 0.5772)
+        end
+        engine.log("record: the recorded player explores, beta " .. explore)
+    end
     local header = {"dx", "dz", "my", "ty", "tfaces", "hp", "thp", "mp", "tmp", "vx", "tvx", "tvz", "tvy", "wpn", "twpn"}
     for i = 0, 9 do header[#header + 1] = "me" .. i end
     for i = 0, 9 do header[#header + 1] = "tg" .. i end
@@ -186,6 +217,7 @@ function job.run(config)
         if not ok then engine.log("record: game failed: " .. tostring(problem)) end
     end
     for _, module in ipairs(modules) do module.on_start = nil end
+    smart.explore = nil
     engine.log(string.format("RECORD %d games, %d records, %s won %d lost %d vs %s", played, count, names[1], wins, losses, names[2]))
 end
 return job

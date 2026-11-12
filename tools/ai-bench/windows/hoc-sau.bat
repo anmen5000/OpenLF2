@@ -42,6 +42,12 @@ rem thi voi chinh no (khong co bo nao). Ghi xoi: luon danh voi chinh no, ke ca b
 rem rieng yeu hon XOI nhieu (KT-LF2, Dragon Ball Super, One Piece ban moi...): hoc danh mot AI yeu thi bo nao chi hoc
 rem cach thang AI ay. Ap dung cho moi ban mod cua lan chay, ca phan kiem tra (ban Sauce thi chay rieng, de trong).
 set "DOI_THU="
+rem Thu don (THU_DON, goi 79): khi ghi du lieu XOI thinh thoang ra mot don khac voi don no cho la tot nhat - don diem
+rem gan bang don tot nhat thi hay duoc thu, don kem xa thi gan nhu khong - de bo nao biet ca nhung don XOI it chon
+rem mang lai gi, khong chi nhung don no luc nao cung chon. So nguyen; 0 = tat; lon hon thi thu nhieu hon. Phan kiem
+rem tra cuoi khong bao gio thu don. (Convergence, XOI tu danh voi chinh no, 1 luot: bo nao hoc voi THU_DON=4 thang
+rem hon XOI khong co bo nao 6,5 tran moi 100, bo nao hoc khong thu don 2,9.)
+set "THU_DON=4"
 rem Bo nao: so no-ron lop giua (AN) va so lan hoc qua toan bo du lieu (EPOCH). 48 va 8 la du; lon hon thi hoc lau hon.
 set "AN=48"
 set "EPOCH=8"
@@ -67,6 +73,14 @@ if /i "%DOI_THU%"=="xoi" (
   set "DT_GHI=, DOI_THU=xoi"
 )
 if defined DOI_THU if not defined DT_CFG (echo [LOI] DOI_THU chi nhan xoi ^(hoac de trong^), khong phai "%DOI_THU%".& pause& exit /b 1)
+set "TD_CFG="
+set "TD_GHI=, THU_DON=0"
+set /a TD_N=0
+if defined THU_DON set /a TD_N=THU_DON 2>nul
+if !TD_N! GTR 0 (
+  set TD_CFG=explore = !TD_N!,
+  set "TD_GHI=, THU_DON=!TD_N!"
+)
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -190,6 +204,7 @@ if defined KHAC (
 >"%LV%\ban-mod.txt" echo !DS_MOD!
 echo %VONG% luot x %PHUT_GHI% phut ghi du lieu, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
 if defined DT_CFG echo Doi thu: chinh XOI ^(DOI_THU=xoi^), ke ca o ban mod co AI rieng.
+if defined TD_CFG echo Thu don: THU_DON=!TD_N! - khi ghi du lieu XOI thinh thoang ra don khac voi don no cho la tot nhat.
 echo Tam dung: dong cua so nay ^(cac game chay ngam tu dung theo^). Chay lai file nay la lam tiep.
 echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
 rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc hoc-sau
@@ -266,7 +281,7 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=HAT_GIONG+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Hoc sau - luot %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 luot-%E% %%k !SEED! !PI!
   )
 )
@@ -399,7 +414,7 @@ if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem Ket qua, va bo nao cua moi ban mod: xoi-<ten>\brain.txt, goi <ten>-xoi.zip.
 (
-  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%%DT_GHI%; ban mod:
+  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%%DT_GHI%%TD_GHI%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\thoi-gian.txt" findstr /c:"Luot " "%LV%\thoi-gian.txt"
   if exist "%K%\tong.txt" type "%K%\tong.txt"

@@ -610,6 +610,20 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- `hoc-sau.bat` (`brain.bat`): XOI tries other moves while it records (package 79) — `THU_DON` (`EXPLORE`), 4 by
+  default, 0 off; the bench's `record` job's `explore`. Each move XOI finds worth starting gets a shift of its score
+  drawn for the frame and the move (Gumbel noise of that scale, less its mean), so that moves scoring close to the
+  best one are sometimes started instead and moves far below it almost never: the brain then learns what the moves XOI
+  would not have chosen bring too, not only those it picks every time — the records of a player that always takes its
+  best move hold nothing of the others. The opponent never explores, nor does anyone in the check. Mode Convergence,
+  XOI against itself, one round of 25 minutes on 2 threads each way, the brains checked over the same 2,000 games: the
+  brain learned exploring won 6.5 games in 100 more than XOI without a brain (± 2.3, 35 HP a game), the brain learned
+  without 2.9 (± 2.2): 3.6 (± 2.2) between them. Against Sauce's AI on Sauce's pack (one round of 20 minutes on 1
+  thread each way, the brains checked over the same 1,400 games) it made no difference: 8.5 games in 100 more than XOI
+  without a brain exploring, 8.0 without (± 3) — an opponent that answers otherwise than XOI expects already shows the
+  brain enough. Weighing the brain more (`brain_weight` 0.75 or 1 instead of 0.5) made no difference that 800 games
+  can tell (−1.1 and +0.2 games in 100, ± 3.5). In a game nothing changes: `smart.explore` is set by the recording
+  alone (the same 300 games with the hook and without, with a brain and without)
 - The guide pages (xoi.html, insane.html) keep a bar on top while scrolling: back to the game (Play), INSANE!, XOI
   (package 78). The balance runners: `VONG` / `ROUNDS` left empty splits the run for you (rounds of 10 minutes to an
   hour: two hours make 10, twenty make 20; 10 rounds with a total of games); `NAO` / `BRAIN` left empty is XOI, which
@@ -690,6 +704,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   The bench's `moves` job prints `share`, `lasting`, `branch` and a swap's `reach`
 
 ### Fixed
+- XOI's brain learned against XOI itself — `hoc-sau.bat` (`brain.bat`) in a mod without AI scripts of its own, or
+  with `DOI_THU=xoi` (`OPPONENT=xoi`) — was checked against itself, from package 67 to 78. The opponent is a copy of
+  XOI meant to play without the brain, but the bench's `record` job never set up the routing that hands a
+  `xoi@<copy>` fighter to that copy (`duel` does it, through `bench/brains`): the match handed it to XOI itself, the
+  brain with it. The final check set the brain against itself and no brain against no brain — about even whatever
+  the brain was worth: the project owner saw no gain from a brain learned against XOI and a clear one from a brain
+  learned against Sauce's AI, which no copy plays — and the rounds from the second recorded the brain against itself.
+  `record` loads its players through `bench/brains` now (package 79). Measured again on mode Convergence: one round of
+  25 minutes on 2 threads (7,591 games, 250,000 moves), then 2,000 games played twice from the same points of the
+  random sequence, XOI with the brain and XOI without it, each against XOI without it: 52.0% won against 49.1%, 2.9
+  games in 100 more (± 2.2), 27 HP a game. A brain learned before is sound; to see what it is worth, delete
+  `hoc-sau\kiem-tra` (`brain\check`) and run the new kit's `hoc-sau.bat` (`brain.bat`) again: only the check runs
 - Closing the kit's windows (spsa.bat's, hoc-sau.bat's and brain.bat's, with their minimized process windows) left
   their games running in the background to the end of the round, since package 69: a game whose output goes to a file
   no longer attached to its window's console, and a process not attached to a console does not end with its window.

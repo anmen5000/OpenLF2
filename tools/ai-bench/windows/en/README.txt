@@ -83,6 +83,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    owner's 10 rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI,
    without 45.8%. The brain folder belongs to the mods it was run with: for other mods, rename it first (brain-sauce,
    say) - brain.bat stops with a message rather than mix their data.
+   Package 79, a fix: from package 67 to 78, when XOI recorded and was checked against itself (a mod without an AI of
+   its own, or OPPONENT=xoi), the copy that is its opponent played with the brain too - the check set the brain
+   against itself, about even whether the brain was good or bad, and from the second round the data was recorded
+   with the brain against itself. A brain learned so is sound; to see what it is worth, delete the brain\check
+   folder and run the new kit's brain.bat again - only the check runs. Measured again on mode Convergence (one round
+   of 25 minutes on 2 threads, 250,000 moves; 2,000 games, each played twice): XOI with the brain won 2.9 games in 100
+   more than XOI without it.
+   Package 79, EXPLORE=4: while recording, XOI now and then tries a move other than the one it finds best (moves that
+   score close to the best one often, ones far below it almost never), so that the brain learns what the moves XOI
+   seldom picks bring too. The same one round, exploring: the brain won 6.5 games in 100 more. Against Sauce's AI it
+   makes no difference (either way the brain won about 8 games in 100 more): an opponent unlike XOI already shows the
+   brain enough. 0 = off; the check never explores.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

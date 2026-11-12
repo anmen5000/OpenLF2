@@ -4643,6 +4643,17 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                         score = score + tune.brain_weight * (expected - score)
                     end
                 end
+                -- (The bench's recording for a brain may have the fighter try other moves now and then —
+                -- smart.explore, set by tools/ai-bench/record.lua alone: a move worth starting gets a shift of its
+                -- score drawn for the frame and the move, the score kept for the records being the one before it.
+                -- In a game it is never set.)
+                if smart.explore and score > tune.attack_threshold then
+                    local shift = smart.explore(self, move)
+                    if shift then
+                        if not brain then smart.brain_kit.hand[move] = score end
+                        score = max(tune.attack_threshold + 0.01, score + shift)
+                    end
+                end
                 if score > best_score then best, best_t, best_score = move, combo or t, score end
             end
         end

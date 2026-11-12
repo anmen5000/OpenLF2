@@ -52,7 +52,8 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    get English names, renamed at **every** use in the file (`%X%`, `!X!`, `set X=`, `set /a ...`, `if defined X`,
    `for ... %X%`, `defined`, `echo` lines that print them). Suggested names: VONG→ROUNDS, PHUT_VONG→ROUND_MINUTES,
    PHUT_KIEM_TRA→CHECK_MINUTES, SONG_SONG→PARALLEL, HAT_GIONG→SEED (if SEED is free; FIRST_SEED in spsa.bat and
-   brain.bat, where SEED is used internally), PHUT_GHI→RECORD_MINUTES, AN→HIDDEN, EPOCH→EPOCHS, UU_TIEN→PRIORITY,
+   brain.bat, where SEED is used internally), PHUT_GHI→RECORD_MINUTES, AN→HIDDEN, EPOCH→EPOCHS, DOI_THU→OPPONENT,
+   THU_DON→EXPLORE, UU_TIEN→PRIORITY,
    VE→RENDERER, THU_GIAY→TEST_SECONDS, SO_TRAN/TRAN→GAMES, MUC→LEVEL, NHAN_VAT→FIGHTERS, GAME/PACK/NOTES/BENCH/SCRIPTS
    unchanged; in can-bang.bat: NAO→BRAIN, BO_NHAN_VAT→EXCLUDE, TONG_VAN→TOTAL_GAMES, TONG_GIO→TOTAL_HOURS,
    VU_KHI→WEAPONS, PHUT_VAN→GAME_MINUTES, GIAY_DUNG_IM→STILL_SECONDS, GIO_CHAY→RUN_HOURS, THU_TONG_GIAY→TEST_TOTAL_SECONDS,

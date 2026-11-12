@@ -918,7 +918,15 @@
           <code>spsa.bat</code> does. <code>DOI_THU=xoi</code> (package 71; <code>OPPONENT=xoi</code> in the English
           <code>brain.bat</code>) does so in a mod with AI scripts of its own too, the check included: most mods' own AI is far
           weaker than XOI (Dragon Ball Super's loses most of its games to it), and a brain learned against it only learns to beat it.
-          Leave it empty for Sauce's pack.</li>
+          Leave it empty for Sauce's pack. From package 67 to 78 the copy played with the brain too (a fault of the recording job):
+          the check set the brain against itself, about even whatever the brain was worth. A brain learned so is sound — delete
+          <code>hoc-sau\kiem-tra</code> and run the new kit's <code>hoc-sau.bat</code> again to check it (only the check runs).</li>
+        <li><code>THU_DON</code> (package 79; <code>EXPLORE</code> in the English <code>brain.bat</code>), 4: while recording,
+          XOI now and then starts a move other than the one it finds best — moves scoring close to the best one often, moves far
+          below it almost never — so that the brain learns what the moves XOI seldom picks bring too, not only those it always
+          picks. 0 turns it off; the check never explores. Mode Convergence, XOI against itself, one round of 25 minutes on
+          2 threads: the brain learned so won 6.5 games in 100 more than XOI without a brain, the one learned without exploring
+          2.9 (the same 2,000 games). Against Sauce's AI it made no difference (about 8 games in 100 either way): an opponent unlike XOI already shows the brain enough.</li>
         <li><b>First <code>spsa.bat</code>, then <code>hoc-sau.bat</code>:</b> the brain learns on top of the numbers (the
           hand-made score is one of its inputs), so after a new tuning a few more rounds bring it up to date. The project owner's
           10 rounds on Sauce's pack (80 threads, November 2026): XOI with the brain won 57.4% of its games against Sauce's AI,
@@ -940,7 +948,14 @@
           não), như <code>spsa.bat</code>. <code>DOI_THU=xoi</code> (gói 71; bộ tiếng Anh: <code>OPPONENT=xoi</code> trong
           <code>brain.bat</code>) làm vậy cả ở bản mod có script AI riêng, cả phần kiểm tra: AI riêng của phần lớn bản mod yếu hơn
           XOI nhiều (AI của Dragon Ball Super thua XOI phần lớn số trận), và bộ não học đánh AI ấy chỉ học được cách thắng nó. Bản
-          Sauce thì để trống.</li>
+          Sauce thì để trống. Từ gói 67 tới 78 bản sao ấy lại chơi cùng bộ não (lỗi của bước ghi dữ liệu): phần kiểm tra là bộ
+          não đấu với chính nó, gần như hòa dù bộ não tốt hay dở. Bộ não đã học vẫn dùng được — xóa <code>hoc-sau\kiem-tra</code>
+          rồi chạy <code>hoc-sau.bat</code> của bộ mới để kiểm tra lại (chỉ phần kiểm tra chạy).</li>
+        <li><code>THU_DON</code> (gói 79; bộ tiếng Anh: <code>EXPLORE</code> trong <code>brain.bat</code>), 4: khi ghi dữ liệu, XOI
+          thỉnh thoảng thử một đòn khác với đòn nó cho là tốt nhất — đòn điểm gần bằng thì hay được thử, đòn kém xa thì gần như
+          không — để bộ não biết cả những đòn XOI ít chọn mang lại gì, không chỉ những đòn nó luôn chọn. 0 là tắt; phần kiểm tra
+          không bao giờ thử đòn. Convergence, XOI tự đánh với chính nó, 1 lượt 25 phút trên 2 luồng: bộ não học như vậy thắng
+          nhiều hơn XOI không có bộ não 6,5 trận mỗi 100 trận, bộ não học không thử đòn 2,9 (cùng 2.000 ván). Với AI của Sauce thì như nhau (thử đòn hay không đều chừng 8 trận mỗi 100): một đối thủ khác XOI đã cho bộ não đủ điều để học.</li>
         <li><b>Chạy <code>spsa.bat</code> trước rồi mới <code>hoc-sau.bat</code>:</b> bộ não học trên nền bộ số (điểm tự tính là một
           đầu vào của nó), nên chỉnh số lại thì chạy thêm vài lượt cho bộ não theo kịp. Lần chạy 10 lượt của chủ dự án trên bản
           Sauce (80 luồng, tháng 11/2026): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%.</li>

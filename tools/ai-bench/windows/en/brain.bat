@@ -46,6 +46,12 @@ rem itself (without the brain). xoi: always itself, in a mod with an AI of its o
 rem weaker than XOI (KT-LF2, Dragon Ball Super, One Piece newest...): a brain learned against a weak AI only learns to
 rem beat that AI. It applies to every mod of the run, the check included (run Sauce's pack apart, with it empty).
 set "OPPONENT="
+rem Trying other moves (EXPLORE, package 79): while recording, XOI now and then starts a move other than the one it
+rem finds best - moves that score close to the best one are tried often, ones far below it almost never - so that the
+rem brain learns what the moves XOI seldom picks bring too, not only those it picks every time. A whole number; 0 = off;
+rem higher tries more. The check at the end never explores. (Mode Convergence, XOI against itself, one round: the
+rem brain learned with EXPLORE=4 beat XOI without a brain by 6.5 games in 100, the one learned without exploring by 2.9.)
+set "EXPLORE=4"
 rem The brain: neurons in the middle layer (HIDDEN) and passes over the whole data (EPOCHS). 48 and 8 are enough;
 rem more takes longer to learn.
 set "HIDDEN=48"
@@ -72,6 +78,14 @@ if /i "%OPPONENT%"=="xoi" (
   set "DT_GHI=, OPPONENT=xoi"
 )
 if defined OPPONENT if not defined DT_CFG (echo [ERROR] OPPONENT takes xoi ^(or nothing^), not "%OPPONENT%".& pause& exit /b 1)
+set "TD_CFG="
+set "TD_GHI=, EXPLORE=0"
+set /a TD_N=0
+if defined EXPLORE set /a TD_N=EXPLORE 2>nul
+if !TD_N! GTR 0 (
+  set TD_CFG=explore = !TD_N!,
+  set "TD_GHI=, EXPLORE=!TD_N!"
+)
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -196,6 +210,7 @@ if defined KHAC (
 >"%LV%\mods.txt" echo !DS_MOD!
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
+if defined TD_CFG echo Trying other moves: EXPLORE=!TD_N! - while recording, XOI now and then starts a move other than the one it finds best.
 echo To pause: close this window ^(the games in the background stop with it^). Running this file again goes on from there.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
 rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
@@ -274,7 +289,7 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=FIRST_SEED+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Brain - round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E% %%k !SEED! !PI!
   )
 )
@@ -408,7 +423,7 @@ if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.zip.
 (
-  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%%DT_GHI%; mods:
+  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%%DT_GHI%%TD_GHI%; mods:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\timing.txt" findstr /c:"Round " "%LV%\timing.txt"
   if exist "%K%\totals.txt" type "%K%\totals.txt"
