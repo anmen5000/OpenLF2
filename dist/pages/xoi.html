@@ -938,6 +938,15 @@
           picks. 0 turns it off; the check never explores. Mode Convergence, XOI against itself, one round of 25 minutes on
           2 threads: the brain learned so won 6.5 games in 100 more than XOI without a brain, the one learned without exploring
           2.9 (the same 2,000 games). Against Sauce's AI it made no difference (about 8 games in 100 either way): an opponent unlike XOI already shows the brain enough.</li>
+        <li><code>NHIN_XA</code> (package 81; <code>LOOK_AHEAD</code> in the English <code>brain.bat</code>): the seconds after a move
+          whose outcome the brain predicts — <code>1,5</code> (the default), <code>3</code> or <code>5</code>; or <code>tu</code>
+          (<code>auto</code>): three brains, 1.5 / 3 / 5 seconds, learned from the same data, all three played in the check, and
+          each mod keeps the one that won most. Looking further, the brain sees a combo's opening move or a push into the
+          corner, but the outcome holds more of what that move did not do; on mode Convergence the three won 4.1 / 6.1 / 5.1
+          games in 100 more than XOI without a brain, within chance of each other. Auto trains three brains at once a mod
+          (three times the memory) and splits the check four ways: worth it on many threads (some 40 or more) or with a
+          longer <code>PHUT_KIEM_TRA</code>. A <code>hoc-sau</code> folder records with one <code>NHIN_XA</code>: rename it to
+          change.</li>
         <li><b>First <code>spsa.bat</code>, then <code>hoc-sau.bat</code>:</b> the brain learns on top of the numbers (the
           hand-made score is one of its inputs), so after a new tuning a few more rounds bring it up to date. The project owner's
           10 rounds on Sauce's pack (80 threads, November 2026): XOI with the brain won 57.4% of its games against Sauce's AI,
@@ -967,6 +976,14 @@
           không — để bộ não biết cả những đòn XOI ít chọn mang lại gì, không chỉ những đòn nó luôn chọn. 0 là tắt; phần kiểm tra
           không bao giờ thử đòn. Convergence, XOI tự đánh với chính nó, 1 lượt 25 phút trên 2 luồng: bộ não học như vậy thắng
           nhiều hơn XOI không có bộ não 6,5 trận mỗi 100 trận, bộ não học không thử đòn 2,9 (cùng 2.000 ván). Với AI của Sauce thì như nhau (thử đòn hay không đều chừng 8 trận mỗi 100): một đối thủ khác XOI đã cho bộ não đủ điều để học.</li>
+        <li><code>NHIN_XA</code> (gói 81; bộ tiếng Anh: <code>LOOK_AHEAD</code> trong <code>brain.bat</code>): số giây sau mỗi đòn mà
+          bộ não đoán kết quả — <code>1,5</code> (mặc định), <code>3</code> hay <code>5</code>; hoặc <code>tu</code>: từ cùng dữ
+          liệu học ba bộ não 1,5 / 3 / 5 giây, phần kiểm tra cho cả ba đánh và mỗi bản mod giữ bộ não thắng nhiều nhất. Nhìn
+          xa thì bộ não thấy cả đòn mở đầu combo hay đòn dồn đối thủ vào góc, nhưng kết quả lẫn nhiều thứ không do đòn ấy gây
+          ra hơn; trên Convergence ba bộ não thắng hơn XOI không có bộ não 4,1 / 6,1 / 5,1 trận mỗi 100, chênh nhau còn trong
+          dao động. Tự chọn thì huấn luyện ba bộ não cùng lúc mỗi bản mod (gấp ba bộ nhớ) và phần kiểm tra chia bốn: đáng dùng
+          khi máy nhiều luồng (chừng 40 trở lên) hay <code>PHUT_KIEM_TRA</code> dài hơn. Một thư mục <code>hoc-sau</code> ghi
+          theo một <code>NHIN_XA</code>: muốn đổi thì đổi tên thư mục ấy.</li>
         <li><b>Chạy <code>spsa.bat</code> trước rồi mới <code>hoc-sau.bat</code>:</b> bộ não học trên nền bộ số (điểm tự tính là một
           đầu vào của nó), nên chỉnh số lại thì chạy thêm vài lượt cho bộ não theo kịp. Lần chạy 10 lượt của chủ dự án trên bản
           Sauce (80 luồng, tháng 11/2026): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%.</li>

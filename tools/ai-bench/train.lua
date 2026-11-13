@@ -10,6 +10,9 @@
 --   no XOI_BRAIN lines, the figures only). A record takes about 500 bytes of memory: six million, 3 GB — so with
 --   `records` (how many the files hold, which hoc-sau.bat counts as it packs them) more than `max_records`
 --   (6,000,000) are thinned to every k-th record, the rounds all still represented (`stride` given wins).
+--   target (1): which outcome to learn when the records carry several windows (record.lua's windows: the REC
+--   line holds the first, an RW line after it the others) — 1 the REC line's, k the (k-1)-th pair of the RW line;
+--   a record with no RW line after it is left out for k > 1.
 -- Prints TRAIN (counts), BASE (the mean alone, and how the player's own score correlates with the outcome),
 -- LINEAR and NET<H> a line an epoch (train mse, test mse, test correlation), then the network as XOI_BRAIN lines
 -- (the text of xoi/brain.txt: hoc-sau.bat keeps them).
@@ -57,10 +60,33 @@ function job.run(config)
             config.records, stride, 500))
     end
     local tokens = {}
+    -- (target > 1: a REC line's row waits for the RW line after it — kept across files —, whose pair it then takes.)
+    local target = config.target or 1
+    local waiting = nil
+    local no_rw = 0
+    local function commit(row, dealt, taken)
+        count = count + 1
+        X[count] = row
+        local y = (dealt - taken) / 100
+        if y > 2 then y = 2 elseif y < -2 then y = -2 end
+        Y[count] = y
+    end
     local function take(text)
         files, bytes = files + 1, bytes + #text
         for line in text:gmatch("[^\r\n]+") do
-            if line:sub(1, 4) == "REC " then
+            if target > 1 and line:sub(1, 3) == "RW " then
+                if waiting then
+                    local pairs_of, k = {}, 0
+                    for token in line:gmatch("%S+") do
+                        k = k + 1
+                        if k > 1 then pairs_of[#pairs_of + 1] = tonumber(token) end
+                    end
+                    local dealt, taken = pairs_of[2 * (target - 1) - 1], pairs_of[2 * (target - 1)]
+                    if dealt and taken then commit(waiting, dealt, taken) else dropped = dropped + 1 end
+                    waiting = nil
+                end
+            elseif line:sub(1, 4) == "REC " then
+                if waiting then no_rw = no_rw + 1; waiting = nil end
                 seen = seen + 1
                 if seen % stride == 0 then
                     local k = 0
@@ -82,11 +108,7 @@ function job.run(config)
                         end
                     end
                     if row then
-                        count = count + 1
-                        X[count] = row
-                        local y = (dealt - taken) / 100
-                        if y > 2 then y = 2 elseif y < -2 then y = -2 end
-                        Y[count] = y
+                        if target > 1 then waiting = row else commit(row, dealt, taken) end
                     else
                         dropped = dropped + 1
                     end
@@ -113,6 +135,11 @@ function job.run(config)
         end
     end
     assert(files > 0, "no records: xoi/data_1.txt in the pack, or bench module " .. name)
+    if waiting then no_rw = no_rw + 1 end
+    if target > 1 then
+        engine.log(string.format("target %d: the outcome of the RW line's pair %d%s", target, target - 1,
+            no_rw > 0 and string.format(" (%d records without an RW line left out)", no_rw) or ""))
+    end
     engine.log(string.format("records read from %d file(s), %.1f MB: %d records%s%s", files, bytes / 1048576, count,
         stride > 1 and string.format(" (every %dth of %d)", stride, seen) or "",
         dropped > 0 and string.format(" (%d lines dropped: not a whole record)", dropped) or ""))

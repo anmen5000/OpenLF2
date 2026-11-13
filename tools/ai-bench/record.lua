@@ -8,6 +8,8 @@
 --   of most mods are far weaker than Sauce's, and a brain learned against them learns to beat a weak player
 --   (hoc-sau.bat's DOI_THU=xoi, brain.bat's OPPONENT=xoi)
 --   explore (beta; nil or 0: off): the recorded player tries other moves now and then (below)
+--   windows = {45, 90, 150} (instead of window): the outcome at each of several windows, the first on the REC line,
+--   the others on an "RW <dealt> <taken> ..." line right after it (hoc-sau.bat's NHIN_XA=tu; train.lua's target)
 local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
@@ -105,7 +107,8 @@ function job.run(config)
     end
     local quiet = config.quiet -- (a check only: games and their winners, no records)
     local random = generator(config.seed or 1)
-    local window = config.window or 45
+    local windows = config.windows or {config.window or 45}
+    local window = windows[#windows]
     local limit = config.limit or 9000
     local both = config.both
     local state_now
@@ -192,15 +195,29 @@ function job.run(config)
                 -- Records whose window has passed.
                 local keep = {}
                 for _, rec in ipairs(pending) do
-                    if state.frame_number - rec.at >= window or one.hp <= 0 or two.hp <= 0 then
+                    -- (The HP at every window of `windows` as it passes, or as a fighter falls; resolved at the last.)
+                    local age = state.frame_number - rec.at
+                    local over = one.hp <= 0 or two.hp <= 0
+                    rec.snaps = rec.snaps or {}
+                    for w = 1, #windows - 1 do
+                        if not rec.snaps[w] and (age >= windows[w] or over) then
+                            rec.snaps[w] = {clamp(rec.thp - (rec.target.hp or 0), 0, 500), clamp(rec.hp - (rec.me.hp or 0), 0, 500)}
+                        end
+                    end
+                    if age >= window or over then
                         local me, target = rec.me, rec.target
-                        local dealt = clamp(rec.thp - (target.hp or 0), 0, 500)
-                        local taken = clamp(rec.hp - (me.hp or 0), 0, 500)
+                        rec.snaps[#windows] = {clamp(rec.thp - (target.hp or 0), 0, 500), clamp(rec.hp - (me.hp or 0), 0, 500)}
                         count = count + 1
                         if not quiet then
                             local parts = {}
                             for i = 1, rec.n do parts[i] = string.format("%.3g", rec.feats[i]) end
-                            engine.log(string.format("REC %d %d %d %s", rec.slot, dealt, taken, table.concat(parts, " ")))
+                            local first = rec.snaps[1]
+                            engine.log(string.format("REC %d %d %d %s", rec.slot, first[1], first[2], table.concat(parts, " ")))
+                            if #windows > 1 then
+                                local more = {}
+                                for w = 2, #windows do more[#more + 1] = rec.snaps[w][1] .. " " .. rec.snaps[w][2] end
+                                engine.log("RW " .. table.concat(more, " "))
+                            end
                         end
                     else
                         keep[#keep + 1] = rec

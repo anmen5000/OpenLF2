@@ -48,6 +48,14 @@ rem mang lai gi, khong chi nhung don no luc nao cung chon. So nguyen; 0 = tat; l
 rem tra cuoi khong bao gio thu don. (Convergence, XOI tu danh voi chinh no, 1 luot: bo nao hoc voi THU_DON=4 thang
 rem hon XOI khong co bo nao 6,5 tran moi 100, bo nao hoc khong thu don 2,9.)
 set "THU_DON=4"
+rem Nhin xa (NHIN_XA, goi 81): bo nao doan mot don mang lai gi trong bao nhieu giay sau khi ra don - 1,5 (mac dinh), 3
+rem hay 5; hoac tu: tu cung du lieu (khong ghi them) hoc ba bo nao 1,5 / 3 / 5 giay, phan kiem tra cho ca ba danh va giu bo
+rem nao thang nhieu nhat cho tung ban mod. Nhin xa thi bo nao thay ca don mo dau combo hay dan doi thu vao goc, nhung ket
+rem qua lan nhieu thu khong do don ay gay ra hon (Convergence: hon XOI khong co bo nao 4,1 / 6,1 / 5,1 tran moi 100, cac
+rem chenh lech con nam trong dao dong). Tu chon: huan luyen ba tien trinh cung luc moi ban mod (gap ba bo nho), phan kiem
+rem tra chia cho bon (ba bo nao va khong bo nao) - can may nhieu luong (chung 40 tro len) hay PHUT_KIEM_TRA lon hon moi
+rem phan biet duoc. Doi NHIN_XA cho mot thu muc hoc-sau da ghi du lieu thi doi ten thu muc ay truoc (hoc lai tu dau).
+set "NHIN_XA=1,5"
 rem Bo nao: so no-ron lop giua (AN) va so lan hoc qua toan bo du lieu (EPOCH). 48 va 8 la du; lon hon thi hoc lau hon.
 set "AN=48"
 set "EPOCH=8"
@@ -81,6 +89,32 @@ if !TD_N! GTR 0 (
   set TD_CFG=explore = !TD_N!,
   set "TD_GHI=, THU_DON=!TD_N!"
 )
+rem (NHIN_XA: NX = so khung hinh, 30 mot giay, hay tu; NX_N bo nao moi ban mod, NX_GIAY_<c> so giay cua bo nao thu c.)
+set "NX="
+if not defined NHIN_XA set "NX=45"
+if "%NHIN_XA%"=="1,5" set "NX=45"
+if "%NHIN_XA%"=="1.5" set "NX=45"
+if "%NHIN_XA%"=="3" set "NX=90"
+if "%NHIN_XA%"=="5" set "NX=150"
+if /i "%NHIN_XA%"=="tu" set "NX=tu"
+if not defined NX (echo [LOI] NHIN_XA nhan 1,5 / 3 / 5 hay tu, khong phai "%NHIN_XA%".& pause& exit /b 1)
+set "NX_CFG="
+set /a NX_N=1
+if "%NX%"=="45" set "NX_GIAY_1=1,5"
+if "%NX%"=="90" set "NX_GIAY_1=3"
+if "%NX%"=="150" set "NX_GIAY_1=5"
+if "%NX%"=="90" set NX_CFG=window = 90,
+if "%NX%"=="150" set NX_CFG=window = 150,
+if "%NX%"=="tu" (
+  set NX_CFG=windows = {45, 90, 150},
+  set /a NX_N=3
+  set "NX_GIAY_1=1,5"
+  set "NX_GIAY_2=3"
+  set "NX_GIAY_3=5"
+)
+set /a NX_M1=NX_N-1
+set "NX_GHI=, NHIN_XA=%NX_GIAY_1%"
+if "%NX%"=="tu" set "NX_GHI=, NHIN_XA=tu"
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -202,9 +236,20 @@ if defined KHAC (
   exit /b 1
 )
 >"%LV%\ban-mod.txt" echo !DS_MOD!
+rem (NHIN_XA cua thu muc: cac luot da ghi theo no - thu muc cu, chua co nhin-xa.txt, la 45 khung hinh. Doi giua chung thi du
+rem lieu cu khong co cac cua so moi: dung lai.)
+set "NX_CU="
+if exist "%LV%\nhin-xa.txt" (set /p NX_CU=<"%LV%\nhin-xa.txt") else if exist "%LV%\luot-1\" set "NX_CU=45"
+if defined NX_CU if /i not "!NX_CU!"=="%NX%" (
+  echo [LOI] Thu muc "%LV%" da ghi du lieu voi NHIN_XA khac ^(!NX_CU!; 45 = 1,5 giay, 90 = 3, 150 = 5^): doi ten thu muc ay ^(vi du hoc-sau-cu^) roi chay lai file nay, hoac de NHIN_XA nhu cu.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+>"%LV%\nhin-xa.txt" echo %NX%
 echo %VONG% luot x %PHUT_GHI% phut ghi du lieu, %N% tien trinh ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
 if defined DT_CFG echo Doi thu: chinh XOI ^(DOI_THU=xoi^), ke ca o ban mod co AI rieng.
 if defined TD_CFG echo Thu don: THU_DON=!TD_N! - khi ghi du lieu XOI thinh thoang ra don khac voi don no cho la tot nhat.
+if "%NX%"=="tu" (echo Nhin xa: tu chon giua 1,5 / 3 / 5 giay ^(NHIN_XA=tu^) - ba bo nao moi ban mod, phan kiem tra giu bo thang nhieu nhat.) else if not "%NX%"=="45" echo Nhin xa: bo nao doan ket qua %NX_GIAY_1% giay sau moi don ^(NHIN_XA^).
 echo Tam dung: dong cua so nay ^(cac game chay ngam tu dung theo^). Chay lai file nay la lam tiep.
 echo De may chay qua dem: tat che do ngu cua Windows ^(Settings - System - Power - Sleep: Never^).
 rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc hoc-sau
@@ -237,6 +282,7 @@ set "D=%LV%\luot-%E%"
 if exist "%D%\xong-luot.txt" (
   rem (Luot da xong: bo nao cua no.)
   for /L %%p in (1,1,%NP%) do if exist "%D%\nao-%%p.txt" set "NAO_%%p=%D%\nao-%%p.txt"
+  for /L %%p in (1,1,%NP%) do for /L %%c in (2,1,%NX_N%) do if exist "%D%\nao-%%p-%%c.txt" set "NAOX_%%p_%%c=%D%\nao-%%p-%%c.txt"
   set /a E+=1
   goto luot_tiep
 )
@@ -281,13 +327,13 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=HAT_GIONG+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NX_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Hoc sau - luot %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 luot-%E% %%k !SEED! !PI!
   )
 )
 call :cho "%D%" "RECORD "
 :hoc_luot
-rem Gop du lieu cua luot nay: cac dong REC cua tien trinh k vao du-lieu\<ban mod>\luot-%E%-p<k>.txt (ghi lai ca file,
+rem Gop du lieu cua luot nay: cac dong REC (va RW, NHIN_XA=tu) cua tien trinh k vao du-lieu\<ban mod>\luot-%E%-p<k>.txt (ghi lai ca file,
 rem nen chay lai khong gop trung), roi bo chung khoi out.txt cho nhe.
 set /a PI=0
 for /L %%k in (1,1,%N%) do (
@@ -295,61 +341,26 @@ for /L %%k in (1,1,%N%) do (
   if !PI! GTR %NP% set /a PI=1
   if not exist "%LV%\du-lieu\!PI!" mkdir "%LV%\du-lieu\!PI!"
   if exist "%D%\p%%k\out.txt" if not exist "%D%\p%%k\gop.txt" (
-    findstr /b /c:"REC " "%D%\p%%k\out.txt" >"%LV%\du-lieu\!PI!\luot-%E%-p%%k.tmp"
+    findstr /b /c:"REC " /c:"RW " "%D%\p%%k\out.txt" >"%LV%\du-lieu\!PI!\luot-%E%-p%%k.tmp"
     move /y "%LV%\du-lieu\!PI!\luot-%E%-p%%k.tmp" "%LV%\du-lieu\!PI!\luot-%E%-p%%k.txt" >nul
     >"%D%\p%%k\gop.txt" echo xong
-    findstr /v /b /c:"REC " "%D%\p%%k\out.txt" >"%D%\p%%k\out-tom.txt"
+    findstr /v /b /c:"REC " /c:"RW " "%D%\p%%k\out.txt" >"%D%\p%%k\out-tom.txt"
     move /y "%D%\p%%k\out-tom.txt" "%D%\p%%k\out.txt" >nul
   )
 )
-rem Goi du lieu cua tung ban mod (tat ca cac luot) thanh goi huan luyen, roi huan luyen - mot tien trinh moi ban mod.
+rem Goi du lieu cua tung ban mod (tat ca cac luot) thanh goi huan luyen, roi huan luyen - mot tien trinh moi bo nao (mot
+rem moi ban mod; NHIN_XA=tu: ba, moi cua so mot bo nao, chung mot goi du lieu).
 echo === Huan luyen bo nao cho tung ban mod ^(%TIME%^) ===
 set /a DONG_TONG=0
-for /L %%p in (1,1,%NP%) do (
-  set "H=%D%\hoc%%p"
-  set "DA="
-  if exist "!H!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!H!\out.txt" >nul 2>nul && set "DA=1"
-  set /a DONG_%%p=0
-  if not defined DA (
-    mkdir "!H!" 2>nul
-    del /q "!H!\out.txt" 2>nul
-    del /q "!H!\xong.txt" 2>nul
-    call :ban_bench "!H!"
-    call :goi_du_lieu %%p "!H!\du-lieu.zip"
-    rem (So dong di kem: qua 6 trieu thi train chi lay moi dong thu k - du lieu moi luot van co mat, bo nho vua.)
-    set "DN_="
-    if exist "!H!\du-lieu.txt" for /f %%c in ('type "!H!\du-lieu.txt"') do set "DN_=records = %%c, "
-    >"!H!\config.lua" echo return {command = "train", !DN_!epochs = %EPOCH%, hidden = %AN%, weights = true, seed = %HAT_GIONG%}
-  )
-  if exist "!H!\du-lieu.txt" for /f %%c in ('type "!H!\du-lieu.txt"') do set /a DONG_%%p=%%c
-  set /a DONG_TONG+=DONG_%%p
-)
+for /L %%p in (1,1,%NP%) do call :chuan_bi_hoc %%p
 echo   Du lieu: !DONG_TONG! lan ra don ^(tat ca cac luot^)
 if !DONG_TONG! LSS 200 (echo [LOI] Qua it du lieu - cac tien trinh co chay khong? Xem "%D%\p1\out.txt".& exit /b 1)
-for /L %%p in (1,1,%NP%) do (
-  set "DA="
-  if exist "%D%\hoc%%p\out.txt" findstr /b /c:"XOI_BRAIN b2" "%D%\hoc%%p\out.txt" >nul 2>nul && set "DA=1"
-  if not defined DA start "Hoc sau - huan luyen %%p" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 luot-%E%\hoc %%p %HAT_GIONG% %%p hoc
-)
-set "N_CU=%N%"
-set /a N=NP
-call :cho_hoc "%D%"
-set /a N=N_CU
-for /L %%p in (1,1,%NP%) do (
-  set "H=%D%\hoc%%p"
-  findstr /b /c:"XOI_BRAIN b2" "!H!\out.txt" >nul 2>nul || (echo [LOI] Huan luyen ban mod %%p khong xong - xem "!H!\out.txt".& exit /b 1)
-  findstr /b /c:"XOI_BRAIN " "!H!\out.txt" >"%D%\nao-%%p.txt"
-  set "NAO_%%p=%D%\nao-%%p.txt"
-  set "DONG_BASE="
-  set "DONG_NET="
-  for /f "delims=" %%l in ('findstr /b /c:"BASE " "!H!\out.txt"') do set "DONG_BASE=%%l"
-  for /f "delims=" %%l in ('findstr /b /c:"NET done" "!H!\out.txt"') do set "DONG_NET=%%l"
-  call set "PK=%%PACK_%%p%%"
-  call set "DN=%%DONG_%%p%%"
-  for %%z in ("!PK!") do echo   %%p. %%~nxz: !DONG_BASE! / !DONG_NET!
-  for %%z in ("!PK!") do >>"%LV%\thoi-gian.txt" echo Luot %E%/%VONG% ban mod %%p ^(%%~nxz^): !DN! lan ra don; !DONG_BASE!; !DONG_NET!
-  del /q "!H!\du-lieu.zip" 2>nul
-)
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :chay_hoc %%p %%c
+call :cho_hoc
+set "KH_LOI="
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :ket_hoc %%p %%c
+if defined KH_LOI exit /b 1
+for /L %%p in (1,1,%NP%) do del /q "%D%\hoc%%p\du-lieu.zip" 2>nul
 call :giay HET
 set /a "GIAY_V=(HET-BAT_DAU+86400) %% 86400, PHUT_V=GIAY_V/60"
 >>"%LV%\thoi-gian.txt" echo Luot %E%/%VONG% xong luc %TIME%, mat !PHUT_V! phut
@@ -361,60 +372,45 @@ exit /b 0
 
 :kiem
 rem Kiem tra: tien trinh le cho XOI co bo nao danh doi thu, tien trinh chan ngay sau no cho XOI khong co bo nao danh
-rem cung doi thu ay (AI cua ban mod neu co script, khong thi XOI khong bo nao), cung ban mod, cung hat giong.
+rem cung doi thu ay (AI cua ban mod neu co script, khong thi XOI khong bo nao), cung ban mod, cung hat giong (NHIN_XA=tu:
+rem nhom bon tien trinh, ba bo nao va khong bo nao; bo nao thang nhieu nhat cua moi ban mod duoc giu, kiem-tra\chon-<p>.txt).
 if %GIAY_KT% LEQ 0 goto xong
 set "K=%LV%\kiem-tra"
 if exist "%K%\tong.txt" goto xong
 echo.
-echo === Kiem tra: XOI co bo nao va XOI khong co, %N% tien trinh trong %PHUT_KIEM_TRA% phut ^(%TIME%^) ===
+rem (Moi nhom NX_N+1 tien trinh cung ban mod, cung hat giong: tien trinh thu m cua nhom (0..NX_N-1) cho XOI voi bo nao
+rem thu m+1, tien trinh cuoi cho XOI khong co bo nao; so tien trinh lam tron len cho du nhom, it nhat mot nhom moi ban mod.)
+set /a "KG=NX_N+1, NK=(N+KG-1)/KG*KG, NK_MIN=KG*NP"
+if !NK! LSS !NK_MIN! set /a NK=NK_MIN
+if %NX_N% GTR 1 (echo === Kiem tra: XOI voi tung bo nao ^(1,5 / 3 / 5 giay^) va XOI khong co, !NK! tien trinh trong %PHUT_KIEM_TRA% phut ^(%TIME%^) ===) else echo === Kiem tra: XOI co bo nao va XOI khong co, !NK! tien trinh trong %PHUT_KIEM_TRA% phut ^(%TIME%^) ===
 if not exist "%K%" mkdir "%K%"
-for /L %%k in (1,1,%N%) do (
-  set /a "PI=((%%k-1)/2) %% NP + 1, LE=%%k %% 2, SEED=HAT_GIONG+500000+(%%k+1)/2"
-  set "DA="
-  if exist "%K%\p%%k\out.txt" findstr /c:"RECORD " "%K%\p%%k\out.txt" >nul 2>nul && set "DA=1"
-  if not defined DA (
-    mkdir "%K%\p%%k" 2>nul
-    del /q "%K%\p%%k\xong.txt" 2>nul
-    del /q "%K%\p%%k\out.txt" 2>nul
-    call :ban_bench "%K%\p%%k"
-    copy /y "%LV%\scripts\base\game\smart_ai.lua" "%K%\p%%k\hs_alt.lua" >nul
-    >>"%K%\p%%k\package.manifest" echo module=hs_alt^|hs_alt.lua
-    set "NAO_CFG="
-    call set "NAO_NAY=%%NAO_!PI!%%"
-    if !LE! EQU 1 if defined NAO_NAY (
-      call :nao_lua "!NAO_NAY!" "%K%\p%%k\xoi_brain.lua"
-      >>"%K%\p%%k\package.manifest" echo module=xoi_brain^|xoi_brain.lua
-      set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
-    )
-    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
-    start "Hoc sau - kiem tra %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 kiem-tra %%k !SEED! !PI!
-  )
-)
+for /L %%k in (1,1,%NK%) do call :kt_mot %%k
+set "N_CU=%N%"
+set /a N=NK
 call :cho "%K%" "RECORD "
-rem Cong: tien trinh le = co bo nao (CW/CL), chan = khong (KW/KL); tung ban mod.
-set /a CW=0, CL=0, KW=0, KL=0
-for /L %%p in (1,1,%NP%) do set /a "CW_%%p=0, CL_%%p=0, KW_%%p=0, KL_%%p=0"
-for /L %%k in (1,1,%N%) do (
-  set /a "PI=((%%k-1)/2) %% NP + 1, LE=%%k %% 2"
-  rem (RECORD <games> games, <records> records, <name> won <w> lost <l> vs <o>: w la tu thu 8, l tu thu 10)
-  if exist "%K%\p%%k\out.txt" for /f "tokens=8,10" %%a in ('findstr /b /c:"RECORD " "%K%\p%%k\out.txt"') do (
-    if !LE! EQU 1 (
-      set /a CW+=%%a, CL+=%%b
-      set /a "CW_!PI!+=%%a, CL_!PI!+=%%b"
-    ) else (
-      set /a KW+=%%a, KL+=%%b
-      set /a "KW_!PI!+=%%a, KL_!PI!+=%%b"
-    )
-  )
+set /a N=N_CU
+rem Cong: tung thanh vien m (0..NX_N-1: bo nao m+1; NX_N: khong co bo nao), tong va tung ban mod.
+for /L %%m in (0,1,%NX_N%) do (
+  set /a "KW_%%m=0, KL_%%m=0"
+  for /L %%p in (1,1,%NP%) do set /a "KW_%%m_%%p=0, KL_%%m_%%p=0"
 )
-call :phan_tram !CW! !CL! CP
-call :phan_tram !KW! !KL! KP
->"%K%\tong.txt" echo XOI co bo nao: thang !CW! thua !CL! ^(!CP!%%^); XOI khong co bo nao: thang !KW! thua !KL! ^(!KP!%%^) - cung doi thu, cung hat giong
+for /L %%k in (1,1,%NK%) do call :kt_cong %%k
+if %NX_N% EQU 1 (
+  call :phan_tram !KW_0! !KL_0! CP
+  call :phan_tram !KW_1! !KL_1! KP
+  >"%K%\tong.txt" echo XOI co bo nao: thang !KW_0! thua !KL_0! ^(!CP!%%^); XOI khong co bo nao: thang !KW_1! thua !KL_1! ^(!KP!%%^) - cung doi thu, cung hat giong
+) else (
+  set "KT_DONG=XOI co bo nao"
+  for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m
+  call :phan_tram !KW_%NX_N%! !KL_%NX_N%! KP
+  >"%K%\tong.txt" echo !KT_DONG!; XOI khong co bo nao: thang !KW_%NX_N%! thua !KL_%NX_N%! ^(!KP!%%^) - cung doi thu, cung hat giong
+  for /L %%p in (1,1,%NP%) do call :kt_chon %%p
+)
 if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem Ket qua, va bo nao cua moi ban mod: xoi-<ten>\brain.txt, goi <ten>-xoi.zip.
 (
-  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%%DT_GHI%%TD_GHI%; ban mod:
+  echo Hoc sau: %VONG% luot x %PHUT_GHI% phut, %N% tien trinh, AN=%AN% EPOCH=%EPOCH% HAT_GIONG=%HAT_GIONG%%DT_GHI%%TD_GHI%%NX_GHI%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\thoi-gian.txt" findstr /c:"Luot " "%LV%\thoi-gian.txt"
   if exist "%K%\tong.txt" type "%K%\tong.txt"
@@ -422,6 +418,7 @@ rem Ket qua, va bo nao cua moi ban mod: xoi-<ten>\brain.txt, goi <ten>-xoi.zip.
 if not exist "%LV%\da-goi.txt" (
   echo.
   echo === Bo nao cua tung ban mod ===
+  if %NX_N% GTR 1 for /L %%p in (1,1,%NP%) do call :nao_chon %%p
   for /L %%p in (1,1,%NP%) do call :goi_nao %%p
   >"%LV%\da-goi.txt" echo xong
 )
@@ -443,9 +440,159 @@ exit /b 1
 
 rem --- Dong ket qua kiem tra cua ban mod thu %1 vao tong.txt ---
 :tong_mod
-call :phan_tram !CW_%1! !CL_%1! CP
-call :phan_tram !KW_%1! !KL_%1! KP
-for %%z in ("!PACK_%1!") do >>"%K%\tong.txt" echo   %1. %%~nxz: co bo nao thang !CW_%1! thua !CL_%1! ^(!CP!%%^); khong co thang !KW_%1! thua !KL_%1! ^(!KP!%%^)
+if %NX_N% GTR 1 goto tong_mod_tu
+call :phan_tram !KW_0_%1! !KL_0_%1! CP
+call :phan_tram !KW_1_%1! !KL_1_%1! KP
+for %%z in ("!PACK_%1!") do >>"%K%\tong.txt" echo   %1. %%~nxz: co bo nao thang !KW_0_%1! thua !KL_0_%1! ^(!CP!%%^); khong co thang !KW_1_%1! thua !KL_1_%1! ^(!KP!%%^)
+exit /b 0
+:tong_mod_tu
+set "KT_DONG="
+for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m %1
+call :phan_tram !KW_%NX_N%_%1! !KL_%NX_N%_%1! KP
+set /p KT_C=<"%K%\chon-%1.txt"
+for %%z in ("!PACK_%1!") do >>"%K%\tong.txt" echo   %1. %%~nxz:!KT_DONG! khong co thang !KW_%NX_N%_%1! thua !KL_%NX_N%_%1! ^(!KP!%%^) - chon !NX_GIAY_%KT_C%! giay
+exit /b 0
+rem --- Them ket qua cua bo nao m = %1 (cua ban mod %2, hay tong) vao KT_DONG ---
+:kt_dong
+if "%2"=="" (
+  call :phan_tram !KW_%1! !KL_%1! KT_P
+  set /a "KT_W=KW_%1, KT_L=KL_%1"
+) else (
+  call :phan_tram !KW_%1_%2! !KL_%1_%2! KT_P
+  set /a "KT_W=KW_%1_%2, KT_L=KL_%1_%2"
+)
+set /a KT_C=%1+1
+call set "KT_G=%%NX_GIAY_!KT_C!%%"
+if "%2"=="" (if %1 EQU 0 (set "KT_DONG=!KT_DONG! nhin !KT_G! giay: thang !KT_W! thua !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG!; !KT_G! giay: thang !KT_W! thua !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG! !KT_G! giay thang !KT_W! thua !KT_L! (!KT_P!%%);"
+exit /b 0
+rem --- Bo nao duoc chon cho ban mod %1 (NHIN_XA=tu): thang nhieu nhat theo phan tram (bang nhau: nhin gan hon) ---
+:kt_chon
+set /a "CH_TOT=-1, CH_C=1"
+for /L %%m in (0,1,%NX_M1%) do call :kt_chon_mot %1 %%m
+>"%K%\chon-%1.txt" echo !CH_C!
+if %NP% EQU 1 >>"%K%\tong.txt" echo Chon: bo nao nhin !NX_GIAY_%CH_C%! giay ^(thang nhieu nhat^)
+exit /b 0
+:kt_chon_mot
+set /a "CT_W=KW_%2_%1, CT_L=KL_%2_%1, CT_T=CT_W+CT_L, CT_V=-1"
+if !CT_T! GTR 0 set /a "CT_V=CT_W*1000/CT_T"
+if !CT_V! GTR !CH_TOT! set /a "CH_TOT=CT_V, CH_C=%2+1"
+exit /b 0
+rem --- Bo nao duoc chon cua ban mod %1 vao NAO_<p> (de goi): kiem-tra\chon-<p>.txt ---
+:nao_chon
+set "NC_="
+if defined K if exist "%K%\chon-%1.txt" set /p NC_=<"%K%\chon-%1.txt"
+if not defined NC_ exit /b 0
+call set "NC_G=%%NX_GIAY_%NC_%%%"
+if not "%NC_%"=="1" (
+  call set "NC_F=%%NAOX_%1_%NC_%%%"
+  if defined NC_F set "NAO_%1=!NC_F!"
+)
+for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: bo nao nhin !NC_G! giay ^(kiem tra thang nhieu nhat^)
+exit /b 0
+rem --- Mot tien trinh kiem tra %1: nhom, thanh vien, ban mod, hat giong; bo nao cua thanh vien ay ---
+:kt_mot
+set /a "KM=(%1-1) %% KG, KGR=(%1-1)/KG, PI=KGR %% NP + 1, SEED=HAT_GIONG+500000+KGR+1, KC=KM+1"
+set "KP=%K%\p%1"
+set "DA="
+if exist "%KP%\out.txt" findstr /c:"RECORD " "%KP%\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+mkdir "%KP%" 2>nul
+del /q "%KP%\xong.txt" 2>nul
+del /q "%KP%\out.txt" 2>nul
+set "NAO_NAY="
+if !KM! LSS %NX_N% (
+  if !KC! EQU 1 (call set "NAO_NAY=%%NAO_!PI!%%") else call set "NAO_NAY=%%NAOX_!PI!_!KC!%%"
+  rem (Bo nao thu KC chua co - khong the khi cac luot da xong: ghi tran rong, tien trinh khong chay.)
+  if not defined NAO_NAY (
+    >"%KP%\out.txt" echo RECORD 0 games, 0 records, xoi won 0 lost 0 vs none
+    exit /b 0
+  )
+)
+call :ban_bench "%KP%"
+copy /y "%LV%\scripts\base\game\smart_ai.lua" "%KP%\hs_alt.lua" >nul
+>>"%KP%\package.manifest" echo module=hs_alt^|hs_alt.lua
+set "NAO_CFG="
+if defined NAO_NAY (
+  call :nao_lua "!NAO_NAY!" "%KP%\xoi_brain.lua"
+  >>"%KP%\package.manifest" echo module=xoi_brain^|xoi_brain.lua
+  set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
+)
+>"%KP%\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
+start "Hoc sau - kiem tra %1" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 kiem-tra %1 !SEED! !PI!
+exit /b 0
+rem --- Cong ket qua cua tien trinh kiem tra %1 (RECORD <games> games, <records> records, <name> won <w> lost <l> vs <o>:
+rem w la tu thu 8, l tu thu 10) vao thanh vien cua no, tong va ban mod ---
+:kt_cong
+set /a "KM=(%1-1) %% KG, KGR=(%1-1)/KG, PI=KGR %% NP + 1"
+if not exist "%K%\p%1\out.txt" exit /b 0
+for /f "tokens=8,10" %%a in ('findstr /b /c:"RECORD " "%K%\p%1\out.txt"') do set /a "KW_!KM!+=%%a, KL_!KM!+=%%b, KW_!KM!_!PI!+=%%a, KL_!KM!_!PI!+=%%b"
+exit /b 0
+rem --- Thu muc huan luyen cua ban mod %1, bo nao %2 vao HD: hoc<p> (bo nao 1), hoc<p>-<c> (NHIN_XA=tu: 2, 3) ---
+:thu_muc_hoc
+if "%2"=="1" (set "HD=%D%\hoc%1") else set "HD=%D%\hoc%1-%2"
+exit /b 0
+rem --- Chuan bi huan luyen ban mod %1: con bo nao chua hoc xong thi goi lai du lieu (hoc<p>\du-lieu.zip, chung cho cac bo
+rem nao cua no) va viet config cho tung bo nao ay (target: cua so thu may) ---
+:chuan_bi_hoc
+set "CB_CON="
+for /L %%c in (1,1,%NX_N%) do call :hoc_xong %1 %%c
+set "H=%D%\hoc%1"
+if defined CB_CON (
+  mkdir "!H!" 2>nul
+  call :goi_du_lieu %1 "!H!\du-lieu.zip"
+)
+set /a DONG_%1=0
+if exist "!H!\du-lieu.txt" for /f %%n in ('type "!H!\du-lieu.txt"') do set /a DONG_%1=%%n
+set /a DONG_TONG+=DONG_%1
+if not defined CB_CON exit /b 0
+rem (So dong di kem: qua 6 trieu thi train chi lay moi dong thu k - du lieu moi luot van co mat, bo nho vua.)
+set "DN_="
+if !DONG_%1! GTR 0 set "DN_=records = !DONG_%1!, "
+for /L %%c in (1,1,%NX_N%) do call :viet_hoc %1 %%c
+exit /b 0
+:hoc_xong
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if not defined DA set "CB_CON=1"
+exit /b 0
+:viet_hoc
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+mkdir "!HD!" 2>nul
+del /q "!HD!\out.txt" 2>nul
+del /q "!HD!\xong.txt" 2>nul
+call :ban_bench "!HD!"
+set "TG_="
+if not "%2"=="1" set "TG_=target = %2, "
+>"!HD!\config.lua" echo return {command = "train", !TG_!!DN_!epochs = %EPOCH%, hidden = %AN%, weights = true, seed = %HAT_GIONG%}
+exit /b 0
+rem --- Chay huan luyen bo nao %2 cua ban mod %1 (chua xong) ---
+:chay_hoc
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+if "%2"=="1" (set "HC=%1") else set "HC=%1-%2"
+start "Hoc sau - huan luyen %1-%2" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 luot-%E%\hoc !HC! %HAT_GIONG% %1 hoc
+exit /b 0
+rem --- Ket qua huan luyen bo nao %2 cua ban mod %1: nao-<p>.txt (bo nao 1, NAO_<p>) hay nao-<p>-<c>.txt (NAOX_<p>_<c>) ---
+:ket_hoc
+call :thu_muc_hoc %1 %2
+findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul || (echo [LOI] Huan luyen ban mod %1 ^(bo nao %2^) khong xong - xem "!HD!\out.txt".& set "KH_LOI=1"& exit /b 0)
+if "%2"=="1" (set "KH_NAO=%D%\nao-%1.txt") else set "KH_NAO=%D%\nao-%1-%2.txt"
+findstr /b /c:"XOI_BRAIN " "!HD!\out.txt" >"!KH_NAO!"
+if "%2"=="1" (set "NAO_%1=!KH_NAO!") else set "NAOX_%1_%2=!KH_NAO!"
+set "DONG_BASE="
+set "DONG_NET="
+for /f "delims=" %%l in ('findstr /b /c:"BASE " "!HD!\out.txt"') do set "DONG_BASE=%%l"
+for /f "delims=" %%l in ('findstr /b /c:"NET done" "!HD!\out.txt"') do set "DONG_NET=%%l"
+set "KH_G="
+if %NX_N% GTR 1 set "KH_G= nhin !NX_GIAY_%2! giay"
+for %%z in ("!PACK_%1!") do echo   %1. %%~nxz!KH_G!: !DONG_BASE! / !DONG_NET!
+for %%z in ("!PACK_%1!") do >>"%LV%\thoi-gian.txt" echo Luot %E%/%VONG% ban mod %1 ^(%%~nxz^)!KH_G!: !DONG_%1! lan ra don; !DONG_BASE!; !DONG_NET!
 exit /b 0
 rem --- Phan tram thang (mot chu so le) cua %1 thang %2 thua vao bien %3 ---
 :phan_tram
@@ -462,7 +609,7 @@ type "%~1" >>"%~2"
 exit /b 0
 rem --- Goi du lieu cua ban mod %1 thanh goi huan luyen %2: mot file zip nho chi co data\data.txt, cac file .exe o thu
 rem muc goc cua ban mod va thu muc UI (hinh cua game khi file .exe cua mod khong mang hinh - ban Sauce: lf2-AI VS and
-rem Stage Challenge.exe chi 320 KB, hinh o UI\; thieu no game khong mo goi), va xoi\data_<n>.txt = cac dong REC cua moi
+rem Stage Challenge.exe chi 320 KB, hinh o UI\; thieu no game khong mo goi), va xoi\data_<n>.txt = cac dong REC (va RW) cua moi
 rem luot (moi file duoi 3,5 MB - script doc duoc file toi 4 MB). So dong vao du-lieu.txt canh goi. ---
 :goi_du_lieu
 set "GD_PACK=!PACK_%1!"
@@ -472,7 +619,7 @@ set "GD_CNT=%~dp2du-lieu.txt"
 set "GD_P=%1"
 del /q "%GD_OUT%" 2>nul
 del /q "%GD_CNT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'luot-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Du lieu ban mod ' + $env:GD_P + ': ' + $count + ' dong, ' + $k + ' file trong ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'luot-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { $rec=$line.StartsWith('REC '); if (-not ($rec -or $line.StartsWith('RW '))) { continue }; if (-not $rec -and -not $w) { continue }; if ($rec -and $bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; if ($rec) { $count++ } } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Du lieu ban mod ' + $env:GD_P + ': ' + $count + ' dong, ' + $k + ' file trong ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
 if not exist "%GD_OUT%" echo      [LOI] Khong goi duoc du lieu cua ban mod %1.
 exit /b 0
 rem --- Bo nao cua ban mod thu %1: xoi-<ten>\brain.txt (bo truoc giu o brain-truoc.txt), va <ten>-xoi.zip: ban sao file
@@ -582,38 +729,42 @@ if !PHUT! EQU 0 (
   )
 )
 goto cho_tiep
-rem --- Cho cac tien trinh huan luyen hoc1..hocN trong %1 xong (dong XOI_BRAIN b2, hoac xong.txt) ---
+rem --- Cho cac tien trinh huan luyen (hoc<p>, va hoc<p>-<c> voi NHIN_XA=tu) cua luot nay xong (dong XOI_BRAIN b2, hoac
+rem xong.txt) ---
 :cho_hoc
-set /a CHO=0
+set /a CHO=0, CANH_N=NP*NX_N
 call :giay CHO_TU
 :cho_hoc_tiep
 ping -n 6 127.0.0.1 >nul 2>&1
 set /a XONG=0
-for /L %%p in (1,1,%N%) do (
-  set "X="
-  if exist "%~1\hoc%%p\out.txt" findstr /b /c:"XOI_BRAIN b2" "%~1\hoc%%p\out.txt" >nul 2>&1 && set "X=1"
-  if not defined THU_WINE if exist "%~1\hoc%%p\xong.txt" set "X=1"
-  if defined X set /a XONG+=1
-)
-if !XONG! GEQ %N% exit /b 0
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :hoc_da_xong %%p %%c
+if !XONG! GEQ !CANH_N! exit /b 0
 set /a CHO+=5
 set /a PHUT=CHO%%60
 if !PHUT! EQU 0 (
   call :giay BAY_GIO
   set /a "M_=((BAY_GIO-CHO_TU+86400) %% 86400)/60"
-  echo   ... huan luyen: !XONG!/%N% xong, da cho !M_! phut ^(!TIME:~0,8!^)
+  echo   ... huan luyen: !XONG!/!CANH_N! xong, da cho !M_! phut ^(!TIME:~0,8!^)
   if not defined KHONG_TASKLIST (
     tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul || (echo   [CHU Y] Khong con game nao chay - bo qua.& exit /b 0)
   )
 )
 goto cho_hoc_tiep
+:hoc_da_xong
+call :thu_muc_hoc %1 %2
+set "X="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>&1 && set "X=1"
+if not defined THU_WINE if exist "!HD!\xong.txt" set "X=1"
+if defined X set /a XONG+=1
+exit /b 0
 
 rem --- Mot tien trinh: game chay ngam; %2 thu muc (luot-N, kiem-tra, hay luot-N\hoc), %3 so tien trinh, %4 hat giong,
-rem %5 so thu tu ban mod, %6 "hoc" = huan luyen (goi du lieu cua ban mod ay lam ban mod); xong thi dong cua so ---
+rem %5 so thu tu ban mod, %6 "hoc" = huan luyen (goi du lieu cua ban mod ay lam ban mod: hoc<p>\du-lieu.zip, chung cho cac
+rem bo nao cua no - %3 la <p> hay <p>-<c>); xong thi dong cua so ---
 :chay1
 if /i "%~6"=="hoc" (
   set "DIR=%LV%\%~2%~3"
-  set "P=!DIR!\du-lieu.zip"
+  set "P=%LV%\%~2%~5\du-lieu.zip"
 ) else (
   set "DIR=%LV%\%~2\p%~3"
   set "P=%LV%\ban-mod-%~5.zip"

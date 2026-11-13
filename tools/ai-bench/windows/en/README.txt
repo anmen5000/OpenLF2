@@ -100,6 +100,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    seldom picks bring too. The same one round, exploring: the brain won 6.5 games in 100 more. Against Sauce's AI it
    makes no difference (either way the brain won about 8 games in 100 more): an opponent unlike XOI already shows the
    brain enough. 0 = off; the check never explores.
+   Looking ahead (package 81): LOOK_AHEAD, the seconds after a move whose outcome the brain predicts - 1.5 (the
+   default), 3 or 5; or LOOK_AHEAD=auto: three brains (1.5 / 3 / 5 seconds) learned from the same data, all three
+   played in the check, and each mod keeps the one that won most (brain\check\choice-<p>.txt; results.txt shows all
+   three). It takes three trainings at once a mod (three times the memory) and splits the check four ways: worth it on
+   many threads (some 40 or more) or with a longer CHECK_MINUTES. On mode Convergence the three won 4.1 / 6.1 / 5.1
+   games in 100 more than XOI without a brain, within chance of each other. A brain folder records with one
+   LOOK_AHEAD: to change it, rename the folder first.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

@@ -52,6 +52,15 @@ rem brain learns what the moves XOI seldom picks bring too, not only those it pi
 rem higher tries more. The check at the end never explores. (Mode Convergence, XOI against itself, one round: the
 rem brain learned with EXPLORE=4 beat XOI without a brain by 6.5 games in 100, the one learned without exploring by 2.9.)
 set "EXPLORE=4"
+rem Looking ahead (LOOK_AHEAD, package 81): how many seconds after a move the brain predicts what it brings - 1.5 (the
+rem default), 3 or 5; or auto: three brains, 1.5 / 3 / 5 seconds, learned from the same data (nothing more recorded),
+rem all three played in the check, and each mod keeps the one that won most. Looking further, the brain sees a combo's
+rem opening move or a push into the corner too, but the outcome holds more of what that move did not do (mode
+rem Convergence: 4.1 / 6.1 / 5.1 games in 100 ahead of XOI without a brain, within chance of each other). Auto: three
+rem trainings at once a mod (three times the memory), the check split four ways (three brains and none) - it takes many
+rem threads (some 40 or more) or a longer CHECK_MINUTES to tell them apart. Changing LOOK_AHEAD for a brain folder that
+rem has recorded data: rename that folder first (learning from the start).
+set "LOOK_AHEAD=1.5"
 rem The brain: neurons in the middle layer (HIDDEN) and passes over the whole data (EPOCHS). 48 and 8 are enough;
 rem more takes longer to learn.
 set "HIDDEN=48"
@@ -86,6 +95,32 @@ if !TD_N! GTR 0 (
   set TD_CFG=explore = !TD_N!,
   set "TD_GHI=, EXPLORE=!TD_N!"
 )
+rem (LOOK_AHEAD: NX = frames, 30 a second, or tu (auto); NX_N brains a mod, NX_GIAY_<c> the seconds of brain c.)
+set "NX="
+if not defined LOOK_AHEAD set "NX=45"
+if "%LOOK_AHEAD%"=="1.5" set "NX=45"
+if "%LOOK_AHEAD%"=="1,5" set "NX=45"
+if "%LOOK_AHEAD%"=="3" set "NX=90"
+if "%LOOK_AHEAD%"=="5" set "NX=150"
+if /i "%LOOK_AHEAD%"=="auto" set "NX=tu"
+if not defined NX (echo [ERROR] LOOK_AHEAD takes 1.5 / 3 / 5 or auto, not "%LOOK_AHEAD%".& pause& exit /b 1)
+set "NX_CFG="
+set /a NX_N=1
+if "%NX%"=="45" set "NX_GIAY_1=1.5"
+if "%NX%"=="90" set "NX_GIAY_1=3"
+if "%NX%"=="150" set "NX_GIAY_1=5"
+if "%NX%"=="90" set NX_CFG=window = 90,
+if "%NX%"=="150" set NX_CFG=window = 150,
+if "%NX%"=="tu" (
+  set NX_CFG=windows = {45, 90, 150},
+  set /a NX_N=3
+  set "NX_GIAY_1=1.5"
+  set "NX_GIAY_2=3"
+  set "NX_GIAY_3=5"
+)
+set /a NX_M1=NX_N-1
+set "NX_GHI=, LOOK_AHEAD=%NX_GIAY_1%"
+if "%NX%"=="tu" set "NX_GHI=, LOOK_AHEAD=auto"
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
@@ -208,9 +243,20 @@ if defined KHAC (
   exit /b 1
 )
 >"%LV%\mods.txt" echo !DS_MOD!
+rem (The folder's LOOK_AHEAD: its rounds recorded by it - an old folder, without look-ahead.txt, is 45 frames. Changed
+rem half way, the old data lacks the new windows: stop.)
+set "NX_CU="
+if exist "%LV%\look-ahead.txt" (set /p NX_CU=<"%LV%\look-ahead.txt") else if exist "%LV%\round-1\" set "NX_CU=45"
+if defined NX_CU if /i not "!NX_CU!"=="%NX%" (
+  echo [ERROR] The folder "%LV%" recorded its data with another LOOK_AHEAD ^(!NX_CU!; 45 = 1.5 seconds, 90 = 3, 150 = 5, tu = auto^): rename that folder ^(brain-old, say^) and run this file again, or set LOOK_AHEAD back.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+>"%LV%\look-ahead.txt" echo %NX%
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
 if defined TD_CFG echo Trying other moves: EXPLORE=!TD_N! - while recording, XOI now and then starts a move other than the one it finds best.
+if "%NX%"=="tu" (echo Looking ahead: chosen among 1.5 / 3 / 5 seconds ^(LOOK_AHEAD=auto^) - three brains a mod, the check keeps the one that wins most.) else if not "%NX%"=="45" echo Looking ahead: the brain predicts the outcome %NX_GIAY_1% seconds after each move ^(LOOK_AHEAD^).
 echo To pause: close this window ^(the games in the background stop with it^). Running this file again goes on from there.
 echo To run overnight: turn off Windows sleep ^(Settings - System - Power - Sleep: Never^).
 rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
@@ -245,6 +291,7 @@ set "D=%LV%\round-%E%"
 if exist "%D%\round-done.txt" (
   rem (A finished round: its brain.)
   for /L %%p in (1,1,%NP%) do if exist "%D%\brain-%%p.txt" set "NAO_%%p=%D%\brain-%%p.txt"
+  for /L %%p in (1,1,%NP%) do for /L %%c in (2,1,%NX_N%) do if exist "%D%\brain-%%p-%%c.txt" set "NAOX_%%p_%%c=%D%\brain-%%p-%%c.txt"
   set /a E+=1
   goto luot_tiep
 )
@@ -289,13 +336,13 @@ for /L %%k in (1,1,%N%) do (
       set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
     )
     set /a SEED=FIRST_SEED+E*1000+%%k
-    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
+    >"%D%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", !DT_CFG! !TD_CFG! !NX_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_GHI%, seed = !SEED!, limit = 9000}
     start "Brain - round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E% %%k !SEED! !PI!
   )
 )
 call :cho "%D%" "RECORD "
 :hoc_luot
-rem Gathering this round's data: process k's REC lines into data\<mod>\round-%E%-p<k>.txt (the whole file written
+rem Gathering this round's data: process k's REC lines (and RW lines, LOOK_AHEAD=auto) into data\<mod>\round-%E%-p<k>.txt (the whole file written
 rem again, so a rerun does not gather twice), then taken out of out.txt to keep it small.
 set /a PI=0
 for /L %%k in (1,1,%N%) do (
@@ -303,61 +350,26 @@ for /L %%k in (1,1,%N%) do (
   if !PI! GTR %NP% set /a PI=1
   if not exist "%LV%\data\!PI!" mkdir "%LV%\data\!PI!"
   if exist "%D%\p%%k\out.txt" if not exist "%D%\p%%k\gathered.txt" (
-    findstr /b /c:"REC " "%D%\p%%k\out.txt" >"%LV%\data\!PI!\round-%E%-p%%k.tmp"
+    findstr /b /c:"REC " /c:"RW " "%D%\p%%k\out.txt" >"%LV%\data\!PI!\round-%E%-p%%k.tmp"
     move /y "%LV%\data\!PI!\round-%E%-p%%k.tmp" "%LV%\data\!PI!\round-%E%-p%%k.txt" >nul
     >"%D%\p%%k\gathered.txt" echo done
-    findstr /v /b /c:"REC " "%D%\p%%k\out.txt" >"%D%\p%%k\out-short.txt"
+    findstr /v /b /c:"REC " /c:"RW " "%D%\p%%k\out.txt" >"%D%\p%%k\out-short.txt"
     move /y "%D%\p%%k\out-short.txt" "%D%\p%%k\out.txt" >nul
   )
 )
-rem Each mod's data (every round) packed into a training pack, then trained - one process per mod.
+rem Each mod's data (every round) packed into a training pack, then trained - one process a brain (one a mod;
+rem LOOK_AHEAD=auto: three, one brain a window, sharing the pack).
 echo === Training a brain for each mod ^(%TIME%^) ===
 set /a DONG_TONG=0
-for /L %%p in (1,1,%NP%) do (
-  set "H=%D%\train%%p"
-  set "DA="
-  if exist "!H!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!H!\out.txt" >nul 2>nul && set "DA=1"
-  set /a DONG_%%p=0
-  if not defined DA (
-    mkdir "!H!" 2>nul
-    del /q "!H!\out.txt" 2>nul
-    del /q "!H!\done.txt" 2>nul
-    call :ban_bench "!H!"
-    call :goi_du_lieu %%p "!H!\data.zip"
-    rem (The line count goes along: over 6 million, train keeps every k-th line - every round still in, memory bounded.)
-    set "DN_="
-    if exist "!H!\count.txt" for /f %%c in ('type "!H!\count.txt"') do set "DN_=records = %%c, "
-    >"!H!\config.lua" echo return {command = "train", !DN_!epochs = %EPOCHS%, hidden = %HIDDEN%, weights = true, seed = %FIRST_SEED%}
-  )
-  if exist "!H!\count.txt" for /f %%c in ('type "!H!\count.txt"') do set /a DONG_%%p=%%c
-  set /a DONG_TONG+=DONG_%%p
-)
+for /L %%p in (1,1,%NP%) do call :chuan_bi_hoc %%p
 echo   Data: !DONG_TONG! moves ^(every round^)
 if !DONG_TONG! LSS 200 (echo [ERROR] Too little data - did the processes run? See "%D%\p1\out.txt".& exit /b 1)
-for /L %%p in (1,1,%NP%) do (
-  set "DA="
-  if exist "%D%\train%%p\out.txt" findstr /b /c:"XOI_BRAIN b2" "%D%\train%%p\out.txt" >nul 2>nul && set "DA=1"
-  if not defined DA start "Brain - training %%p" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E%\train %%p %FIRST_SEED% %%p hoc
-)
-set "N_CU=%N%"
-set /a N=NP
-call :cho_hoc "%D%"
-set /a N=N_CU
-for /L %%p in (1,1,%NP%) do (
-  set "H=%D%\train%%p"
-  findstr /b /c:"XOI_BRAIN b2" "!H!\out.txt" >nul 2>nul || (echo [ERROR] Training mod %%p did not finish - see "!H!\out.txt".& exit /b 1)
-  findstr /b /c:"XOI_BRAIN " "!H!\out.txt" >"%D%\brain-%%p.txt"
-  set "NAO_%%p=%D%\brain-%%p.txt"
-  set "DONG_BASE="
-  set "DONG_NET="
-  for /f "delims=" %%l in ('findstr /b /c:"BASE " "!H!\out.txt"') do set "DONG_BASE=%%l"
-  for /f "delims=" %%l in ('findstr /b /c:"NET done" "!H!\out.txt"') do set "DONG_NET=%%l"
-  call set "PK=%%PACK_%%p%%"
-  call set "DN=%%DONG_%%p%%"
-  for %%z in ("!PK!") do echo   %%p. %%~nxz: !DONG_BASE! / !DONG_NET!
-  for %%z in ("!PK!") do >>"%LV%\timing.txt" echo Round %E%/%ROUNDS% mod %%p ^(%%~nxz^): !DN! moves; !DONG_BASE!; !DONG_NET!
-  del /q "!H!\data.zip" 2>nul
-)
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :chay_hoc %%p %%c
+call :cho_hoc
+set "KH_LOI="
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :ket_hoc %%p %%c
+if defined KH_LOI exit /b 1
+for /L %%p in (1,1,%NP%) do del /q "%D%\train%%p\data.zip" 2>nul
 call :giay HET
 set /a "GIAY_V=(HET-BAT_DAU+86400) %% 86400, PHUT_V=GIAY_V/60"
 >>"%LV%\timing.txt" echo Round %E%/%ROUNDS% done at %TIME%, took !PHUT_V! minutes
@@ -370,60 +382,45 @@ exit /b 0
 :kiem
 rem The check: odd processes play XOI with the brain against the opponent, the even process right after each plays
 rem XOI without the brain against the same opponent (the mod's AI when it has scripts, else XOI without a brain), same
-rem mod, same seed.
+rem mod, same seed (LOOK_AHEAD=auto: groups of four processes, three brains and none; each mod keeps the brain that won
+rem most, check\choice-<p>.txt).
 if %GIAY_KT% LEQ 0 goto xong
 set "K=%LV%\check"
 if exist "%K%\totals.txt" goto xong
 echo.
-echo === Check: XOI with the brain and XOI without it, %N% processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===
+rem (Groups of NX_N+1 processes, the same mod and seed: process m of a group (0..NX_N-1) plays XOI with brain m+1, the
+rem last one XOI without a brain; the processes rounded up to whole groups, one group a mod at least.)
+set /a "KG=NX_N+1, NK=(N+KG-1)/KG*KG, NK_MIN=KG*NP"
+if !NK! LSS !NK_MIN! set /a NK=NK_MIN
+if %NX_N% GTR 1 (echo === Check: XOI with each brain ^(1.5 / 3 / 5 seconds^) and XOI without one, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===) else echo === Check: XOI with the brain and XOI without it, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===
 if not exist "%K%" mkdir "%K%"
-for /L %%k in (1,1,%N%) do (
-  set /a "PI=((%%k-1)/2) %% NP + 1, LE=%%k %% 2, SEED=FIRST_SEED+500000+(%%k+1)/2"
-  set "DA="
-  if exist "%K%\p%%k\out.txt" findstr /c:"RECORD " "%K%\p%%k\out.txt" >nul 2>nul && set "DA=1"
-  if not defined DA (
-    mkdir "%K%\p%%k" 2>nul
-    del /q "%K%\p%%k\done.txt" 2>nul
-    del /q "%K%\p%%k\out.txt" 2>nul
-    call :ban_bench "%K%\p%%k"
-    copy /y "%LV%\scripts\base\game\smart_ai.lua" "%K%\p%%k\hs_alt.lua" >nul
-    >>"%K%\p%%k\package.manifest" echo module=hs_alt^|hs_alt.lua
-    set "NAO_CFG="
-    call set "NAO_NAY=%%NAO_!PI!%%"
-    if !LE! EQU 1 if defined NAO_NAY (
-      call :nao_lua "!NAO_NAY!" "%K%\p%%k\xoi_brain.lua"
-      >>"%K%\p%%k\package.manifest" echo module=xoi_brain^|xoi_brain.lua
-      set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
-    )
-    >"%K%\p%%k\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
-    start "Brain - check %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 check %%k !SEED! !PI!
-  )
-)
+for /L %%k in (1,1,%NK%) do call :kt_mot %%k
+set "N_CU=%N%"
+set /a N=NK
 call :cho "%K%" "RECORD "
-rem Adding up: odd processes = with the brain (CW/CL), even = without (KW/KL); per mod too.
-set /a CW=0, CL=0, KW=0, KL=0
-for /L %%p in (1,1,%NP%) do set /a "CW_%%p=0, CL_%%p=0, KW_%%p=0, KL_%%p=0"
-for /L %%k in (1,1,%N%) do (
-  set /a "PI=((%%k-1)/2) %% NP + 1, LE=%%k %% 2"
-  rem (RECORD <games> games, <records> records, <name> won <w> lost <l> vs <o>: w is the 8th word, l the 10th)
-  if exist "%K%\p%%k\out.txt" for /f "tokens=8,10" %%a in ('findstr /b /c:"RECORD " "%K%\p%%k\out.txt"') do (
-    if !LE! EQU 1 (
-      set /a CW+=%%a, CL+=%%b
-      set /a "CW_!PI!+=%%a, CL_!PI!+=%%b"
-    ) else (
-      set /a KW+=%%a, KL+=%%b
-      set /a "KW_!PI!+=%%a, KL_!PI!+=%%b"
-    )
-  )
+set /a N=N_CU
+rem Adding up: each member m (0..NX_N-1: brain m+1; NX_N: no brain), all mods and each.
+for /L %%m in (0,1,%NX_N%) do (
+  set /a "KW_%%m=0, KL_%%m=0"
+  for /L %%p in (1,1,%NP%) do set /a "KW_%%m_%%p=0, KL_%%m_%%p=0"
 )
-call :phan_tram !CW! !CL! CP
-call :phan_tram !KW! !KL! KP
->"%K%\totals.txt" echo XOI with the brain: won !CW! lost !CL! ^(!CP!%%^); XOI without it: won !KW! lost !KL! ^(!KP!%%^) - same opponent, same seeds
+for /L %%k in (1,1,%NK%) do call :kt_cong %%k
+if %NX_N% EQU 1 (
+  call :phan_tram !KW_0! !KL_0! CP
+  call :phan_tram !KW_1! !KL_1! KP
+  >"%K%\totals.txt" echo XOI with the brain: won !KW_0! lost !KL_0! ^(!CP!%%^); XOI without it: won !KW_1! lost !KL_1! ^(!KP!%%^) - same opponent, same seeds
+) else (
+  set "KT_DONG=XOI with the brain"
+  for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m
+  call :phan_tram !KW_%NX_N%! !KL_%NX_N%! KP
+  >"%K%\totals.txt" echo !KT_DONG!; XOI without one: won !KW_%NX_N%! lost !KL_%NX_N%! ^(!KP!%%^) - same opponent, same seeds
+  for /L %%p in (1,1,%NP%) do call :kt_chon %%p
+)
 if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.zip.
 (
-  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%%DT_GHI%%TD_GHI%; mods:
+  echo Brain: %ROUNDS% rounds x %RECORD_MINUTES% minutes, %N% processes, HIDDEN=%HIDDEN% EPOCHS=%EPOCHS% FIRST_SEED=%FIRST_SEED%%DT_GHI%%TD_GHI%%NX_GHI%; mods:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
   if exist "%LV%\timing.txt" findstr /c:"Round " "%LV%\timing.txt"
   if exist "%K%\totals.txt" type "%K%\totals.txt"
@@ -431,6 +428,7 @@ rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.
 if not exist "%LV%\packed.txt" (
   echo.
   echo === Each mod's brain ===
+  if %NX_N% GTR 1 for /L %%p in (1,1,%NP%) do call :nao_chon %%p
   for /L %%p in (1,1,%NP%) do call :goi_nao %%p
   >"%LV%\packed.txt" echo done
 )
@@ -452,9 +450,159 @@ exit /b 1
 
 rem --- The check line of mod %1 into totals.txt ---
 :tong_mod
-call :phan_tram !CW_%1! !CL_%1! CP
-call :phan_tram !KW_%1! !KL_%1! KP
-for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz: with the brain won !CW_%1! lost !CL_%1! ^(!CP!%%^); without won !KW_%1! lost !KL_%1! ^(!KP!%%^)
+if %NX_N% GTR 1 goto tong_mod_tu
+call :phan_tram !KW_0_%1! !KL_0_%1! CP
+call :phan_tram !KW_1_%1! !KL_1_%1! KP
+for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz: with the brain won !KW_0_%1! lost !KL_0_%1! ^(!CP!%%^); without won !KW_1_%1! lost !KL_1_%1! ^(!KP!%%^)
+exit /b 0
+:tong_mod_tu
+set "KT_DONG="
+for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m %1
+call :phan_tram !KW_%NX_N%_%1! !KL_%NX_N%_%1! KP
+set /p KT_C=<"%K%\choice-%1.txt"
+for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz:!KT_DONG! none won !KW_%NX_N%_%1! lost !KL_%NX_N%_%1! ^(!KP!%%^) - chosen: !NX_GIAY_%KT_C%! seconds
+exit /b 0
+rem --- Adds brain m = %1's result (of mod %2, or of all) to KT_DONG ---
+:kt_dong
+if "%2"=="" (
+  call :phan_tram !KW_%1! !KL_%1! KT_P
+  set /a "KT_W=KW_%1, KT_L=KL_%1"
+) else (
+  call :phan_tram !KW_%1_%2! !KL_%1_%2! KT_P
+  set /a "KT_W=KW_%1_%2, KT_L=KL_%1_%2"
+)
+set /a KT_C=%1+1
+call set "KT_G=%%NX_GIAY_!KT_C!%%"
+if "%2"=="" (if %1 EQU 0 (set "KT_DONG=!KT_DONG! looking !KT_G! seconds ahead: won !KT_W! lost !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG!; !KT_G! seconds: won !KT_W! lost !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG! !KT_G! s won !KT_W! lost !KT_L! (!KT_P!%%);"
+exit /b 0
+rem --- The brain chosen for mod %1 (LOOK_AHEAD=auto): the highest share of wins (a tie: the shorter look) ---
+:kt_chon
+set /a "CH_TOT=-1, CH_C=1"
+for /L %%m in (0,1,%NX_M1%) do call :kt_chon_mot %1 %%m
+>"%K%\choice-%1.txt" echo !CH_C!
+if %NP% EQU 1 >>"%K%\totals.txt" echo Chosen: the brain looking !NX_GIAY_%CH_C%! seconds ahead ^(it won most^)
+exit /b 0
+:kt_chon_mot
+set /a "CT_W=KW_%2_%1, CT_L=KL_%2_%1, CT_T=CT_W+CT_L, CT_V=-1"
+if !CT_T! GTR 0 set /a "CT_V=CT_W*1000/CT_T"
+if !CT_V! GTR !CH_TOT! set /a "CH_TOT=CT_V, CH_C=%2+1"
+exit /b 0
+rem --- The chosen brain of mod %1 into NAO_<p> (for packing): check\choice-<p>.txt ---
+:nao_chon
+set "NC_="
+if defined K if exist "%K%\choice-%1.txt" set /p NC_=<"%K%\choice-%1.txt"
+if not defined NC_ exit /b 0
+call set "NC_G=%%NX_GIAY_%NC_%%%"
+if not "%NC_%"=="1" (
+  call set "NC_F=%%NAOX_%1_%NC_%%%"
+  if defined NC_F set "NAO_%1=!NC_F!"
+)
+for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: the brain looking !NC_G! seconds ahead ^(it won most in the check^)
+exit /b 0
+rem --- One check process %1: its group, member, mod and seed; that member's brain ---
+:kt_mot
+set /a "KM=(%1-1) %% KG, KGR=(%1-1)/KG, PI=KGR %% NP + 1, SEED=FIRST_SEED+500000+KGR+1, KC=KM+1"
+set "KP=%K%\p%1"
+set "DA="
+if exist "%KP%\out.txt" findstr /c:"RECORD " "%KP%\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+mkdir "%KP%" 2>nul
+del /q "%KP%\done.txt" 2>nul
+del /q "%KP%\out.txt" 2>nul
+set "NAO_NAY="
+if !KM! LSS %NX_N% (
+  if !KC! EQU 1 (call set "NAO_NAY=%%NAO_!PI!%%") else call set "NAO_NAY=%%NAOX_!PI!_!KC!%%"
+  rem (Brain KC missing - not once the rounds are done: an empty game line, the process not run.)
+  if not defined NAO_NAY (
+    >"%KP%\out.txt" echo RECORD 0 games, 0 records, xoi won 0 lost 0 vs none
+    exit /b 0
+  )
+)
+call :ban_bench "%KP%"
+copy /y "%LV%\scripts\base\game\smart_ai.lua" "%KP%\hs_alt.lua" >nul
+>>"%KP%\package.manifest" echo module=hs_alt^|hs_alt.lua
+set "NAO_CFG="
+if defined NAO_NAY (
+  call :nao_lua "!NAO_NAY!" "%KP%\xoi_brain.lua"
+  >>"%KP%\package.manifest" echo module=xoi_brain^|xoi_brain.lua
+  set NAO_CFG=brain = {module = "xoi_brain", on = {1}},
+)
+>"%KP%\config.lua" echo return {command = "record", alt = "hs_alt", quiet = true, !DT_CFG! !NAO_CFG! games = 1000000, seconds = %GIAY_KT%, seed = !SEED!, limit = 9000}
+start "Brain - check %1" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 check %1 !SEED! !PI!
+exit /b 0
+rem --- Adds check process %1's result (RECORD <games> games, <records> records, <name> won <w> lost <l> vs <o>: w is the
+rem 8th word, l the 10th) to its member, all mods and its mod ---
+:kt_cong
+set /a "KM=(%1-1) %% KG, KGR=(%1-1)/KG, PI=KGR %% NP + 1"
+if not exist "%K%\p%1\out.txt" exit /b 0
+for /f "tokens=8,10" %%a in ('findstr /b /c:"RECORD " "%K%\p%1\out.txt"') do set /a "KW_!KM!+=%%a, KL_!KM!+=%%b, KW_!KM!_!PI!+=%%a, KL_!KM!_!PI!+=%%b"
+exit /b 0
+rem --- The training folder of mod %1, brain %2, into HD: train<p> (brain 1), train<p>-<c> (LOOK_AHEAD=auto: 2, 3) ---
+:thu_muc_hoc
+if "%2"=="1" (set "HD=%D%\train%1") else set "HD=%D%\train%1-%2"
+exit /b 0
+rem --- Getting mod %1 ready to train: with a brain of it not yet trained, its data packed again (train<p>\data.zip, shared
+rem by its brains) and a config written for each such brain (target: which window) ---
+:chuan_bi_hoc
+set "CB_CON="
+for /L %%c in (1,1,%NX_N%) do call :hoc_xong %1 %%c
+set "H=%D%\train%1"
+if defined CB_CON (
+  mkdir "!H!" 2>nul
+  call :goi_du_lieu %1 "!H!\data.zip"
+)
+set /a DONG_%1=0
+if exist "!H!\count.txt" for /f %%n in ('type "!H!\count.txt"') do set /a DONG_%1=%%n
+set /a DONG_TONG+=DONG_%1
+if not defined CB_CON exit /b 0
+rem (The line count goes along: over 6 million, train keeps every k-th line - every round still in, memory bounded.)
+set "DN_="
+if !DONG_%1! GTR 0 set "DN_=records = !DONG_%1!, "
+for /L %%c in (1,1,%NX_N%) do call :viet_hoc %1 %%c
+exit /b 0
+:hoc_xong
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if not defined DA set "CB_CON=1"
+exit /b 0
+:viet_hoc
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+mkdir "!HD!" 2>nul
+del /q "!HD!\out.txt" 2>nul
+del /q "!HD!\done.txt" 2>nul
+call :ban_bench "!HD!"
+set "TG_="
+if not "%2"=="1" set "TG_=target = %2, "
+>"!HD!\config.lua" echo return {command = "train", !TG_!!DN_!epochs = %EPOCHS%, hidden = %HIDDEN%, weights = true, seed = %FIRST_SEED%}
+exit /b 0
+rem --- Starts training brain %2 of mod %1 (not yet done) ---
+:chay_hoc
+call :thu_muc_hoc %1 %2
+set "DA="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul && set "DA=1"
+if defined DA exit /b 0
+if "%2"=="1" (set "HC=%1") else set "HC=%1-%2"
+start "Brain - training %1-%2" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E%\train !HC! %FIRST_SEED% %1 hoc
+exit /b 0
+rem --- Brain %2 of mod %1 trained: brain-<p>.txt (brain 1, NAO_<p>) or brain-<p>-<c>.txt (NAOX_<p>_<c>) ---
+:ket_hoc
+call :thu_muc_hoc %1 %2
+findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>nul || (echo [ERROR] Training mod %1 ^(brain %2^) did not finish - see "!HD!\out.txt".& set "KH_LOI=1"& exit /b 0)
+if "%2"=="1" (set "KH_NAO=%D%\brain-%1.txt") else set "KH_NAO=%D%\brain-%1-%2.txt"
+findstr /b /c:"XOI_BRAIN " "!HD!\out.txt" >"!KH_NAO!"
+if "%2"=="1" (set "NAO_%1=!KH_NAO!") else set "NAOX_%1_%2=!KH_NAO!"
+set "DONG_BASE="
+set "DONG_NET="
+for /f "delims=" %%l in ('findstr /b /c:"BASE " "!HD!\out.txt"') do set "DONG_BASE=%%l"
+for /f "delims=" %%l in ('findstr /b /c:"NET done" "!HD!\out.txt"') do set "DONG_NET=%%l"
+set "KH_G="
+if %NX_N% GTR 1 set "KH_G= looking !NX_GIAY_%2! s ahead"
+for %%z in ("!PACK_%1!") do echo   %1. %%~nxz!KH_G!: !DONG_BASE! / !DONG_NET!
+for %%z in ("!PACK_%1!") do >>"%LV%\timing.txt" echo Round %E%/%ROUNDS% mod %1 ^(%%~nxz^)!KH_G!: !DONG_%1! moves; !DONG_BASE!; !DONG_NET!
 exit /b 0
 rem --- Win percentage (one decimal) of %1 won %2 lost into variable %3 ---
 :phan_tram
@@ -481,7 +629,7 @@ set "GD_CNT=%~dp2count.txt"
 set "GD_P=%1"
 del /q "%GD_OUT%" 2>nul
 del /q "%GD_CNT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'round-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { if (-not $line.StartsWith('REC ')) { continue }; if ($bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; $count++ } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Data of mod ' + $env:GD_P + ': ' + $count + ' lines, ' + $k + ' files in ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $src=[System.IO.Compression.ZipFile]::OpenRead($env:GD_PACK); try { $e=$src.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); $out=[System.IO.Compression.ZipFile]::Open($env:GD_OUT,'Create'); try { foreach ($x in $src.Entries) { if ($x.FullName.Length -le $root.Length) { continue }; if ($x.FullName.Substring(0, $root.Length) -ine $root) { continue }; $rel=$x.FullName.Substring($root.Length).Replace('\', '/'); if ($rel -ieq 'data/data.txt' -or $rel -imatch '^[^/]+\.exe$' -or $rel -imatch '^(sprite/)?ui/') { $n=$out.CreateEntry($rel); $i=$x.Open(); $o=$n.Open(); try { $i.CopyTo($o) } finally { $o.Dispose(); $i.Dispose() } } }; $limit=3500000; $k=0; $w=$null; $bytes=$limit; $count=0; foreach ($f in (Get-ChildItem -LiteralPath $env:GD_DIR -Filter 'round-*.txt' | Sort-Object Name)) { foreach ($line in [System.IO.File]::ReadLines($f.FullName)) { $rec=$line.StartsWith('REC '); if (-not ($rec -or $line.StartsWith('RW '))) { continue }; if (-not $rec -and -not $w) { continue }; if ($rec -and $bytes + $line.Length + 1 -gt $limit) { if ($w) { $w.Dispose() }; $k++; $w=New-Object System.IO.StreamWriter(($out.CreateEntry('xoi/data_' + $k + '.txt')).Open()); $bytes=0 }; $w.Write($line); $w.Write([char]10); $bytes += $line.Length + 1; if ($rec) { $count++ } } }; if ($w) { $w.Dispose() }; [System.IO.File]::WriteAllText($env:GD_CNT, [string]$count + [char]13 + [char]10); Write-Host ('     Data of mod ' + $env:GD_P + ': ' + $count + ' lines, ' + $k + ' files in ' + $env:GD_OUT) } finally { $out.Dispose() } } finally { $src.Dispose() }"
 if not exist "%GD_OUT%" echo      [ERROR] Could not pack the data of mod %1.
 exit /b 0
 rem --- Mod %1's brain: xoi-<mod>\brain.txt (the earlier one kept as brain-previous.txt), and <mod>-xoi.zip: a copy
@@ -591,38 +739,41 @@ if !PHUT! EQU 0 (
   )
 )
 goto cho_tiep
-rem --- Wait for the training processes train1..trainN in %1 (the XOI_BRAIN b2 line, or done.txt) ---
+rem --- Wait for this round's training processes (train<p>, and train<p>-<c> with LOOK_AHEAD=auto) (the XOI_BRAIN b2 line,
+rem or done.txt) ---
 :cho_hoc
-set /a CHO=0
+set /a CHO=0, CANH_N=NP*NX_N
 call :giay CHO_TU
 :cho_hoc_tiep
 ping -n 6 127.0.0.1 >nul 2>&1
 set /a XONG=0
-for /L %%p in (1,1,%N%) do (
-  set "X="
-  if exist "%~1\train%%p\out.txt" findstr /b /c:"XOI_BRAIN b2" "%~1\train%%p\out.txt" >nul 2>&1 && set "X=1"
-  if not defined THU_WINE if exist "%~1\train%%p\done.txt" set "X=1"
-  if defined X set /a XONG+=1
-)
-if !XONG! GEQ %N% exit /b 0
+for /L %%p in (1,1,%NP%) do for /L %%c in (1,1,%NX_N%) do call :hoc_da_xong %%p %%c
+if !XONG! GEQ !CANH_N! exit /b 0
 set /a CHO+=5
 set /a PHUT=CHO%%60
 if !PHUT! EQU 0 (
   call :giay BAY_GIO
   set /a "M_=((BAY_GIO-CHO_TU+86400) %% 86400)/60"
-  echo   ... training: !XONG!/%N% done, waited !M_! minutes ^(!TIME:~0,8!^)
+  echo   ... training: !XONG!/!CANH_N! done, waited !M_! minutes ^(!TIME:~0,8!^)
   if not defined KHONG_TASKLIST (
     tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul || (echo   [NOTE] No game is running any more - skipping.& exit /b 0)
   )
 )
 goto cho_hoc_tiep
+:hoc_da_xong
+call :thu_muc_hoc %1 %2
+set "X="
+if exist "!HD!\out.txt" findstr /b /c:"XOI_BRAIN b2" "!HD!\out.txt" >nul 2>&1 && set "X=1"
+if not defined THU_WINE if exist "!HD!\done.txt" set "X=1"
+if defined X set /a XONG+=1
+exit /b 0
 
 rem --- One process: the game runs headless; %2 the folder (round-N, check, or round-N\train), %3 the process number,
 rem %4 the seed, %5 the mod number, %6 "hoc" = training (that mod's data pack as the mod); the window closes when done ---
 :chay1
 if /i "%~6"=="hoc" (
   set "DIR=%LV%\%~2%~3"
-  set "P=!DIR!\data.zip"
+  set "P=%LV%\%~2%~5\data.zip"
 ) else (
   set "DIR=%LV%\%~2\p%~3"
   set "P=%LV%\mod-%~5.zip"

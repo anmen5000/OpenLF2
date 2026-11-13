@@ -85,6 +85,20 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    rounds on Sauce's pack (80 threads): XOI with the brain won 57.4% of its games against Sauce's AI, without 45.8%.
    The hoc-sau folder belongs to the mods it was run with: for other mods, rename it first (hoc-sau-sauce, say) -
    hoc-sau.bat stops with a message rather than mix their data.
+   Package 79, a fix: from package 67 to 78, when XOI recorded and was checked against itself (a mod without an AI of
+   its own, or DOI_THU=xoi), the copy that is its opponent played with the brain too - the check set the brain against
+   itself, about even whether the brain was good or bad. A brain learned so is sound: delete hoc-sau\kiem-tra and run
+   the new kit's hoc-sau.bat again - only the check runs. And THU_DON=4: while recording, XOI now and then tries a move
+   other than the one it finds best, so that the brain learns what the moves XOI seldom picks bring too (mode
+   Convergence, one round: 6.5 games in 100 ahead of XOI without a brain, 2.9 without trying; against Sauce's AI the
+   same either way). 0 = off.
+   Looking ahead (package 81): NHIN_XA, the seconds after a move whose outcome the brain predicts - 1,5 (the default),
+   3 or 5; or NHIN_XA=tu: three brains (1,5 / 3 / 5 seconds) learned from the same data, all three played in the check,
+   and each mod keeps the one that won most (hoc-sau\kiem-tra\chon-<p>.txt; ket-qua.txt shows all three). It takes
+   three trainings at once a mod (three times the memory) and splits the check four ways: worth it on many threads
+   (some 40 or more) or with a longer PHUT_KIEM_TRA. On mode Convergence the three won 4.1 / 6.1 / 5.1 games in 100
+   more than XOI without a brain, within chance of each other. A hoc-sau folder records with one NHIN_XA: to change
+   it, rename the folder first.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -228,6 +242,12 @@ chơi được chính các file của bản mod.
    như trên mà có thử đòn: bộ não thắng nhiều hơn 6,5 trận mỗi 100. Với AI của Sauce thì như nhau (thử đòn hay không,
    bộ não đều thắng hơn chừng 8 trận mỗi 100): một đối thủ khác XOI đã cho bộ não đủ điều để học. 0 = tắt; phần kiểm
    tra không bao giờ thử đòn.
+   Nhìn xa (gói 81): NHIN_XA là số giây sau mỗi đòn mà bộ não đoán kết quả - 1,5 (mặc định), 3 hay 5; hoặc NHIN_XA=tu:
+   từ cùng dữ liệu học ba bộ não 1,5 / 3 / 5 giây, phần kiểm tra cho cả ba đánh và mỗi bản mod giữ bộ não thắng nhiều
+   nhất (hoc-sau\kiem-tra\chon-<p>.txt; ket-qua.txt ghi cả ba). Tốn ba tiến trình huấn luyện cùng lúc mỗi bản mod (gấp
+   ba bộ nhớ) và phần kiểm tra chia bốn: đáng dùng khi máy nhiều luồng (chừng 40 trở lên) hay PHUT_KIEM_TRA dài hơn.
+   Trên Convergence ba bộ não thắng hơn XOI không có bộ não 4,1 / 6,1 / 5,1 trận mỗi 100, chênh nhau còn trong dao động.
+   Một thư mục hoc-sau ghi dữ liệu theo một NHIN_XA: muốn đổi thì đổi tên thư mục ấy trước.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

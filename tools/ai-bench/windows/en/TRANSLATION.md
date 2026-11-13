@@ -32,6 +32,7 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    | hoc-sau-cai-dat.bat / spsa-cai-dat.bat (settings files) | brain-settings.bat / spsa-settings.bat |
    | hoc-sau\ (folder), luot-N\, du-lieu\, hocN\, nao-N.txt, xong-luot.txt, gop.txt, du-lieu.zip, du-lieu.txt | brain\, round-N\, data\, trainN\, brain-N.txt, round-done.txt, gathered.txt, data.zip, count.txt |
    | hoc-sau-truoc\ (an earlier run's folder, renamed by spsa.bat), tu-spsa.txt, spsa\da-goi.txt | brain-previous\, from-spsa.txt, spsa\packed.txt |
+   | hoc<p>-<c>\, nao-<p>-<c>.txt, nhin-xa.txt, kiem-tra\chon-<p>.txt | train<p>-<c>\, brain-<p>-<c>.txt, look-ahead.txt, check\choice-<p>.txt |
    | xem.bat | watch.bat |
    | xuat-ban.bat | publish.bat |
    | xuat-ban.ps1 | publish.ps1 |
@@ -54,7 +55,7 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    `for ... %X%`, `defined`, `echo` lines that print them). Suggested names: VONG→ROUNDS, PHUT_VONG→ROUND_MINUTES,
    PHUT_KIEM_TRA→CHECK_MINUTES, SONG_SONG→PARALLEL, HAT_GIONG→SEED (if SEED is free; FIRST_SEED in spsa.bat and
    brain.bat, where SEED is used internally), PHUT_GHI→RECORD_MINUTES, AN→HIDDEN, EPOCH→EPOCHS, DOI_THU→OPPONENT,
-   THU_DON→EXPLORE, TIEP_HOC_SAU→THEN_BRAIN, UU_TIEN→PRIORITY,
+   THU_DON→EXPLORE, TIEP_HOC_SAU→THEN_BRAIN, NHIN_XA→LOOK_AHEAD (its value tu→auto, 1,5→1.5), UU_TIEN→PRIORITY,
    VE→RENDERER, THU_GIAY→TEST_SECONDS, SO_TRAN/TRAN→GAMES, MUC→LEVEL, NHAN_VAT→FIGHTERS, GAME/PACK/NOTES/BENCH/SCRIPTS
    unchanged; in can-bang.bat: NAO→BRAIN, BO_NHAN_VAT→EXCLUDE, TONG_VAN→TOTAL_GAMES, TONG_GIO→TOTAL_HOURS,
    VU_KHI→WEAPONS, PHUT_VAN→GAME_MINUTES, GIAY_DUNG_IM→STILL_SECONDS, GIO_CHAY→RUN_HOURS, THU_TONG_GIAY→TEST_TOTAL_SECONDS,

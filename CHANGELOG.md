@@ -610,6 +610,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- `hoc-sau.bat` (`brain.bat`): how far the brain looks (package 81) — `NHIN_XA` (`LOOK_AHEAD`), the seconds after a
+  move whose outcome it predicts: 1,5 (the default, as before), 3 or 5; or `tu` (`auto`): one recording at 45, 90 and
+  150 frames (the bench's `record` job's `windows`: the REC line holds the first, an `RW` line after it the others),
+  three brains trained from the same moves at once (`train`'s `target`), and a check in groups of four processes, the
+  same mod and seed — XOI with each brain and XOI without one —, each mod keeping the brain that won the greatest
+  share (`kiem-tra\chon-<p>.txt`, `check\choice-<p>.txt`; the results show all three). The check's processes are
+  rounded up to whole groups, one group a mod at least. A folder records with one setting (`nhin-xa.txt`,
+  `look-ahead.txt`; a folder without it is 45): changed half way, the run stops and asks for the folder to be renamed.
+  Measured on mode Convergence (one exploring round, 211,600 moves, the same 2,000 games): 4.1, 6.1 and 5.1 games in
+  100 more than XOI without a brain at 1.5, 3 and 5 seconds, within chance of each other — the choice is left to the
+  check of each mod, worth it on many threads. Tried under Wine: the default (as package 80), auto (one round, then a
+  second added), a fixed 3, two mods at once, the setting changed on a folder, the English kit
 - `spsa.bat`: then the brain (package 80) — `TIEP_HOC_SAU=1` (`THEN_BRAIN=1` in the English kit): once the tuning is
   done (all rounds, the check, the numbers packed), `spsa.bat` runs `hoc-sau.bat` (`brain.bat`) beside it by itself,
   so that XOI's brain learns on top of the numbers just tuned: the same mods (a mod dragged on or named by PACK alone,
