@@ -57,6 +57,11 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    20 rounds) and run spsa.bat again - the added rounds start from the last round's numbers, the steps go on
    shrinking as before, they use the new kit's scripts (the new AI), and the run ends with a new check and new
    packages. Better than starting over: the numbers found still fit, and a new run begins with large steps again.
+   Then the brain (package 80): set "TIEP_HOC_SAU=1" and, once the tuning is done (all rounds, the check, the numbers
+   packed), spsa.bat runs hoc-sau.bat by itself, so that XOI's brain learns on top of the numbers just tuned - the same
+   mods (dragged on or PACK: that one; else the mods beside it, as hoc-sau.bat picks them), with hoc-sau.bat's settings.
+   A hoc-sau folder of an earlier run is renamed hoc-sau-truoc (hoc-sau-truoc-2...) so that the new brain starts from
+   scratch; a brain run left half way goes on when spsa.bat or hoc-sau.bat is run again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -185,6 +190,11 @@ chơi được chính các file của bản mod.
    rồi chạy lại spsa.bat - các vòng thêm bắt đầu từ bộ số của vòng cuối, bước dịch nhỏ dần tiếp như cũ, dùng scripts
    của bộ XOI mới (AI bản mới), và cuối đợt kiểm tra, gói số lại. Tốt hơn chỉnh lại từ đầu: bộ số đã tìm vẫn dùng
    được, còn một đợt mới thì bắt đầu lại bằng bước dịch lớn.
+   Học sâu tiếp (gói 80): đặt  set "TIEP_HOC_SAU=1"  thì chỉnh số xong (hết các vòng, kiểm tra, gói số) spsa.bat tự chạy
+   hoc-sau.bat, để bộ não XOI học trên bộ số vừa chỉnh - cùng bản mod (kéo thả hay PACK: chỉ bản ấy; không thì các bản
+   mod cạnh nó, như hoc-sau.bat tự chọn), với cài đặt của hoc-sau.bat. Thư mục hoc-sau của một lần chạy trước được đổi
+   tên thành hoc-sau-truoc (hoc-sau-truoc-2...) để bộ não mới học từ đầu; hoc-sau đang dở thì chạy lại spsa.bat hay
+   hoc-sau.bat là nó làm tiếp.
 5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
    ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
    nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên

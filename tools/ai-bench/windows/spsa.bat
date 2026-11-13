@@ -50,6 +50,12 @@ rem Sauce tren 10 nhan vat goc; dat IDS trong tools\ai-bench neu can). Ban mod k
 rem van danh nhau o ban ay (may goc CRAZY qua yeu de chinh theo) - nen dat ban Sauce va cac ban mod cung luc: mot bo so
 rem chung, moi ban nang nhu nhau, ban nao cung chinh theo doi thu manh nhat no co.
 set "DOI_THU="
+rem Hoc sau tiep (TIEP_HOC_SAU, goi 80): 1 = chinh so xong (het cac vong, kiem tra va goi so) thi tu chay hoc-sau.bat
+rem canh file nay, de bo nao XOI hoc tren bo so vua chinh. Cung ban mod: keo tha hay PACK thi chi ban ay, de trong thi
+rem hoc-sau.bat tu chon cac ban mod canh no nhu moi lan; cai dat la cua hoc-sau.bat va hoc-sau-cai-dat.bat. Thu muc
+rem hoc-sau cua mot lan chay truoc duoc doi ten (hoc-sau-truoc, hoc-sau-truoc-2...) de bo nao moi hoc tu dau; hoc-sau dang
+rem do (dong cua so giua chung) thi chay lai file nay hay hoc-sau.bat la no lam tiep. De trong hay 0: khong chay.
+set "TIEP_HOC_SAU="
 rem Thu muc tools\ai-bench va scripts cua goi ban 32 tro len (de trong thi tu tim canh file .bat nay)
 set "BENCH="
 set "SCRIPTS="
@@ -73,13 +79,16 @@ set "KIT=%~dp0"
 set "LV=%~dp0spsa"
 rem --- Ban mod: keo tha, dong PACK, hoac moi file zip ban mod canh file nay ---
 set /a NP=0
+set "MOD_CHON="
 if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" (
   set /a NP=1
   set "PACK_1=%~f1"
+  set "MOD_CHON=1"
 )
 if !NP! EQU 0 if defined PACK (
   set /a NP=1
   set "PACK_1=!PACK!"
+  set "MOD_CHON=1"
 )
 if !NP! EQU 0 (
   pushd "%~dp0"
@@ -202,6 +211,7 @@ if defined GC_H (
 rem (THU_GIOI_HAN: so giay, de thu file nay.)
 if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
 if !GIOI_HAN! GTR 0 echo Hen gio: chay %GIO_CHAY% gio roi tam dung ^(GIO_CHAY^).
+if "%TIEP_HOC_SAU%"=="1" echo Hoc sau tiep: chinh so xong thi tu chay hoc-sau.bat ^(TIEP_HOC_SAU=1^).
 call :giay CHAY_LUC
 rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc spsa
 rem nay (game goi 69-72 khong dung theo cua so cmd cua no khi ket qua ghi vao out.txt, nen dong cac cua so roi game van
@@ -417,7 +427,7 @@ if not exist "%LV%\da-goi.txt" (
   echo.
   echo === Bo so rieng cho tung ban mod ===
   for /L %%p in (1,1,%NP%) do call :goi_so %%p
-  >"%LV%\da-goi.txt" echo xong
+  >"%LV%\da-goi.txt" echo xong %DATE% %TIME%
 )
 echo.
 echo ===== Xong. Ket qua: "%LV%\ket-qua.txt" =====
@@ -427,6 +437,7 @@ echo Gui file ket-qua.txt cho nguoi lam AI. Hoac dung ngay: tai file ^<ten ban m
 echo mod cu^) - XOI choi ban mod ay bang bo so vua chinh ^(trong tran ghi "mod tuned"^), INSANE giu so cua no. Kiem tra o tren ^<50%%
 echo thi dung tai len: bo so moi chua hon bo so cu.
 if defined CANH_XONG >"%CANH_XONG%" echo xong
+if "%TIEP_HOC_SAU%"=="1" goto tiep_hoc_sau
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 
@@ -443,6 +454,57 @@ echo === Da chay du %GIO_CHAY% gio ^(%TIME:~0,8%^): tam dung. Chay lai file nay 
 >>"%LV%\thoi-gian.txt" echo Tam dung luc %TIME:~0,8% sau %GIO_CHAY% gio ^(GIO_CHAY^)
 if defined CANH_XONG >"%CANH_XONG%" echo xong
 if "%KHONG_DUNG%"=="" pause
+exit /b 0
+
+rem --- Hoc sau tiep (TIEP_HOC_SAU=1): hoc-sau.bat canh file nay, tren bo so vua chinh. Dau cua bo so ay: dong cua
+rem da-goi.txt (ghi luc goi so). Thu muc hoc-sau mang dau khac, hay khong mang dau (mot lan chay truoc), thi doi ten di de
+rem bo nao moi hoc tu dau; cung dau (hoc-sau dang do, hay da xong) thi hoc-sau.bat lam tiep tu cho do. Truoc khi goi no,
+rem endlocal bo het bien cua file nay: hoc-sau.bat bat dau voi cai dat cua chinh no. ---
+:tiep_hoc_sau
+set "HS_BAT=%KIT%hoc-sau.bat"
+if not exist "%HS_BAT%" (
+  echo [LOI] Khong thay "%HS_BAT%" de hoc sau tiep ^(TIEP_HOC_SAU=1^): chep bo XOI tu goi 80 tro len canh file nay.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+set "HS=%KIT%hoc-sau"
+set "DAU="
+if exist "%LV%\da-goi.txt" set /p DAU=<"%LV%\da-goi.txt"
+set "DAU_HS="
+if exist "%HS%\tu-spsa.txt" set /p DAU_HS=<"%HS%\tu-spsa.txt"
+if exist "%HS%\" if not "!DAU_HS!"=="!DAU!" (
+  call :doi_ten_hs
+  if errorlevel 1 (
+    if "%KHONG_DUNG%"=="" pause
+    exit /b 1
+  )
+)
+if not exist "%HS%\" mkdir "%HS%"
+if not exist "%HS%\tu-spsa.txt" >"%HS%\tu-spsa.txt" echo !DAU!
+echo.
+echo ===== Hoc sau tiep ^(TIEP_HOC_SAU=1^): hoc-sau.bat, bo nao XOI hoc tren bo so vua chinh =====
+set "HS_ARG="
+if defined MOD_CHON set HS_ARG="!PACK_1!"
+endlocal & set "HS_BAT=%HS_BAT%" & set HS_ARG=%HS_ARG%
+call "%HS_BAT%" %HS_ARG%
+exit /b
+
+rem --- Doi ten thu muc hoc-sau cua lan chay truoc thanh hoc-sau-truoc (da co thi hoc-sau-truoc-2, -3...) ---
+:doi_ten_hs
+set "TEN_CU=hoc-sau-truoc"
+set /a SO_CU=1
+:doi_ten_hs_tiep
+if exist "%KIT%!TEN_CU!" (
+  set /a SO_CU+=1
+  set "TEN_CU=hoc-sau-truoc-!SO_CU!"
+  goto doi_ten_hs_tiep
+)
+ren "%HS%" "!TEN_CU!" 2>nul
+if exist "%HS%\" (
+  echo [LOI] Khong doi ten duoc thu muc "%HS%" ^(co cua so hay chuong trinh nao dang mo no?^) - dong no roi chay lai file nay.
+  exit /b 1
+)
+echo Thu muc hoc-sau cua lan chay truoc da doi ten thanh !TEN_CU!: bo nao moi hoc tu dau tren bo so vua chinh.
 exit /b 0
 
 rem --- Them vao file %2 dong cuoi cua mot chuoi trong file %1: dong ket thuc, hay (tien trinh bi dung giua chung) dong

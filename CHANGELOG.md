@@ -610,6 +610,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   way are stopped, keeping what they played (a report every ten game pairs), the time is written to `thoi-gian.txt`
   (`timing.txt`), and spsa.bat ends; run again, it goes on from there, the round under way included. Left empty, it
   runs to the end as before
+- `spsa.bat`: then the brain (package 80) — `TIEP_HOC_SAU=1` (`THEN_BRAIN=1` in the English kit): once the tuning is
+  done (all rounds, the check, the numbers packed), `spsa.bat` runs `hoc-sau.bat` (`brain.bat`) beside it by itself,
+  so that XOI's brain learns on top of the numbers just tuned: the same mods (a mod dragged on or named by PACK alone,
+  else hoc-sau.bat's own choice of the mods beside it) with hoc-sau.bat's own settings — `endlocal` drops every
+  variable of spsa.bat before it is called. The numbers packed carry a mark (`da-goi.txt`, `packed.txt`: the date and
+  time of the packing), copied into the brain folder (`tu-spsa.txt`, `from-spsa.txt`): a brain folder with another
+  mark or none (an earlier run, other numbers) is renamed `hoc-sau-truoc` (`brain-previous`; then `-2`, `-3`…) and the
+  brain starts from scratch; with the same mark (a brain run left half way, or done) it goes on where it was. Tried
+  under Wine: a run, the same run again (the brain run going on, nothing renamed), the run extended by a round (the
+  old brain folder set aside, a new brain), the English kit, a mod dragged onto spsa.bat
 - `hoc-sau.bat` (`brain.bat`): XOI tries other moves while it records (package 79) — `THU_DON` (`EXPLORE`), 4 by
   default, 0 off; the bench's `record` job's `explore`. Each move XOI finds worth starting gets a shift of its score
   drawn for the frame and the move (Gumbel noise of that scale, less its mean), so that moves scoring close to the
@@ -623,7 +633,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   without a brain exploring, 8.0 without (± 3) — an opponent that answers otherwise than XOI expects already shows the
   brain enough. Weighing the brain more (`brain_weight` 0.75 or 1 instead of 0.5) made no difference that 800 games
   can tell (−1.1 and +0.2 games in 100, ± 3.5). In a game nothing changes: `smart.explore` is set by the recording
-  alone (the same 300 games with the hook and without, with a brain and without)
+  alone (the same 300 games with the hook and without, with a brain and without). A second round, recorded exploring
+  with the first round's brain (528,000 moves in all), and a network of 96 hidden units on the same records did no
+  better: 5.9 and 6.3 games in 100 more than XOI without a brain (± 2.3), against 6.5 — in self-play, at this size,
+  the brain stops about there. Looking further ahead did no better either (one exploring round, 211,600 moves, four
+  brains on the same moves, the same 2,000 games): the window of 45 frames +4.1 games in 100, 90 frames +6.1, 150
+  frames +5.1, 150 frames with the second 45 at half and the rest at a quarter +3.5 (± 2.3; 90 against 45 +1.9 ± 2.1)
+  — the outcome's spread grows (46, 63, 78 HP) and the network's test correlation falls (0.40, 0.35, 0.33): the later
+  frames hold more of other moves than of the one judged. The window stays 45
 - The guide pages (xoi.html, insane.html) keep a bar on top while scrolling: back to the game (Play), INSANE!, XOI
   (package 78). The balance runners: `VONG` / `ROUNDS` left empty splits the run for you (rounds of 10 minutes to an
   hour: two hours make 10, twenty make 20; 10 rounds with a total of games); `NAO` / `BRAIN` left empty is XOI, which

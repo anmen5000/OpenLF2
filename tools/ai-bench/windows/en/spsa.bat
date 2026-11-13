@@ -52,6 +52,13 @@ rem needed). In a mod with no AI scripts of its own the two nudged sets still pl
 rem weak to tune against) - so put Sauce's pack and the mods in together: one set of numbers, every pack weighing the
 rem same, each tuned against the strongest player it has.
 set "OPPONENT="
+rem Then the brain (THEN_BRAIN, package 80): 1 = once the tuning is done (all rounds, the check, the numbers packed),
+rem brain.bat beside this file runs by itself, so that XOI's brain learns on top of the numbers just tuned. The same mods:
+rem dragged on or PACK, that one alone; empty, brain.bat picks the mods beside it as it always does; its settings are
+rem brain.bat's and brain-settings.bat's. The brain folder of an earlier run is renamed (brain-previous,
+rem brain-previous-2...) so that the new brain learns from the start; a brain run left half way (its window closed) goes
+rem on when this file or brain.bat is run again. Empty or 0: it does not run.
+set "THEN_BRAIN="
 rem The tools\ai-bench and scripts folders of package 32 or later (left empty, they are looked for next to this .bat file)
 set "BENCH="
 set "SCRIPTS="
@@ -75,13 +82,16 @@ set "KIT=%~dp0"
 set "LV=%~dp0spsa"
 rem --- The mods: dragged onto this file, the PACK line, or every mod zip next to this file ---
 set /a NP=0
+set "MOD_CHON="
 if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" (
   set /a NP=1
   set "PACK_1=%~f1"
+  set "MOD_CHON=1"
 )
 if !NP! EQU 0 if defined PACK (
   set /a NP=1
   set "PACK_1=!PACK!"
+  set "MOD_CHON=1"
 )
 if !NP! EQU 0 (
   pushd "%~dp0"
@@ -206,6 +216,7 @@ if defined GC_H (
 rem (THU_GIOI_HAN: seconds, for trying this file.)
 if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
 if !GIOI_HAN! GTR 0 echo Timer: running %RUN_HOURS% hours, then pausing ^(RUN_HOURS^).
+if "%THEN_BRAIN%"=="1" echo Then the brain: brain.bat runs by itself once the tuning is done ^(THEN_BRAIN=1^).
 call :giay CHAY_LUC
 rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
 rem stops every game of this spsa folder (the game of packages 69-72 does not stop with its cmd window when its output
@@ -423,7 +434,7 @@ if not exist "%LV%\packed.txt" (
   echo.
   echo === Each mod's own numbers ===
   for /L %%p in (1,1,%NP%) do call :goi_so %%p
-  >"%LV%\packed.txt" echo done
+  >"%LV%\packed.txt" echo done %DATE% %TIME%
 )
 echo.
 echo ===== Done. Results: "%LV%\results.txt" =====
@@ -433,6 +444,7 @@ echo Send results.txt to whoever maintains the AI. Or use it right away: upload 
 echo old mod^) - XOI plays that mod with the numbers just tuned ^("mod tuned" in the match^), INSANE keeps its own. A check above
 echo under 50%% means do not upload: the new numbers are not yet better than the old ones.
 if defined CANH_XONG >"%CANH_XONG%" echo done
+if "%THEN_BRAIN%"=="1" goto tiep_hoc_sau
 if "%KHONG_DUNG%"=="" pause
 exit /b 0
 
@@ -449,6 +461,58 @@ echo === Ran %RUN_HOURS% hours ^(%TIME:~0,8%^): pausing. Run this file again to 
 >>"%LV%\timing.txt" echo Paused at %TIME:~0,8% after %RUN_HOURS% hours ^(RUN_HOURS^)
 if defined CANH_XONG >"%CANH_XONG%" echo done
 if "%KHONG_DUNG%"=="" pause
+exit /b 0
+
+rem --- Then the brain (THEN_BRAIN=1): brain.bat beside this file, on the numbers just tuned. Their mark: the line of
+rem packed.txt (written when the numbers were packed). A brain folder with another mark, or none (an earlier run), is
+rem renamed so that the new brain learns from the start; the same mark (a brain run under way, or done) and brain.bat
+rem goes on from where it was. Before it is called, endlocal drops every variable of this file: brain.bat starts with
+rem its own settings. ---
+:tiep_hoc_sau
+set "HS_BAT=%KIT%brain.bat"
+if not exist "%HS_BAT%" (
+  echo [ERROR] "%HS_BAT%" not found, for the brain to follow ^(THEN_BRAIN=1^): copy the kit of package 80 or later here.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+set "HS=%KIT%brain"
+set "DAU="
+if exist "%LV%\packed.txt" set /p DAU=<"%LV%\packed.txt"
+set "DAU_HS="
+if exist "%HS%\from-spsa.txt" set /p DAU_HS=<"%HS%\from-spsa.txt"
+if exist "%HS%\" if not "!DAU_HS!"=="!DAU!" (
+  call :doi_ten_hs
+  if errorlevel 1 (
+    if "%KHONG_DUNG%"=="" pause
+    exit /b 1
+  )
+)
+if not exist "%HS%\" mkdir "%HS%"
+if not exist "%HS%\from-spsa.txt" >"%HS%\from-spsa.txt" echo !DAU!
+echo.
+echo ===== Then the brain ^(THEN_BRAIN=1^): brain.bat, XOI's brain learning on the numbers just tuned =====
+set "HS_ARG="
+if defined MOD_CHON set HS_ARG="!PACK_1!"
+endlocal & set "HS_BAT=%HS_BAT%" & set HS_ARG=%HS_ARG%
+call "%HS_BAT%" %HS_ARG%
+exit /b
+
+rem --- Renames the brain folder of an earlier run to brain-previous (taken: brain-previous-2, -3...) ---
+:doi_ten_hs
+set "TEN_CU=brain-previous"
+set /a SO_CU=1
+:doi_ten_hs_tiep
+if exist "%KIT%!TEN_CU!" (
+  set /a SO_CU+=1
+  set "TEN_CU=brain-previous-!SO_CU!"
+  goto doi_ten_hs_tiep
+)
+ren "%HS%" "!TEN_CU!" 2>nul
+if exist "%HS%\" (
+  echo [ERROR] The folder "%HS%" could not be renamed ^(a window or program has it open?^) - close it and run this file again.
+  exit /b 1
+)
+echo The brain folder of an earlier run is renamed !TEN_CU!: the new brain learns from the start on the numbers just tuned.
 exit /b 0
 
 rem --- Appends to file %2 the last line of a chain in file %1: its end line, or (process stopped midway) its last

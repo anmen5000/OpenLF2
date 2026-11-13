@@ -798,6 +798,12 @@
           <code>SONG_SONG</code> left as it is, <code>spsa.bat</code> runs fewer processes on a PC short of memory (a 16 GB
           PC: 18), keeping about 4 GB for Windows. Still, look at Task Manager (<i>Performance → Memory</i>) after a quarter
           of an hour; above about 85% in use, lower <code>SONG_SONG</code>.</li>
+        <li><b>Then the brain</b> (package 80): <code>TIEP_HOC_SAU=1</code> (<code>THEN_BRAIN=1</code> in the English kit) — once
+          the tuning is done (all rounds, the check, the numbers packed), <code>spsa.bat</code> runs <code>hoc-sau.bat</code> by
+          itself, so that XOI's brain learns on top of the numbers just tuned: the same mods, with <code>hoc-sau.bat</code>'s own
+          settings. A <code>hoc-sau</code> folder of an earlier run is renamed <code>hoc-sau-truoc</code> (<code>-2</code>,
+          <code>-3</code>…) so that the new brain starts from scratch; a brain run left half way goes on when either file is run
+          again.</li>
       </ul>
       <ul class="plain vi">
         <li><code>VONG</code> số vòng (12), <code>PHUT_VONG</code> số phút mỗi vòng (5), <code>SONG_SONG</code> số tiến trình (mọi
@@ -823,6 +829,11 @@
           <code>SONG_SONG</code> thì máy ít bộ nhớ sẽ được <code>spsa.bat</code> tự bớt số tiến trình (máy 16 GB: 18), chừa
           khoảng 4 GB cho Windows. Dù vậy, sau mười lăm phút nên mở Task Manager (<i>Performance → Memory</i>); dùng quá
           khoảng 85% thì giảm <code>SONG_SONG</code>.</li>
+        <li><b>Học sâu tiếp</b> (gói 80): <code>TIEP_HOC_SAU=1</code> (bộ tiếng Anh: <code>THEN_BRAIN=1</code>) — chỉnh số xong (hết
+          các vòng, kiểm tra, gói số) thì <code>spsa.bat</code> tự chạy <code>hoc-sau.bat</code>, để bộ não XOI học trên bộ số vừa
+          chỉnh: cùng các bản mod, với cài đặt của chính <code>hoc-sau.bat</code>. Thư mục <code>hoc-sau</code> của một lần chạy
+          trước được đổi tên thành <code>hoc-sau-truoc</code> (<code>-2</code>, <code>-3</code>…) để bộ não mới học từ đầu;
+          <code>hoc-sau</code> đang dở thì chạy lại file nào cũng làm tiếp.</li>
       </ul>
     </section>
 

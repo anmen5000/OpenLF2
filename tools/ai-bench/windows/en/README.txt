@@ -60,6 +60,11 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    20 rounds) and run spsa.bat again - the added rounds start from the last round's numbers, the steps go on
    shrinking as before, they use the new kit's scripts (the new AI), and the run ends with a new check and new
    packages. Better than starting over: the numbers found still fit, and a new run begins with large steps again.
+   Then the brain (package 80): set "THEN_BRAIN=1" and, once the tuning is done (all rounds, the check, the numbers
+   packed), spsa.bat runs brain.bat by itself, so that XOI's brain learns on top of the numbers just tuned - the same
+   mods (dragged on or PACK: that one; else the mods beside it, as brain.bat picks them), with brain.bat's settings.
+   A brain folder of an earlier run is renamed brain-previous (brain-previous-2...) so that the new brain starts from
+   scratch; a brain run left half way goes on when spsa.bat or brain.bat is run again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
