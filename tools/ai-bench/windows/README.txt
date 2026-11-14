@@ -99,6 +99,14 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    (some 40 or more) or with a longer PHUT_KIEM_TRA. On mode Convergence the three won 4.1 / 6.1 / 5.1 games in 100
    more than XOI without a brain, within chance of each other. A hoc-sau folder records with one NHIN_XA: to change
    it, rename the folder first.
+   A brain that sees more (package 82): each move is now recorded with 88 numbers instead of 58 - what XOI's own rules
+   work out for it (how sure the blow is, whether the target can guard or strike back in time, how soon a blow lands
+   on XOI, the room to the stage's edges, things flying about...) and which two fighters are fighting - and makes a
+   brain "of the second kind" (a brain of the first kind still plays as before). AN is 96 now. On mode Convergence,
+   the same moves and the same 2,000 games: the old kind won 5.7 games in 100 more than XOI without a brain, the new
+   kind 11.5. The check also plays the brain there was before the run (xoi-<mod>\brain.txt, or the zip's own) and keeps
+   it when the new one does not win more: nothing is packed then, nothing changes (ket-qua.txt shows them all). A
+   hoc-sau folder of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -248,6 +256,13 @@ chơi được chính các file của bản mod.
    ba bộ nhớ) và phần kiểm tra chia bốn: đáng dùng khi máy nhiều luồng (chừng 40 trở lên) hay PHUT_KIEM_TRA dài hơn.
    Trên Convergence ba bộ não thắng hơn XOI không có bộ não 4,1 / 6,1 / 5,1 trận mỗi 100, chênh nhau còn trong dao động.
    Một thư mục hoc-sau ghi dữ liệu theo một NHIN_XA: muốn đổi thì đổi tên thư mục ấy trước.
+   Bộ não thấy nhiều hơn (gói 82): mỗi lần ra đòn giờ ghi 88 số thay vì 58 - những gì luật của XOI tự tính ra cho đòn
+   ấy (chắc trúng tới đâu, đối thủ có kịp đỡ hay đánh trả không, bao lâu nữa một đòn đánh tới XOI, khoảng cách tới mép
+   sân, vật đang bay...) và hai nhân vật đang đánh - rồi học ra bộ não "kiểu hai" (bộ não kiểu cũ vẫn chơi như trước).
+   AN giờ là 96. Trên Convergence, cùng dữ liệu và cùng 2.000 trận: bộ não kiểu cũ thắng hơn XOI không có bộ não 5,7
+   trận mỗi 100, kiểu mới 11,5. Phần kiểm tra cho cả bộ não đã có trước lần chạy (xoi-<tên>\brain.txt, hay bộ não trong
+   file zip) đánh cùng, và giữ nguyên nó khi bộ mới không thắng nhiều hơn: không gói gì, không đổi gì (ket-qua.txt ghi
+   đủ). Thư mục hoc-sau của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được: đổi tên nó trước (kit sẽ báo).
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các

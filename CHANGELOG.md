@@ -622,6 +622,32 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   100 more than XOI without a brain at 1.5, 3 and 5 seconds, within chance of each other — the choice is left to the
   check of each mod, worth it on many threads. Tried under Wine: the default (as package 80), auto (one round, then a
   second added), a fixed 3, two mods at once, the setting changed on a folder, the English kit
+- XOI's brain of the second kind (package 82, INSANE! version 46): the project owner's runs on mode Convergence
+  (99 threads) had the brain's predictions at 0.46 from 2 to 10 million moves, and looking 3 or 5 seconds ahead did
+  worse (0.41, 0.37) — what the brain saw was the limit. The bench's `record` job now writes 88 numbers a move: the 58,
+  then `smart_ai.lua`'s `brain_kit.extra_names` — 28 numbers the rules work out themselves (from `attack_score`, for
+  the move: how sure the blow is, the chance of a guard, a guard already up, its worth, whether the target can strike
+  back before the fighter is free, that blow's damage, the frames left open, what novelty, repeats, loops and the
+  notes did to the score; from `best_attack`, for the situation: the target's counter time and quickest blow, the
+  boldness, the answer chance, the time without a blow, the target's lock, stagger and blink, its flip risk, the
+  earliest blow on the fighter, the target's guard rate, the room to the stage's edges in depth and to its right end,
+  things flying about, and whether these are this frame's) and the two fighters' ids. `train` makes a brain of the
+  second kind from such records (`XOI_BRAIN inputs N hidden H extra 28`, `XOI_BRAIN ids ...`): the 86 plain numbers
+  standardized, each fighter of the mod an input for the fighter and one for the target (two weights a hidden unit
+  to add; the one that is counts 1 over its spread, as standardizing would make it), about 750 bytes a record
+  (`max_records` 4,000,000 for them). Records of 58 numbers make a brain of the first kind as before, bit for bit;
+  such a brain plays as before, game for game. Measured on 603,502 moves of XOI against itself with the owner's
+  numbers (2 threads, 90 minutes, exploring): test correlation 0.436 with the 58 numbers, 0.453 with the 28 more,
+  0.505 with the fighters alone, 0.518 with all of it, 0.538 with 96 hidden units; over the same 2,000 games against
+  XOI without a brain, 5.7, 9.8 and 11.5 games in 100 more (± 2.3) for the first kind, the second, and the second
+  with 96 — so `AN` (`HIDDEN`) is 96 from this package. `hoc-sau.bat` (`brain.bat`): the check plays the brain there
+  was before the run too (`xoi-<mod>\brain.txt`, or the zip's own; copied at the run's start to
+  `hoc-sau\nao-dau-<p>.txt`, `brain\start-brain-<p>.txt`) — one more process a group, the same seeds — and keeps it
+  when the best new brain does not win a greater share (`chon-<p>.txt` `cu`, `choice-<p>.txt` `old`: nothing is
+  packed, nothing changes); the results show it beside the new one. A brain folder of an earlier package (58-number
+  data: a `luot-1`/`round-1` folder without `ban-ghi.txt`/`records.txt`) stops the run with a message to rename it.
+  Tried under Wine: the brain there was kept, a new one chosen over a bad one and packed (the English kit), auto with
+  five processes a group, no brain before, two mods with one brain before, the old folder stopped (both kits)
 - `spsa.bat`: then the brain (package 80) — `TIEP_HOC_SAU=1` (`THEN_BRAIN=1` in the English kit): once the tuning is
   done (all rounds, the check, the numbers packed), `spsa.bat` runs `hoc-sau.bat` (`brain.bat`) beside it by itself,
   so that XOI's brain learns on top of the numbers just tuned: the same mods (a mod dragged on or named by PACK alone,

@@ -33,6 +33,7 @@ ASCII without diacritics, e.g. "khong co" = "không có"). Target: the same tool
    | hoc-sau\ (folder), luot-N\, du-lieu\, hocN\, nao-N.txt, xong-luot.txt, gop.txt, du-lieu.zip, du-lieu.txt | brain\, round-N\, data\, trainN\, brain-N.txt, round-done.txt, gathered.txt, data.zip, count.txt |
    | hoc-sau-truoc\ (an earlier run's folder, renamed by spsa.bat), tu-spsa.txt, spsa\da-goi.txt | brain-previous\, from-spsa.txt, spsa\packed.txt |
    | hoc<p>-<c>\, nao-<p>-<c>.txt, nhin-xa.txt, kiem-tra\chon-<p>.txt | train<p>-<c>\, brain-<p>-<c>.txt, look-ahead.txt, check\choice-<p>.txt |
+   | ban-ghi.txt (the folder's kind of data, package 82), nao-dau-<p>.txt (the brain there was before the run), chon-<p>.txt's `cu` (that brain kept) | records.txt, start-brain-<p>.txt, choice-<p>.txt's `old` |
    | xem.bat | watch.bat |
    | xuat-ban.bat | publish.bat |
    | xuat-ban.ps1 | publish.ps1 |

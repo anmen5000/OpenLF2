@@ -17,6 +17,14 @@ rem (recorded data is kept). To learn further: raise ROUNDS and run again - it g
 rem data so far, the new round recorded with the newest brain (and, package 75 on, with this kit's scripts - the new
 rem AI - when the run before was finished). To start over: delete the brain folder (round 1 then
 rem records with the brain already in xoi-<mod>, if there is one).
+rem Package 82 on: a brain that sees more - each move recorded with 88 numbers instead of 58: what XOI's own rules work
+rem out for the move (how sure the blow is to land, whether the target can guard in time, whether it can strike back
+rem before the move is over, how soon a blow lands on the fighter, the room to the stage's near and far edges, things
+rem flying about...) and which two fighters are fighting (an input for each fighter of the mod) - a brain "of the
+rem second kind" (a brain of the first kind, 58 inputs, plays as before). And the check plays the brain there was
+rem before the run too (xoi-<mod>\brain.txt, or the one in the zip): when the new brain does not win more than it, the
+rem brain there was is kept and nothing changes. A brain folder of package 81 or older (58-number data) cannot go on:
+rem rename it (brain-old, say) and run again.
 rem ============ SETTINGS ============
 rem The installed game. Empty: found automatically (Install for me only, all users, or an OpenLF2 folder beside this file).
 set "GAME="
@@ -61,9 +69,11 @@ rem trainings at once a mod (three times the memory), the check split four ways 
 rem threads (some 40 or more) or a longer CHECK_MINUTES to tell them apart. Changing LOOK_AHEAD for a brain folder that
 rem has recorded data: rename that folder first (learning from the start).
 set "LOOK_AHEAD=1.5"
-rem The brain: neurons in the middle layer (HIDDEN) and passes over the whole data (EPOCHS). 48 and 8 are enough;
-rem more takes longer to learn.
-set "HIDDEN=48"
+rem The brain: neurons in the middle layer (HIDDEN) and passes over the whole data (EPOCHS). Package 82 on, HIDDEN=96: a
+rem brain of the second kind sees more, and a network twice the size predicts better (mode Convergence: 0.518 to 0.538;
+rem 9.8 to 11.5 games in 100 more than XOI without a brain) - half as long again to train. (A brain of the first kind,
+rem 58 inputs: 96 no better than 48.) EPOCHS 8 is enough.
+set "HIDDEN=96"
 set "EPOCHS=8"
 rem The tools\ai-bench and scripts folders of package 67 or later (empty: found beside this .bat file)
 set "BENCH="
@@ -253,6 +263,14 @@ if defined NX_CU if /i not "!NX_CU!"=="%NX%" (
   exit /b 1
 )
 >"%LV%\look-ahead.txt" echo %NX%
+rem (The folder's kind of data: from package 82 a move is 88 numbers, records.txt; a folder of a package before - a round-1
+rem folder and no records.txt - has 58. The two do not mix: stop.)
+if exist "%LV%\round-1\" if not exist "%LV%\records.txt" (
+  echo [ERROR] The folder "%LV%" holds data of the old kind ^(package 81 or older, 58 numbers a move^): rename that folder ^(brain-old, say^) and run this file again. The new run starts from the beginning - the brain you have still plays round 1, and the check plays it too.
+  if "%KHONG_DUNG%"=="" pause
+  exit /b 1
+)
+>"%LV%\records.txt" echo 88
 echo %ROUNDS% rounds x %RECORD_MINUTES% minutes of recording, %N% processes ^(priority %PRIORITY%^); results go to "%LV%"
 if defined DT_CFG echo Opponent: XOI itself ^(OPPONENT=xoi^), in mods with an AI of their own too.
 if defined TD_CFG echo Trying other moves: EXPLORE=!TD_N! - while recording, XOI now and then starts a move other than the one it finds best.
@@ -383,39 +401,59 @@ exit /b 0
 rem The check: odd processes play XOI with the brain against the opponent, the even process right after each plays
 rem XOI without the brain against the same opponent (the mod's AI when it has scripts, else XOI without a brain), same
 rem mod, same seed (LOOK_AHEAD=auto: groups of four processes, three brains and none; each mod keeps the brain that won
-rem most, check\choice-<p>.txt).
+rem most, check\choice-<p>.txt). Package 82 on, with a brain there was before the run (brain\start-brain-<p>.txt): one
+rem more process a group plays XOI with it; when the best new brain does not win more than it, the brain there was is
+rem kept (choice-<p>.txt: old).
 if %GIAY_KT% LEQ 0 goto xong
 set "K=%LV%\check"
 if exist "%K%\totals.txt" goto xong
 echo.
-rem (Groups of NX_N+1 processes, the same mod and seed: process m of a group (0..NX_N-1) plays XOI with brain m+1, the
-rem last one XOI without a brain; the processes rounded up to whole groups, one group a mod at least.)
-set /a "KG=NX_N+1, NK=(N+KG-1)/KG*KG, NK_MIN=KG*NP"
+set /a KT_CU=0
+for /L %%p in (1,1,%NP%) do if exist "%LV%\start-brain-%%p.txt" set /a KT_CU=1
+set /a "M_CU=NX_N+1, NX_K=NX_N+KT_CU"
+rem (Groups of NX_K+1 processes, the same mod and seed: process m of a group (0..NX_N-1) plays XOI with new brain m+1,
+rem process NX_N XOI without a brain, process NX_N+1 - with a brain there was - XOI with that one; the processes rounded
+rem up to whole groups, one group a mod at least.)
+set /a "KG=NX_K+1, NK=(N+KG-1)/KG*KG, NK_MIN=KG*NP"
 if !NK! LSS !NK_MIN! set /a NK=NK_MIN
-if %NX_N% GTR 1 (echo === Check: XOI with each brain ^(1.5 / 3 / 5 seconds^) and XOI without one, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===) else echo === Check: XOI with the brain and XOI without it, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===
+set "KT_THEM="
+if %KT_CU% EQU 1 set "KT_THEM=, XOI with the brain there was"
+if %NX_N% GTR 1 (echo === Check: XOI with each brain ^(1.5 / 3 / 5 seconds^)!KT_THEM! and XOI without one, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===) else echo === Check: XOI with the new brain!KT_THEM! and XOI without one, !NK! processes for %CHECK_MINUTES% minutes ^(%TIME%^) ===
 if not exist "%K%" mkdir "%K%"
 for /L %%k in (1,1,%NK%) do call :kt_mot %%k
 set "N_CU=%N%"
 set /a N=NK
 call :cho "%K%" "RECORD "
 set /a N=N_CU
-rem Adding up: each member m (0..NX_N-1: brain m+1; NX_N: no brain), all mods and each.
-for /L %%m in (0,1,%NX_N%) do (
+rem Adding up: each member m (0..NX_N-1: brain m+1; NX_N: no brain; NX_N+1: the brain there was), all mods and each.
+for /L %%m in (0,1,%NX_K%) do (
   set /a "KW_%%m=0, KL_%%m=0"
   for /L %%p in (1,1,%NP%) do set /a "KW_%%m_%%p=0, KL_%%m_%%p=0"
 )
 for /L %%k in (1,1,%NK%) do call :kt_cong %%k
+set "KT_CU_DONG="
+if %KT_CU% EQU 1 (
+  call :phan_tram !KW_%M_CU%! !KL_%M_CU%! CUP
+  set "KT_CU_DONG=; XOI with the brain there was: won !KW_%M_CU%! lost !KL_%M_CU%! (!CUP!%%)"
+)
 if %NX_N% EQU 1 (
   call :phan_tram !KW_0! !KL_0! CP
   call :phan_tram !KW_1! !KL_1! KP
-  >"%K%\totals.txt" echo XOI with the brain: won !KW_0! lost !KL_0! ^(!CP!%%^); XOI without it: won !KW_1! lost !KL_1! ^(!KP!%%^) - same opponent, same seeds
+  if %KT_CU% EQU 1 (
+    >"%K%\totals.txt" echo XOI with the new brain: won !KW_0! lost !KL_0! ^(!CP!%%^)!KT_CU_DONG!; XOI without one: won !KW_1! lost !KL_1! ^(!KP!%%^) - same opponent, same seeds
+  ) else (
+    >"%K%\totals.txt" echo XOI with the brain: won !KW_0! lost !KL_0! ^(!CP!%%^); XOI without it: won !KW_1! lost !KL_1! ^(!KP!%%^) - same opponent, same seeds
+  )
 ) else (
   set "KT_DONG=XOI with the brain"
   for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m
   call :phan_tram !KW_%NX_N%! !KL_%NX_N%! KP
-  >"%K%\totals.txt" echo !KT_DONG!; XOI without one: won !KW_%NX_N%! lost !KL_%NX_N%! ^(!KP!%%^) - same opponent, same seeds
-  for /L %%p in (1,1,%NP%) do call :kt_chon %%p
+  >"%K%\totals.txt" echo !KT_DONG!!KT_CU_DONG!; XOI without one: won !KW_%NX_N%! lost !KL_%NX_N%! ^(!KP!%%^) - same opponent, same seeds
 )
+set "KT_CHON="
+if %NX_N% GTR 1 set "KT_CHON=1"
+if %KT_CU% EQU 1 set "KT_CHON=1"
+if defined KT_CHON for /L %%p in (1,1,%NP%) do call :kt_chon %%p
 if %NP% GTR 1 for /L %%p in (1,1,%NP%) do call :tong_mod %%p
 :xong
 rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.zip.
@@ -428,7 +466,7 @@ rem The results, and each mod's brain: xoi-<mod>\brain.txt, packed as <mod>-xoi.
 if not exist "%LV%\packed.txt" (
   echo.
   echo === Each mod's brain ===
-  if %NX_N% GTR 1 for /L %%p in (1,1,%NP%) do call :nao_chon %%p
+  for /L %%p in (1,1,%NP%) do call :nao_chon %%p
   for /L %%p in (1,1,%NP%) do call :goi_nao %%p
   >"%LV%\packed.txt" echo done
 )
@@ -453,14 +491,30 @@ rem --- The check line of mod %1 into totals.txt ---
 if %NX_N% GTR 1 goto tong_mod_tu
 call :phan_tram !KW_0_%1! !KL_0_%1! CP
 call :phan_tram !KW_1_%1! !KL_1_%1! KP
-for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz: with the brain won !KW_0_%1! lost !KL_0_%1! ^(!CP!%%^); without won !KW_1_%1! lost !KL_1_%1! ^(!KP!%%^)
+set "TM_CU="
+if %KT_CU% EQU 1 if exist "%LV%\start-brain-%1.txt" call :tong_mod_cu %1
+for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz: with the brain won !KW_0_%1! lost !KL_0_%1! ^(!CP!%%^)!TM_CU!; without won !KW_1_%1! lost !KL_1_%1! ^(!KP!%%^)
+exit /b 0
+rem (The brain there was of mod %1 in its line: TM_CU.)
+:tong_mod_cu
+call :phan_tram !KW_%M_CU%_%1! !KL_%M_CU%_%1! CUP
+set "TM_C="
+if exist "%K%\choice-%1.txt" set /p TM_C=<"%K%\choice-%1.txt"
+set "TM_CU=; the brain there was won !KW_%M_CU%_%1! lost !KL_%M_CU%_%1! (!CUP!%%)"
+if "!TM_C!"=="old" (set "TM_CU=!TM_CU! - kept") else set "TM_CU=!TM_CU! - the new one chosen"
 exit /b 0
 :tong_mod_tu
 set "KT_DONG="
 for /L %%m in (0,1,%NX_M1%) do call :kt_dong %%m %1
 call :phan_tram !KW_%NX_N%_%1! !KL_%NX_N%_%1! KP
 set /p KT_C=<"%K%\choice-%1.txt"
-for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz:!KT_DONG! none won !KW_%NX_N%_%1! lost !KL_%NX_N%_%1! ^(!KP!%%^) - chosen: !NX_GIAY_%KT_C%! seconds
+set "TM_CU="
+if %KT_CU% EQU 1 if exist "%LV%\start-brain-%1.txt" (
+  call :phan_tram !KW_%M_CU%_%1! !KL_%M_CU%_%1! CUP
+  set "TM_CU= the brain there was won !KW_%M_CU%_%1! lost !KL_%M_CU%_%1! (!CUP!%%);"
+)
+if "!KT_C!"=="old" (set "TM_G=the brain there was kept") else call set "TM_G=chosen: %%NX_GIAY_!KT_C!%% seconds"
+for %%z in ("!PACK_%1!") do >>"%K%\totals.txt" echo   %1. %%~nxz:!KT_DONG!!TM_CU! none won !KW_%NX_N%_%1! lost !KL_%NX_N%_%1! ^(!KP!%%^) - !TM_G!
 exit /b 0
 rem --- Adds brain m = %1's result (of mod %2, or of all) to KT_DONG ---
 :kt_dong
@@ -475,29 +529,49 @@ set /a KT_C=%1+1
 call set "KT_G=%%NX_GIAY_!KT_C!%%"
 if "%2"=="" (if %1 EQU 0 (set "KT_DONG=!KT_DONG! looking !KT_G! seconds ahead: won !KT_W! lost !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG!; !KT_G! seconds: won !KT_W! lost !KT_L! (!KT_P!%%)") else set "KT_DONG=!KT_DONG! !KT_G! s won !KT_W! lost !KT_L! (!KT_P!%%);"
 exit /b 0
-rem --- The brain chosen for mod %1 (LOOK_AHEAD=auto): the highest share of wins (a tie: the shorter look) ---
+rem --- The brain chosen for mod %1 (LOOK_AHEAD=auto, or with a brain there was): the new one with the highest share of
+rem wins (a tie: the shorter look); "old" when the brain there was won as large a share or more - kept ---
 :kt_chon
 set /a "CH_TOT=-1, CH_C=1"
 for /L %%m in (0,1,%NX_M1%) do call :kt_chon_mot %1 %%m
->"%K%\choice-%1.txt" echo !CH_C!
-if %NP% EQU 1 >>"%K%\totals.txt" echo Chosen: the brain looking !NX_GIAY_%CH_C%! seconds ahead ^(it won most^)
+set "CH_KQ=!CH_C!"
+if %KT_CU% EQU 1 if exist "%LV%\start-brain-%1.txt" call :kt_chon_cu %1
+>"%K%\choice-%1.txt" echo !CH_KQ!
+if %NP% GTR 1 exit /b 0
+if "!CH_KQ!"=="old" (
+  >>"%K%\totals.txt" echo Chosen: the brain there was, kept ^(it won as much as the new one or more^)
+) else if %NX_N% GTR 1 (
+  >>"%K%\totals.txt" echo Chosen: the brain looking !NX_GIAY_%CH_C%! seconds ahead ^(it won most^)
+) else (
+  >>"%K%\totals.txt" echo Chosen: the new brain ^(it won more than the brain there was^)
+)
+exit /b 0
+:kt_chon_cu
+set /a "CO_W=KW_%M_CU%_%1, CO_L=KL_%M_CU%_%1, CO_T=CO_W+CO_L, CO_V=-1"
+if !CO_T! GTR 0 set /a "CO_V=CO_W*1000/CO_T"
+if !CO_V! GEQ !CH_TOT! set "CH_KQ=old"
 exit /b 0
 :kt_chon_mot
 set /a "CT_W=KW_%2_%1, CT_L=KL_%2_%1, CT_T=CT_W+CT_L, CT_V=-1"
 if !CT_T! GTR 0 set /a "CT_V=CT_W*1000/CT_T"
 if !CT_V! GTR !CH_TOT! set /a "CH_TOT=CT_V, CH_C=%2+1"
 exit /b 0
-rem --- The chosen brain of mod %1 into NAO_<p> (for packing): check\choice-<p>.txt ---
+rem --- The chosen brain of mod %1 into NAO_<p> (for packing): check\choice-<p>.txt; "old": GIU_<p>, nothing packed ---
 :nao_chon
 set "NC_="
 if defined K if exist "%K%\choice-%1.txt" set /p NC_=<"%K%\choice-%1.txt"
 if not defined NC_ exit /b 0
+if "%NC_%"=="old" (
+  set "GIU_%1=1"
+  for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: the brain there was is kept ^(the check: it won as much as the new one or more^)
+  exit /b 0
+)
 call set "NC_G=%%NX_GIAY_%NC_%%%"
 if not "%NC_%"=="1" (
   call set "NC_F=%%NAOX_%1_%NC_%%%"
   if defined NC_F set "NAO_%1=!NC_F!"
 )
-for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: the brain looking !NC_G! seconds ahead ^(it won most in the check^)
+if %NX_N% GTR 1 for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: the brain looking !NC_G! seconds ahead ^(it won most in the check^)
 exit /b 0
 rem --- One check process %1: its group, member, mod and seed; that member's brain ---
 :kt_mot
@@ -510,6 +584,13 @@ mkdir "%KP%" 2>nul
 del /q "%KP%\done.txt" 2>nul
 del /q "%KP%\out.txt" 2>nul
 set "NAO_NAY="
+rem (Member NX_N+1: the brain that mod had before; a mod without one: the process is not run.)
+if !KM! GTR %NX_N% (
+  if exist "%LV%\start-brain-!PI!.txt" (set "NAO_NAY=%LV%\start-brain-!PI!.txt") else (
+    >"%KP%\out.txt" echo RECORD 0 games, 0 records, xoi won 0 lost 0 vs none
+    exit /b 0
+  )
+)
 if !KM! LSS %NX_N% (
   if !KC! EQU 1 (call set "NAO_NAY=%%NAO_!PI!%%") else call set "NAO_NAY=%%NAOX_!PI!_!KC!%%"
   rem (Brain KC missing - not once the rounds are done: an empty game line, the process not run.)
@@ -555,7 +636,8 @@ set /a DONG_%1=0
 if exist "!H!\count.txt" for /f %%n in ('type "!H!\count.txt"') do set /a DONG_%1=%%n
 set /a DONG_TONG+=DONG_%1
 if not defined CB_CON exit /b 0
-rem (The line count goes along: over 6 million, train keeps every k-th line - every round still in, memory bounded.)
+rem (The line count goes along: over 6 million - 4 million for package 82's 88-number data - train keeps every k-th line:
+rem every round still in, memory bounded.)
 set "DN_="
 if !DONG_%1! GTR 0 set "DN_=records = !DONG_%1!, "
 for /L %%c in (1,1,%NX_N%) do call :viet_hoc %1 %%c
@@ -636,6 +718,10 @@ rem --- Mod %1's brain: xoi-<mod>\brain.txt (the earlier one kept as brain-previ
 rem of the mod's zip with xoi/brain.txt beside the data folder - and xoi-<mod>'s xoi/tune.txt and xoi/notes.txt, if any.
 rem Given <mod>-xoi.zip itself, it is updated in place (the earlier one kept as <mod>-xoi-previous.zip). ---
 :goi_nao
+if defined GIU_%1 (
+  for %%z in ("!PACK_%1!") do echo   %1. %%~nxz: the brain there was is kept - nothing changed
+  exit /b 0
+)
 if not defined NAO_%1 (echo   %1. ^(no brain yet^)& exit /b 0)
 set "XPACK=!PACK_%1!"
 set "XTEN=!TEN_%1!"
@@ -687,7 +773,10 @@ set "ND_=%KIT%xoi-!TEN_%1!\brain.txt"
 if exist "!ND_!" set "NAO_%1=!ND_!"
 if not defined NAO_%1 for %%z in ("!PACK_%1!") do if exist "%KIT%xoi-%%~nz\brain.txt" set "NAO_%1=%KIT%xoi-%%~nz\brain.txt"
 if not defined NAO_%1 if exist "%LV%\zip-brain-%1.txt" set "NAO_%1=%LV%\zip-brain-%1.txt"
-if defined NAO_%1 echo Mod %1 starts from its brain so far: "!NAO_%1!"
+if defined NAO_%1 echo Mod %1 starts from its brain so far: "!NAO_%1!" ^(the check plays it too^)
+rem (A copy of it from the first run in this folder, brain\start-brain-<p>.txt: the check plays XOI with it too, and keeps it
+rem when the new brain does not win more.)
+if defined NAO_%1 if not exist "%LV%\start-brain-%1.txt" copy /y "!NAO_%1!" "%LV%\start-brain-%1.txt" >nul
 exit /b 0
 rem --- Mod %1's working copy: brain\mod-<p>.zip = a copy of the mod's zip; xoi/tune.txt and xoi/notes.txt replaced by
 rem xoi-<mod>'s when it has them; xoi/brain.txt taken out (kept as zip-brain-<p>.txt when xoi-<mod> has no brain yet) ---

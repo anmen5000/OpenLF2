@@ -107,6 +107,14 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    many threads (some 40 or more) or with a longer CHECK_MINUTES. On mode Convergence the three won 4.1 / 6.1 / 5.1
    games in 100 more than XOI without a brain, within chance of each other. A brain folder records with one
    LOOK_AHEAD: to change it, rename the folder first.
+   A brain that sees more (package 82): each move is now recorded with 88 numbers instead of 58 - what XOI's own rules
+   work out for it (how sure the blow is, whether the target can guard or strike back in time, how soon a blow lands
+   on XOI, the room to the stage's edges, things flying about...) and which two fighters are fighting - and makes a
+   brain "of the second kind" (a brain of the first kind still plays as before). HIDDEN is 96 now. On mode
+   Convergence, the same moves and the same 2,000 games: the old kind won 5.7 games in 100 more than XOI without a
+   brain, the new kind 11.5. The check also plays the brain there was before the run (xoi-<mod>\brain.txt, or the zip's
+   own) and keeps it when the new one does not win more: nothing is packed then, nothing changes (results.txt shows
+   them all). A brain folder of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

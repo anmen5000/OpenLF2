@@ -270,7 +270,14 @@ end
 -- from the same numbers: brain_kit.features). A mod carries it as xoi/brain.txt beside its data (XOI_BRAIN lines,
 -- the kit's hoc-sau.bat); the bench sets it with smart.set_brain. best_attack weighs the network's expectation
 -- with its own score by tune.brain_weight; INSANE! plays without it, as without the notes and the numbers.
-smart.brain_kit = {hand = {}} -- (hand: the last hand-made score of each move, for the records)
+-- A brain of the second kind (package 82) sees more: 28 more numbers (brain_kit.extra_names: what the rules
+-- themselves work out for the move and the situation — how sure the blow is, how likely a guard, whether the
+-- target can strike back meanwhile, how soon a blow lands on the fighter, the room to the walls in depth, things
+-- flying about) and which two fighters these are (an input for each fighter of the mod, the "ids" line of its file).
+-- A brain of the first kind (58 inputs) plays as before.
+smart.brain_kit = {hand = {}, extra = {}, extra_at = {}, parts = {}} -- (hand: the last hand-made score of each
+-- move, for the records; extra, extra_at: the extra numbers best_attack worked out for each move, and the frame;
+-- parts: attack_score's pieces of the last move it weighed)
 do
     local brain_kit = smart.brain_kit
     local function clamp(v, lo, hi) if v < lo then return lo elseif v > hi then return hi end return v end
@@ -292,9 +299,9 @@ do
         out[at + slot] = 1
         return at + 10
     end
-    -- The numbers of a situation and a move: 58, in the order of record.lua's header. `calm`: frames since the
-    -- last blow between the two (memory.calm).
-    function brain_kit.features(self, target, move, t, score, calm)
+    -- The numbers of a situation and a move: 58, in the order of record.lua's header, and `extra`'s after them
+    -- (brain_kit.extra_count) when given. `calm`: frames since the last blow between the two (memory.calm).
+    function brain_kit.features(self, target, move, t, score, calm, extra)
         local out = {}
         local face = self.facing == facing_right and 1 or -1
         local dx = (target.x_int - self.x_int) * face
@@ -353,12 +360,47 @@ do
         out[at + 12] = (e.basic == "attack" or e.basic == "weapon_attack") and 1 or 0
         out[at + 13] = (e.basic == "jump_attack" or e.basic == "dash_attack") and 1 or 0
         out[at + 14] = e.sequence and 1 or 0
-        return out, at + 14
+        local last = at + 14
+        if extra then
+            for i = 1, brain_kit.extra_count do out[last + i] = extra[i] or 0 end
+            last = last + brain_kit.extra_count
+        end
+        return out, last
     end
     brain_kit.count = 58
+    -- The extra numbers of a brain of the second kind, in order (record.lua's header names them so): 28 plain ones,
+    -- then the fighter's id and the target's (given to the network as one input per fighter of the mod). From
+    -- attack_score, for the move: sure (the share of the blow's worth that counts by the time it takes), guarded (the
+    -- chance a free target guards it), blocked (its guard already up against it), worth (what its hits are worth,
+    -- in hundreds), punish (1: still busy when the target, free again, could land its quickest blow), the damage of
+    -- that blow, open (frames left open after it, in thirties), factor (what novelty, repeats, loops and the notes
+    -- made of the score). From best_attack, for the situation: danger (frames until the target could land a blow if
+    -- it struck now, in thirties: 3 for none soon), the target's quickest blow from standing, aggression (the
+    -- boldness the calm gives), the chance the target answers a risky start, quiet (frames by the clock without a
+    -- blow, in three hundreds), stunned (frames the target cannot act), stagger (frames a hit holds it), untouchable
+    -- (frames nothing lands on it), flip risk (of its getting out of a fall), threat (frames until the earliest blow
+    -- on the fighter lands: 3 for none soon), the target's guard rate, the room in depth to the near and the far edge
+    -- of the stage for the fighter and for the target (in hundreds of pixels), the room to the stage's right end for
+    -- both (in 800s), the enemy's things flying within 400 pixels of the fighter and the fighter's side's within 400
+    -- of the target (counts); fresh (1: these numbers are this frame's, best_attack's for the move).
+    brain_kit.extra_count = 30
+    brain_kit.extra_plain = 28
+    brain_kit.extra_names = {"sure", "guarded", "blocked", "worth", "punish", "cdmg", "open", "factor",
+        "danger", "cfirst", "aggr", "answer", "quiet", "stun", "stagger", "untouch", "flip", "threat", "tguard",
+        "znear", "zfar", "tznear", "tzfar", "xroom", "txroom", "theirs", "mine", "fresh", "id", "tid"}
+    -- The extra numbers of a move not weighed by best_attack this frame (a record of a move started otherwise): zeros,
+    -- fresh 0, the ids.
+    function brain_kit.no_extra(self, target)
+        local e = {}
+        for i = 1, brain_kit.extra_plain do e[i] = 0 end
+        e[brain_kit.extra_plain + 1], e[brain_kit.extra_plain + 2] = self.record.id, target.record.id
+        return e
+    end
     -- The network from its text: "XOI_BRAIN inputs N hidden H", "XOI_BRAIN mean ...", "XOI_BRAIN sd ...", one
     -- "XOI_BRAIN w1 <j> <weights...> b <bias> w2 <weight>" a hidden unit, "XOI_BRAIN b2 <bias>". nil when it does
-    -- not fit.
+    -- not fit. The second kind: "XOI_BRAIN inputs N hidden H extra 28" and "XOI_BRAIN ids <id> ...": N = 58 + 28 +
+    -- twice the ids, the last 2 x ids inputs being one per fighter for the fighter and one per fighter for the target
+    -- (0 but for the one it is, which counts 1 over its spread; mean 0).
     function brain_kit.parse(text)
         local brain = {W1 = {}, b1 = {}, W2 = {}, b2 = 0, scratch = {}}
         local function numbers(rest)
@@ -370,6 +412,8 @@ do
             local kind, rest = line:match("^XOI_BRAIN (%S+)%s*(.*)$")
             if kind == "inputs" then
                 brain.inputs, brain.hidden = tonumber(rest:match("^(%d+)")), tonumber(rest:match("hidden (%d+)"))
+                brain.extra = tonumber(rest:match("extra (%d+)"))
+            elseif kind == "ids" then brain.ids = numbers(rest)
             elseif kind == "mean" then brain.mean = numbers(rest)
             elseif kind == "sd" then brain.sd = numbers(rest)
             elseif kind == "w1" then
@@ -383,28 +427,53 @@ do
             end
         end
         local n, h = brain.inputs, brain.hidden
-        if n ~= brain_kit.count or not h or h < 1 or not brain.mean or #brain.mean ~= n or not brain.sd or #brain.sd ~= n then return nil end
+        -- (plain: the inputs taken as they are, standardized; the second kind's one-hot inputs come after them.)
+        brain.plain = brain_kit.count
+        if brain.extra or brain.ids then
+            if brain.extra ~= brain_kit.extra_plain or not brain.ids or #brain.ids < 1 then return nil end
+            brain.plain = brain_kit.count + brain_kit.extra_plain
+            brain.id_count = #brain.ids
+            brain.id_index = {}
+            for k, id in ipairs(brain.ids) do brain.id_index[id] = k end
+            if n ~= brain.plain + 2 * brain.id_count then return nil end
+            brain.id_value = {}
+        elseif n ~= brain_kit.count then
+            return nil
+        end
+        if not h or h < 1 or not brain.mean or #brain.mean ~= n or not brain.sd or #brain.sd ~= n then return nil end
         for j = 1, h do
             if not brain.W1[j] or #brain.W1[j] ~= n or not brain.b1[j] or not brain.W2[j] then return nil end
         end
         for i = 1, n do if not brain.sd[i] or brain.sd[i] <= 0 then brain.sd[i] = 1 end end
+        if brain.id_value then for i = brain.plain + 1, n do brain.id_value[i] = 1 / brain.sd[i] end end
         return brain
     end
-    -- The expectation (HP dealt minus taken, in hundreds) for the numbers `x`. (Standardized inputs are clipped at
-    -- ±6, as train.lua clips them.)
+    -- The expectation (HP dealt minus taken, in hundreds) for the numbers `x` (brain_kit.features'; with the extra
+    -- ones for a brain of the second kind). (Standardized inputs are clipped at ±6, as train.lua clips them; the
+    -- one-hot inputs are two weights a hidden unit, times their values: the fighter's and the target's, nothing for an
+    -- id the brain did not see.)
     function brain_kit.predict(brain, x)
-        local n, h = brain.inputs, brain.hidden
+        local h, plain = brain.hidden, brain.plain
         local mean, sd, z = brain.mean, brain.sd, brain.scratch
-        for i = 1, n do
+        for i = 1, plain do
             local v = (x[i] - mean[i]) / sd[i]
             if v > 6 then v = 6 elseif v < -6 then v = -6 end
             z[i] = v
+        end
+        local a, b, va, vb = nil, nil, 0, 0
+        if brain.id_index then
+            a = brain.id_index[x[plain + 1]]
+            b = brain.id_index[x[plain + 2]]
+            if a then a = plain + a; va = brain.id_value[a] end
+            if b then b = plain + brain.id_count + b; vb = brain.id_value[b] end
         end
         local out = brain.b2
         local W1, b1, W2 = brain.W1, brain.b1, brain.W2
         for j = 1, h do
             local w, sum = W1[j], b1[j]
-            for i = 1, n do sum = sum + w[i] * z[i] end
+            for i = 1, plain do sum = sum + w[i] * z[i] end
+            if a then sum = sum + w[a] * va end
+            if b then sum = sum + w[b] * vb end
             if sum > 0 then out = out + W2[j] * sum end
         end
         return out
@@ -427,8 +496,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 45
+smart.version = 46
 smart.history = {
+    {46, "2026-11-14", "A brain that sees more. The project owner's runs on mode Convergence (99 threads, his numbers from SPSA): the brain's predictions went with what came of the moves at 0.46 from 2 to 10 million moves alike, looking 3 or 5 seconds ahead instead of 1.5 did worse (0.41, 0.37), and a network twice the size did no better in the lab: what it was given to see was the limit. A brain of the second kind sees 28 more numbers and which two fighters these are (brain_kit.extra_names). From attack_score, for the move: how sure the blow is by the time it takes, the chance a free target guards it, whether its guard is up already, what its hits are worth, whether the fighter is still busy when the target, free again, could land its quickest blow, and that blow's damage, the frames left open after it, what novelty, repeats, loops and the notes made of the score. From best_attack, for the situation: how soon the target could land a blow if it struck now, its quickest from standing, the boldness the calm gives, the chance the target answers a risky start, the frames without a blow by the clock, how long the target cannot act, a hit holds it and nothing lands on it, the chance it gets out of a fall, how soon the earliest blow lands on the fighter, the target's guard rate, the room to the stage's near and far edges and to its right end for both, the enemy's things flying near the fighter and the fighter's side's near the target, and whether these are this frame's. And the fighter's id and the target's: an input for each fighter of the mod (the one that is counts as much as standardizing it would make it). On the same 603,502 moves of XOI against itself with the owner's numbers (2 threads, 90 minutes, exploring), the test correlation: 0.436 with the 58 numbers; with the rules' pieces 0.445, the situation's 0.448, the edges 0.438, things flying 0.437, all 28 0.453; the two fighters alone 0.505; all of it 0.518, and 0.538 with 96 hidden units (with 58 inputs 96 did no better than 48). Over the same 2,000 games against XOI without a brain: the brain of the first kind from those moves won 5.7 games in 100 more, the second kind 9.8, with 96 hidden units 11.5 (± 2.3) — 4.2 and 5.9 more than the first kind (± 2.2), HP margin +25.7 and +37.5 a game. A brain of the first kind (58 inputs) plays as before, game for game, and without a brain nothing changed; INSANE! plays without one."},
     {45, "2026-11-11", "Standoffs that someone has to end, the weapon in hand, and the same on every computer of a room. The project owner's clip from Sauce's pack: XOI's Nya and XOI's Felix face to face, Felix jabbing into her guard for twenty seconds, then both standing for good. (1) Her punch lands in 4 frames, his in 3: a move slower than the target's quickest answer was no candidate at all, so she had nothing to start, while his jab, met by her guard every time (a guarded blow does not end the calm), was worth less with every try by the rule against loops (version 30) until it was not worth starting either. In a standoff long enough to be a loop that answer rules a slower blow out no more — it has not come for as long — and its chance, in what a move at risk is worth, fades with every further frame, to nothing at twice loop_calm. (2) Past that the standoff is overdue: the score a move needs comes down with every frame (0.1 a frame, below nothing if need be), and the best move that lands is started whatever it is thought to cost — in frames of the fighter's own, one in eight by its slot: two of XOI's else start in the same frame every time. (3) A standoff is timed by the clock (memory.quiet). The calm counts the frames a fighter is free to decide in, and two that keep each other busy to no avail let it run at a fraction of the time going by: Stancher and Crimson in mode Convergence, each punch carrying them through the other, punched past each other for 44 seconds before their 189 frames of calm were up, then stood — for good in three games of four. (4) The weapon in hand. From version 21, which told a move's own items from the weapon a fighter holds, the learning left that weapon out altogether: no swing and no throw was learned to do anything, in any game, for 24 versions. A fighter still walked to a stick and picked it up, and was left with its D-moves alone: short of MP it stood before its enemy, and two of them so stood for good (Deep and John in KT-LF2, a stick each). The weapon strikes again — in the hand by the holder's strength entry, thrown by its own frames from the tick it leaves the hand: against an opponent that never moves, Deapis with a stick in mode Convergence had not won after 900 frames and now has within 540. (5) Steps in depth alone that move nothing — a heavy item lying on the way to the target's line, which stops whoever walks into it — go round it along x, as steps along x went round in depth: Sanji walked into one for two minutes with Ace behind it, in One Piece GrandWorld. (6) What is learned of a frame of no known move during play (a fighter on fire) is kept by the frame and by whether the fighter is in the air, each frame from a play of its own. It was kept as played from wherever the fighter was when the frame was first met, the play's later frames with it: what a fighter knew depended on the matches played since the game was opened — Louis on fire was judged otherwise, three minutes into a game, when a game against Firen had been played before it — and two computers of a network room that had not played the same matches could decide differently, which ends the room's game (the HP check). Results, game by game from the same points of the random sequence. Nya against Felix, XOI against itself, 40 games: 17 stood to the bench's three minutes with the owner's numbers for the pack (18 with version 43), 6 with the default ones; none now, the longest 68 seconds (with the owner's brain none did: the clip's match ran without it — the game says ', brain' beside the version when one is loaded). All 210 ordered pairs of the pack's 15 fighters twice, XOI against itself: 17 of 420 games at three minutes with the owner's numbers and 16 with the default ones; 2 and 4 now, all of Louis's, with blows to the end (11 seconds at most without one). Six other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell), 672 games of XOI against itself: 13 at three minutes, 5 of them standing; 6 now, none standing. Against Sauce's AI over the same games: Nya 418 of 1,200 with version 44 and 436 now (HP margin +12.7 a game), with the owner's numbers and brain 435 and 470; XOI's fighters against Sauce's Nya 801 of 1,120 and 823; all 210 pairs 212 of 420 and 210. Five other mods against version 44: 1,139 to 1,087 of 2,240 games, 14 drawn (56 with version 43 against 42); six mods game by game against version 44, 672 games: 342 won and 319 lost where version 44 itself wins 330 and loses 325 (HP margin +16 a game). A game played alone and the same game after others: the same, 112 of 112."},
     {44, "2026-11-11", "What the draws of a random move leave, known for what it is: the project owner's follow-up on Nya's cards in Sauce's pack (the crystal that stops thrown things and the heart were not weighed). Measured game by game — the bench's card watch starts every game from its own point of the random sequence, so two versions play the same game until one of them chooses otherwise: 1,200 games of XOI's Nya against Sauce's AI, 15 opponents. (1) The spade. Drawn, it leaves her changed (a catch on a hidden copy of herself, cpoint throwinjury -1), and D+J+A then changes her back with a burst about her (her frame 245: no MP, a start nothing touches). Version 43 drew it and never let it off: 0 bursts in 1,200 games, the games with a spade its worst (15% won). The change back is learned as the move of a fighter that has changed (analysis.back_move, apart from the moves its reach and worth are judged by) and chosen like any other: 143 bursts, 67 HP each, those games 21% won. (2) The diamond. Her crystal breaks every plain ball of the enemy's as it appears (a blow over the whole stage that touches no fighter). Learned by trying: after a draw that leaves things standing, the game's first plain ball is put into the copy twice, 600 pixels before the fighter and as far behind it, off its line; what breaks both at once, with a blow that wide, is a shield, kept with the frames it is up in (smart.shield_kit) — not a thing with a body that a ball runs into (Crimson's shadows in mode Convergence, which a single ball thrown from in front took for one). While a shield of a fighter's side stands, plain balls land nowhere on that fighter (move_hits): those flying at it are no threat, the enemy's ball moves no danger, and a fighter facing an enemy's shield throws none. (3) The crystal holds a hidden copy of Nya, a character without a body and with 500 HP, for as long as it stands. It is no fighter but a thing of its holder's (smart.shield_kit.prop): up to version 43 it was a target like any other (nearer than Nya, it was the one the fighter went for), and with Nya beaten and her crystal standing the round went on for good — 7 of 1,120 games of XOI's fighters against Sauce's Nya ran to the bench's three minutes so. It is no target now, and with nothing else left to fight its holder is walked up to and struck until it breaks, as Sauce's own computer players do (smart.shield_kit.clear). (4) The heart gives back 104 HP of the HP that can come back, and did so already: 110 HP a game in the games with a heart, a draw coming once the fighter has been hurt. Weighing a draw by what its kinds are worth at the moment (the heal by the HP to come back, the shield by the enemy's balls, the burst, the strikes) was tried against version 43's plain rule (the target beyond 250 pixels, twice a match): 411 wins to 415 over the same games, no better, so the plain rule stays, and so does its distance (from 200 pixels 418 to 417, from 330 pixels 379). (5) A brain's expectation looks 45 frames ahead and is no longer weighed into what comes later than that (a draw, a late blow the enemy is put into or walks into): with the project owner's numbers and brain for Sauce's pack 435 wins to 423. Results: XOI's Nya against Sauce's AI 406 of 1,200 with version 43, 418 now (HP margin +9.7 a game), with the owner's numbers and brain 409 and 435; XOI's fighters against Sauce's Nya 798 of 1,120 and 801, none left standing by a crystal at the three minutes. Seven other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell, Dragon Ball Super: 824 games of XOI against itself) play as with version 43, game for game."},
     {43, "2026-11-11", "Long-term value, from the project owner's look at Nya in Sauce's pack: the AI weighed a move by what its blows do at once, and missed what comes later or lasts. (1) A move that shows nothing on the learning's untouchable dummy is tried again on one it can touch, at four distances and from six points of the game's random sequence: a swap of places (Nya's D>J, hidden helpers that grab the enemy and put it where she stood) is learned as a teleport with its reach, 450 pixels; a move of random draws as the share of its draws that strike (her coin, D^J, 0.33: it bursts by her or turns into a whirlwind that stays; her cards, D+J+A, 0.17), with the frames its objects go through only in the striking draws and whether the others leave things standing. (2) A late blow about the fighter that knocks down - the coin bursts 40 frames on, she is free at 19 - is weighed, when it does not land on the enemy's way, as the space it holds about her (zone_sure: 2.5 of its worth): thrown 5 times in 300 games before, where Sauce's own player throws it whenever the enemy is at a distance. Only a mine about the fighter (within 150 pixels, mine_reach) that knocks down: Kakashi's Uj in Naruto: The Setting Dawn 2.6 (fall 2) won 20 of 128 games against version 42 weighed so instead of 74, Shino's insects (out to 331 pixels) lost 16 and 20 of 384 in 2.4 and 2.6; Stancher's Dj in mode Convergence, a burst about him, won 109 of 256 games against version 42 weighed so, 75 before. (3) With a swap at hand, the blow brought onto the enemy: once the coin is the bursting one (its frames say so) and the enemy within the swap's reach, the swap puts the enemy on her spot as it bursts, about 107 HP when it fires. (4) The swap as a way out of a thing flying at her with its thrower within reach, counted as a blow struck back: a swap tried against Dennis's ball put him in its way and his own ball struck him; out of reach the swap is what it does with no one to take, its untouchable frames. (5) Her cards, a move of lasting draws (a heal, a crystal that breaks thrown things, bouncing balls, a burst) never used before: drawn at a fixed score (draw_score 6) with the target beyond 250 pixels, twice a match at most, as Sauce's player draws them. (6) The threat forecast follows a thing's next 999 to its frame 0, as the game does - it stopped there: Kaktena's trap in that pack, quiet in frames that go on by 999 into its biting ones, was not foreseen (its bites, about one a game, stay: they come where no step clears it in time). XOI's Nya against Sauce's AI, 15 opponents, 1,200 games: 293 won with version 42, 355 now (the coin as space alone 333; Louis 1 to 27 of 80, Deep 5 to 14, Rudolf 31 to 42). The five mods against version 42: 1,096 to 1,088 of 2,240 games; the ten originals against Sauce's Kaktena 170 of 400 (168 without the forecast's 999)."},
@@ -4325,6 +4395,9 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
     local damage = worth(target, box, false, move) * (1 - guarded) + worth(target, box, true, move) * guarded
     -- (A move whose blows come only out of some draws of the random numbers is worth that share of them.)
     if move.share then damage = damage * move.share end
+    -- (Its pieces, for a brain of the second kind: brain_kit.parts.)
+    local parts = smart.brain_kit.parts
+    parts.sure, parts.guarded, parts.blocked, parts.worth, parts.punish, parts.open = sure, guarded, blocked and 1 or 0, damage, 0, 0
     local score = damage * sure
     if not blocked and guarded > 0 then score = score - guarded * (context.guard_counter or 20) end
     score = score - move.mp * tune.mp_cost - max(move.hp, 0) * tune.hp_cost
@@ -4334,10 +4407,12 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
     local knocked = box.fall >= 60 or target.timer_b0 + max(box.fall, 20) > 60
     local back_at = t + (knocked and 30 or stagger) + (context.counter_first or 99)
     if ready >= back_at - 1 then
+        parts.punish = 1
         score = score - (context.counter_damage or 0) * tune.counter_price * (context.momentum_counter or 1) * 14 / (t + tune.time_bias) * (tune.time_bias / 10)
     end
     local open = ready - t - (knocked and 30 or stagger)
-    if open > 0 then score = score - open * tune.open_cost end
+    if open > 0 then score = score - open * tune.open_cost; parts.open = open end
+    local base = score
     -- The whole of what the fighter can do gets its turn: a move not yet tried this match is a little more
     -- tempting, one just used a little less (the choice stays the fighter's own, from its own data).
     local last_use = context.last_use
@@ -4367,6 +4442,7 @@ local function attack_score(context, target, tstate, move, t, box, face, stunned
         if situation then score = score * situation_factor(notes, note_key(move), situation)
         else score = score * (notes.factor[note_key(move)] or 1) end
     end
+    parts.factor = base > 0 and score / base or 1
     return score
 end
 
@@ -4538,6 +4614,40 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
     local standing = setup_kit.standing(context, self, analysis)
     if standing and #standing == 0 then standing = nil end
     local swap = setup_kit.swap_move_of(analysis)
+    -- The situation's extra numbers, for a brain of the second kind or the bench's records (brain_kit.want_extra):
+    -- once a call, the moves' own after their scores (brain_kit.extra_names).
+    local kit = smart.brain_kit
+    local situ = nil
+    if kit.want_extra or (context.brain and context.brain.id_index) then
+        local state = context.state
+        local memory = self.smart_memory or {}
+        local chance = ((memory.risk_hits or 0) + tune.risk_weight * (memory.risk_prior or tune.risk_prior)) / ((memory.risk_starts or 0) + tune.risk_weight)
+        local quiet = memory.quiet or 0
+        if quiet > tune.loop_calm then chance = chance * max(0, 1 - (quiet - tune.loop_calm) / tune.loop_calm) end
+        local near, far = state.stage.zboundary[1] or 0, state.stage.zboundary[2] or 0
+        local width = state.stage_bound > 0 and state.stage_bound or (state.stage.width or constants.view.width)
+        local mine, theirs = 0, 0
+        local items = state.items
+        for other = 0, constants.item_slots - 1 do
+            local value = items[other]
+            if value and value.hp > 0 and value.record.kind ~= record_kinds.character and not (value.weapon < 0)
+               and not resting_states[value.record.frame(value.frame).state] then
+                if hostile(state, self, value) then
+                    if abs(value.x_int - self.x_int) < 400 and abs(value.z_int - self.z_int) < 100 then theirs = theirs + 1 end
+                elseif abs(value.x_int - target.x_int) < 400 and abs(value.z_int - target.z_int) < 100 then
+                    mine = mine + 1
+                end
+            end
+        end
+        local function c(v, lo, hi) if v < lo then return lo elseif v > hi then return hi end return v end
+        situ = {
+            c((danger or 90) / 30, 0, 3), c((context.counter_first or 90) / 30, 0, 3), context.aggression or 0, chance,
+            c(quiet / 300, 0, 3), c(stunned / 30, 0, 3), c((stagger or 0) / 30, 0, 3), c(untouchable / 30, 0, 3), flip_risk,
+            c((context.threat_t or 90) / 30, 0, 3), guard_rate(model_of(context, target)),
+            c((self.z_int - near) / 100, 0, 3), c((far - self.z_int) / 100, 0, 3), c((target.z_int - near) / 100, 0, 3),
+            c((far - target.z_int) / 100, 0, 3), c((width - self.x_int) / 800, 0, 1.5), c((width - target.x_int) / 800, 0, 1.5),
+            c(theirs, 0, 3), c(mine, 0, 3), self.record.id, target.record.id}
+    end
     for _, move in ipairs(setup_kit.moves_of(analysis, self)) do
         local entry = move.entry
         if move.first and move.first <= horizon and entry.basic ~= "attack2" and entry.basic ~= "weapon_attack2"
@@ -4630,16 +4740,26 @@ local function best_attack(context, self, frame, fstate, target, horizon, danger
                 if extras and #extras > 0 then score = score + setup_kit.worth(context, target, tstate, extras, t, box, face, stunned, stagger) end
                 if alone then score = score * setup_kit.alone end
                 if flip_risk > 0 and t >= descent then score = score * (1 - flip_risk) end
+                -- (The move's extra numbers, with the situation's: kept for the records and the brain.)
+                if situ and not drawn and not combo then
+                    local p = kit.parts
+                    local e = {p.sure or 1, p.guarded or 0, p.blocked or 0, min(3, (p.worth or 0) / 100), p.punish or 0,
+                        min(3, (context.counter_damage or 0) / 100), min(3, (p.open or 0) / 30), min(3, max(0, p.factor or 1))}
+                    for i = 1, 19 do e[8 + i] = situ[i] end
+                    e[28] = 1
+                    e[29], e[30] = situ[20], situ[21]
+                    kit.extra[move], kit.extra_at[move] = e, context.now
+                end
                 -- (A brain's expectation of the move here, weighed with the score; the score itself kept for the
                 -- records, brain_kit.hand. Not for what a move brings later than a brain looks, the 45 frames after its
                 -- start — the things a draw leaves, a late blow the enemy is put into or walks into: with the project
                 -- owner's brain for Sauce's pack, XOI's Nya won 435 of 1,200 games against Sauce's AI so, 423 weighed.)
                 local brain = context.brain
                 if brain and score > 0 then
-                    local kit = smart.brain_kit
                     kit.hand[move] = score
-                    if not drawn and not combo then
-                        local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm)) * 100
+                    local extra = brain.id_index and kit.extra[move] or nil
+                    if not drawn and not combo and (extra or not brain.id_index) then
+                        local expected = kit.predict(brain, kit.features(self, target, move, t, score, context.calm, extra)) * 100
                         score = score + tune.brain_weight * (expected - score)
                     end
                 end
@@ -6226,6 +6346,7 @@ function smart.control(state, index)
     local blinking = abs(self.blink)
     local threat_t, threat_box, threat_source = earliest_threat(state, index, self, tune.threat_horizon, nil, level.reaction, context)
     if threat_t and threat_t < blinking then threat_t = nil end
+    context.threat_t = threat_t -- (for a brain of the second kind: brain_kit.extra_names' threat)
     if threat_t and answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, threat_source, target) then
         return
     end

@@ -143,7 +143,19 @@ function job.run(config)
     for i = 0, 9 do header[#header + 1] = "me" .. i end
     for i = 0, 9 do header[#header + 1] = "tg" .. i end
     for _, name in ipairs({"twait", "tleft", "tblink", "calm", "x", "tx", "t", "score", "m_first", "m_dmg", "m_mp", "m_reach", "m_ready", "m_catch", "m_proj", "m_own", "m_bdef", "m_fall", "m_air", "m_zw", "m_punch", "m_airmv", "m_seq"}) do header[#header + 1] = name end
+    -- (From package 82 the extra numbers of a brain of the second kind follow — smart_ai.lua's brain_kit.extra_names,
+    -- the last two the fighters' ids — so that train.lua makes one: 88 numbers a record.)
+    local extra_names = smart.brain_kit.extra_names
+    if extra_names then for _, name in ipairs(extra_names) do header[#header + 1] = name end end
     engine.log("RECH slot dealt taken " .. table.concat(header, " "))
+    -- (The recorded sides' players work the extra numbers out in best_attack: want_extra, off again at the end.)
+    local recorded = {}
+    if extra_names and not quiet then
+        for side = 1, both and 2 or 1 do
+            local player = player_of(side)
+            if player and player.brain_kit then player.brain_kit.want_extra = true; recorded[#recorded + 1] = player end
+        end
+    end
     local function on_start(self, move, t, score, hand)
         local state = state_now
         if not state then return end
@@ -153,10 +165,16 @@ function job.run(config)
         local target = memory and memory.target and state.items[memory.target]
         if not target then target = state.items[self == state.items[10] and 11 or 10] end
         if not target or target.hp == nil then return end
-        local kit = smart.brain_kit
-        local feats, n = kit.features(self, target, move, t, hand or score, memory and memory.calm or 0)
+        local player = player_of(self == state.items[10] and 1 or 2) or smart
+        local kit = player.brain_kit or smart.brain_kit
+        local extra = nil
+        if extra_names and kit.no_extra then
+            -- (Those best_attack worked out for the move in this frame; a move started otherwise has zeros, fresh 0.)
+            extra = kit.extra_at[move] == state.frame_number and kit.extra[move] or kit.no_extra(self, target)
+        end
+        local feats, n = kit.features(self, target, move, t, hand or score, memory and memory.calm or 0, extra)
         pending[#pending + 1] = {me = self, target = target, at = state.frame_number, hp = self.hp, thp = target.hp, feats = feats, n = n,
-            slot = self == state.items[10] and 1 or 0}
+            slot = self == state.items[10] and 1 or 0, ids = extra ~= nil}
     end
     local modules = {smart}
     for _, name in ipairs(names) do
@@ -211,6 +229,11 @@ function job.run(config)
                         if not quiet then
                             local parts = {}
                             for i = 1, rec.n do parts[i] = string.format("%.3g", rec.feats[i]) end
+                            -- (The ids whole: %.3g would write 1001 as 1e+03.)
+                            if rec.ids then
+                                parts[rec.n - 1] = string.format("%d", rec.feats[rec.n - 1])
+                                parts[rec.n] = string.format("%d", rec.feats[rec.n])
+                            end
                             local first = rec.snaps[1]
                             engine.log(string.format("REC %d %d %d %s", rec.slot, first[1], first[2], table.concat(parts, " ")))
                             if #windows > 1 then
@@ -234,6 +257,7 @@ function job.run(config)
         if not ok then engine.log("record: game failed: " .. tostring(problem)) end
     end
     for _, module in ipairs(modules) do module.on_start = nil end
+    for _, player in ipairs(recorded) do player.brain_kit.want_extra = nil end
     smart.explore = nil
     engine.log(string.format("RECORD %d games, %d records, %s won %d lost %d vs %s", played, count, names[1], wins, losses, names[2]))
 end

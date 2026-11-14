@@ -243,8 +243,24 @@ mean and spread, one line per hidden unit with its weights, bias and output weig
 as `xoi/brain.txt` beside its data (shown as "brain" beside XOI in the match), and the bench sets one with
 `smart.set_brain` (duel's and record's `brain = {module = "<module>", on = {1}}`, the module returning `{text = "..."}`).
 
+A brain of the second kind (package 82, INSANE! version 46) sees more: 28 numbers the rules work out themselves
+(`brain_kit.extra_names` — from `attack_score` for the move: how sure the blow is, the chance of a guard, a guard
+already up, its worth, whether the target can strike back before the fighter is free and that blow's damage, the
+frames left open, what novelty, repeats, loops and the notes did to the score; from `best_attack` for the situation:
+the target's counter time and quickest blow, the boldness, the answer chance, the time without a blow, the target's
+lock, stagger and blink, its flip risk, the earliest blow on the fighter, the target's guard rate, the room to the
+stage's edges, things flying about, and whether these are this frame's) and which two fighters these are: an input
+for each fighter of the mod for the fighter, and again for the target. Its file says so (`XOI_BRAIN inputs N hidden H
+extra 28`, then `XOI_BRAIN ids <id> ...`; N = 58 + 28 + twice the ids). `best_attack` works the extra numbers out
+only for such a brain (or for `record`); a brain of the first kind plays as before, game for game. Measured on 603,502
+moves of mode Convergence (XOI against itself, the project owner's numbers, exploring): test correlation 0.436 with
+the 58 numbers — 0.445 with the rules' pieces for the move, 0.448 with the situation's, 0.438 with the edges, 0.437
+with things flying, 0.453 with all 28, 0.505 with the fighters alone — and 0.518 with all of it, 0.538 with 96 hidden
+units; against XOI without a brain over the same 2,000 games, 5.7 games in 100 more for the first kind from those
+moves, 9.8 for the second, 11.5 for the second with 96 hidden units (± 2.3).
+
 ```lua
--- 1. record XOI's moves and what came of them: REC lines (slot, HP dealt, HP taken, the 58 numbers) for brains[1]
+-- 1. record XOI's moves and what came of them: REC lines (slot, HP dealt, HP taken, the 58 numbers, from package 82 the 28 extra ones and the two fighters' ids: 88) for brains[1]
 {command = "record", games = 1000000, seconds = 1200, seed = 7001, limit = 9000}           -- against the pack's own AI scripts (Sauce's) when it has them, else XOI itself (alt: a copy of smart_ai.lua as a module, so the opponent plays without the brain)
 {command = "record", brain = {module = "xoi_brain", on = {1}}, alt = "hs_alt", seconds = 1200, seed = 8001}   -- the next round, recorded with the brain learned so far
 {command = "record", alt = "hs_alt", explore = 4, seconds = 1200, seed = 9001}   -- XOI tries other moves now and then (hoc-sau.bat's THU_DON)
@@ -271,7 +287,11 @@ mean alone, and how the hand-made score correlates with the outcome: about 0.2),
 About 150,000 samples a second on LuaJIT; a record takes about 500 bytes of memory (six million: 3 GB). `stride = k`
 keeps every k-th record for a quicker look; with `records = N` (how many the files hold: hoc-sau.bat counts them as it
 packs) over `max_records` (6,000,000), the job thins to every k-th record itself, so ten rounds on eighty threads still
-train in a few GB. `windows/hoc-sau.bat` does all of it on a PC (English kit: `brain.bat`):
+train in a few GB. Records of 88 numbers make a brain of the second kind: the 86 plain numbers standardized, the two
+ids each turned into the input of that fighter (two weights a hidden unit to add, not a hundred to multiply; the one
+that is counts 1 over its spread, as standardizing would make it, at most 20; an id only test records have counts
+nothing); about 750 bytes a record, `max_records` 4,000,000 for them. Records of 58 numbers train as before, bit for
+bit. `windows/hoc-sau.bat` does all of it on a PC (English kit: `brain.bat`):
 rounds of recording on every CPU thread, the data gathered into a small training pack (data/data.txt, the mod's
 executables and the `xoi/data_N.txt` files), one training per mod, the next round recorded with the new brain, a check
 of XOI with and without it against the same opponent, `hoc-sau\ket-qua.txt`, each mod's brain in `xoi-<mod>\brain.txt`
@@ -347,8 +367,8 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `still` | INSANE! fighter `ids[1]` against `ids[2]` standing still (no computer player) `far` apart, logging both every `every` frames and whenever the still one's frame changes: what the AI does to a fighter that cannot answer. `handover` plays `seq` (as `keyseq`) on the INSANE! fighter first, then hands it to the AI; `spawn = {id, frame, dx}` places an object of the mod on the still fighter (a trap set by hand). | `ids`, `far`, `dz`, `ticks`, `every`, `handover`, `seq`, `spawn` |
 | `loadall` | Loads every object of the mod as a match would and reports what fails. | `diagnostics` |
 | `aitest` | Checks that a mod's own AI scripts (`ai/*.as`) compile and make instances. | `ids`, `other` |
-| `record` | XOI's brain, step one (above): random pairs of the pool on random stages, `brains[1]` (XOI) against `brains[2]` (the pack's own AI scripts when it has them, else `xoi@<alt>`; `opponent = "xoi"`: `xoi@<alt>` there too, hoc-sau.bat's `DOI_THU=xoi`), `games` games or `seconds` seconds; a `REC` line per move started with its outcome `window` frames later; `brain` plays the recorded side with a brain; `quiet` plays without records; `both` records both sides when both are XOI; `explore` (beta): the recorded side tries other moves now and then. | `brains`, `alt`, `opponent`, `brain`, `explore`, `games`, `seconds`, `seed`, `limit`, `window`, `windows`, `ids`, `difficulty`, `quiet`, `both` |
-| `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines. | `data`, `target`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
+| `record` | XOI's brain, step one (above): random pairs of the pool on random stages, `brains[1]` (XOI) against `brains[2]` (the pack's own AI scripts when it has them, else `xoi@<alt>`; `opponent = "xoi"`: `xoi@<alt>` there too, hoc-sau.bat's `DOI_THU=xoi`), `games` games or `seconds` seconds; a `REC` line per move started with its outcome `window` frames later (88 numbers from package 82: the second kind's); `brain` plays the recorded side with a brain; `quiet` plays without records; `both` records both sides when both are XOI; `explore` (beta): the recorded side tries other moves now and then. | `brains`, `alt`, `opponent`, `brain`, `explore`, `games`, `seconds`, `seed`, `limit`, `window`, `windows`, `ids`, `difficulty`, `quiet`, `both` |
+| `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines — of the second kind from records of 88 numbers. | `data`, `target`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
 | `balance` | Fighter balance (above): `step = "list"`, `"play"` or `"merge"`; win rates of every pair of fighters and what each move brings, one computer player on both sides. | `step`, `ids`, `exclude`, `brain`, `weapons`, `limit`, `stall`, `games`, `seconds`, `snap`, `seed`, `round`, `process`, `processes`, `prev`, `lang`, `mod`, `plan_rounds`, `plan_games`, `plan_seconds`, `date`, `kit` |
 | `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
 

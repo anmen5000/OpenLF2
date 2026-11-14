@@ -920,9 +920,10 @@
         <li><code>VONG</code> rounds (2), <code>PHUT_GHI</code> minutes of recording a round (20), <code>SONG_SONG</code> processes
           (every CPU thread; fewer on a PC short of memory, as <code>spsa.bat</code> does), <code>PHUT_KIEM_TRA</code> minutes of the
           final check (10; 0 skips it), <code>UU_TIEN</code> the processes' priority, <code>HAT_GIONG</code> the seed.</li>
-        <li><code>AN</code> neurons in the middle layer (48) and <code>EPOCH</code> passes over the data (8): enough; more takes longer
-          to train. Training takes about half a GB of memory per million moves (six million: 3 GB) and a few minutes a million
-          moves a pass, one process per mod.</li>
+        <li><code>AN</code> neurons in the middle layer (96 from package 82; 48 before) and <code>EPOCH</code> passes over the data
+          (8): enough; more takes longer to train. Training takes about half a GB of memory per million moves (six million: 3 GB;
+          package 82's moves of 88 numbers about 750 MB a million, four million at most) and a few minutes a million moves a
+          pass, one process per mod.</li>
         <li><b>Disk:</b> a move is a line of about 400 bytes; the gathered data of a run stays in <code>hoc-sau\du-lieu\</code>
           (about 2.5 GB for 6 million moves) and the training packs are deleted once trained.</li>
         <li><b>A mod without AI scripts of its own</b> records XOI against a copy of itself (the copy without the brain), as
@@ -947,6 +948,17 @@
           (three times the memory) and splits the check four ways: worth it on many threads (some 40 or more) or with a
           longer <code>PHUT_KIEM_TRA</code>. A <code>hoc-sau</code> folder records with one <code>NHIN_XA</code>: rename it to
           change.</li>
+        <li><b>A brain that sees more</b> (package 82, INSANE! version 46). The project owner's runs on mode Convergence had the
+          brain's predictions stuck at 0.46 however much data, and looking further did worse: what it saw was the limit. Each
+          move is now recorded with 88 numbers instead of 58: what XOI's own rules work out for it — how sure the blow is to
+          land, whether the target can guard in time or strike back before the move is over, how soon a blow lands on XOI,
+          the room to the stage's edges, things flying about — and which two fighters are fighting (an input for each fighter
+          of the mod). The brain so learned is "of the second kind"; one of the first kind (58 inputs) still plays as before.
+          On mode Convergence, the same 603,502 moves and the same 2,000 games: predictions 0.436 → 0.538, mostly from knowing
+          the two fighters; the old kind won 5.7 games in 100 more than XOI without a brain, the new kind 11.5 (± 2.3). The
+          check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
+          keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
+          of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
         <li><b>First <code>spsa.bat</code>, then <code>hoc-sau.bat</code>:</b> the brain learns on top of the numbers (the
           hand-made score is one of its inputs), so after a new tuning a few more rounds bring it up to date. The project owner's
           10 rounds on Sauce's pack (80 threads, November 2026): XOI with the brain won 57.4% of its games against Sauce's AI,
@@ -959,9 +971,10 @@
         <li><code>VONG</code> số lượt (2), <code>PHUT_GHI</code> số phút ghi dữ liệu mỗi lượt (20), <code>SONG_SONG</code> số tiến trình
           (mọi luồng CPU; máy ít bộ nhớ được tự bớt, như <code>spsa.bat</code>), <code>PHUT_KIEM_TRA</code> số phút kiểm tra cuối (10; 0 là
           bỏ qua), <code>UU_TIEN</code> mức ưu tiên, <code>HAT_GIONG</code> hạt giống.</li>
-        <li><code>AN</code> số nơ-ron lớp giữa (48) và <code>EPOCH</code> số lần học qua toàn bộ dữ liệu (8): đủ dùng; lớn hơn thì huấn
-          luyện lâu hơn. Huấn luyện tốn chừng nửa GB bộ nhớ cho mỗi triệu lần ra đòn (6 triệu: 3 GB) và vài phút cho mỗi triệu mỗi
-          lần học, mỗi bản mod một tiến trình.</li>
+        <li><code>AN</code> số nơ-ron lớp giữa (96 từ gói 82; trước đó 48) và <code>EPOCH</code> số lần học qua toàn bộ dữ liệu (8): đủ
+          dùng; lớn hơn thì huấn luyện lâu hơn. Huấn luyện tốn chừng nửa GB bộ nhớ cho mỗi triệu lần ra đòn (6 triệu: 3 GB; lần ra
+          đòn 88 số của gói 82 chừng 750 MB mỗi triệu, nhiều nhất 4 triệu) và vài phút cho mỗi triệu mỗi lần học, mỗi bản mod một
+          tiến trình.</li>
         <li><b>Ổ đĩa:</b> mỗi lần ra đòn là một dòng chừng 400 byte; dữ liệu đã gộp của một lần chạy nằm trong
           <code>hoc-sau\du-lieu\</code> (chừng 2,5 GB cho 6 triệu lần) và các gói huấn luyện được xóa sau khi học xong.</li>
         <li><b>Bản mod không có script AI riêng</b> thì XOI ghi dữ liệu khi đánh với một bản sao của chính nó (bản sao không có bộ
@@ -984,6 +997,17 @@
           dao động. Tự chọn thì huấn luyện ba bộ não cùng lúc mỗi bản mod (gấp ba bộ nhớ) và phần kiểm tra chia bốn: đáng dùng
           khi máy nhiều luồng (chừng 40 trở lên) hay <code>PHUT_KIEM_TRA</code> dài hơn. Một thư mục <code>hoc-sau</code> ghi
           theo một <code>NHIN_XA</code>: muốn đổi thì đổi tên thư mục ấy.</li>
+        <li><b>Bộ não thấy nhiều hơn</b> (gói 82, INSANE! bản 46). Các lần chạy của chủ dự án trên Convergence cho thấy độ đoán
+          đúng của bộ não đứng yên ở 0,46 dù dữ liệu nhiều bao nhiêu, và nhìn xa hơn còn kém đi: cái giới hạn là những gì nó
+          được thấy. Giờ mỗi lần ra đòn ghi 88 số thay vì 58: những gì luật của XOI tự tính ra cho đòn ấy — chắc trúng tới đâu,
+          đối thủ có kịp đỡ hay đánh trả trước khi xong đòn không, bao lâu nữa một đòn đánh tới XOI, khoảng cách tới mép sân,
+          vật đang bay — và hai nhân vật đang đánh (mỗi nhân vật của bản mod một đầu vào). Bộ não học như thế là "kiểu hai";
+          bộ não kiểu cũ (58 đầu vào) vẫn chơi như trước. Trên Convergence, cùng 603.502 lần ra đòn và cùng 2.000 trận: độ đoán
+          đúng 0,436 → 0,538, phần lớn nhờ biết hai nhân vật; bộ não kiểu cũ thắng hơn XOI không có bộ não 5,7 trận mỗi 100,
+          kiểu mới 11,5 (± 2,3). Phần kiểm tra giờ cho cả bộ não đã có trước lần chạy đánh cùng
+          (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
+          không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
+          đổi tên nó trước (kit sẽ báo).</li>
         <li><b>Chạy <code>spsa.bat</code> trước rồi mới <code>hoc-sau.bat</code>:</b> bộ não học trên nền bộ số (điểm tự tính là một
           đầu vào của nó), nên chỉnh số lại thì chạy thêm vài lượt cho bộ não theo kịp. Lần chạy 10 lượt của chủ dự án trên bản
           Sauce (80 luồng, tháng 11/2026): XOI có bộ não thắng 57,4% số trận với AI của Sauce, không có 45,8%.</li>
