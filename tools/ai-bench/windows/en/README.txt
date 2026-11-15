@@ -115,6 +115,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    brain, the new kind 11.5. The check also plays the brain there was before the run (xoi-<mod>\brain.txt, or the zip's
    own) and keeps it when the new one does not win more: nothing is packed then, nothing changes (results.txt shows
    them all). A brain folder of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).
+   Under threat (package 83, XOI version 47): with the opponent able to strike within 8 frames, the brain no longer
+   calls every attack off - when XOI's rules would strike and the brain likes nothing, the brain's favourite of the
+   rules' moves is used. With the project owner's brain, XOI's Stancher had won 1 game of 30 against XOI's Tiger
+   (14 without a brain): Tiger in his face and quicker, every move looked bad to the brain, and stepping back he was
+   hit anyway. Now 12 of 30, and over 2,000 games the brain's gain is the same (12.4 games in 100, 12.9 before). Brains
+   are as before: no need to run brain.bat again for this.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to publish.bat and double-click it. It makes publish\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its

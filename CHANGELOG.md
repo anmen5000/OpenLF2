@@ -759,6 +759,25 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   The bench's `moves` job prints `share`, `lasting`, `branch` and a swap's `reach`
 
 ### Fixed
+- XOI's brain called every attack off where the fighter took blows whatever it did (package 83, INSANE! version 47).
+  The project owner's clips of his pack (his numbers and brain): XOI's Tiger lost to INSANE!'s Stancher — `xem.bat`
+  plays the same five games for one `HAT_GIONG`, and those were lost, lost, won, won, won; over 200 games XOI's Tiger
+  beats INSANE!'s Stancher 149 to 51 (126 to 71 without the brain) — and XOI's Tiger beat XOI's Stancher with ease.
+  Stancher was the one the brain failed: with it, against XOI's Tiger without one, he won 1 game of 30 (14 without the
+  brain), 3 of 30 against Crimson, and both with the brain Tiger won 99 to 1. What a brain expects of a move is HP dealt
+  minus taken over the 45 frames after its start; with Tiger in his face and quicker (his punch lands in 4 to 6 frames)
+  every move of Stancher's looked bad, the brain called them all off — 40 times a game where the rules would have
+  struck — and stepping back instead he was punched, made dizzy, held and punched again: starting nothing was worse,
+  which no record of a move tells. Now, with the target able to land a blow within 8 frames if it struck now
+  (`brain_kit.threat`), when the rules would start a move and none clears the bar with the brain, `best_attack` starts
+  the brain's favourite of those the rules would start, at the rules' score; elsewhere, and whenever a move clears the
+  bar with the brain, as before. Stancher with the brain 12 of 30 against Tiger, 9 against Crimson; both with the brain
+  68 to 31; Tiger against INSANE!'s Stancher 140 to 59; over the same 2,000 games against XOI without a brain, 12.4
+  games in 100 more (12.9 before; 0.4 between the two, ± 1.7). Tried and left: the brain only picking among the rules'
+  moves, everywhere (5.0 in 100 more), under any threat within `counter_horizon` (8.9), within 8 frames (11.8), within
+  4 (Stancher 2 of 30 again); passes among the records so that the brain learns what starting nothing brings (300,000
+  of them with 860,000 moves: 3 of 30); what passing brought in the match standing in for that (1 of 30); no notice
+  taken of an opponent seen as passive (0 of 30). Brains and records are as before: no new brain is needed
 - XOI's brain learned against XOI itself — `hoc-sau.bat` (`brain.bat`) in a mod without AI scripts of its own, or
   with `DOI_THU=xoi` (`OPPONENT=xoi`) — was checked against itself, from package 67 to 78. The opponent is a copy of
   XOI meant to play without the brain, but the bench's `record` job never set up the routing that hands a

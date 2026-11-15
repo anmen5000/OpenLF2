@@ -259,6 +259,19 @@ with things flying, 0.453 with all 28, 0.505 with the fighters alone — and 0.5
 units; against XOI without a brain over the same 2,000 games, 5.7 games in 100 more for the first kind from those
 moves, 9.8 for the second, 11.5 for the second with 96 hidden units (± 2.3).
 
+Under threat (package 83, INSANE! version 47) the brain no longer calls every attack off: with the target able to
+land a blow within `brain_kit.threat` frames (8) if it struck now, when the rules would start a move and none clears
+the bar with the brain, `best_attack` starts the brain's favourite of the moves the rules would start, at the rules'
+score; elsewhere, and whenever a move clears the bar with the brain, as before. What a brain expects of a move is HP
+dealt minus taken, and a fighter that takes blows whatever it does — the target in its face and quicker — finds every
+move bad, while starting none is worse, which no record of a move tells: with the project owner's numbers and brain,
+XOI's Stancher against XOI's Tiger without a brain won 1 game of 30 (14 without the brain; the brain called his attacks
+off 40 times a game where the rules would have struck, and stepping back he was punched, made dizzy, held and punched
+again), now 12; over the same 2,000 games against XOI without a brain 12.4 games in 100 more, 12.9 before (± 1.7
+between the two). Passes among the records (the brain learning what starting nothing brings: 300,000 of them with
+860,000 moves) did not mend it (3 of 30), nor did what passing brought in the match standing in for that (1 of 30);
+the brain only picking among the rules' moves everywhere kept 5.0 of its 12.9.
+
 ```lua
 -- 1. record XOI's moves and what came of them: REC lines (slot, HP dealt, HP taken, the 58 numbers, from package 82 the 28 extra ones and the two fighters' ids: 88) for brains[1]
 {command = "record", games = 1000000, seconds = 1200, seed = 7001, limit = 9000}           -- against the pack's own AI scripts (Sauce's) when it has them, else XOI itself (alt: a copy of smart_ai.lua as a module, so the opponent plays without the brain)

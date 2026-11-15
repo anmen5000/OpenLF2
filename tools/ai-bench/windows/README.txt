@@ -107,6 +107,12 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    kind 11.5. The check also plays the brain there was before the run (xoi-<mod>\brain.txt, or the zip's own) and keeps
    it when the new one does not win more: nothing is packed then, nothing changes (ket-qua.txt shows them all). A
    hoc-sau folder of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).
+   Under threat (package 83, XOI version 47): with the opponent able to strike within 8 frames, the brain no longer
+   calls every attack off - when XOI's rules would strike and the brain likes nothing, the brain's favourite of the
+   rules' moves is used. With the project owner's brain, XOI's Stancher had won 1 game of 30 against XOI's Tiger
+   (14 without a brain): Tiger in his face and quicker, every move looked bad to the brain, and stepping back he was
+   hit anyway. Now 12 of 30, and over 2,000 games the brain's gain is the same (12.4 games in 100, 12.9 before). Brains
+   are as before: no need to run hoc-sau.bat again for this.
 6. Publish a mod for its players, INSANE! and XOI built in: put <mod>-xoi.zip (or the mod's zip or folder)
    next to xuat-ban.bat and double-click it. It makes xuat-ban\<mod>.zip: the mod's own folder as its author
    shares it (bg, bgm, data, sprite..., its own .exe too) with OpenLF2 added - "<mod> - INSANE XOI.exe", its
@@ -263,6 +269,12 @@ chơi được chính các file của bản mod.
    trận mỗi 100, kiểu mới 11,5. Phần kiểm tra cho cả bộ não đã có trước lần chạy (xoi-<tên>\brain.txt, hay bộ não trong
    file zip) đánh cùng, và giữ nguyên nó khi bộ mới không thắng nhiều hơn: không gói gì, không đổi gì (ket-qua.txt ghi
    đủ). Thư mục hoc-sau của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được: đổi tên nó trước (kit sẽ báo).
+   Khi bị áp sát (gói 83, XOI bản 47): đối thủ đánh tới được trong 8 khung hình thì bộ não không còn hủy hết mọi đòn
+   nữa - luật của XOI muốn đánh mà bộ não không ưng đòn nào thì vẫn đánh, bằng đòn bộ não ưng nhất trong các đòn luật
+   chọn. Với bộ não của chủ dự án, Stancher của XOI từng chỉ thắng 1/30 trận trước Tiger của XOI (không có bộ não 14):
+   Tiger áp sát và nhanh hơn, đòn nào bộ não cũng thấy lỗ, lùi lại thì vẫn bị đánh. Giờ 12/30, và qua 2.000 trận bộ não
+   vẫn lợi như cũ (thắng hơn 12,4 trận mỗi 100, trước là 12,9). Bộ não giữ nguyên: không cần chạy lại hoc-sau.bat vì
+   chuyện này.
 6. Xuất bản bản mod cho người chơi, có sẵn INSANE! và XOI: đặt <tên>-xoi.zip (hoặc file zip hay thư mục bản
    mod) cạnh xuat-ban.bat rồi nháy đúp. Kết quả: xuat-ban\<tên>.zip - nguyên thư mục gốc của bản mod như tác
    giả chia sẻ (bg, bgm, data, sprite..., cả file .exe của nó), thêm OpenLF2: "<tên> - INSANE XOI.exe", các
