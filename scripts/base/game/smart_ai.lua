@@ -505,8 +505,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 47
+smart.version = 48
 smart.history = {
+    {48, "2026-11-15", "A fighter flipping back onto its feet is followed to where it lands. The project owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that flips up out of it lands within reach of his D>J, whose last frame stays out 50 ticks, and one that does not is struck by D^A — and XOI did neither. With his numbers and brain, after 310 such flips XOI's Khaoslong started nothing 101 times, 15 HP of follow-up on average: from the roll's frames on, where nothing can hit it, the opponent was taken to stay in that frame for good, and to be free to act at once. A fighter flipping already (a rowing frame in the air) now has its roll followed as the game plays it — the roll's frame that goes on to frame 0 held until the landing (base/game/animation), the crouch it lands in, frame 215 (base/game/physics), then standing — and is held until that crouch is over (target_lock_of); the flip foreseen from the frame of descent (182 or 188) is played so too (up to now it stood in the air from its roll's end, hittable, and landed in frame 219). After 206 flips XOI's Khaoslong started nothing 3 times, 47.9 HP of follow-up on average (D+J+A 62, D>A 49, D>J 33), and won 52 games to 20 against the same opponents on the same seeds (37 to 35 before). The D^A on an opponent that stays down: started as soon as he is free it brings 86 HP (98 times in 155 against opponents that never flip), but it has to be started before the opponent's choice shows — a frame later it no longer reaches (made to, nothing in 6) — so against one that flips as a rule it is not thrown. A grab's own follow-ups are not learned yet (the keys its holding frames take: Khaoslong's D^A out of the last kick, frame 280 — made to, 58 HP on an opponent that stays down, 2.5 on one that flips). Over 2,000 games against version 47, both with the owner's brain: 1.2 games in 100 more than version 47 against itself (± 1.3), HP margin +8.6 a game (± 5.8), Khaoslong's 12.9 more; without a brain 0.3 more (± 1.2), Khaoslong's 11.3. INSANE! has it as well."},
     {47, "2026-11-15", "Under threat the brain no longer calls every attack off. The project owner's clips: XOI's Tiger lost to INSANE!'s Stancher (xem.bat plays the same five games for one HAT_GIONG: lost, lost, won, won, won; over 200 games XOI's Tiger with his numbers and brain beats INSANE!'s Stancher 149 to 51, 126 to 71 without the brain) and beat XOI's Stancher with ease. Stancher was the one the brain failed: with it against XOI's Tiger without one he won 1 game of 30 (14 without the brain), 3 of 30 against Crimson, and Tiger with the brain beat Stancher with it 99 to 1. What the brain expects of a move is HP dealt minus taken over the 45 frames after its start; with Tiger in his face and quicker (his punch lands in 4 to 6 frames) Stancher took blows whatever he did, so every move looked bad and the brain called them all off, 40 times a game where the rules would have struck, and stepping back instead he was punched, made dizzy, held and punched again: starting nothing was worse, which no record of a move tells. Now, with the target able to land a blow within 8 frames if it struck now (brain_kit.threat), when the rules would start a move and none clears the bar with the brain, the brain's favourite of those the rules would start is started, at the rules' score; elsewhere, and whenever a move clears the bar with the brain, as before. Stancher with the brain: 12 of 30 against Tiger, 9 against Crimson; Tiger and Stancher both with it 68 to 31; Tiger against INSANE!'s Stancher 140 to 59; over the same 2,000 games against XOI without a brain 12.4 games in 100 more (12.9 before; 0.4 between the two, ± 1.7). Tried and left: the brain picking among the rules' moves and the rules deciding, everywhere (5.0 in 100 more), under any threat within counter_horizon (8.9), within 8 frames (11.8, Tiger against INSANE!'s Stancher 131 to 67), within 4 (Stancher 2 of 30 again); passes among the records, so that a brain learns what passing brings (300,000 of them with 860,000 moves: Stancher 3 of 30); what passing brought in the match standing in for it (1 of 30); no notice taken of an opponent seen as passive (0 of 30). Brains and records are as before: no new brain is needed."},
     {46, "2026-11-14", "A brain that sees more. The project owner's runs on mode Convergence (99 threads, his numbers from SPSA): the brain's predictions went with what came of the moves at 0.46 from 2 to 10 million moves alike, looking 3 or 5 seconds ahead instead of 1.5 did worse (0.41, 0.37), and a network twice the size did no better in the lab: what it was given to see was the limit. A brain of the second kind sees 28 more numbers and which two fighters these are (brain_kit.extra_names). From attack_score, for the move: how sure the blow is by the time it takes, the chance a free target guards it, whether its guard is up already, what its hits are worth, whether the fighter is still busy when the target, free again, could land its quickest blow, and that blow's damage, the frames left open after it, what novelty, repeats, loops and the notes made of the score. From best_attack, for the situation: how soon the target could land a blow if it struck now, its quickest from standing, the boldness the calm gives, the chance the target answers a risky start, the frames without a blow by the clock, how long the target cannot act, a hit holds it and nothing lands on it, the chance it gets out of a fall, how soon the earliest blow lands on the fighter, the target's guard rate, the room to the stage's near and far edges and to its right end for both, the enemy's things flying near the fighter and the fighter's side's near the target, and whether these are this frame's. And the fighter's id and the target's: an input for each fighter of the mod (the one that is counts as much as standardizing it would make it). On the same 603,502 moves of XOI against itself with the owner's numbers (2 threads, 90 minutes, exploring), the test correlation: 0.436 with the 58 numbers; with the rules' pieces 0.445, the situation's 0.448, the edges 0.438, things flying 0.437, all 28 0.453; the two fighters alone 0.505; all of it 0.518, and 0.538 with 96 hidden units (with 58 inputs 96 did no better than 48). Over the same 2,000 games against XOI without a brain: the brain of the first kind from those moves won 5.7 games in 100 more, the second kind 9.8, with 96 hidden units 11.5 (± 2.3) — 4.2 and 5.9 more than the first kind (± 2.2), HP margin +25.7 and +37.5 a game. A brain of the first kind (58 inputs) plays as before, game for game, and without a brain nothing changed; INSANE! plays without one."},
     {45, "2026-11-11", "Standoffs that someone has to end, the weapon in hand, and the same on every computer of a room. The project owner's clip from Sauce's pack: XOI's Nya and XOI's Felix face to face, Felix jabbing into her guard for twenty seconds, then both standing for good. (1) Her punch lands in 4 frames, his in 3: a move slower than the target's quickest answer was no candidate at all, so she had nothing to start, while his jab, met by her guard every time (a guarded blow does not end the calm), was worth less with every try by the rule against loops (version 30) until it was not worth starting either. In a standoff long enough to be a loop that answer rules a slower blow out no more — it has not come for as long — and its chance, in what a move at risk is worth, fades with every further frame, to nothing at twice loop_calm. (2) Past that the standoff is overdue: the score a move needs comes down with every frame (0.1 a frame, below nothing if need be), and the best move that lands is started whatever it is thought to cost — in frames of the fighter's own, one in eight by its slot: two of XOI's else start in the same frame every time. (3) A standoff is timed by the clock (memory.quiet). The calm counts the frames a fighter is free to decide in, and two that keep each other busy to no avail let it run at a fraction of the time going by: Stancher and Crimson in mode Convergence, each punch carrying them through the other, punched past each other for 44 seconds before their 189 frames of calm were up, then stood — for good in three games of four. (4) The weapon in hand. From version 21, which told a move's own items from the weapon a fighter holds, the learning left that weapon out altogether: no swing and no throw was learned to do anything, in any game, for 24 versions. A fighter still walked to a stick and picked it up, and was left with its D-moves alone: short of MP it stood before its enemy, and two of them so stood for good (Deep and John in KT-LF2, a stick each). The weapon strikes again — in the hand by the holder's strength entry, thrown by its own frames from the tick it leaves the hand: against an opponent that never moves, Deapis with a stick in mode Convergence had not won after 900 frames and now has within 540. (5) Steps in depth alone that move nothing — a heavy item lying on the way to the target's line, which stops whoever walks into it — go round it along x, as steps along x went round in depth: Sanji walked into one for two minutes with Ace behind it, in One Piece GrandWorld. (6) What is learned of a frame of no known move during play (a fighter on fire) is kept by the frame and by whether the fighter is in the air, each frame from a play of its own. It was kept as played from wherever the fighter was when the frame was first met, the play's later frames with it: what a fighter knew depended on the matches played since the game was opened — Louis on fire was judged otherwise, three minutes into a game, when a game against Firen had been played before it — and two computers of a network room that had not played the same matches could decide differently, which ends the room's game (the HP check). Results, game by game from the same points of the random sequence. Nya against Felix, XOI against itself, 40 games: 17 stood to the bench's three minutes with the owner's numbers for the pack (18 with version 43), 6 with the default ones; none now, the longest 68 seconds (with the owner's brain none did: the clip's match ran without it — the game says ', brain' beside the version when one is loaded). All 210 ordered pairs of the pack's 15 fighters twice, XOI against itself: 17 of 420 games at three minutes with the owner's numbers and 16 with the default ones; 2 and 4 now, all of Louis's, with blows to the end (11 seconds at most without one). Six other mods (Convergence, Naruto: The Setting Dawn 2.4 and 2.6, One Piece GrandWorld, KT-LF2, Hell), 672 games of XOI against itself: 13 at three minutes, 5 of them standing; 6 now, none standing. Against Sauce's AI over the same games: Nya 418 of 1,200 with version 44 and 436 now (HP margin +12.7 a game), with the owner's numbers and brain 435 and 470; XOI's fighters against Sauce's Nya 801 of 1,120 and 823; all 210 pairs 212 of 420 and 210. Five other mods against version 44: 1,139 to 1,087 of 2,240 games, 14 drawn (56 with version 43 against 42); six mods game by game against version 44, 672 games: 342 won and 319 lost where version 44 itself wins 330 and loses 325 (HP margin +16 a game). A game played alone and the same game after others: the same, 112 of 112."},
@@ -3841,7 +3842,15 @@ end
 -- A knocked fighter's two ways down, k = 1..recovery_horizon frames from now: flipping back onto its feet now
 -- (the recovery frames, carried by the roll's speed until it lands, the landing crouch, standing), or letting the
 -- fall finish (the falling frames in the air, then lying until it gets up, blinking). Each is the frame it would be
--- in (nil where nothing can hit it) and where it would be, relative to now.
+-- in (nil where nothing can hit it) and where it would be, relative to now; flip.free, the first of those frames it
+-- stands in, free again. `rolling`: the fighter is flipping already (a rowing frame in the air) — its roll from
+-- where it is, its frame and speeds as they are. (As the game plays it: a roll's frame that goes on to frame 0 is
+-- held until the landing, base/game/animation, and a roll lands in the crouch, frame 215, base/game/physics. Up to
+-- version 47 the roll was taken to stand from there in the air, hittable, and to land in frame 219; and a fighter
+-- already flipping had no path: it was taken to stay in the frame it was in, its roll's, where nothing hits it, and to
+-- be free at once — so a flip was never struck as it landed. Khaoslong of mode Convergence grabs and kicks with D^J,
+-- the last kick knocking up; the opponent that flips there lands within reach of his D>J, whose last frame stays out
+-- 50 ticks: the project owner's catch. XOI's Khaoslong started D>J after 12 of 310 such flips; made to, 38 HP a time.)
 local recovery_horizon = 30
 local function hittable(frame)
     if not frame then return nil end
@@ -3850,21 +3859,26 @@ local function hittable(frame)
     end
     return nil
 end
-local function recovery_paths(self, analysis)
+local function recovery_paths(self, analysis, rolling)
     local record = self.record
     local movement = record.movement or {}
     local roll, roll_height = movement.rowing_distance or 0, movement.rowing_height or 0
     local standing = hittable(standing_frame(record))
     local flip, fall = {frames = {}, x = {}, y = {}}, {frames = {}, x = {}, y = {}}
     -- Flipping (base/game/control recovering, physics landing).
-    local current
-    if self.facing == facing_right then current = self.vx <= 0.0 and 100 or 108 else current = self.vx >= 0.0 and 100 or 108 end
-    if not record.frames[current] then current = nil end
-    local vx
-    if self.vx < 1.0 and self.vx > -1.0 then vx = self.facing == facing_left and roll or -roll
-    else vx = self.vx > 0.0 and roll or -roll end
-    local x, y, vy = 0, self.y, min(self.vy, roll_height)
-    local left = current and record.frames[current].wait + 1 or 0
+    local current, vx, vy, left
+    if rolling then
+        current, vx, vy = self.frame, self.vx, self.vy
+        left = max(record.frames[current].wait + 1 - (self.wait_counter or 0), 1)
+    else
+        if self.facing == facing_right then current = self.vx <= 0.0 and 100 or 108 else current = self.vx >= 0.0 and 100 or 108 end
+        if not record.frames[current] then current = nil end
+        if self.vx < 1.0 and self.vx > -1.0 then vx = self.facing == facing_left and roll or -roll
+        else vx = self.vx > 0.0 and roll or -roll end
+        vy = min(self.vy, roll_height)
+        left = current and record.frames[current].wait + 1 or 0
+    end
+    local x, y = 0, self.y
     local landed = false
     for k = 1, recovery_horizon do
         x = x + vx
@@ -3873,8 +3887,12 @@ local function recovery_paths(self, analysis)
         else
             y = y + vy
             if y >= 0 then
+                -- (Out of a roll's frame, or standing in the air — the jump's frame, base/game/animation —, the crouch;
+                -- out of another, the other crouch.)
+                local from = current and record.frames[current]
                 y, landed, vx = 0, true, vx / 3
-                current = record.frames[frames.crouch_alternate] and frames.crouch_alternate or nil
+                current = (not from or from.state == states.rowing) and frames.crouch or frames.crouch_alternate
+                if not record.frames[current] then current = nil end
                 left = current and record.frames[current].wait + 1 or 0
             else
                 vy = vy + 1.7
@@ -3882,12 +3900,16 @@ local function recovery_paths(self, analysis)
         end
         flip.frames[k] = current and hittable(record.frames[current]) or (not current and standing) or nil
         flip.x[k], flip.y[k] = trunc(x), trunc(y)
+        if landed and not current and not flip.free then flip.free = k end
         if current then
             left = left - 1
             if left <= 0 then
                 local next_id = record.frames[current].next
                 if next_id < 0 then next_id = -next_id end
-                if next_id == 0 or next_id == 999 or next_id >= 1000 or not record.frames[next_id] then current = nil
+                if next_id == 0 and not landed then
+                    -- (Held until the landing: base/game/animation keeps a frame whose next is 0.)
+                    left = record.frames[current].wait + 1
+                elseif next_id == 0 or next_id == 999 or next_id >= 1000 or not record.frames[next_id] then current = nil
                 else current = next_id; left = record.frames[current].wait + 1 end
             end
         end
@@ -5042,6 +5064,11 @@ local function target_lock_of(context, target, tframe)
     end
     if exposed_states[tstate] or tstate == states.lying then
         return max(lock_of(target.record, analysis, target.frame) - target.wait_counter, 0)
+    end
+    -- Flipping back onto its feet already: until it has landed and its crouch is over (recovery_paths, rolling).
+    if tstate == states.rowing and target.y_int < 0 then
+        local flip = recovery_paths(target, analysis, true)
+        return flip.free or recovery_horizon
     end
     if tstate == states.caught then
         -- Held: until the hold's timer runs out (base/game/grab: `decrease` a frame from 300), or, when the hold
@@ -6361,6 +6388,9 @@ function smart.control(state, index)
     if (target.frame == 182 or target.frame == 188) and rare.flips_up(model) then
         local flip = rare.recovery_paths(target, target_analysis)
         context.target_path = {value = target, path = flip}
+    elseif tframe.state == states.rowing and target.y_int < 0 then
+        -- (And one flipping already: where its roll takes it, no doubt about it now.)
+        context.target_path = {value = target, path = rare.recovery_paths(target, target_analysis, true)}
     end
     memory.last_use = memory.last_use or {}
     context.last_use, context.now = memory.last_use, state.frame_number

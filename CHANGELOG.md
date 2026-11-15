@@ -759,6 +759,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   The bench's `moves` job prints `share`, `lasting`, `branch` and a swap's `reach`
 
 ### Fixed
+- A fighter flipping back onto its feet was never struck as it landed (package 84, INSANE! version 48). The project
+  owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up;
+  one that flips up out of it lands within reach of his D>J (its last frame stays out 50 ticks), one that does not is
+  struck by D^A — and XOI did neither. After 310 such flips XOI's Khaoslong (the owner's numbers and brain) started
+  nothing 101 times, 15 HP of follow-up on average: from the roll's frames on, where nothing can hit it, the opponent
+  was taken to stay in that frame for good, and to be free to act at once. A fighter flipping already (a rowing frame
+  in the air) now has its roll followed as the game plays it — the roll's frame that goes on to frame 0 held until the
+  landing (`base/game/animation`), the crouch it lands in, frame 215 (`base/game/physics`), then standing — and is held
+  until that crouch is over (`target_lock_of`); the flip foreseen from the frame of descent (182 or 188) is played so
+  too (before, it stood in the air from its roll's end, hittable, and landed in frame 219). After 206 flips XOI's
+  Khaoslong started nothing 3 times, 47.9 HP of follow-up on average (D+J+A 62, D>A 49, D>J 33), and won 52 games to
+  20 against the same opponents on the same seeds (37 to 35 before). The D^A on an opponent that stays down: started as
+  soon as he is free it brings 86 HP (98 times in 155 against opponents that never flip), but it has to be started
+  before the opponent's choice shows — a frame later it no longer reaches — so against one that flips as a rule it is
+  not thrown. A grab's own follow-ups (the keys its holding frames take: Khaoslong's D^A out of the last kick) are not
+  learned yet. Over 2,000 games against version 47, both with the owner's brain: 1.2 games in 100 more than version 47
+  against itself (± 1.3), HP margin +8.6 a game, Khaoslong's 12.9 more; without a brain 0.3 more (± 1.2),
+  Khaoslong's 11.3. INSANE! has it as well
 - XOI's brain called every attack off where the fighter took blows whatever it did (package 83, INSANE! version 47).
   The project owner's clips of his pack (his numbers and brain): XOI's Tiger lost to INSANE!'s Stancher — `xem.bat`
   plays the same five games for one `HAT_GIONG`, and those were lost, lost, won, won, won; over 200 games XOI's Tiger
