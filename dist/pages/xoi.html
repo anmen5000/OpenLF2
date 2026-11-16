@@ -959,6 +959,14 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>The chosen network is confirmed on new games</b> (package 89, <code>hoc-tang-cuong.bat</code>). Package 88
+          kept the network of the best check and put it in a mod when that check beat XOI alone; but every check plays the
+          same games and is off by several points either way, so the best of twenty is mostly the luckiest (the project
+          owner's Ryozaki, worse than XOI alone, had +2.5 at round 450). Now a run ends by playing its last network and its
+          best-checked one on 720 games no check has played, and keeps the better; <code>dua-bo-nao-vao-mod.bat</code>
+          puts it in when it beats XOI alone there (<code>xac-nhan.txt</code>). A finished run run again only plays that
+          confirmation. The checks only measure: the learning never reads them, and every 25 rounds they cost about 7% of
+          the time.</li>
         <li><b>Learned brains in the game</b> (package 88, INSANE! version 50). The networks that
           <code>hoc-tang-cuong.bat</code> learns can now play: a mod with <code>xoi/rl-&lt;id&gt;.txt</code> has XOI play
           that fighter with its network (INSANE! does not), and the new <code>dua-bo-nao-vao-mod.bat</code> puts each
@@ -1059,6 +1067,13 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Bộ não được chọn được xác nhận trên trận mới</b> (gói 89, <code>hoc-tang-cuong.bat</code>). Gói 88 giữ bộ
+          não có lần kiểm tra cao nhất và đưa vào bản mod nếu lần ấy hơn XOI một mình; nhưng mọi lần kiểm tra đánh cùng một
+          bộ trận và lệch vài điểm do may rủi, nên lần cao nhất trong 20 lần thường là lần gặp may (Ryozaki của chủ dự án,
+          kém hơn XOI một mình, có lần +2,5 ở vòng 450). Nay hết vòng cuối, bộ não vòng cuối và bộ tốt nhất đánh 720 trận
+          chưa lần kiểm tra nào đánh, bộ nào hơn thì được giữ; <code>dua-bo-nao-vao-mod.bat</code> đưa nó vào nếu trên các
+          trận ấy nó hơn XOI một mình (<code>xac-nhan.txt</code>). Lượt đã xong mà chạy lại thì chỉ làm bước xác nhận.
+          Kiểm tra chỉ đo: bước học không bao giờ đọc nó, và cứ 25 vòng một lần thì tốn thêm chừng 7% thời gian.</li>
         <li><b>Game dùng được bộ não học tăng cường</b> (gói 88, INSANE! bản 50). Các bộ não mà
           <code>hoc-tang-cuong.bat</code> học được nay đánh được trong game: bản mod có <code>xoi/rl-&lt;id&gt;.txt</code>
           thì XOI điều khiển nhân vật ấy bằng bộ não của nó (INSANE! thì không), và file mới

@@ -9,9 +9,11 @@ rem Moi vong: moi tien trinh (mot luong CPU) danh TRAN tran voi bo nao cua vong 
 rem minh (PPO), ghi phan doi; het vong lay trung binh phan doi cua cac tien trinh thanh bo nao moi. Luc dau bo nao
 rem gan nhu luon de XOI bam (99 khung tren 100), nen nhan vat danh gan nhu XOI; no chi doi khi thay doi co loi.
 rem Cu KIEM_TRA_MOI vong: kiem tra - moi tran danh hai lan tu cung mot luc bat dau, mot lan bo nao, mot lan XOI mot
-rem minh, so ket qua. Ket qua: hoc-tang-cuong\<NHAN_VAT>\tom-tat.txt (gui file nay cho nguoi lam AI); bo nao cua
-rem moi vong: hoc-tang-cuong\<NHAN_VAT>\bo-nao-<vong>.txt; bo nao co lan kiem tra "greedy" tot nhat (tu goi 88):
-rem bo-nao-tot-nhat.txt (vong va diem cua no trong tot-nhat.txt).
+rem minh, so ket qua. Kiem tra chi do, khong doi gi trong viec hoc. Ket qua: hoc-tang-cuong\<NHAN_VAT>\tom-tat.txt
+rem (gui file nay cho nguoi lam AI); bo nao cua moi vong: hoc-tang-cuong\<NHAN_VAT>\bo-nao-<vong>.txt; bo nao co lan
+rem kiem tra "greedy" tot nhat (tu goi 88): bo-nao-tot-nhat.txt (vong va diem cua no trong tot-nhat.txt).
+rem Xac nhan (tu goi 89): het vong cuoi, bo nao vong cuoi va bo tot nhat danh lai tren nhung tran moi; bo co ket qua
+rem cao hon duoc chon (xac-nhan.txt: vong va diem). dua-bo-nao-vao-mod.bat lay bo nay.
 rem Dua bo nao vao ban mod (tu goi 88 game dung duoc): chay dua-bo-nao-vao-mod.bat - chi nhan vat co bo nao hon XOI.
 rem Tam dung: dong cua so nay (cac game cua no tu dung theo), hay dat GIO_CHAY. Lam tiep: chay lai file nay - cac
 rem vong da xong duoc giu, vong dang do danh lai. Hoc lai tu dau: xoa thu muc hoc-tang-cuong\<NHAN_VAT>.
@@ -30,9 +32,14 @@ rem phut; 500 vong khoang 5-6 gio)
 set "VONG=500"
 set "TRAN=20"
 set "SONG_SONG=%NUMBER_OF_PROCESSORS%"
-rem Kiem tra cu bao nhieu vong (0 = chi kiem tra o vong cuoi), moi tien trinh bao nhieu tran (moi tran danh 2 lan)
+rem Kiem tra cu bao nhieu vong (0 = chi kiem tra o vong cuoi), moi tien trinh bao nhieu tran. Kiem tra KHONG lam bo nao
+rem hoc tot hon (buoc hoc khong nhin ket qua kiem tra; bo nao vong cuoi y het du kiem tra hay khong): no de xem tien do
+rem va chon bo nao. Moi lan kiem tra, moi tran danh 3 lan (XOI mot minh, greedy, sample), ton chung 2 vong: moi 25
+rem vong la them chung 7 phan tram thoi gian, moi 50 vong chung 3-4 phan tram.
 set "KIEM_TRA_MOI=25"
 set "TRAN_KIEM_TRA=12"
+rem Xac nhan sau vong cuoi: tong so tran (chia deu cho cac tien trinh; moi tran danh 2 lan, XOI mot minh va greedy).
+set "TRAN_XAC_NHAN=720"
 rem Hen gio tam dung: chay chung ay gio roi tu dung (vi du 8; de trong: chay den het)
 set "GIO_CHAY="
 set "UU_TIEN=BELOWNORMAL"
@@ -113,6 +120,7 @@ if !RAM_GB! GEQ 2 (
 )
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 if not defined KIEM_TRA_MOI set "KIEM_TRA_MOI=0"
+if not defined TRAN_XAC_NHAN set "TRAN_XAC_NHAN=720"
 
 rem Nhieu nhan vat (cach nhau bang dau cach hay dau phay): moi nhan vat mot cua so rieng chay file nay, chia deu cac
 rem luong; cua so nay chi mo cac cua so ay.
@@ -337,10 +345,94 @@ if defined DIEM (
 rmdir /s /q "%K%" 2>nul
 exit /b 0
 
+rem --- Xac nhan (tu goi 89), sau vong cuoi: bo nao vong cuoi va bo tot nhat (neu khac) danh lai tren nhung tran moi,
+rem chi greedy (nhu khi dau that). Moi lan kiem tra deu dung cung mot bo tran va lech vai diem do may rui, nen lan cao
+rem nhat trong nhieu lan thuong la lan gap may; tren tran moi moi ra diem that. Bo co diem xac nhan cao hon duoc chon
+rem (bang nhau: bo vong cuoi): xac-nhan.txt = vong va diem (phan muoi diem moi 100 tran); dua-bo-nao-vao-mod.bat lay
+rem bo nay. Bo nao da xac nhan (xac-nhan-<vong>.txt) thi khong danh lai. ---
+:xac_nhan
+if not exist "%LV%\bo-nao-%VONG%.txt" exit /b 0
+set "XN_TOT="
+if exist "%LV%\tot-nhat.txt" for /f "usebackq tokens=1" %%a in ("%LV%\tot-nhat.txt") do set "XN_TOT=%%a"
+if "!XN_TOT!"=="%VONG%" set "XN_TOT="
+if defined XN_TOT if not exist "%LV%\bo-nao-!XN_TOT!.txt" set "XN_TOT="
+call :xn_mot %VONG%
+if defined HET_GIO exit /b 0
+if defined XN_TOT call :xn_mot !XN_TOT!
+if defined HET_GIO exit /b 0
+set "XN_CHON="
+set "XN_DIEM="
+for %%r in (%VONG% !XN_TOT!) do if exist "%LV%\xac-nhan-%%r.txt" for /f "usebackq tokens=1,2" %%a in ("%LV%\xac-nhan-%%r.txt") do (
+  if not defined XN_CHON (
+    set "XN_CHON=%%a"
+    set "XN_DIEM=%%b"
+  ) else if %%b GTR !XN_DIEM! (
+    set "XN_CHON=%%a"
+    set "XN_DIEM=%%b"
+  )
+)
+if not defined XN_CHON exit /b 0
+set "XN_CU="
+if exist "%LV%\xac-nhan.txt" for /f "usebackq tokens=1,2" %%a in ("%LV%\xac-nhan.txt") do set "XN_CU=%%a %%b"
+if "!XN_CU!"=="!XN_CHON! !XN_DIEM!" (echo   Bo nao da chon tu truoc: vong !XN_CHON!.& exit /b 0)
+>"%LV%\xac-nhan.txt" echo !XN_CHON! !XN_DIEM!
+>>"%LV%\tom-tat.txt" echo XAC NHAN: chon bo nao vong !XN_CHON! - dua-bo-nao-vao-mod.bat dua no vao neu network - XOI tren tran moi duong.
+echo   Chon bo nao vong !XN_CHON!.
+exit /b 0
+
+rem --- Xac nhan mot bo nao (tham so: vong, file bo-nao-<vong>.txt); ket qua xac-nhan-<vong>.txt = vong va diem ---
+:xn_mot
+set "XR=%~1"
+if exist "%LV%\xac-nhan-%XR%.txt" exit /b 0
+if !GIOI_HAN! GTR 0 (
+  call :dong_ho
+  if !DA_CHAY! GEQ !GIOI_HAN! (set "HET_GIO=1"& exit /b 0)
+)
+set /a XN_MOI=1
+set /a "XN_MOI=(TRAN_XAC_NHAN+N-1)/N" 2>nul
+if !XN_MOI! LSS 1 set /a XN_MOI=1
+echo.
+echo === Xac nhan bo nao vong %XR% tren tran moi: !XN_MOI! tran moi tien trinh, bo nao ^(greedy^) va XOI mot minh ^(%TIME:~0,8%^) ===
+set "K=%LV%\xac-nhan-vong-%XR%"
+if exist "%K%" rmdir /s /q "%K%"
+mkdir "%K%"
+set "W_TRUOC=%LV%\bo-nao-%XR%.txt"
+call :chuan_bi "%K%"
+rem Hat giong rieng: nhung tran khac cac lan kiem tra va cac vong hoc; moi bo nao xac nhan danh cung cac tran ay.
+for /L %%k in (1,1,%N%) do (
+  set /a SEED=HAT_GIONG+900500+%%k, OFF=%%k*173+7
+  >"%K%\p%%k\config.lua" echo return {command = "rl", step = "eval", greedy = true, weights = "rl_weights", fighter = "%NHAN_VAT%", games = !XN_MOI!, seed = !SEED!, offset = !OFF!, limit = 9000}
+  start "Hoc tang cuong xac nhan - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 xac-nhan-vong-%XR% %%k !SEED!
+)
+call :cho "%K%" "RL_DONE"
+if defined HET_GIO exit /b 0
+set "M=%K%\gop"
+mkdir "%M%" 2>nul
+call :ban_bench "%M%"
+>"%M%\rl_evals.lua" echo return {text = [==[
+for /L %%k in (1,1,%N%) do if exist "%K%\p%%k\out.txt" findstr /b /c:"RLE " "%K%\p%%k\out.txt" >>"%M%\rl_evals.lua"
+>>"%M%\rl_evals.lua" echo ]==]}
+>>"%M%\package.manifest" echo module=rl_evals^|rl_evals.lua
+>"%M%\config.lua" echo return {command = "rl", step = "sum", evals = "rl_evals"}
+"%GAME%" --pack "%PACK_1%" %XS% --mod "%M%" --seed 1 --input-trace "" >"%M%\out.txt" 2>&1
+call :cho_dong "%M%\out.txt" "RL_DONE"
+for /f "tokens=1,* delims= " %%a in ('findstr /b /c:"RLC greedy" "%M%\out.txt"') do (
+  >>"%LV%\tom-tat.txt" echo XAC NHAN vong %XR% ^(tran moi^), %%b
+  echo   %%b
+)
+set "DIEM="
+for /f "tokens=2,3" %%a in ('findstr /b /c:"RLB " "%M%\out.txt"') do if /i "%%a"=="greedy" set "DIEM=%%b"
+if not defined DIEM (echo [CHU Y] Khong cong duoc ket qua xac nhan vong %XR% - xem "%M%\out.txt".& exit /b 0)
+>"%LV%\xac-nhan-%XR%.txt" echo %XR% !DIEM!
+rmdir /s /q "%K%" 2>nul
+exit /b 0
+
 :xong
+call :xac_nhan
+if defined HET_GIO goto het_gio
 echo.
 echo ===== Xong %VONG% vong. Ket qua: "%LV%\tom-tat.txt" =====
-findstr /c:"KIEM TRA" "%LV%\tom-tat.txt"
+findstr /c:"KIEM TRA" /c:"XAC NHAN" "%LV%\tom-tat.txt"
 echo.
 echo Gui file tom-tat.txt cho nguoi lam AI. Dong "greedy": "network - XOI" duong ^(+^) va lon hon phan +- la bo nao da hon
 echo XOI mot minh. Dua bo nao vao ban mod: chay dua-bo-nao-vao-mod.bat ^(chi nhan vat co bo nao hon XOI^).

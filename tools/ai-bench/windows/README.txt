@@ -163,16 +163,21 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    XOI without a brain on every fighter of the mod. Each round every process (one per CPU thread) plays TRAN games
    with the last round's network and learns from its own games (PPO); the changes are averaged into the next network.
    Every KIEM_TRA_MOI rounds each game is played twice from the same start, by the network and by XOI alone, and
-   compared ("greedy": the network's likeliest moves, as in a match; "sample": drawn, as it learns). Defaults: 500
+   compared ("greedy": the network's likeliest moves, as in a match; "sample": drawn, as it learns). The checks only
+   measure - the learning never reads them, and the networks are the same with or without them; a check costs about
+   two rounds (every 25 rounds: about 7% of the time). Defaults: 500
    rounds of 20 games a process (about 6-8 hours on 100 threads). Several fighters at once (package 86): NHAN_VAT
    with their names or ids apart by spaces or commas (2 19 55), each in a window of its own, the CPU threads shared
    out evenly. Results in hoc-tang-cuong\<fighter>\: tom-tat.txt
    (send it to whoever maintains the AI) and bo-nao-<round>.txt (the network); from package 88 also
-   bo-nao-tot-nhat.txt, the network of the best "greedy" check so far (its round and score in tot-nhat.txt). Close the
-   window to pause; run it again to go on.
-   From package 88 the game uses them: dua-bo-nao-vao-mod.bat puts each fighter's network (the best checked, else the
-   last round's) into the mod's <name>-xoi.zip as xoi/rl-<id>.txt - only those whose check beats XOI alone (its
-   "greedy" line positive), and takes out those that do not (or the ids in BO_RA). XOI playing a fighter with such a
+   bo-nao-tot-nhat.txt, the network of the best "greedy" check so far (its round and score in tot-nhat.txt). From
+   package 89 a run ends with a confirmation: the last round's network and the best check's play TRAN_XAC_NHAN new
+   games (720, shared out among the processes) and the better one on them is chosen (xac-nhan.txt; XAC NHAN lines in
+   tom-tat.txt) - the best of many checks is mostly the luckiest. Close the window to pause; run it again to go on (a
+   finished run run again only plays the confirmation it lacks).
+   From package 88 the game uses them: dua-bo-nao-vao-mod.bat puts each fighter's network (from package 89 the
+   confirmed one, else the latest check's) into the mod's <name>-xoi.zip as xoi/rl-<id>.txt - only those that beat
+   XOI alone (the "greedy" line positive), and takes out those that do not (or the ids in BO_RA). XOI playing a fighter with such a
    file plays its network; INSANE! does not. Every player of a room needs that same zip. The owner's first run
    (300,000 games a fighter): Keny 200-0 against XOI alone's 95-102, Khaoslong +8 points in 100 games, Ryozaki -6
    (left out).
@@ -344,15 +349,20 @@ chơi được chính các file của bản mod.
    nhân vật của bản mod. Mỗi vòng, mỗi tiến trình (một luồng CPU) đánh TRAN trận với bộ não của vòng trước rồi tự học
    trên các trận của mình (PPO); hết vòng lấy trung bình phần đổi thành bộ não mới. Cứ KIEM_TRA_MOI vòng, mỗi trận đánh
    hai lần từ cùng một lúc bắt đầu, một lần bộ não, một lần XOI một mình, rồi so ("greedy": bộ não ra nước nó cho là
-   hay nhất, như khi đấu thật; "sample": nước rút ngẫu nhiên theo bộ não, như lúc học). Mặc định: 500 vòng, mỗi tiến
+   hay nhất, như khi đấu thật; "sample": nước rút ngẫu nhiên theo bộ não, như lúc học). Kiểm tra chỉ đo: bước học
+   không bao giờ đọc kết quả kiểm tra, có kiểm tra hay không thì bộ não vẫn y hệt; mỗi lần kiểm tra tốn chừng 2 vòng
+   (cứ 25 vòng: thêm chừng 7% thời gian). Mặc định: 500 vòng, mỗi tiến
    trình 20 trận (khoảng 6-8 giờ trên 100 luồng). Nhiều nhân vật cùng lúc (gói 86): ghi tên hay số id ở NHAN_VAT, cách
    nhau bằng dấu cách hay dấu phẩy (2 19 55); mỗi nhân vật một cửa sổ riêng, các luồng CPU chia đều. Kết quả ở
    hoc-tang-cuong\<nhân vật>\: tom-tat.txt (gửi file này cho
    người làm AI) và bo-nao-<vòng>.txt (bộ não); từ gói 88 còn có bo-nao-tot-nhat.txt, bộ não có lần kiểm tra "greedy"
-   tốt nhất đến lúc ấy (vòng và điểm của nó trong tot-nhat.txt). Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp.
-   Từ gói 88 game dùng được các bộ não này: dua-bo-nao-vao-mod.bat đưa bộ não của từng nhân vật (bộ tốt nhất, không
-   thì bộ của vòng cuối) vào <tên>-xoi.zip của bản mod, thành xoi/rl-<id>.txt - chỉ nhân vật có lần kiểm tra hơn XOI
-   một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). XOI điều khiển nhân vật có file
+   tốt nhất đến lúc ấy (vòng và điểm của nó trong tot-nhat.txt). Từ gói 89, hết vòng cuối có bước xác nhận: bộ não
+   vòng cuối và bộ tốt nhất đánh TRAN_XAC_NHAN trận mới (720, chia cho các tiến trình), bộ nào hơn trên các trận ấy
+   được chọn (xac-nhan.txt; các dòng XAC NHAN trong tom-tat.txt) - lần cao nhất trong nhiều lần kiểm tra thường là lần
+   gặp may. Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp (đã xong mà chạy lại thì chỉ làm bước xác nhận còn thiếu).
+   Từ gói 88 game dùng được các bộ não này: dua-bo-nao-vao-mod.bat đưa bộ não của từng nhân vật (từ gói 89: bộ đã
+   xác nhận, không thì bộ của lần kiểm tra mới nhất) vào <tên>-xoi.zip của bản mod, thành xoi/rl-<id>.txt - chỉ bộ
+   hơn XOI một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). XOI điều khiển nhân vật có file
    ấy thì dùng bộ não của nó; INSANE! thì không. Mọi người trong phòng cần cùng file zip ấy. Lần chạy đầu của chủ dự
    án (300.000 trận mỗi nhân vật): Keny 200-0 so với XOI một mình 95-102, Khaoslong hơn 8 điểm mỗi 100 trận, Ryozaki
    kém 6 (không đưa vào).

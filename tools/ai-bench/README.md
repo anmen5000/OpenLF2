@@ -385,9 +385,15 @@ processes or more the first merge failed.)
 From package 88 (INSANE! version 50) the game plays these networks: a mod's `xoi/rl-<id>.txt` (a `bo-nao-<round>.txt`)
 has XOI play that fighter with it (`smart.rl_kit` in `smart_ai.lua`: the same moves and numbers, the likeliest
 action; this job turns it off on both sides while it learns or checks). The kit's `dua-bo-nao-vao-mod.bat` puts in
-each fighter's network whose check beats XOI alone (`bo-nao-tot-nhat.txt`, the best check's, else the last round's),
-and `hoc-tang-cuong.bat` keeps the best check's network as it goes (step `sum`'s `RLB <way> <difference> <lower bound>`
-lines, in tenths of a point per 100 games).
+each fighter's network that beats XOI alone, and `hoc-tang-cuong.bat` keeps the best check's network as it goes
+(step `sum`'s `RLB <way> <difference> <lower bound>` lines, in tenths of a point per 100 games). The best of twenty
+checks is mostly the luckiest - every check plays the same games, and each is off by several points either way - so
+from package 89 a run ends with a confirmation: the last round's network and the best check's play `TRAN_XAC_NHAN`
+games (720, shared out among the processes; step `eval` with `greedy`, on seeds no check or round uses), and the
+better of the two there is the run's choice (`xac-nhan.txt`: its round and score), the one `dua-bo-nao-vao-mod.bat`
+puts in when that score is positive (without a confirmation, the latest check's network, which was not picked from
+many). The checks only measure: no round's learning reads them, and a round's network is the same with or without
+them.
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
 was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),

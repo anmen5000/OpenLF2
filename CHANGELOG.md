@@ -787,6 +787,20 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   now keeps the network of the best check so far (`bo-nao-tot-nhat.txt`, `tot-nhat.txt`; the bench's `rl` step `sum`
   prints `RLB` lines for it) and checks on 12 games a process instead of 6.
 ### Fixed
+- The learned network `dua-bo-nao-vao-mod.bat` put into a mod was the one of `hoc-tang-cuong.bat`'s best check
+  (package 88), and the best of twenty checks is mostly the luckiest: every check plays the same games, and each is
+  off by several points either way. The project owner's Ryozaki, whose last network did worse than XOI alone
+  (-6.0 +- 5.8 points per 100 games over 1,000 games), had a check of +2.5 at round 450 among checks of about -5, and
+  package 88 would have put that network in. From package 89 a run ends with a confirmation: the last round's network
+  and the best check's play `TRAN_XAC_NHAN` games (720 by default, shared out among the processes; the network's
+  likeliest moves, as in a match) that no check or round has played, and the better of the two on those games is the
+  run's choice (`xac-nhan.txt`: its round and score in tenths of a point per 100 games; `xac-nhan-<round>.txt` for
+  each network played; `XAC NHAN` lines in `tom-tat.txt`). `dua-bo-nao-vao-mod.bat` puts that network in when its
+  score on the new games is positive, and without a confirmation (a run stopped early, or begun with an older kit and
+  not run again) the latest check's network, whose check was not picked from many. A finished run run again with the
+  new kit only plays its confirmation. The checks themselves only measure: no round's learning reads them, and a
+  round's network is the same with or without them (a check costs about two rounds; every 25 rounds, about 7% of
+  the time) - the settings say so now.
 - A guard that holds for good is no longer kept until the fighter dies in it (package 87, INSANE! version 49). The
   project owner's clip: XOI's Khaoslong of mode Convergence guarded Keny's balls one after another until he died, his
   MP full. Keny throws them for nothing (40 HP, no MP, no defence points), one every 29 frames, each striking twice as
