@@ -105,6 +105,12 @@ function job.run(config)
         local player = not on and player_of(side)
         if player and not given[player] then player.set_brain(nil) end
     end
+    -- (The learned brains of a mod, smart.rl_kit, stay off: the records are of XOI's own choices.)
+    if smart.rl_kit then smart.rl_kit.off = true end
+    for side = 1, 2 do
+        local player = player_of(side)
+        if player and player.rl_kit then player.rl_kit.off = true end
+    end
     local quiet = config.quiet -- (a check only: games and their winners, no records)
     local random = generator(config.seed or 1)
     local windows = config.windows or {config.window or 45}

@@ -10,7 +10,9 @@ rem minh (PPO), ghi phan doi; het vong lay trung binh phan doi cua cac tien trin
 rem gan nhu luon de XOI bam (99 khung tren 100), nen nhan vat danh gan nhu XOI; no chi doi khi thay doi co loi.
 rem Cu KIEM_TRA_MOI vong: kiem tra - moi tran danh hai lan tu cung mot luc bat dau, mot lan bo nao, mot lan XOI mot
 rem minh, so ket qua. Ket qua: hoc-tang-cuong\<NHAN_VAT>\tom-tat.txt (gui file nay cho nguoi lam AI); bo nao cua
-rem moi vong: hoc-tang-cuong\<NHAN_VAT>\bo-nao-<vong>.txt.
+rem moi vong: hoc-tang-cuong\<NHAN_VAT>\bo-nao-<vong>.txt; bo nao co lan kiem tra "greedy" tot nhat (tu goi 88):
+rem bo-nao-tot-nhat.txt (vong va diem cua no trong tot-nhat.txt).
+rem Dua bo nao vao ban mod (tu goi 88 game dung duoc): chay dua-bo-nao-vao-mod.bat - chi nhan vat co bo nao hon XOI.
 rem Tam dung: dong cua so nay (cac game cua no tu dung theo), hay dat GIO_CHAY. Lam tiep: chay lai file nay - cac
 rem vong da xong duoc giu, vong dang do danh lai. Hoc lai tu dau: xoa thu muc hoc-tang-cuong\<NHAN_VAT>.
 rem ============ CHINH O DAY ============
@@ -30,7 +32,7 @@ set "TRAN=20"
 set "SONG_SONG=%NUMBER_OF_PROCESSORS%"
 rem Kiem tra cu bao nhieu vong (0 = chi kiem tra o vong cuoi), moi tien trinh bao nhieu tran (moi tran danh 2 lan)
 set "KIEM_TRA_MOI=25"
-set "TRAN_KIEM_TRA=6"
+set "TRAN_KIEM_TRA=12"
 rem Hen gio tam dung: chay chung ay gio roi tu dung (vi du 8; de trong: chay den het)
 set "GIO_CHAY="
 set "UU_TIEN=BELOWNORMAL"
@@ -316,6 +318,22 @@ for /f "tokens=1,* delims= " %%a in ('findstr /b /c:"RLC " "%M%\out.txt"') do (
 )
 if not defined KQ (echo [CHU Y] Khong cong duoc ket qua kiem tra vong %E% - xem "%M%\out.txt".& exit /b 0)
 move /y "%LV%\kiem-tra-%E%.tmp" "%LV%\kiem-tra-%E%.txt" >nul
+rem Bo nao tot nhat den nay: lan kiem tra "greedy" (nhu khi dau that) hon XOI nhieu nhat - bo-nao-tot-nhat.txt, va
+rem tot-nhat.txt = vong va diem (phan muoi diem moi 100 tran). dua-bo-nao-vao-mod.bat lay bo nay.
+set "DIEM="
+for /f "tokens=2,3" %%a in ('findstr /b /c:"RLB " "%M%\out.txt"') do if /i "%%a"=="greedy" set "DIEM=%%b"
+if defined DIEM (
+  set "DIEM_TOT="
+  if exist "%LV%\tot-nhat.txt" for /f "usebackq tokens=1,2" %%a in ("%LV%\tot-nhat.txt") do set "DIEM_TOT=%%b"
+  set "MOI="
+  if not defined DIEM_TOT (set "MOI=1") else if !DIEM! GTR !DIEM_TOT! set "MOI=1"
+  if defined MOI (
+    copy /y "%LV%\bo-nao-%E%.txt" "%LV%\bo-nao-tot-nhat.txt" >nul
+    >"%LV%\tot-nhat.txt" echo %E% !DIEM!
+    >>"%LV%\tom-tat.txt" echo   ^(bo nao tot nhat den nay: vong %E%^)
+    echo   ^(bo nao tot nhat den nay: vong %E%^)
+  )
+)
 rmdir /s /q "%K%" 2>nul
 exit /b 0
 
@@ -325,7 +343,7 @@ echo ===== Xong %VONG% vong. Ket qua: "%LV%\tom-tat.txt" =====
 findstr /c:"KIEM TRA" "%LV%\tom-tat.txt"
 echo.
 echo Gui file tom-tat.txt cho nguoi lam AI. Dong "greedy": "network - XOI" duong ^(+^) va lon hon phan +- la bo nao da hon
-echo XOI mot minh.
+echo XOI mot minh. Dua bo nao vao ban mod: chay dua-bo-nao-vao-mod.bat ^(chi nhan vat co bo nao hon XOI^).
 if defined CANH_XONG >"%CANH_XONG%" echo xong
 pause
 exit /b 0

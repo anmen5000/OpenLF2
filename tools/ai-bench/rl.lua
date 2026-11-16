@@ -344,6 +344,9 @@ function job.step(config)
     end
     local alt = brains.load("xoi@hs_alt")
     if alt and alt.set_brain then alt.set_brain(nil) end
+    -- (The game's own learned brains, smart.rl_kit, stay off on both sides: this job plays the network it learns.)
+    if smart.rl_kit then smart.rl_kit.off = true end
+    if alt and alt.rl_kit then alt.rl_kit.off = true end
     local p = config.weights and parse_params(require("bench/" .. config.weights).text, "RLW") or new_params(config.init_seed or 1)
     -- How the learned side plays the game under way: "learn" (drawn from the network, recorded), "sample" (drawn),
     -- "greedy" (the likeliest), "follow" (XOI alone).
@@ -557,6 +560,8 @@ function job.sum(config)
             local se_h = sqrt(max(sh2 / n - mh * mh, 0) * n / (n - 1) / n)
             engine.log(string.format("RLC %s games %d: network %d-%d (draws %d, %.1f%%), XOI alone %d-%d (draws %d, %.1f%%); network - XOI %+.1f points per 100 games +- %.1f (95%%); HP margin %+.1f +- %.1f a game; same game %d",
                 way, n, w, l, d, 100 * (w + d / 2) / n, xw, xl, xd, 100 * (xw + xd / 2) / n, 100 * md, 196 * se_d, mh, 1.96 * se_h, same))
+            -- (For the kit, whole numbers: the difference and its lower 95% bound, in tenths of a point per 100 games.)
+            engine.log(string.format("RLB %s %d %d", way, floor(1000 * md + 0.5), floor(1000 * md - 1960 * se_d + 0.5)))
         end
     end
 end

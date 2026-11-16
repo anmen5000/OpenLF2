@@ -505,8 +505,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 49
+smart.version = 50
 smart.history = {
+    {50, "2026-11-17", "Learned brains: a mod may give a fighter a network of reinforcement learning (xoi/rl-<id>.txt, as the kit's hoc-tang-cuong.bat learns it beside XOI), and XOI playing that fighter plays it: where a key can change something the network sees the situation and XOI's keys, and lets them through or plays one of its 22 moves instead (smart.rl_kit). The project owner's first run (300,000 games a fighter against XOI without a brain, on 30 threads a fighter) checked in the lab against XOI alone, each game twice from the same start, version 49 and the owner's brain on both sides: Keny 200-0 where XOI alone went 95-102 (his network calls up his unseen heavy weapon - D, A, then A to pick it up - whose A is a guard-breaking punch that ends in a grab, and walks in); Khaoslong 64.3% where XOI alone won 56.0% (+8.3 points in 100 games, +- 3.4, 1,000 games), mostly by waiting where XOI would act; Ryozaki -6.0 (+- 5.8), left out. The game plays exactly the games of the learning job's own check (60 Khaoslong and 30 Keny games the same, one by one); tanh made of + - * / alone, so every machine of a room plays the same keys, and replays stay in step. Without such files XOI plays as version 49. INSANE! does not use them."},
     {49, "2026-11-16", "Guard locks broken. The project owner's clip: XOI's Khaoslong in mode Convergence guarded Keny's balls one after another until he died, his MP full. Keny throws them for nothing (40 HP, no MP, no defence points), one every 29 frames, each striking twice as it passes; the guard frame (110, 12 frames) was struck again just as it would end, so that only a D-move could leave it, and the guard was the cheapest answer to every ball: the in-match lessons counted blows of 5 HP and more, and a guard lets a tenth through, 4 HP. Nor did XOI see anything to strike: it foresaw Keny back in his standing frames after his D>J (frames no blow touches), where he goes on into its second half with attack, and from its end straight into it again. Guarded blows are counted now, by attacker (a thrown thing's thrower): six or more no more than 30 frames apart, while the attacker's MP has not gone down by 60, are a lock, and in a gap between them the fighter strikes out of the guard with the blow of its own that lands on the attacker soonest, the attacker taken to go on as it is, and not into a blow on its way (lesson_kit.strike_out). The clip's game rebuilt in the lab (the owner's numbers and brain on both sides): the lock of 146 blows (584 HP) ends at the sixth with Khaoslong's D+J+A on Keny, and Khaoslong wins that game. Over 30 games against Keny Khaoslong guarded 187 blows (498 before), his longest run 61 (152); Winnie 520 (1,257), her longest 27 (298); both still lose to him, as before (9 and 0 games of 30). A lock that no blow of the fighter's reaches out of is kept: Keny's D>A strikes 18 pixels off in depth, out of reach of Khaoslong's D-moves, and pulls, so the guard holds whichever way he faces (once in those 30 games). The 2,000 games of the regular roster against version 48: 1,996 the same, -0.1 +- 0.1 points per 100 games."},
     {48, "2026-11-15", "A fighter flipping back onto its feet is followed to where it lands. The project owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that flips up out of it lands within reach of his D>J, whose last frame stays out 50 ticks, and one that does not is struck by D^A — and XOI did neither. With his numbers and brain, after 310 such flips XOI's Khaoslong started nothing 101 times, 15 HP of follow-up on average: from the roll's frames on, where nothing can hit it, the opponent was taken to stay in that frame for good, and to be free to act at once. A fighter flipping already (a rowing frame in the air) now has its roll followed as the game plays it — the roll's frame that goes on to frame 0 held until the landing (base/game/animation), the crouch it lands in, frame 215 (base/game/physics), then standing — and is held until that crouch is over (target_lock_of); the flip foreseen from the frame of descent (182 or 188) is played so too (up to now it stood in the air from its roll's end, hittable, and landed in frame 219). After 206 flips XOI's Khaoslong started nothing 3 times, 47.9 HP of follow-up on average (D+J+A 62, D>A 49, D>J 33), and won 52 games to 20 against the same opponents on the same seeds (37 to 35 before). The D^A on an opponent that stays down: started as soon as he is free it brings 86 HP (98 times in 155 against opponents that never flip), but it has to be started before the opponent's choice shows — a frame later it no longer reaches (made to, nothing in 6) — so against one that flips as a rule it is not thrown. A grab's own follow-ups are not learned yet (the keys its holding frames take: Khaoslong's D^A out of the last kick, frame 280 — made to, 58 HP on an opponent that stays down, 2.5 on one that flips). Over 2,000 games against version 47, both with the owner's brain: 1.2 games in 100 more than version 47 against itself (± 1.3), HP margin +8.6 a game (± 5.8), Khaoslong's 12.9 more; without a brain 0.3 more (± 1.2), Khaoslong's 11.3. INSANE! has it as well."},
     {47, "2026-11-15", "Under threat the brain no longer calls every attack off. The project owner's clips: XOI's Tiger lost to INSANE!'s Stancher (xem.bat plays the same five games for one HAT_GIONG: lost, lost, won, won, won; over 200 games XOI's Tiger with his numbers and brain beats INSANE!'s Stancher 149 to 51, 126 to 71 without the brain) and beat XOI's Stancher with ease. Stancher was the one the brain failed: with it against XOI's Tiger without one he won 1 game of 30 (14 without the brain), 3 of 30 against Crimson, and Tiger with the brain beat Stancher with it 99 to 1. What the brain expects of a move is HP dealt minus taken over the 45 frames after its start; with Tiger in his face and quicker (his punch lands in 4 to 6 frames) Stancher took blows whatever he did, so every move looked bad and the brain called them all off, 40 times a game where the rules would have struck, and stepping back instead he was punched, made dizzy, held and punched again: starting nothing was worse, which no record of a move tells. Now, with the target able to land a blow within 8 frames if it struck now (brain_kit.threat), when the rules would start a move and none clears the bar with the brain, the brain's favourite of those the rules would start is started, at the rules' score; elsewhere, and whenever a move clears the bar with the brain, as before. Stancher with the brain: 12 of 30 against Tiger, 9 against Crimson; Tiger and Stancher both with it 68 to 31; Tiger against INSANE!'s Stancher 140 to 59; over the same 2,000 games against XOI without a brain 12.4 games in 100 more (12.9 before; 0.4 between the two, ± 1.7). Tried and left: the brain picking among the rules' moves and the rules deciding, everywhere (5.0 in 100 more), under any threat within counter_horizon (8.9), within 8 frames (11.8, Tiger against INSANE!'s Stancher 131 to 67), within 4 (Stancher 2 of 30 again); passes among the records, so that a brain learns what passing brings (300,000 of them with 860,000 moves: Stancher 3 of 30); what passing brought in the match standing in for it (1 of 30); no notice taken of an opponent seen as passive (0 of 30). Brains and records are as before: no new brain is needed."},
@@ -7474,6 +7475,308 @@ function smart.prepare(state)
             if record and record.kind == record_kinds.character then learn(record) end
         end
     end
+end
+
+-- Learned brains (version 50): networks of reinforcement learning, one a fighter, from the mod (xoi/rl-<id>.txt, a
+-- network as tools/ai-bench/rl.lua writes it: lines RLW_HEAD and RLW, the kit's hoc-tang-cuong\<fighter>\bo-nao-<round>.txt).
+-- XOI plays as ever; where a key can change something (rl_kit.can_act), the network of the fighter it plays sees the
+-- situation and the keys XOI chose (rl_kit.observe) and lets them through, or plays one of its 22 moves instead
+-- (rl_kit.moves: A, J, D; jumps; walks; runs; the D-moves; a wait) — the likeliest of its actions, as the trial's
+-- "greedy" check plays. The project owner's first run (2026-11-16, 300,000 games a fighter against XOI without a brain):
+-- Khaoslong's network beats XOI alone by 8.3 points in 100 games (± 3.4, 1,000 games, version 49, the owner's brain
+-- on both sides), mostly by waiting where XOI would act (5,369 of its 7,850 moves were the wait); Keny's 200-0 (XOI
+-- alone 95-102): it calls up his unseen heavy weapon (D, A, then A to pick it up), whose A is a guard-breaking punch
+-- that ends in a grab; Ryozaki's lost 6 points, and was left out. Only XOI uses them, only where the mod has one;
+-- the bench's learning job turns them off (rl_kit.off). The numbers are those of the network as it learned, its
+-- tanh made of + - * / alone (rl_kit.tanh), so that every machine of a room plays the same keys.
+smart.rl_kit = {nets = {}, texts = nil, off = false, NOBS = 105, NH = 64, NA = 23,
+    moves = {
+        {"!A"}, {"!J"}, {"!D"},
+        {"!J"}, {"f!J", "f", "f"}, {"b!J", "b", "b"}, {"u!J", "u", "u"}, {"d!J", "d", "d"},
+        {"!f", "f", "f", "f"}, {"!b", "b", "b", "b"}, {"!u", "u", "u", "u"}, {"!d", "d", "d", "d"},
+        {"!f", "", "!f", "f", "f", "f", "f", "f", "f", "f"}, {"!b", "", "!b", "b", "b", "b", "b", "b", "b", "b"},
+        {"!D", "!f", "!A"}, {"!D", "!f", "!J"}, {"!D", "!u", "!A"}, {"!D", "!u", "!J"}, {"!D", "!d", "!A"},
+        {"!D", "!d", "!J"}, {"!D", "!J", "!A"},
+        {"", "", "", ""},
+    },
+    -- States whose frames a key changes (standing, walking, running, jumping, dashing, defending, catching).
+    act_states = {[0] = true, [1] = true, [2] = true, [4] = true, [5] = true, [7] = true, [9] = true},
+    letter_key = {u = "up", d = "down", A = "attack", J = "jump", D = "defend"},
+    dummy_move = {boxes = {}, entry = {}}}
+-- (Its numbers' count, and powers of two made by doubling, exact; in a function: the file's main chunk is at Lua's
+-- limit of 200 locals.)
+function smart.rl_kit.init()
+    local rl = smart.rl_kit
+    rl.NP = rl.NH * rl.NOBS + rl.NH + rl.NH * rl.NH + rl.NH + rl.NA * rl.NH + rl.NA + rl.NH + 1
+    rl.pow2 = {}
+    local v = 1
+    for n = 0, 64 do rl.pow2[n], rl.pow2[-n] = v, 1 / v; v = v * 2 end
+end
+smart.rl_kit.init()
+-- tanh by + - * / alone (math.tanh is the C library's, which machines may round apart): exp(-2|x|) as 2^-n times
+-- the series of exp(n ln 2 - 2|x|) to its 16th term.
+function smart.rl_kit.tanh(x)
+    if x >= 20 then return 1 elseif x <= -20 then return -1 end
+    local y = x < 0 and -2 * x or 2 * x
+    local n = floor(y * 1.4426950408889634 + 0.5)
+    local r = n * 0.6931471805599453 - y
+    local e = 1
+    for k = 16, 1, -1 do e = 1 + r * e / k end
+    e = e * smart.rl_kit.pow2[-n]
+    local t = (1 - e) / (1 + e)
+    return x < 0 and -t or t
+end
+-- A network's numbers from its text (lines RLW_HEAD <inputs> <hidden> <actions> <numbers>, RLW <first> <numbers>…),
+-- or nil.
+function smart.rl_kit.parse(text)
+    local rl = smart.rl_kit
+    local head = text:match("RLW_HEAD (%d+ %d+ %d+ %d+)")
+    if head ~= string.format("%d %d %d %d", rl.NOBS, rl.NH, rl.NA, rl.NP) then return nil end
+    local p, count = {}, 0
+    for line in text:gmatch("[^\n]+") do
+        local first, rest = line:match("^RLW (%d+) (.*)$")
+        if first then
+            local i = tonumber(first)
+            for token in rest:gmatch("%S+") do
+                local number = tonumber(token)
+                if not number or i < 1 or i > rl.NP then return nil end
+                p[i] = number
+                i = i + 1
+                count = count + 1
+            end
+        end
+    end
+    if count ~= rl.NP then return nil end
+    for i = 1, rl.NP do if not p[i] then return nil end end
+    return p
+end
+-- The network of fighter `id`, or nil (the mod's file read once; the bench's texts, rl_kit.texts, first).
+function smart.rl_kit.net_of(id)
+    local rl = smart.rl_kit
+    local net = rl.nets[id]
+    if net == nil then
+        local text = rl.texts and rl.texts[id]
+        if not text then
+            local ok, found = pcall(engine.read_resource, "xoi/rl-" .. tostring(id) .. ".txt")
+            text = ok and type(found) == "string" and found or nil
+        end
+        net = text and rl.parse(text) or false
+        rl.nets[id] = net
+    end
+    return net or nil
+end
+-- The keys as a facing-relative kind: direction 0..8 (none, forward, back, up, down, up-forward, up-back,
+-- down-forward, down-back) times button 0..3 (none, A, J, D): 1..36.
+function smart.rl_kit.kind_of(keys, previous, facing)
+    local fwd, back
+    if facing == facing_right then fwd, back = keys.right and not keys.left, keys.left and not keys.right
+    else fwd, back = keys.left and not keys.right, keys.right and not keys.left end
+    local up, down = keys.up and not keys.down, keys.down and not keys.up
+    local d
+    if up then d = fwd and 5 or back and 6 or 3
+    elseif down then d = fwd and 7 or back and 8 or 4
+    else d = fwd and 1 or back and 2 or 0 end
+    local b = 0
+    if keys.attack and not previous.attack then b = 1
+    elseif keys.jump and not previous.jump then b = 2
+    elseif keys.defend and not previous.defend then b = 3
+    elseif keys.attack then b = 1 elseif keys.jump then b = 2 elseif keys.defend then b = 3 end
+    return d * 4 + b + 1
+end
+-- Whether a key can change anything in the fighter's frame: free, a frame with ways on by keys, a fall's flip frames.
+function smart.rl_kit.can_act(self)
+    local frame = self.record.frame(self.frame)
+    if smart.rl_kit.act_states[frame.state] then return true end
+    local h = frame.hits
+    if h.a ~= 0 or h.j ~= 0 or h.d ~= 0 or h.Fa ~= 0 or h.Ua ~= 0 or h.Da ~= 0 or h.Fj ~= 0 or h.Uj ~= 0 or h.Dj ~= 0
+       or h.ja ~= 0 then
+        return true
+    end
+    return self.frame == 182 or self.frame == 188
+end
+-- A move's frame onto the keys (held letters, then those pressed fresh after "!"; `right` the facing at its start).
+function smart.rl_kit.apply_frame(value, spec, right, last)
+    local rl = smart.rl_kit
+    local held, fresh = spec:match("^([^!]*)!?(.*)$")
+    local want = {up = false, down = false, left = false, right = false, attack = false, jump = false, defend = false}
+    local new = {}
+    local function key_of(ch)
+        if ch == "f" then return right and "right" or "left" end
+        if ch == "b" then return right and "left" or "right" end
+        return rl.letter_key[ch]
+    end
+    for ch in held:gmatch(".") do local k = key_of(ch); if k then want[k] = true end end
+    for ch in fresh:gmatch(".") do local k = key_of(ch); if k then want[k] = true; new[k] = true end end
+    for _, key in ipairs(item.keys) do
+        value.previous_keys[key] = (not new[key]) and (last[key] or false) or false
+        value.keys[key] = want[key]
+    end
+end
+-- The situation as the network sees it (as rl.lua's observe): the brain's 41 numbers, the keys of the frame before,
+-- XOI's keys now, the frame's ways on, the target's blow, the two nearest flying things of the enemy, the meters.
+function smart.rl_kit.observe(state, self, target, xoi_kind, last, out)
+    local memory = self.smart_memory or {}
+    local f = smart.brain_kit.features(self, target, smart.rl_kit.dummy_move, 0, 0, memory.calm, nil)
+    for i = 1, 41 do out[i] = f[i] end
+    local at = 41
+    local right = self.facing == facing_right
+    out[at + 1] = (right and last.right or (not right) and last.left) and 1 or 0
+    out[at + 2] = (right and last.left or (not right) and last.right) and 1 or 0
+    out[at + 3] = last.up and 1 or 0
+    out[at + 4] = last.down and 1 or 0
+    out[at + 5] = last.attack and 1 or 0
+    out[at + 6] = last.jump and 1 or 0
+    out[at + 7] = last.defend and 1 or 0
+    at = at + 7
+    for k = 1, 36 do out[at + k] = 0 end
+    out[at + xoi_kind] = 1
+    at = at + 36
+    local frame = self.record.frame(self.frame)
+    out[at + 1] = frame.hits.a ~= 0 and 1 or 0
+    out[at + 2] = frame.hits.j ~= 0 and 1 or 0
+    out[at + 3] = frame.hits.d ~= 0 and 1 or 0
+    at = at + 3
+    local tframe = target.record.frame(target.frame)
+    local injury, fall, blows = 0, 0, 0
+    for _, box in ipairs(tframe.interactions or {}) do
+        blows = 1
+        if (box.injury or 0) > injury then injury = box.injury end
+        if (box.fall or 0) > fall then fall = box.fall end
+    end
+    out[at + 1] = blows
+    out[at + 2] = min(max(injury / 100, 0), 3)
+    out[at + 3] = min(max(fall / 100, 0), 2)
+    at = at + 3
+    local face = right and 1 or -1
+    local best1, best2, d1, d2 = nil, nil, math.huge, math.huge
+    for index = 12, 399 do
+        local value = state.items[index]
+        if value and value.record.kind ~= record_kinds.character and value.team ~= self.team and value.team ~= 0 then
+            local fr = value.record.frame(value.frame)
+            if fr.interactions and #fr.interactions > 0 then
+                local dd = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int) * 2
+                if dd < d1 then best2, d2, best1, d1 = best1, d1, value, dd
+                elseif dd < d2 then best2, d2 = value, dd end
+            end
+        end
+    end
+    local function clamp(v, lo, hi) if v < lo then return lo elseif v > hi then return hi end return v end
+    for slot = 1, 2 do
+        local value = slot == 1 and best1 or best2
+        local base = at + (slot - 1) * 6
+        if value then
+            out[base + 1] = 1
+            out[base + 2] = clamp((value.x_int - self.x_int) * face / 300, -3, 3)
+            out[base + 3] = clamp((value.z_int - self.z_int) / 60, -3, 3)
+            out[base + 4] = clamp((value.y_int - self.y_int) / 100, -3, 3)
+            out[base + 5] = clamp((value.vx or 0) * face / 10, -3, 3)
+            out[base + 6] = clamp((value.vz or 0) / 4, -3, 3)
+        else
+            for i = 1, 6 do out[base + i] = 0 end
+        end
+    end
+    at = at + 12
+    out[at + 1] = clamp((self.fall_damage or 0) / 100, -1, 2)
+    out[at + 2] = clamp((self.timer_b8 or 0) / 100, -1, 2)
+    out[at + 3] = (self.attack_press > 0 or self.jump_press > 0 or self.defend_press > 0) and 1 or 0
+    return out
+end
+-- The network's likeliest action for the numbers `x`: 1 lets XOI's keys through, 1 + m plays move m.
+function smart.rl_kit.decide(p, x, h1, h2)
+    local rl = smart.rl_kit
+    local NOBS, NH, NA, tanh = rl.NOBS, rl.NH, rl.NA, rl.tanh
+    local oB1 = NH * NOBS
+    local oW2 = oB1 + NH
+    local oB2 = oW2 + NH * NH
+    local oWP = oB2 + NH
+    local oBP = oWP + NA * NH
+    for j = 1, NH do
+        local s = p[oB1 + j]
+        local base = (j - 1) * NOBS
+        for i = 1, NOBS do
+            local xi = x[i]
+            if xi ~= 0 then s = s + p[base + i] * xi end
+        end
+        h1[j] = tanh(s)
+    end
+    for j = 1, NH do
+        local s = p[oB2 + j]
+        local base = oW2 + (j - 1) * NH
+        for i = 1, NH do s = s + p[base + i] * h1[i] end
+        h2[j] = tanh(s)
+    end
+    local best, best_z = 1, nil
+    for k = 1, NA do
+        local s = p[oBP + k]
+        local base = oWP + (k - 1) * NH
+        for i = 1, NH do s = s + p[base + i] * h2[i] end
+        if not best_z or s > best_z then best, best_z = k, s end
+    end
+    return best
+end
+-- The enemy the network sees: one of the match's fighters (its own owner; not one a fighter calls up, as the networks
+-- learned against the one fighter of a duel), XOI's target when it is one, else the nearest; or nil.
+function smart.rl_kit.target_of(state, index, self, memory)
+    local items = state.items
+    local chosen = memory.target and items[memory.target]
+    if chosen and chosen.record.kind == record_kinds.character and chosen.owner == memory.target and chosen.hp > 0 then
+        return chosen
+    end
+    local best, best_distance
+    for other = 0, constants.item_slots - 1 do
+        local value = items[other]
+        if value and other ~= index and value.record.kind == record_kinds.character and value.owner == other
+           and value.hp > 0 and hostile(state, self, value) then
+            local distance = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int) * 2
+            if not best_distance or distance < best_distance then best, best_distance = value, distance end
+        end
+    end
+    return best
+end
+-- After XOI's keys of the frame: the network's, if the fighter XOI plays has one (see above).
+function smart.rl_kit.after(state, index)
+    local rl = smart.rl_kit
+    if rl.off then return end
+    local self = state.items[index]
+    if not self or self.record.kind ~= record_kinds.character then return end
+    local level = smart.levels[state.difficulty] or smart.levels[constants.difficulties.insane]
+    local brain = self.brain
+    if not ((brain and brain:sub(1, 3) == "xoi") or (brain == nil and level.notes)) then return end
+    local p = rl.net_of(self.record.id)
+    if not p then return end
+    local memory = self.smart_memory
+    if not memory then return end
+    local run = memory.rl
+    if not run then
+        run = {last = {}, x = {}, h1 = {}, h2 = {}}
+        memory.rl = run
+    end
+    if run.move then
+        local move = run.move
+        rl.apply_frame(self, rl.moves[move.index][move.at], move.right, run.last)
+        move.at = move.at + 1
+        if move.at > #rl.moves[move.index] then run.move = nil end
+    elseif rl.can_act(self) then
+        local target = rl.target_of(state, index, self, memory)
+        if target then
+            local xoi_kind = rl.kind_of(self.keys, self.previous_keys, self.facing)
+            local x = rl.observe(state, self, target, xoi_kind, run.last, run.x)
+            local a = rl.decide(p, x, run.h1, run.h2)
+            if a ~= 1 then
+                local move = {index = a - 1, at = 1, right = self.facing == facing_right}
+                rl.apply_frame(self, rl.moves[move.index][1], move.right, run.last)
+                move.at = 2
+                if move.at <= #rl.moves[move.index] then run.move = move end
+            end
+        end
+    end
+    local last = run.last
+    for _, key in ipairs(item.keys) do last[key] = self.keys[key] end
+end
+smart.rl_kit.xoi_control = smart.control
+function smart.control(state, index)
+    smart.rl_kit.xoi_control(state, index)
+    smart.rl_kit.after(state, index)
 end
 
 -- For the test bench.

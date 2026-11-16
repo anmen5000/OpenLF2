@@ -168,8 +168,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    settings: NHAN_VAT the fighter, VONG rounds, TRAN games a process a round, KIEM_TRA_MOI how often to check). A
    small network learns, for one fighter, when to set XOI's keys aside - every frame it lets them through or plays one
    of 22 moves of its own - by PPO on every CPU thread; every 25 rounds each game is played twice from the same start,
-   by the network and by XOI alone. Results in hoc-tang-cuong\<fighter>\tom-tat.txt. The game does not use these
-   networks yet.
+   by the network and by XOI alone. Results in hoc-tang-cuong\<fighter>\tom-tat.txt. From package 88 the game uses
+   them: a mod with xoi/rl-<id>.txt (a network, bo-nao-<round>.txt) has XOI play that fighter with it (the Vietnamese
+   kit's dua-bo-nao-vao-mod.bat puts in those that beat XOI alone). The owner's first run: Keny 200-0 against XOI
+   alone's 95-102, Khaoslong +8 points in 100 games.
 
 Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch), balance.bat (balance),
 publish.bat (publish; its work is in publish.ps1, the published README comes from publish-README.txt),

@@ -167,10 +167,17 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    rounds of 20 games a process (about 6-8 hours on 100 threads). Several fighters at once (package 86): NHAN_VAT
    with their names or ids apart by spaces or commas (2 19 55), each in a window of its own, the CPU threads shared
    out evenly. Results in hoc-tang-cuong\<fighter>\: tom-tat.txt
-   (send it to whoever maintains the AI) and bo-nao-<round>.txt (the network). Close the window to pause; run it again
-   to go on. A trial: the game does not use these networks yet.
+   (send it to whoever maintains the AI) and bo-nao-<round>.txt (the network); from package 88 also
+   bo-nao-tot-nhat.txt, the network of the best "greedy" check so far (its round and score in tot-nhat.txt). Close the
+   window to pause; run it again to go on.
+   From package 88 the game uses them: dua-bo-nao-vao-mod.bat puts each fighter's network (the best checked, else the
+   last round's) into the mod's <name>-xoi.zip as xoi/rl-<id>.txt - only those whose check beats XOI alone (its
+   "greedy" line positive), and takes out those that do not (or the ids in BO_RA). XOI playing a fighter with such a
+   file plays its network; INSANE! does not. Every player of a room needs that same zip. The owner's first run
+   (300,000 games a fighter): Keny 200-0 against XOI alone's 95-102, Khaoslong +8 points in 100 games, Ryozaki -6
+   (left out).
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -341,10 +348,16 @@ chơi được chính các file của bản mod.
    trình 20 trận (khoảng 6-8 giờ trên 100 luồng). Nhiều nhân vật cùng lúc (gói 86): ghi tên hay số id ở NHAN_VAT, cách
    nhau bằng dấu cách hay dấu phẩy (2 19 55); mỗi nhân vật một cửa sổ riêng, các luồng CPU chia đều. Kết quả ở
    hoc-tang-cuong\<nhân vật>\: tom-tat.txt (gửi file này cho
-   người làm AI) và bo-nao-<vòng>.txt (bộ não). Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp. Thử nghiệm: game chưa
-   dùng các bộ não này.
+   người làm AI) và bo-nao-<vòng>.txt (bộ não); từ gói 88 còn có bo-nao-tot-nhat.txt, bộ não có lần kiểm tra "greedy"
+   tốt nhất đến lúc ấy (vòng và điểm của nó trong tot-nhat.txt). Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp.
+   Từ gói 88 game dùng được các bộ não này: dua-bo-nao-vao-mod.bat đưa bộ não của từng nhân vật (bộ tốt nhất, không
+   thì bộ của vòng cuối) vào <tên>-xoi.zip của bản mod, thành xoi/rl-<id>.txt - chỉ nhân vật có lần kiểm tra hơn XOI
+   một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). XOI điều khiển nhân vật có file
+   ấy thì dùng bộ não của nó; INSANE! thì không. Mọi người trong phòng cần cùng file zip ấy. Lần chạy đầu của chủ dự
+   án (300.000 trận mỗi nhân vật): Keny 200-0 so với XOI một mình 95-102, Khaoslong hơn 8 điểm mỗi 100 trận, Ryozaki
+   kém 6 (không đưa vào).
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

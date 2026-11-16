@@ -381,6 +381,13 @@ threads shared out), the networks in
 process's change to step `avg` as a file of its own, `parts`: the assets `mods/bench/rl_part_<k>.txt` of the step's
 package. Up to package 86 they went as one bench module, `deltas`, and a module may not exceed 1 MiB: with ten
 processes or more the first merge failed.)
+
+From package 88 (INSANE! version 50) the game plays these networks: a mod's `xoi/rl-<id>.txt` (a `bo-nao-<round>.txt`)
+has XOI play that fighter with it (`smart.rl_kit` in `smart_ai.lua`: the same moves and numbers, the likeliest
+action; this job turns it off on both sides while it learns or checks). The kit's `dua-bo-nao-vao-mod.bat` puts in
+each fighter's network whose check beats XOI alone (`bo-nao-tot-nhat.txt`, the best check's, else the last round's),
+and `hoc-tang-cuong.bat` keeps the best check's network as it goes (step `sum`'s `RLB <way> <difference> <lower bound>`
+lines, in tenths of a point per 100 games).
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
 was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),

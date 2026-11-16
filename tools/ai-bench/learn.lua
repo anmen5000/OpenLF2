@@ -50,6 +50,15 @@ function learn.run(config)
     if config.notes then smart.use_notes(require("bench/" .. config.notes).text) end
     local names = config.brains or {"smart", "smart"}
     for _, name in ipairs(names) do brains.load(name) end
+    -- (The learned brains of a mod, smart.rl_kit, stay off: the notes are of XOI's own moves.)
+    if smart.rl_kit then smart.rl_kit.off = true end
+    for _, name in ipairs(names) do
+        local module = name:match("@(.+)$")
+        if module then
+            local ok, found = pcall(require, "bench/" .. module)
+            if ok and type(found) == "table" and found.rl_kit then found.rl_kit.off = true end
+        end
+    end
     engine.log(string.format("learn: %s against %s", brains.label(names[1]), brains.label(names[2])))
     local fighters = catalog.load()
     local backgrounds = catalog.backgrounds()

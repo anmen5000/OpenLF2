@@ -5,7 +5,8 @@
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
 # spsa.bat (tune XOI's numbers by play), hoc-sau.bat (XOI learns a brain, a small network scoring its moves, from its
-# own games), hoc-tang-cuong.bat (reinforcement learning, a trial: a network on one fighter's keys beside XOI), xem.bat
+# own games), hoc-tang-cuong.bat (reinforcement learning, a trial: a network on one fighter's keys beside XOI),
+# dua-bo-nao-vao-mod.bat (puts those networks that beat XOI into the mod's -xoi.zip, xoi/rl-<id>.txt), xem.bat
 # (watch two computer players in the window, fighters by name), can-bang.bat (fighter balance:
 # each fighter's win rate against every other and what each of its moves brings, XOI playing both sides),
 # xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
@@ -47,8 +48,8 @@ def crlf(data):
 windows = root / "tools/ai-bench/windows"
 # texts: (name in the kit, file in the windows folder)
 if edition == "vi":
-    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "hoc-tang-cuong.bat", "xem.bat",
-            "can-bang.bat", "xuat-ban.bat", "kiem-tra.bat")
+    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "hoc-tang-cuong.bat",
+            "dua-bo-nao-vao-mod.bat", "xem.bat", "can-bang.bat", "xuat-ban.bat", "kiem-tra.bat")
     texts = (("README.txt",) * 2, ("xuat-ban.ps1",) * 2, ("xuat-ban-README.txt",) * 2)
 elif edition == "en":
     windows = windows / "en"

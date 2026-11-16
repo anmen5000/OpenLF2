@@ -770,6 +770,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   does not use these networks yet. Several fighters at once (package 86): `NHAN_VAT` with their names or ids apart by
   spaces or commas (`2 19 55`), each fighter in a window of its own, the CPU threads shared out evenly - as the
   project owner tried first.
+- Learned brains in the game (package 88, INSANE! version 50): a mod may give a fighter a network of reinforcement
+  learning, `xoi/rl-<id>.txt` (a `bo-nao-<round>.txt` of `hoc-tang-cuong.bat`), and XOI playing that fighter plays it
+  (`smart.rl_kit`): where a key can change something the network sees the situation and XOI's keys, and lets them
+  through or plays one of its 22 moves instead - its likeliest action, as the trial's "greedy" check plays. The
+  project owner's first run (300,000 games a fighter on 30 threads a fighter, against XOI without a brain), checked
+  in the lab against XOI alone, each game twice from the same start, version 49 and the owner's brain on both sides:
+  Keny 200-0 where XOI alone went 95-102 (his network calls up his unseen heavy weapon - D, A, then A to pick it up -
+  whose A is a guard-breaking punch ending in a grab, and walks in; as he learned it, against XOI v48 without brains:
+  200-0 against 46-154); Khaoslong 64.3% where XOI alone won 56.0%, +8.3 +- 3.4 points per 100 games over 1,000
+  games (+10.1 +- 3.6 as he learned it), mostly by waiting where XOI would act; Ryozaki -6.0 +- 5.8 (left out). The
+  game's layer plays exactly the games of the learning job's own check (60 Khaoslong and 30 Keny games the same, one
+  by one); its tanh is made of + - * / alone, so that every machine of a room plays the same keys, and replays stay in
+  step. Without such files XOI plays as version 49 (the same games). The kit's new `dua-bo-nao-vao-mod.bat` puts each
+  fighter's network into the mod's `<name>-xoi.zip` - only those whose check beats XOI alone - and `hoc-tang-cuong.bat`
+  now keeps the network of the best check so far (`bo-nao-tot-nhat.txt`, `tot-nhat.txt`; the bench's `rl` step `sum`
+  prints `RLB` lines for it) and checks on 12 games a process instead of 6.
 ### Fixed
 - A guard that holds for good is no longer kept until the fighter dies in it (package 87, INSANE! version 49). The
   project owner's clip: XOI's Khaoslong of mode Convergence guarded Keny's balls one after another until he died, his
