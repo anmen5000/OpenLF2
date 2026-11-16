@@ -959,6 +959,18 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>A guard that holds for good is left</b> (package 87, INSANE! version 49). The project owner's clip: XOI's
+          Khaoslong guarded Keny's balls one after another until he died, his MP full. Keny throws them for nothing (40 HP, no
+          MP, no defence points), one every 29 frames, and the guard frame was struck again just as it would end. The guard
+          was the cheapest answer to each ball (a tenth of it, 4 HP), and XOI foresaw nothing to strike: Keny's standing
+          frames cannot be hit, and it took him to go back to them after his D&gt;J, where he goes on into its second half
+          and from its end straight into it again. Now XOI counts the blows it guards: six or more from one attacker, close
+          together, that cost the attacker no MP are a lock, and in a gap between them it strikes out of the guard with the
+          blow of its own that lands soonest. The clip's game rebuilt in the lab: the lock of 146 blows ends at the sixth,
+          and Khaoslong wins that game; over 30 games against Keny he guarded 187 blows instead of 498 (Winnie 520 instead
+          of 1,257) — Keny still wins most of them. A lock no blow reaches out of is still kept (Keny's D&gt;A, 18 pixels off
+          in depth: once in those 30 games). In 2,000 games of the regular fighters nothing else changes (1,996 the
+          same).</li>
         <li><b>A trial of reinforcement learning</b> (package 85, <code>hoc-tang-cuong.bat</code>). A first step toward a computer
           player that learns its own play: for one fighter, a small network learns when to set XOI's keys aside. Every frame XOI
           decides as always; the network sees the situation and the keys XOI chose, and either lets them through or plays one
@@ -967,7 +979,9 @@
           outcome; each CPU thread learns from its own games and every round averages them (PPO), and every 25 rounds each
           game is played twice from the same start, by the network and by XOI alone. In the lab, on two threads, the network
           learned to keep out of XOI's way and played as XOI (−0.5 ± 1.7 points per 100 games); whether a PC's hundred threads
-          find better is what the trial is for. Vietnamese kit only for now; the game does not use these networks yet.</li>
+          find better is what the trial is for. Vietnamese kit only for now; the game does not use these networks yet. From
+          package 87 the merge at the end of each round no longer fails on many threads (up to package 86 it stopped at the
+          first round with ten processes or more).</li>
         <li><b>A flip back onto the feet is struck as it lands</b> (package 84, INSANE! version 48). The project owner's
           question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that
           flips up lands within reach of his D>J, one that does not is struck by D^A — and XOI did neither. In the flip's roll
@@ -1034,6 +1048,17 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Không còn đỡ mãi đến chết</b> (gói 87, INSANE! bản 49). Video của chủ dự án: Khaoslong của XOI đỡ hết quả cầu
+          này đến quả cầu khác của Keny cho tới chết, MP vẫn đầy. Keny ném không tốn gì (40 máu, không tốn MP, không cộng
+          điểm phá thủ), cứ 29 khung một quả, và khung đỡ bị trúng lại đúng lúc sắp hết. Với từng quả, đỡ là cách ít mất
+          nhất (mất một phần mười, 4 máu), và XOI không thấy gì để đánh: tư thế đứng của Keny không trúng đòn được, và XOI
+          tưởng Keny ra xong D&gt;J thì về tư thế ấy, trong khi Keny nối tiếp nửa sau của chiêu rồi lại ra chiêu ngay. Nay XOI
+          đếm cả những cú đã đỡ: từ cú thứ sáu liên tiếp của cùng một đối thủ, sát nhau, mà đối thủ không tốn MP, là bị khóa
+          thủ, và trong khoảng hở giữa hai cú XOI ra đòn thoát thế đỡ — đòn của nó trúng sớm nhất. Dựng lại trận trong video:
+          chuỗi 146 cú đỡ dừng ở cú thứ sáu, Khaoslong thắng trận ấy; trong 30 trận với Keny, Khaoslong phải đỡ 187 cú thay
+          vì 498 (Winnie 520 thay vì 1.257) — Keny vẫn thắng phần lớn. Thế khóa mà không đòn nào với tới thì vẫn còn (D&gt;A
+          của Keny, lệch 18 điểm theo chiều sâu: một lần trong 30 trận ấy). Trong 2.000 trận của các nhân vật thường không
+          có gì khác (1.996 trận y hệt).</li>
         <li><b>Thử nghiệm học tăng cường</b> (gói 85, <code>hoc-tang-cuong.bat</code>). Bước đầu tới một máy tự học cách đánh: cho
           một nhân vật, một bộ não nhỏ học lúc nào nên gạt phím của XOI sang một bên. Mỗi khung hình XOI tự quyết như thường;
           bộ não xem tình huống và phím XOI vừa chọn, rồi hoặc để XOI bấm, hoặc tự ra một trong 22 nước của nó (A, J hay D,
@@ -1042,7 +1067,8 @@
           trên các trận của mình, hết mỗi vòng lấy trung bình (PPO); cứ 25 vòng, mỗi trận đánh hai lần từ cùng một lúc bắt
           đầu, một lần bộ não, một lần XOI một mình. Trong phòng thử, trên hai luồng, bộ não học được cách không cản XOI và
           đánh ngang XOI (−0,5 ± 1,7 điểm mỗi 100 trận); máy trăm luồng có tìm ra cách hay hơn không là điều cần thử. Hiện
-          chỉ có bộ tiếng Việt; game chưa dùng các bộ não này.</li>
+          chỉ có bộ tiếng Việt; game chưa dùng các bộ não này. Từ gói 87 bước gộp cuối mỗi vòng không còn lỗi khi chạy
+          nhiều luồng (tới gói 86 nó dừng ngay vòng đầu khi có từ mười tiến trình trở lên).</li>
         <li><b>Đối thủ lộn người tiếp đất thì bị đánh đúng lúc chạm đất</b> (gói 84, INSANE! bản 48). Câu hỏi của chủ dự
           án: Khaoslong của Convergence túm và đá bằng D^J, cú đá cuối hất đối thủ lên; đối thủ lộn người tiếp đất thì nằm
           trong tầm D>J, không lộn thì ăn D^A — mà XOI không làm cả hai. Trong lúc lộn, đối thủ không có thân để trúng đòn,

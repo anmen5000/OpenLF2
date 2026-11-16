@@ -236,16 +236,17 @@ set "M=%D%\gop"
 mkdir "%M%" 2>nul
 call :ban_bench "%M%"
 if defined W_TRUOC call :mo_dun "%W_TRUOC%" "%M%\rl_weights.lua" rl_weights
-set /a CO=0
->"%M%\rl_deltas.lua" echo return {text = [==[
+rem (Moi tien trinh mot file rl_part_<k>.txt, tai nguyen cua bo chay thu: mot mo dun Lua chi duoc toi 1 MB, ma phan
+rem doi cua mot tien trinh da khoang 150 KB.)
+set /a CO=0, PHAN=0
 for /L %%k in (1,1,%N%) do if exist "%D%\p%%k\out.txt" (
   findstr /b /c:"RL_DONE" "%D%\p%%k\out.txt" >nul 2>nul && set /a CO+=1
-  findstr /b /c:"RLD" /c:"RLS " /c:"RLM " "%D%\p%%k\out.txt" >>"%M%\rl_deltas.lua"
+  set /a PHAN+=1
+  findstr /b /c:"RLD" /c:"RLS " /c:"RLM " "%D%\p%%k\out.txt" >"%M%\rl_part_!PHAN!.txt"
+  >>"%M%\package.manifest" echo asset=mods/bench/rl_part_!PHAN!.txt^|rl_part_!PHAN!.txt
 )
->>"%M%\rl_deltas.lua" echo ]==]}
->>"%M%\package.manifest" echo module=rl_deltas^|rl_deltas.lua
 if !CO! EQU 0 (echo [LOI] Khong tien trinh nao hoc xong o vong %E% - xem "%D%\p1\out.txt".& exit /b 1)
->"%M%\config.lua" echo return {command = "rl", step = "avg", !W_CFG!deltas = "rl_deltas"}
+>"%M%\config.lua" echo return {command = "rl", step = "avg", !W_CFG!parts = !PHAN!}
 "%GAME%" --pack "%PACK_1%" %XS% --mod "%M%" --seed 1 --input-trace "" >"%M%\out.txt" 2>&1
 call :cho_dong "%M%\out.txt" "RL_DONE"
 findstr /b /c:"RLW" "%M%\out.txt" >"%LV%\bo-nao-%E%.tmp"

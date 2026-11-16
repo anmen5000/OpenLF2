@@ -377,7 +377,10 @@ totals the processes' `RLE` lines (`RLC`: points per 100 games, +- the 95% margi
 Vietnamese kit only for now): 500 rounds of 20 games a process by default, a check every 25 rounds (several fighters at
 once from package 86: `NHAN_VAT` with their names or ids apart by spaces or commas, each in a window of its own, the
 threads shared out), the networks in
-`hoc-tang-cuong\<fighter>\bo-nao-<round>.txt` and the account in `tom-tat.txt`.
+`hoc-tang-cuong\<fighter>\bo-nao-<round>.txt` and the account in `tom-tat.txt`. (From package 87 the kit hands each
+process's change to step `avg` as a file of its own, `parts`: the assets `mods/bench/rl_part_<k>.txt` of the step's
+package. Up to package 86 they went as one bench module, `deltas`, and a module may not exceed 1 MiB: with ten
+processes or more the first merge failed.)
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
 was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),
@@ -414,7 +417,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines — of the second kind from records of 88 numbers. | `data`, `target`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
 | `balance` | Fighter balance (above): `step = "list"`, `"play"` or `"merge"`; win rates of every pair of fighters and what each move brings, one computer player on both sides. | `step`, `ids`, `exclude`, `brain`, `weapons`, `limit`, `stall`, `games`, `seconds`, `snap`, `seed`, `round`, `process`, `processes`, `prev`, `lang`, `mod`, `plan_rounds`, `plan_games`, `plan_seconds`, `date`, `kit` |
 | `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
-| `rl` | Reinforcement learning, a trial (above): `step = "play"`, `"avg"`, `"eval"`, `"sum"` or `"who"`; a network on one fighter's keys beside XOI, learned by PPO against XOI without a brain. | `step`, `weights`, `deltas`, `evals`, `fighter`, `ids`, `games`, `seed`, `offset`, `limit`, `brain`, `epochs`, `batch`, `rate`, `clip`, `gamma`, `lambda`, `entropy`, `vcoef`, `win`, `greedy`, `both`, `bonus_move`, `bonus`, `init_seed` |
+| `rl` | Reinforcement learning, a trial (above): `step = "play"`, `"avg"`, `"eval"`, `"sum"` or `"who"`; a network on one fighter's keys beside XOI, learned by PPO against XOI without a brain. | `step`, `weights`, `parts`, `deltas`, `evals`, `fighter`, `ids`, `games`, `seed`, `offset`, `limit`, `brain`, `epochs`, `batch`, `rate`, `clip`, `gamma`, `lambda`, `entropy`, `vcoef`, `win`, `greedy`, `both`, `bonus_move`, `bonus`, `init_seed` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows
 about a fighter and what it actually uses; a move it never starts has a reason worth finding (too slow for the

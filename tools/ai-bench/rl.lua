@@ -20,7 +20,9 @@
 -- config (command = "rl"):
 --   step      "play" (default), "avg", "eval", "sum", "who" (the fighter `fighter` names: RLF <id> <name>)
 --   weights   bench module with the round's network (its text: RLW lines); none: a new one (init_seed, 1)
---   deltas    (avg) bench module with the processes' RLD (and RLS, RLM) lines; evals: (sum) with their RLE lines
+--   parts     (avg) the processes' RLD (and RLS, RLM) lines in that many files mods/bench/rl_part_<k>.txt, assets of
+--             this package (one a process); deltas: instead, a bench module with them all (a few processes only: a
+--             module may not exceed 1 MiB); evals: (sum) bench module with the processes' RLE lines
 --   fighter   the learned side: an id or a name (bench/names; default 2); ids: the opponents' ids (all fighters a
 --             player can choose when absent, the Template aside)
 --   games, seed, offset, limit (frames a game, 9000); brain (bench module: the learned side's XOI brain)
@@ -689,56 +691,69 @@ function job.learn(config, p0, X, Aa, LP, V, R, DONE, n, K)
     for _, line in ipairs(params_text(d, "RLD")) do engine.log(line) end
 end
 
--- The mean of the processes' changes laid onto the round's network: RLW lines (and RLW_HEAD).
+-- The mean of the processes' changes laid onto the round's network: RLW lines (and RLW_HEAD). The changes are the
+-- processes' RLD lines (with their RLS and RLM lines): in files handed over as assets of this package, one a process
+-- (`parts` of them: mods/bench/rl_part_<k>.txt — the kit's way: a bench module may not exceed 1 MiB, nor all of them
+-- together 8, and the change of one process is some 150 KB), or in the bench module `deltas` (a few processes).
 function job.average(config)
     local p = config.weights and parse_params(require("bench/" .. config.weights).text, "RLW") or new_params(config.init_seed or 1)
-    local text = require("bench/" .. config.deltas).text
     local sum, count = {}, 0
     for i = 1, NP do sum[i] = 0 end
-    -- The processes' changes, each from its RLD_HEAD to the next.
-    local current, seen = nil, 0
-    local skipped = 0
-    local function close()
-        if current then
-            -- (A change cut short - a process stopped while writing it - is left out.)
-            if seen == NP then
-                for i = 1, NP do sum[i] = sum[i] + current[i] end
-                count = count + 1
-            else
-                skipped = skipped + 1
-            end
-        end
-        current, seen = nil, 0
-    end
-    for line in text:gmatch("[^\n]+") do
-        if line:match("^RLD_HEAD ") then
-            close()
-            current = {}
-        else
-            local start, rest = line:match("^RLD (%d+) (.*)$")
-            if start and current then
-                local i = tonumber(start)
-                for token in rest:gmatch("%S+") do current[i] = tonumber(token); i = i + 1; seen = seen + 1 end
-            end
-        end
-    end
-    close()
-    assert(count > 0, "no changes")
-    -- The round's games, from the processes' RLS and RLM lines among the changes.
+    local skipped, missing = 0, 0
+    -- The round's games, from the processes' RLS and RLM lines.
     local g, w, l, dr, m, ov, en, k = 0, 0, 0, 0, 0, 0, 0, 0
     local moves = {}
-    for line in text:gmatch("[^\n]+") do
-        local gg, ww, ll, dd, mm, oo, ee = line:match("^RLS games (%d+) won (%d+) lost (%d+) drawn (%d+) margin (%S+) overrides (%S+)%% entropy (%S+)")
-        if gg then
-            gg = tonumber(gg)
-            g, w, l, dr, m = g + gg, w + tonumber(ww), l + tonumber(ll), dr + tonumber(dd), m + tonumber(mm) * gg
-            ov, en, k = ov + tonumber(oo), en + tonumber(ee), k + 1
+    local function take(text)
+        -- The processes' changes, each from its RLD_HEAD to the next.
+        local current, seen = nil, 0
+        local function close()
+            if current then
+                -- (A change cut short - a process stopped while writing it - is left out.)
+                if seen == NP then
+                    for i = 1, NP do sum[i] = sum[i] + current[i] end
+                    count = count + 1
+                else
+                    skipped = skipped + 1
+                end
+            end
+            current, seen = nil, 0
         end
-        local rest = line:match("^RLM (.*)$")
-        if rest then
-            for name, count in rest:gmatch("([^,%s]+) (%d+)") do moves[name] = (moves[name] or 0) + tonumber(count) end
+        for line in text:gmatch("[^\n]+") do
+            if line:match("^RLD_HEAD ") then
+                close()
+                current = {}
+            else
+                local start, rest = line:match("^RLD (%d+) (.*)$")
+                if start then
+                    if current then
+                        local i = tonumber(start)
+                        for token in rest:gmatch("%S+") do current[i] = tonumber(token); i = i + 1; seen = seen + 1 end
+                    end
+                else
+                    local gg, ww, ll, dd, mm, oo, ee = line:match("^RLS games (%d+) won (%d+) lost (%d+) drawn (%d+) margin (%S+) overrides (%S+)%% entropy (%S+)")
+                    if gg then
+                        gg = tonumber(gg)
+                        g, w, l, dr, m = g + gg, w + tonumber(ww), l + tonumber(ll), dr + tonumber(dd), m + tonumber(mm) * gg
+                        ov, en, k = ov + tonumber(oo), en + tonumber(ee), k + 1
+                    end
+                    local listed = line:match("^RLM (.*)$")
+                    if listed then
+                        for name, n in listed:gmatch("([^,%s]+) (%d+)") do moves[name] = (moves[name] or 0) + tonumber(n) end
+                    end
+                end
+            end
         end
+        close()
     end
+    if config.parts then
+        for part = 1, config.parts do
+            local ok, text = pcall(engine.read_resource, "mods/bench/rl_part_" .. part .. ".txt")
+            if ok and type(text) == "string" then take(text) else missing = missing + 1 end
+        end
+    else
+        take(require("bench/" .. config.deltas).text)
+    end
+    assert(count > 0, "no changes")
     if g > 0 then
         engine.log(string.format("RLR games %d won %d lost %d drawn %d margin %+.1f overrides %.2f%% entropy %.3f", g, w, l, dr, m / g, ov / k, en / k))
         local parts = {}
@@ -747,7 +762,8 @@ function job.average(config)
     end
     local scale = config.scale or 1
     for i = 1, NP do p[i] = p[i] + scale * sum[i] / count end
-    engine.log(string.format("RLA averaged %d changes (%d cut short, left out)", count, skipped))
+    engine.log(string.format("RLA averaged %d changes (%d cut short, left out%s)", count, skipped,
+        missing > 0 and string.format("; files not found: %d", missing) or ""))
     for _, line in ipairs(params_text(p, "RLW")) do engine.log(line) end
 end
 

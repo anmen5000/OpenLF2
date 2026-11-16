@@ -505,8 +505,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 48
+smart.version = 49
 smart.history = {
+    {49, "2026-11-16", "Guard locks broken. The project owner's clip: XOI's Khaoslong in mode Convergence guarded Keny's balls one after another until he died, his MP full. Keny throws them for nothing (40 HP, no MP, no defence points), one every 29 frames, each striking twice as it passes; the guard frame (110, 12 frames) was struck again just as it would end, so that only a D-move could leave it, and the guard was the cheapest answer to every ball: the in-match lessons counted blows of 5 HP and more, and a guard lets a tenth through, 4 HP. Nor did XOI see anything to strike: it foresaw Keny back in his standing frames after his D>J (frames no blow touches), where he goes on into its second half with attack, and from its end straight into it again. Guarded blows are counted now, by attacker (a thrown thing's thrower): six or more no more than 30 frames apart, while the attacker's MP has not gone down by 60, are a lock, and in a gap between them the fighter strikes out of the guard with the blow of its own that lands on the attacker soonest, the attacker taken to go on as it is, and not into a blow on its way (lesson_kit.strike_out). The clip's game rebuilt in the lab (the owner's numbers and brain on both sides): the lock of 146 blows (584 HP) ends at the sixth with Khaoslong's D+J+A on Keny, and Khaoslong wins that game. Over 30 games against Keny Khaoslong guarded 187 blows (498 before), his longest run 61 (152); Winnie 520 (1,257), her longest 27 (298); both still lose to him, as before (9 and 0 games of 30). A lock that no blow of the fighter's reaches out of is kept: Keny's D>A strikes 18 pixels off in depth, out of reach of Khaoslong's D-moves, and pulls, so the guard holds whichever way he faces (once in those 30 games). The 2,000 games of the regular roster against version 48: 1,996 the same, -0.1 +- 0.1 points per 100 games."},
     {48, "2026-11-15", "A fighter flipping back onto its feet is followed to where it lands. The project owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that flips up out of it lands within reach of his D>J, whose last frame stays out 50 ticks, and one that does not is struck by D^A — and XOI did neither. With his numbers and brain, after 310 such flips XOI's Khaoslong started nothing 101 times, 15 HP of follow-up on average: from the roll's frames on, where nothing can hit it, the opponent was taken to stay in that frame for good, and to be free to act at once. A fighter flipping already (a rowing frame in the air) now has its roll followed as the game plays it — the roll's frame that goes on to frame 0 held until the landing (base/game/animation), the crouch it lands in, frame 215 (base/game/physics), then standing — and is held until that crouch is over (target_lock_of); the flip foreseen from the frame of descent (182 or 188) is played so too (up to now it stood in the air from its roll's end, hittable, and landed in frame 219). After 206 flips XOI's Khaoslong started nothing 3 times, 47.9 HP of follow-up on average (D+J+A 62, D>A 49, D>J 33), and won 52 games to 20 against the same opponents on the same seeds (37 to 35 before). The D^A on an opponent that stays down: started as soon as he is free it brings 86 HP (98 times in 155 against opponents that never flip), but it has to be started before the opponent's choice shows — a frame later it no longer reaches (made to, nothing in 6) — so against one that flips as a rule it is not thrown. A grab's own follow-ups are not learned yet (the keys its holding frames take: Khaoslong's D^A out of the last kick, frame 280 — made to, 58 HP on an opponent that stays down, 2.5 on one that flips). Over 2,000 games against version 47, both with the owner's brain: 1.2 games in 100 more than version 47 against itself (± 1.3), HP margin +8.6 a game (± 5.8), Khaoslong's 12.9 more; without a brain 0.3 more (± 1.2), Khaoslong's 11.3. INSANE! has it as well."},
     {47, "2026-11-15", "Under threat the brain no longer calls every attack off. The project owner's clips: XOI's Tiger lost to INSANE!'s Stancher (xem.bat plays the same five games for one HAT_GIONG: lost, lost, won, won, won; over 200 games XOI's Tiger with his numbers and brain beats INSANE!'s Stancher 149 to 51, 126 to 71 without the brain) and beat XOI's Stancher with ease. Stancher was the one the brain failed: with it against XOI's Tiger without one he won 1 game of 30 (14 without the brain), 3 of 30 against Crimson, and Tiger with the brain beat Stancher with it 99 to 1. What the brain expects of a move is HP dealt minus taken over the 45 frames after its start; with Tiger in his face and quicker (his punch lands in 4 to 6 frames) Stancher took blows whatever he did, so every move looked bad and the brain called them all off, 40 times a game where the rules would have struck, and stepping back instead he was punched, made dizzy, held and punched again: starting nothing was worse, which no record of a move tells. Now, with the target able to land a blow within 8 frames if it struck now (brain_kit.threat), when the rules would start a move and none clears the bar with the brain, the brain's favourite of those the rules would start is started, at the rules' score; elsewhere, and whenever a move clears the bar with the brain, as before. Stancher with the brain: 12 of 30 against Tiger, 9 against Crimson; Tiger and Stancher both with it 68 to 31; Tiger against INSANE!'s Stancher 140 to 59; over the same 2,000 games against XOI without a brain 12.4 games in 100 more (12.9 before; 0.4 between the two, ± 1.7). Tried and left: the brain picking among the rules' moves and the rules deciding, everywhere (5.0 in 100 more), under any threat within counter_horizon (8.9), within 8 frames (11.8, Tiger against INSANE!'s Stancher 131 to 67), within 4 (Stancher 2 of 30 again); passes among the records, so that a brain learns what passing brings (300,000 of them with 860,000 moves: Stancher 3 of 30); what passing brought in the match standing in for it (1 of 30); no notice taken of an opponent seen as passive (0 of 30). Brains and records are as before: no new brain is needed."},
     {46, "2026-11-14", "A brain that sees more. The project owner's runs on mode Convergence (99 threads, his numbers from SPSA): the brain's predictions went with what came of the moves at 0.46 from 2 to 10 million moves alike, looking 3 or 5 seconds ahead instead of 1.5 did worse (0.41, 0.37), and a network twice the size did no better in the lab: what it was given to see was the limit. A brain of the second kind sees 28 more numbers and which two fighters these are (brain_kit.extra_names). From attack_score, for the move: how sure the blow is by the time it takes, the chance a free target guards it, whether its guard is up already, what its hits are worth, whether the fighter is still busy when the target, free again, could land its quickest blow, and that blow's damage, the frames left open after it, what novelty, repeats, loops and the notes made of the score. From best_attack, for the situation: how soon the target could land a blow if it struck now, its quickest from standing, the boldness the calm gives, the chance the target answers a risky start, the frames without a blow by the clock, how long the target cannot act, a hit holds it and nothing lands on it, the chance it gets out of a fall, how soon the earliest blow lands on the fighter, the target's guard rate, the room to the stage's near and far edges and to its right end for both, the enemy's things flying near the fighter and the fighter's side's near the target, and whether these are this frame's. And the fighter's id and the target's: an input for each fighter of the mod (the one that is counts as much as standardizing it would make it). On the same 603,502 moves of XOI against itself with the owner's numbers (2 threads, 90 minutes, exploring), the test correlation: 0.436 with the 58 numbers; with the rules' pieces 0.445, the situation's 0.448, the edges 0.438, things flying 0.437, all 28 0.453; the two fighters alone 0.505; all of it 0.518, and 0.538 with 96 hidden units (with 58 inputs 96 did no better than 48). Over the same 2,000 games against XOI without a brain: the brain of the first kind from those moves won 5.7 games in 100 more, the second kind 9.8, with 96 hidden units 11.5 (± 2.3) — 4.2 and 5.9 more than the first kind (± 2.2), HP margin +25.7 and +37.5 a game. A brain of the first kind (58 inputs) plays as before, game for game, and without a brain nothing changed; INSANE! plays without one."},
@@ -2861,7 +2862,8 @@ end
 
 -- In-match lessons (version 34): what the fighter has learned in this match from the blows it took (its functions
 -- are with the move families below, lesson_kit.find and after).
-local lesson_kit = {margin_step = 3, margin_cap = 9, fails = 2, fail_share = 0.5, min_damage = 5, window = 24}
+local lesson_kit = {margin_step = 3, margin_cap = 9, fails = 2, fail_share = 0.5, min_damage = 5, window = 24,
+    lock_blows = 6, lock_gap = 30, lock_mp = 60}
 
 -- The shields standing now (smart.shield_kit), looked up as a player's turn starts (smart.control): its list, or none.
 function smart.shield_kit.look(state)
@@ -4156,7 +4158,13 @@ function lesson_kit.note(state, index, self, memory, context)
     if lesson_kit.off then return end
     local before, was_free = memory.lesson_hp, memory.lesson_free
     memory.lesson_hp = self.hp
-    memory.lesson_free = is_free(self) or self.record.frame(self.frame).state == states.defending
+    local guarding = self.record.frame(self.frame).state == states.defending
+    memory.lesson_free = is_free(self) or guarding
+    -- (A blow guarded, the guard's tenth of it taken: a step of a guard lock, lesson_kit.guarded; one let through
+    -- ends it.)
+    if before and self.hp < before and (guarding or self.hp <= before - lesson_kit.min_damage) then
+        lesson_kit.guarded(state, index, self, memory, guarding and before - self.hp or nil)
+    end
     if not before or self.hp > before - lesson_kit.min_damage then return end
     local culprit, culprit_frame, best_gap
     for other = 0, constants.item_slots - 1 do
@@ -4183,6 +4191,65 @@ function lesson_kit.note(state, index, self, memory, context)
         lesson.fails[answered.kind] = (lesson.fails[answered.kind] or 0) + 1
         memory.answered = nil
     end
+end
+
+-- Guard locks (version 49). A guard takes a tenth of a blow and holds until the blows' defence points add up to the
+-- break threshold; a spam whose blows add none (Keny's balls in mode Convergence: 40 HP, bdefend 0, no MP — he throws
+-- them for nothing, one every 29 frames, and each strikes twice as it passes) holds the fighter in its guard for good:
+-- the guard frame (110, 12 frames) is struck again just as it would end, and nothing but a D-move leaves it. The guard
+-- is the answer that costs least, blow by blow, and the lessons above count only blows of min_damage and more: the
+-- tenths it lets through, 4 HP a time, were never counted. In the project owner's clip XOI's Khaoslong stood in it
+-- until he died, his MP full (in the lab: 146 blows, 584 HP, in 2,100 frames). The guard is a short-term answer:
+-- against a spam that costs the attacker nothing it loses in the end. So guarded blows are counted too, by attacker (a
+-- thing's thrower): a run of them no more than lock_gap frames apart, while the attacker's MP has not gone down by
+-- lock_mp, is a lock from the lock_blows-th on, and in the gaps between them the fighter strikes out of the guard
+-- (lesson_kit.strike_out).
+-- What struck `value` is counted against: a fighter, or the fighter a thing belongs to.
+function lesson_kit.attacker(state, value)
+    if value.record.kind == record_kinds.character then return value end
+    for other = 0, constants.item_slots - 1 do
+        local owner = state.items[other]
+        if owner and owner.owner == value.owner and owner.record.kind == record_kinds.character then return owner end
+    end
+    return value
+end
+-- A blow taken since the last frame: guarded (`chip`, the HP it took) — a step of the run of the attacker that
+-- struck it (the nearest hostile thing that struck, as lesson_kit.note finds it) —, or let through (nil): the run
+-- ends.
+function lesson_kit.guarded(state, index, self, memory, chip)
+    if not chip then memory.guard_run = nil; return end
+    local culprit, best_gap
+    for other = 0, constants.item_slots - 1 do
+        local value = state.items[other]
+        if value and other ~= index and hostile(state, self, value) then
+            for _, area in ipairs(value.record.frame(value.frame_at_pass or value.frame).interactions) do
+                if damaging(area) then
+                    local gap = abs(value.x_int - self.x_int) + abs(value.z_int - self.z_int)
+                    if not best_gap or gap < best_gap then culprit, best_gap = value, gap end
+                    break
+                end
+            end
+        end
+    end
+    if not culprit then return end
+    local by = lesson_kit.attacker(state, culprit)
+    local now = state.frame_number
+    local run = memory.guard_run
+    if run and run.by == by and now - run.last <= lesson_kit.lock_gap then
+        run.count, run.chip, run.last = run.count + 1, run.chip + chip, now
+    else
+        memory.guard_run = {by = by, count = 1, chip = chip, first = now, last = now, mp = by.mp}
+    end
+end
+-- The attacker `self` is locked in its guard by, or nil.
+function lesson_kit.locked(state, memory)
+    local run = memory.guard_run
+    if not run or run.count < lesson_kit.lock_blows or state.frame_number - run.last > lesson_kit.lock_gap then
+        return nil
+    end
+    local by = run.by
+    if by.hp <= 0 or by.record.kind ~= record_kinds.character or run.mp - by.mp > lesson_kit.lock_mp then return nil end
+    return by
 end
 
 -- The notes' lines (the same line twice counts twice: training runs simply add up):
@@ -5400,6 +5467,31 @@ local function dodged(memory, state)
     memory.dodging = state.frame_number
 end
 
+-- Out of a guard lock (lesson_kit.locked), in a gap between the attacker's blows (nothing foreseen to hit): the blow
+-- of the fighter's that lands on the attacker soonest best (best_attack, whatever its score: something has to happen),
+-- the attacker taken to go on as it is — in the frame it is in, where it stands: in a lock the forecast of the move it
+-- is in has been wrong (it has gone on striking where it was foreseen to stop: Keny goes on from his D>J into its
+-- second half with attack, and from its end straight into it again, while the D>J learned on a dummy ends in his
+-- standing frames, which no blow touches) —, and not into a blow on its way (earliest_threat along its path). True
+-- when it struck out.
+function lesson_kit.strike_out(state, index, self, frame, fstate, context, memory, level)
+    local by = lesson_kit.locked(state, memory)
+    if not by then return false end
+    local where, lock, path = context.target_where, context.target_lock, context.target_path
+    context.target_where, context.target_lock, context.target_path = nil, 0, nil
+    local move, t, score = best_attack(context, self, frame, fstate, by, horizon_ticks - 5, nil, nil, -math.huge)
+    context.target_where, context.target_lock, context.target_path = where, lock, path
+    if not move then return false end
+    local plan, frames_at = move_path(self, move, by)
+    if earliest_threat(state, index, self, t - 1, plan, level.reaction, context, frames_at) then return false end
+    start(self, move, by, t, score)
+    memory.last_use = memory.last_use or {}
+    memory.last_use[move.index] = state.frame_number
+    tried(memory, move, state.frame_number)
+    memory.note = string.format("strike out of the guard (lock %d)", memory.guard_run.count)
+    return true
+end
+
 -- Answers a threat in `threat_t` frames: true when it did something.
 local function answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, source, target)
     local analysis = context.analysis_of(self)
@@ -6408,6 +6500,11 @@ function smart.control(state, index)
     if threat_t and threat_t < blinking then threat_t = nil end
     context.threat_t = threat_t -- (for a brain of the second kind: brain_kit.extra_names' threat)
     if threat_t and answer(state, index, self, frame, fstate, context, memory, level, threat_t, threat_box, threat_source, target) then
+        return
+    end
+    -- Locked in the guard (lesson_kit.locked): out of it with a blow, in a gap between the attacker's.
+    if fstate == states.defending and not threat_t
+       and lesson_kit.strike_out(state, index, self, frame, fstate, context, memory, level) then
         return
     end
     -- A blow of the fighter's own about to land where it stands, a swap of places at hand: the enemy brought onto it.

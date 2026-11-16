@@ -771,6 +771,30 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   spaces or commas (`2 19 55`), each fighter in a window of its own, the CPU threads shared out evenly - as the
   project owner tried first.
 ### Fixed
+- A guard that holds for good is no longer kept until the fighter dies in it (package 87, INSANE! version 49). The
+  project owner's clip: XOI's Khaoslong of mode Convergence guarded Keny's balls one after another until he died, his
+  MP full. Keny throws them for nothing (40 HP, no MP, no defence points), one every 29 frames, each striking twice as
+  it passes: the guard frame (110, 12 frames) was struck again just as it would end, so only a D-move could leave it,
+  and the guard was the cheapest answer to every ball — the in-match lessons counted blows of 5 HP and more, and a
+  guard lets a tenth through, 4 HP. Nor did XOI see anything to strike: it foresaw Keny back in his standing frames
+  after his D>J, frames no blow touches, where he goes on into its second half with attack and from its end straight
+  into it again. Guarded blows are counted now, by attacker (a thrown thing's thrower): six or more no more than 30
+  frames apart, while the attacker's MP has not gone down by 60, are a lock (`lesson_kit.locked`), and in a gap
+  between them the fighter strikes out of the guard with the blow of its own that lands on the attacker soonest, the
+  attacker taken to go on as it is, not into a blow on its way (`lesson_kit.strike_out`). The clip's game rebuilt in
+  the lab (the owner's numbers and brain on both sides): the lock of 146 blows ends at the sixth, Khaoslong's D+J+A
+  on Keny, and he wins that game; over 30 games against Keny Khaoslong guarded 187 blows (498 before), his longest run
+  61 (152), Winnie 520 (1,257), her longest 27 (298) — both still lose to him. A lock no blow of the fighter's reaches
+  out of is kept (Keny's D>A strikes 18 pixels off in depth and pulls, so the guard holds whichever way Khaoslong
+  faces: once in those 30 games). The 2,000 games of the regular roster against version 48: 1,996 the same, -0.1 +-
+  0.1 points per 100 games.
+- `windows/hoc-tang-cuong.bat` (reinforcement learning, a trial) stopped at the first merge with many processes
+  (package 87): "Khong gop duoc vong 1", the step's out.txt saying "file size exceeds limit: ...\gop\rl_deltas.lua".
+  The processes' changes went to step `avg` as one bench module, and a module may not exceed 1 MiB (all of them
+  together 8): the change of one process is some 125-150 KB, so ten processes were too many — the project owner ran
+  30 a fighter. Each process's change now goes as a file of its own, an asset of the step's bench package
+  (`rl.lua`'s `parts`: `mods/bench/rl_part_<k>.txt`, read one at a time; 16 MiB a file, 1,024 files). Tested with
+  40 of them (5 MB): the same network as from the module, to the sixth digit.
 - A fighter flipping back onto its feet was never struck as it landed (package 84, INSANE! version 48). The project
   owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up;
   one that flips up out of it lands within reach of his D>J (its last frame stays out 50 ticks), one that does not is
