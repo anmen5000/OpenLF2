@@ -164,7 +164,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    with the last round's network and learns from its own games (PPO); the changes are averaged into the next network.
    Every KIEM_TRA_MOI rounds each game is played twice from the same start, by the network and by XOI alone, and
    compared ("greedy": the network's likeliest moves, as in a match; "sample": drawn, as it learns). Defaults: 500
-   rounds of 20 games a process (about 5-6 hours on 100 threads). Results in hoc-tang-cuong\<fighter>\: tom-tat.txt
+   rounds of 20 games a process (about 6-8 hours on 100 threads). Several fighters at once (package 86): NHAN_VAT
+   with their names or ids apart by spaces or commas (2 19 55), each in a window of its own, the CPU threads shared
+   out evenly. Results in hoc-tang-cuong\<fighter>\: tom-tat.txt
    (send it to whoever maintains the AI) and bo-nao-<round>.txt (the network). Close the window to pause; run it again
    to go on. A trial: the game does not use these networks yet.
 
@@ -336,7 +338,9 @@ chơi được chính các file của bản mod.
    trên các trận của mình (PPO); hết vòng lấy trung bình phần đổi thành bộ não mới. Cứ KIEM_TRA_MOI vòng, mỗi trận đánh
    hai lần từ cùng một lúc bắt đầu, một lần bộ não, một lần XOI một mình, rồi so ("greedy": bộ não ra nước nó cho là
    hay nhất, như khi đấu thật; "sample": nước rút ngẫu nhiên theo bộ não, như lúc học). Mặc định: 500 vòng, mỗi tiến
-   trình 20 trận (khoảng 5-6 giờ trên 100 luồng). Kết quả ở hoc-tang-cuong\<nhân vật>\: tom-tat.txt (gửi file này cho
+   trình 20 trận (khoảng 6-8 giờ trên 100 luồng). Nhiều nhân vật cùng lúc (gói 86): ghi tên hay số id ở NHAN_VAT, cách
+   nhau bằng dấu cách hay dấu phẩy (2 19 55); mỗi nhân vật một cửa sổ riêng, các luồng CPU chia đều. Kết quả ở
+   hoc-tang-cuong\<nhân vật>\: tom-tat.txt (gửi file này cho
    người làm AI) và bo-nao-<vòng>.txt (bộ não). Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp. Thử nghiệm: game chưa
    dùng các bộ não này.
 

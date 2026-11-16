@@ -767,7 +767,9 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   processes' changes, as SPSA's chains are; every 25 rounds each game is played twice from the same start, by the
   network and by XOI alone. In the lab (2 processes, 2,400 games) the network learned to keep out of XOI's way and
   played as XOI (-0.5 +- 1.7 points per 100 games); the trial is whether a PC's hundred threads find better. The game
-  does not use these networks yet.
+  does not use these networks yet. Several fighters at once (package 86): `NHAN_VAT` with their names or ids apart by
+  spaces or commas (`2 19 55`), each fighter in a window of its own, the CPU threads shared out evenly - as the
+  project owner tried first.
 ### Fixed
 - A fighter flipping back onto its feet was never struck as it landed (package 84, INSANE! version 48). The project
   owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up;

@@ -19,7 +19,9 @@ set "GAME="
 rem File zip ban mod. De trong thi dung file .zip ban mod dau tien canh file nay (tru *-xoi.zip, goi
 rem lf2-online-upload, xoi-kit); keo tha mot file zip vao file nay thi dung ban mod ay.
 set "PACK="
-rem Nhan vat hoc: ten (hay dau ten) hay so id trong ban mod, vi du khaos, davis, 2
+rem Nhan vat hoc: ten (hay dau ten) hay so id trong ban mod, vi du khaos, davis, 2. Nhieu nhan vat cung luc: ghi cach
+rem nhau bang dau cach hay dau phay, vi du  set "NHAN_VAT=2 19 55"  - moi nhan vat mot cua so rieng, chia deu cac luong
+rem CPU (3 nhan vat tren may 99 luong: moi nhan vat 33).
 set "NHAN_VAT=khaos"
 rem So vong, so tran moi tien trinh moi vong (moi tran ~1-2 giay, them vai giay hoc moi vong: mot vong chung nua
 rem phut; 500 vong khoang 5-6 gio)
@@ -40,6 +42,12 @@ rem =====================================
 rem Cai dat rieng, giu qua cac lan cap nhat bo XOI: file hoc-tang-cuong-cai-dat.bat canh file nay, moi dong mot
 rem cai dat nhu tren, vi du  set "NHAN_VAT=davis"
 if exist "%~dp0hoc-tang-cuong-cai-dat.bat" call "%~dp0hoc-tang-cuong-cai-dat.bat"
+rem (Mot nhan vat trong nhieu: cua so chinh goi lai file nay - mot_nv <nhan vat> <so tien trinh> - trong cua so rieng;
+rem ban mod la ban cua cua so chinh, PACK_CHA.)
+if /i "%~1"=="mot_nv" (
+  set "NHAN_VAT=%~2"
+  set "SONG_SONG=%~3"
+)
 
 rem (Moi tien trinh: file nay goi lai chinh no, trong cua so rieng: cmd /c call "<file nay>" chay1 <thu muc vong>
 rem <so tien trinh> <hat giong>. Duong dan lay tu bien cua cua so chinh: LV, GAME_DA_CHON, XS_DA_CHON, PACK_DA_CHON.)
@@ -50,6 +58,7 @@ set "KIT=%~dp0"
 rem --- Ban mod ---
 set "PACK_1="
 if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" set "PACK_1=%~f1"
+if /i "%~1"=="mot_nv" if defined PACK_CHA set "PACK_1=%PACK_CHA%"
 if not defined PACK_1 if defined PACK set "PACK_1=%PACK%"
 if not defined PACK_1 (
   pushd "%~dp0"
@@ -103,6 +112,26 @@ if !RAM_GB! GEQ 2 (
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 if not defined KIEM_TRA_MOI set "KIEM_TRA_MOI=0"
 
+rem Nhieu nhan vat (cach nhau bang dau cach hay dau phay): moi nhan vat mot cua so rieng chay file nay, chia deu cac
+rem luong; cua so nay chi mo cac cua so ay.
+set /a SO_NV=0
+for %%n in (%NHAN_VAT%) do set /a SO_NV+=1
+if !SO_NV! EQU 0 (echo Dong NHAN_VAT o dau file dang trong: ghi ten, dau ten hay so id cua nhan vat.& pause& exit /b 1)
+if !SO_NV! GTR 1 if /i not "%~1"=="mot_nv" (
+  set /a "MOI_NV=N/SO_NV"
+  if !MOI_NV! LSS 1 set /a MOI_NV=1
+  set "PACK_CHA=%PACK_1%"
+  echo Hoc !SO_NV! nhan vat cung luc, moi nhan vat !MOI_NV! tien trinh, moi nhan vat mot cua so rieng:
+  for %%n in (%NHAN_VAT%) do (
+    echo   %%n
+    start "Hoc tang cuong - %%n" cmd /c call "%SELF%" mot_nv %%n !MOI_NV!
+    ping -n 4 127.0.0.1 >nul 2>&1
+  )
+  echo Ket qua cua moi nhan vat: hoc-tang-cuong\^<nhan vat^>\tom-tat.txt. Dong cua so nay duoc - cac cua so kia van chay.
+  pause
+  exit /b 0
+)
+
 rem Thu muc cua nhan vat: hoc-tang-cuong\<NHAN_VAT> (dau cach doi thanh dau gach).
 set "TEN_NV=%NHAN_VAT: =-%"
 set "LV=%~dp0hoc-tang-cuong\%TEN_NV%"
@@ -133,7 +162,7 @@ for /f "tokens=2,*" %%a in ('findstr /b /c:"RLF " "%W0%\out.txt"') do set "TEN_T
 if not defined TEN_THAT (
   echo [LOI] Khong tim thay nhan vat "%NHAN_VAT%" trong ban mod "%PACK_1%":
   findstr /b /c:"RLF_ERROR" /c:"BENCH ERROR" "%W0%\out.txt"
-  echo Sua dong NHAN_VAT o dau file ^(ten, dau ten hay so id^).
+  echo Sua dong NHAN_VAT o dau file ^(ten, dau ten hay so id; nhieu nhan vat thi cach nhau bang dau cach hay dau phay^).
   pause
   exit /b 1
 )

@@ -374,7 +374,9 @@ network (`RLW` lines, the next round's); step `eval` plays each game twice from 
 the network (`greedy`: its likeliest move, as in a match; `sample`: drawn, as it learns; `both`), and step `sum`
 totals the processes' `RLE` lines (`RLC`: points per 100 games, +- the 95% margin); step `who` names the fighter
 `fighter` stands for (`RLF`). Every step ends with `RL_DONE`. `windows/hoc-tang-cuong.bat` runs it on a PC (the
-Vietnamese kit only for now): 500 rounds of 20 games a process by default, a check every 25 rounds, the networks in
+Vietnamese kit only for now): 500 rounds of 20 games a process by default, a check every 25 rounds (several fighters at
+once from package 86: `NHAN_VAT` with their names or ids apart by spaces or commas, each in a window of its own, the
+threads shared out), the networks in
 `hoc-tang-cuong\<fighter>\bo-nao-<round>.txt` and the account in `tom-tat.txt`.
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
