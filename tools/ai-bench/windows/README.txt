@@ -156,7 +156,19 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    to measure more. The numbers only - what to change is the mod maker's to say. (In English: balance.bat,
    also as balance-kit.zip on the guide's page.)
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
+11. Reinforcement learning, a trial (package 85): hoc-tang-cuong.bat. A small network learns, for ONE fighter
+   (NHAN_VAT: a name, the start of one, or an id), when to set XOI's keys aside: every frame XOI decides as always,
+   and the network either lets its keys through or plays one of 22 moves of its own (A, J or D; jumps; walks; runs;
+   the seven D-moves; a short wait) - at first 1 frame in 100, so the fighter plays nearly as XOI. The fighter plays
+   XOI without a brain on every fighter of the mod. Each round every process (one per CPU thread) plays TRAN games
+   with the last round's network and learns from its own games (PPO); the changes are averaged into the next network.
+   Every KIEM_TRA_MOI rounds each game is played twice from the same start, by the network and by XOI alone, and
+   compared ("greedy": the network's likeliest moves, as in a match; "sample": drawn, as it learns). Defaults: 500
+   rounds of 20 games a process (about 5-6 hours on 100 threads). Results in hoc-tang-cuong\<fighter>\: tom-tat.txt
+   (send it to whoever maintains the AI) and bo-nao-<round>.txt (the network). Close the window to pause; run it again
+   to go on. A trial: the game does not use these networks yet.
+
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -316,7 +328,19 @@ chơi được chính các file của bản mod.
    dừng, chạy lại là làm tiếp; tăng TONG_VAN hay TONG_GIO để đo thêm. Báo cáo chỉ ghi số đo được - chỉnh gì là
    việc của người làm mod. (Bản tiếng Anh: balance.bat, có cả gói riêng balance-kit.zip ở trang hướng dẫn.)
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
+11. Học tăng cường, thử nghiệm (gói 85): hoc-tang-cuong.bat. Một bộ não nhỏ học, cho MỘT nhân vật (NHAN_VAT: tên,
+   đầu tên hay số id), lúc nào nên gạt phím của XOI sang một bên: mỗi khung hình XOI tự quyết như thường, rồi bộ não
+   hoặc để XOI bấm, hoặc tự ra một trong 22 nước của nó (A, J hay D; nhảy; đi; chạy; bảy chiêu D; đứng yên một chút) -
+   lúc đầu 1 khung trên 100, nên nhân vật đánh gần như XOI. Nhân vật ấy đánh với XOI không bộ não, đối thủ là mọi
+   nhân vật của bản mod. Mỗi vòng, mỗi tiến trình (một luồng CPU) đánh TRAN trận với bộ não của vòng trước rồi tự học
+   trên các trận của mình (PPO); hết vòng lấy trung bình phần đổi thành bộ não mới. Cứ KIEM_TRA_MOI vòng, mỗi trận đánh
+   hai lần từ cùng một lúc bắt đầu, một lần bộ não, một lần XOI một mình, rồi so ("greedy": bộ não ra nước nó cho là
+   hay nhất, như khi đấu thật; "sample": nước rút ngẫu nhiên theo bộ não, như lúc học). Mặc định: 500 vòng, mỗi tiến
+   trình 20 trận (khoảng 5-6 giờ trên 100 luồng). Kết quả ở hoc-tang-cuong\<nhân vật>\: tom-tat.txt (gửi file này cho
+   người làm AI) và bo-nao-<vòng>.txt (bộ não). Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp. Thử nghiệm: game chưa
+   dùng các bộ não này.
+
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

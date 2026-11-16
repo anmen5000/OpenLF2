@@ -5,7 +5,8 @@
 # make-xoi-kit.sh OUT.zip: the XOI kit for Windows (the guide is dist/pages/xoi.html), one folder LF2-XOI-kit with
 # choi.bat (play a mod with INSANE! and XOI), xoi-hoc.bat (train XOI for a mod), dau-nhieu.bat (measure),
 # spsa.bat (tune XOI's numbers by play), hoc-sau.bat (XOI learns a brain, a small network scoring its moves, from its
-# own games), xem.bat (watch two computer players in the window, fighters by name), can-bang.bat (fighter balance:
+# own games), hoc-tang-cuong.bat (reinforcement learning, a trial: a network on one fighter's keys beside XOI), xem.bat
+# (watch two computer players in the window, fighters by name), can-bang.bat (fighter balance:
 # each fighter's win rate against every other and what each of its moves brings, XOI playing both sides),
 # xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
 # put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
@@ -46,8 +47,8 @@ def crlf(data):
 windows = root / "tools/ai-bench/windows"
 # texts: (name in the kit, file in the windows folder)
 if edition == "vi":
-    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "xem.bat", "can-bang.bat", "xuat-ban.bat",
-            "kiem-tra.bat")
+    bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "hoc-tang-cuong.bat", "xem.bat",
+            "can-bang.bat", "xuat-ban.bat", "kiem-tra.bat")
     texts = (("README.txt",) * 2, ("xuat-ban.ps1",) * 2, ("xuat-ban-README.txt",) * 2)
 elif edition == "en":
     windows = windows / "en"
@@ -82,7 +83,7 @@ for needed in [name for name, _ in texts] + [
         "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
         "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/list.lua",
         "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
-        "tools/ai-bench/record.lua", "tools/ai-bench/train.lua", "tools/ai-bench/balance.lua",
+        "tools/ai-bench/record.lua", "tools/ai-bench/train.lua", "tools/ai-bench/balance.lua", "tools/ai-bench/rl.lua",
         "tools/ai-bench/balance-report-head.html", "tools/ai-bench/balance-report-tail.html",
         "tools/ai-bench/package.manifest"]:
     if needed not in names:

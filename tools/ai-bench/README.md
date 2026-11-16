@@ -355,6 +355,34 @@ started, and the draws. `windows/can-bang.bat` (English kit: `balance.bat`, also
 on a PC: rounds on every CPU thread until `TONG_VAN` games (`TOTAL_GAMES`) or `TONG_GIO` hours (`TOTAL_HOURS`) are
 played, the report updated after every round, a round cut short taken up where it was.
 
+## Reinforcement learning, a trial (rl)
+
+`rl.lua` (package 85) is a first step toward a computer player that learns its own play rather than one written by
+hand: a small network (two layers of 64) that, for one fighter, learns when to set XOI's keys aside. Every frame XOI
+decides as always; where a key can change anything (a free state, a frame with ways on by keys, the frames of a fall
+where J flips) the network sees the situation - `brain_kit.features`' 41 numbers, the keys of the frame before, the
+ways on by A, J and D in the fighter's frame, the blow in the target's, the two nearest flying things of the enemy,
+the fighter's meters - and the keys XOI chose (one of 36, facing-relative), and either lets them through or plays one
+of 22 moves of its own: a press of A, J or D; a jump on the spot, forward, back, up or down; a walk of four frames
+(forward, back, up, down); a run of ten (forward, back); the seven D-moves (D>A, D>J, D^A, D^J, DvA, DvJ, DJA, the
+direction locked to the facing at its start); a wait of four frames with no key. It starts by letting XOI's keys
+through 99 times in 100. The fighter plays XOI without a brain (`xoi@hs_alt`) on every fighter of the mod, random
+stages; the rewards are HP dealt minus HP taken frame by frame, in hundreds, and 2 more (less) for a game won (lost).
+Learning is PPO spread over processes as SPSA's chains are: each process plays `games` games with the round's network
+and works its own epochs from it (Adam), printing the change (`RLD` lines); step `avg` lays the mean change onto the
+network (`RLW` lines, the next round's); step `eval` plays each game twice from the same start, by XOI alone and by
+the network (`greedy`: its likeliest move, as in a match; `sample`: drawn, as it learns; `both`), and step `sum`
+totals the processes' `RLE` lines (`RLC`: points per 100 games, +- the 95% margin); step `who` names the fighter
+`fighter` stands for (`RLF`). Every step ends with `RL_DONE`. `windows/hoc-tang-cuong.bat` runs it on a PC (the
+Vietnamese kit only for now): 500 rounds of 20 games a process by default, a check every 25 rounds, the networks in
+`hoc-tang-cuong\<fighter>\bo-nao-<round>.txt` and the account in `tom-tat.txt`.
+In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
+out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
+was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),
+-1.5 +- 7.0 drawn. Whether a hundred threads find moves better than XOI's is what the trial is for. The learning
+itself was tested with `bonus_move`/`bonus` (a reward for choosing a move): that move went from 12% to 68% of the
+network's moves in ten rounds. The game does not use these networks yet.
+
 ## Jobs
 
 Edit `config.lua` (a Lua table) and set `command` to one of these:
@@ -384,6 +412,7 @@ Edit `config.lua` (a Lua table) and set `command` to one of these:
 | `train` | XOI's brain, step two (above): the network from the records (`xoi/data_N.txt` in the pack, or bench modules `<data>_N`), printed as `XOI_BRAIN` lines — of the second kind from records of 88 numbers. | `data`, `target`, `hidden`, `epochs`, `rate`, `decay`, `holdout`, `stride`, `seed`, `weights` |
 | `balance` | Fighter balance (above): `step = "list"`, `"play"` or `"merge"`; win rates of every pair of fighters and what each move brings, one computer player on both sides. | `step`, `ids`, `exclude`, `brain`, `weapons`, `limit`, `stall`, `games`, `seconds`, `snap`, `seed`, `round`, `process`, `processes`, `prev`, `lang`, `mod`, `plan_rounds`, `plan_games`, `plan_seconds`, `date`, `kit` |
 | `spsa` | Tunes XOI's numbers by play (above): a chain of iterations, the average of chains, or tuned numbers against XOI's own (or `base`). `opponent = "classic"` has both nudged sets play the original player with the pack's own AI scripts (Sauce's AI) instead of each other; in a pack whose fighters have no such scripts the two sets play each other all the same (the CRAZY! player is too weak to tune against), so one run over several packs tunes each against the strongest player it has. | `step`, `iterations`, `first`, `total`, `seed`, `start`, `chains`, `games`, `base`, `a`, `c`, `names`, `ids`, `limit`, `opponent`, `alt` |
+| `rl` | Reinforcement learning, a trial (above): `step = "play"`, `"avg"`, `"eval"`, `"sum"` or `"who"`; a network on one fighter's keys beside XOI, learned by PPO against XOI without a brain. | `step`, `weights`, `deltas`, `evals`, `fighter`, `ids`, `games`, `seed`, `offset`, `limit`, `brain`, `epochs`, `batch`, `rate`, `clip`, `gamma`, `lambda`, `entropy`, `vcoef`, `win`, `greedy`, `both`, `bonus_move`, `bonus`, `init_seed` |
 
 Fighter ids are those of the mod's `data.txt`. `moves` and `duel` with `usage = true` together show what the AI knows
 about a fighter and what it actually uses; a move it never starts has a reason worth finding (too slow for the

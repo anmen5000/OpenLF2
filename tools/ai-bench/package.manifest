@@ -31,3 +31,4 @@ module=list|list.lua
 module=record|record.lua
 module=train|train.lua
 module=balance|balance.lua
+module=rl|rl.lua

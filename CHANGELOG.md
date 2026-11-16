@@ -758,6 +758,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   75 before); the five mods against v42 1,096 to 1,088 of 2,240.
   The bench's `moves` job prints `share`, `lasting`, `branch` and a swap's `reach`
 
+- A trial of reinforcement learning (package 85, the kit's `hoc-tang-cuong.bat`, the bench's `rl` job): for one
+  fighter, a small network (two layers of 64) learns when to set XOI's keys aside. Every frame XOI decides as always;
+  where a key can change anything the network sees the situation and the keys XOI chose, and either lets them through
+  or plays one of 22 moves of its own (A, J or D; jumps; walks; runs; the seven D-moves; a short wait), at first 1 frame
+  in 100. The fighter plays XOI without a brain on every fighter of the mod, rewarded by HP dealt minus HP taken and
+  the game's outcome; PPO, each process (one per CPU thread) learning from its own games and the rounds averaging the
+  processes' changes, as SPSA's chains are; every 25 rounds each game is played twice from the same start, by the
+  network and by XOI alone. In the lab (2 processes, 2,400 games) the network learned to keep out of XOI's way and
+  played as XOI (-0.5 +- 1.7 points per 100 games); the trial is whether a PC's hundred threads find better. The game
+  does not use these networks yet.
 ### Fixed
 - A fighter flipping back onto its feet was never struck as it landed (package 84, INSANE! version 48). The project
   owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up;

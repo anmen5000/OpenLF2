@@ -164,6 +164,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    again to go on; raise TOTAL_GAMES or TOTAL_HOURS to measure more. The numbers only - what to change is the
    mod maker's to say. (Also on its own, as balance-kit.zip on the guide's page.)
 
+11. Reinforcement learning, a trial (package 85): hoc-tang-cuong.bat, in the Vietnamese kit only for now (its
+   settings: NHAN_VAT the fighter, VONG rounds, TRAN games a process a round, KIEM_TRA_MOI how often to check). A
+   small network learns, for one fighter, when to set XOI's keys aside - every frame it lets them through or plays one
+   of 22 moves of its own - by PPO on every CPU thread; every 25 rounds each game is played twice from the same start,
+   by the network and by XOI alone. Results in hoc-tang-cuong\<fighter>\tom-tat.txt. The game does not use these
+   networks yet.
+
 Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch), balance.bat (balance),
 publish.bat (publish; its work is in publish.ps1, the published README comes from publish-README.txt),
 check.bat (check why the game does not open), scripts\ (the game's scripts with the computer players, laid over

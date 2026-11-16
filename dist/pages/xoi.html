@@ -959,6 +959,15 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>A trial of reinforcement learning</b> (package 85, <code>hoc-tang-cuong.bat</code>). A first step toward a computer
+          player that learns its own play: for one fighter, a small network learns when to set XOI's keys aside. Every frame XOI
+          decides as always; the network sees the situation and the keys XOI chose, and either lets them through or plays one
+          of 22 moves of its own (A, J or D, jumps, walks, runs, the seven D-moves, a short wait) — at first 1 frame in 100.
+          The fighter plays XOI without a brain on every fighter of the mod, rewarded by HP dealt minus HP taken and the
+          outcome; each CPU thread learns from its own games and every round averages them (PPO), and every 25 rounds each
+          game is played twice from the same start, by the network and by XOI alone. In the lab, on two threads, the network
+          learned to keep out of XOI's way and played as XOI (−0.5 ± 1.7 points per 100 games); whether a PC's hundred threads
+          find better is what the trial is for. Vietnamese kit only for now; the game does not use these networks yet.</li>
         <li><b>A flip back onto the feet is struck as it lands</b> (package 84, INSANE! version 48). The project owner's
           question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that
           flips up lands within reach of his D>J, one that does not is struck by D^A — and XOI did neither. In the flip's roll
@@ -1025,6 +1034,15 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Thử nghiệm học tăng cường</b> (gói 85, <code>hoc-tang-cuong.bat</code>). Bước đầu tới một máy tự học cách đánh: cho
+          một nhân vật, một bộ não nhỏ học lúc nào nên gạt phím của XOI sang một bên. Mỗi khung hình XOI tự quyết như thường;
+          bộ não xem tình huống và phím XOI vừa chọn, rồi hoặc để XOI bấm, hoặc tự ra một trong 22 nước của nó (A, J hay D,
+          nhảy, đi, chạy, bảy chiêu D, đứng yên một chút) — lúc đầu 1 khung trên 100. Nhân vật ấy đánh với XOI không bộ não,
+          đối thủ là mọi nhân vật của bản mod, được thưởng bằng máu gây ra trừ máu mất và kết quả trận; mỗi luồng CPU tự học
+          trên các trận của mình, hết mỗi vòng lấy trung bình (PPO); cứ 25 vòng, mỗi trận đánh hai lần từ cùng một lúc bắt
+          đầu, một lần bộ não, một lần XOI một mình. Trong phòng thử, trên hai luồng, bộ não học được cách không cản XOI và
+          đánh ngang XOI (−0,5 ± 1,7 điểm mỗi 100 trận); máy trăm luồng có tìm ra cách hay hơn không là điều cần thử. Hiện
+          chỉ có bộ tiếng Việt; game chưa dùng các bộ não này.</li>
         <li><b>Đối thủ lộn người tiếp đất thì bị đánh đúng lúc chạm đất</b> (gói 84, INSANE! bản 48). Câu hỏi của chủ dự
           án: Khaoslong của Convergence túm và đá bằng D^J, cú đá cuối hất đối thủ lên; đối thủ lộn người tiếp đất thì nằm
           trong tầm D>J, không lộn thì ăn D^A — mà XOI không làm cả hai. Trong lúc lộn, đối thủ không có thân để trúng đòn,
