@@ -198,6 +198,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    learned on that machine itself keep their own) and puts the networks that beat XOI into the mod. Closing a
    slot's window pauses it; may-con.bat run again goes on (each slot gets its fighter back, the rounds done are
    kept). Every machine needs its own name (MAY, its Windows name by default) and Windows 10 1803 or newer (curl.exe).
+   A job on each machine's own mod: drag the mod's zip onto may-con.bat, or put it beside it (<name>-xoi.zip first),
+   or set PACK; may-con.bat checks it before it takes any fighter. From package 91 (relay installer 15) a slot whose
+   machine cannot learn (no game, no scripts: hoc-tang-cuong.bat stops before its tom-tat.txt) gives its fighter back
+   to the queue for another machine, and the page has "Giao lai cac nhan vat loi" for the failed ones.
 
 Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), may-con.bat (a machine of the relay's job), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
@@ -399,6 +403,10 @@ chơi được chính các file của bản mod.
    kết quả của máy ấy) rồi đưa các bộ não hơn XOI vào bản mod. Đóng cửa sổ một ô là tạm dừng; chạy lại may-con.bat
    là làm tiếp (mỗi ô nhận lại nhân vật của nó, các vòng đã xong được giữ). Mỗi máy cần một tên riêng (MAY, mặc
    định là tên Windows của máy) và Windows 10 bản 1803 trở lên (có curl.exe).
+   Việc dùng file mod của mỗi máy: kéo thả file zip bản mod vào may-con.bat, hay đặt nó cạnh may-con.bat (ưu tiên
+   <tên>-xoi.zip), hay ghi ở dòng PACK; may-con.bat kiểm tra trước khi nhận nhân vật. Từ gói 91 (relay phiên bản 15),
+   ô nào mà máy chưa học được (thiếu game, scripts: hoc-tang-cuong.bat dừng trước khi có tom-tat.txt) thì trả nhân
+   vật về hàng đợi cho máy khác, và trang /hoc có nút "Giao lại các nhân vật lỗi".
 
 Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), may-con.bat (máy con của việc trên relay), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm

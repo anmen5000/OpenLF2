@@ -192,7 +192,7 @@ and the rooms use the relay's WebSocket path.
 
 ## Reinforcement learning on many machines
 
-From package 90 (installer version 14) the relay can share out the XOI kit's reinforcement learning
+From package 90 (installer version 14; 15 from package 91) the relay can share out the XOI kit's reinforcement learning
 (`hoc-tang-cuong.bat`, one fighter's network learned on one machine) among many machines: it keeps a
 job, a queue of fighters with the settings to learn them with, hands one fighter to each slot of a
 machine that asks (the kit's `may-con.bat`: as many slots as the machine has threads for), and keeps
@@ -207,7 +207,8 @@ packs, or each machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`
 `TRAN_XAC_NHAN`, and `MOI_NV`, the processes a fighter gets), the fighters (ids or names), and shows
 each one's state: waiting, learning on which slot (with its last check, which the slot reports),
 done (the round chosen and its score on new games), or failed (the end of its account). A fighter can
-be handed out again or taken off. The machines use the job's own key (`X-Hoc-Key`), which the page
+be handed out again (every failed one with one button) or taken off; a slot whose machine cannot learn
+(no game, no mod) gives its fighter back to the queue itself (`POST /hoc/api/tra/<fighter>`, package 91). The machines use the job's own key (`X-Hoc-Key`), which the page
 writes into the file `may-con-cai-dat.bat` it gives out; a new key shuts the old one out. A slot that
 asks again gets the fighter it holds back, so a machine started again goes on where it was (its
 `hoc-tang-cuong` folder keeps the rounds done). Kept in `HOC_DIR` (default `<PACKS_DIR>/hoc`):

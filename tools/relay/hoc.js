@@ -26,6 +26,8 @@
 //   PUT    /hoc/api/nop/<fighter>/<file>?may=<slot>     a file of its results (the body)
 //   POST   /hoc/api/xong/<fighter>?may=<slot>           done (tom-tat.txt sent before)
 //   POST   /hoc/api/loi/<fighter>?may=<slot>            failed (the body: the end of its account)
+//   POST   /hoc/api/tra/<fighter>?may=<slot>            given back: that machine cannot learn (no game, no mod...),
+//                                                        another may take it (package 91)
 //   GET    /hoc/api/ket-qua               the fighters done: "<fighter> <file> <file>..." lines
 //   GET    /hoc/api/tep/<fighter>/<file>  one of their files
 'use strict';
@@ -425,6 +427,17 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       lines(res, 200, ['OK=1']);
       return;
     }
+    if (what === 'tra' && parts.length === 2 && method === 'POST') {
+      authorize(req, true);
+      const slot = slotOf(params);
+      const fighter = held(id, slot);
+      Object.assign(fighter, cleanFighter({ ten: fighter.ten }));
+      save();
+      if (directory) await fsp.rm(folder(id), { recursive: true, force: true });
+      log(`hoc: ${id} given back by ${slot}`);
+      lines(res, 200, ['OK=1']);
+      return;
+    }
     if (what === 'ket-qua' && parts.length === 1 && method === 'GET') {
       authorize(req, true);
       lines(res, 200, job.order.filter((one) => job.fighters[one].state === 'xong' && job.fighters[one].files.length)
@@ -549,6 +562,7 @@ const PAGE = `<!doctype html>
   <div class="card" id="queue" hidden>
     <h2>Các nhân vật</h2>
     <p id="summary" class="note"></p>
+    <p><button id="retryall" class="secondary" hidden>Giao lại các nhân vật lỗi</button></p>
     <div class="wrap"><table><thead><tr><th>Nhân vật</th><th>Trạng thái</th><th></th></tr></thead><tbody id="list"></tbody></table></div>
   </div>
 </main>
@@ -607,6 +621,7 @@ const PAGE = `<!doctype html>
         + text.replace(/[<&]/g, '') + '</td><td>' + actions.join(' ') + '</td></tr>');
     }
     $('list').innerHTML = rows.join('') || '<tr><td colspan="3" class="note">Chưa có nhân vật nào: thêm ở trên.</td></tr>';
+    $('retryall').hidden = counts.loi === 0;
     $('summary').textContent = state.fighters.length + ' nhân vật: ' + counts.xong + ' xong, ' + counts.dang + ' đang học, '
       + counts.cho + ' chờ, ' + counts.loi + ' lỗi.';
   }
@@ -657,6 +672,15 @@ const PAGE = `<!doctype html>
       else await call('POST', 'tra-lai/' + encodeURIComponent(id));
       load(true);
     } catch (error) { status(error.message, 'bad'); }
+  });
+  $('retryall').addEventListener('click', async () => {
+    const failed = state.fighters.filter((f) => f.state === 'loi');
+    if (!failed.length || !confirm('Đưa ' + failed.length + ' nhân vật lỗi về hàng đợi (khi đã sửa lỗi trên máy con)?')) return;
+    try {
+      for (const f of failed) await call('POST', 'tra-lai/' + encodeURIComponent(f.id));
+      status('Đã đưa ' + failed.length + ' nhân vật về hàng đợi.', 'ok');
+    } catch (error) { status(error.message, 'bad'); }
+    load(true);
   });
   $('newkey').addEventListener('click', async () => {
     if (!confirm('Đổi mã máy con? Các máy đang chạy sẽ phải lấy lại file may-con-cai-dat.bat.')) return;

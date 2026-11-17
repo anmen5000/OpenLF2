@@ -801,6 +801,15 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
   `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
 ### Fixed
+- `may-con.bat` took no mod zip dragged onto it and passed over `<name>-xoi.zip` beside it, so on a job with each
+  machine's own mod `hoc-tang-cuong.bat` stopped at once ("Khong thay file zip ban mod") and every slot marked its
+  fighter failed — the project owner's first run left 14 fighters so (package 90). It now takes the zip dragged onto
+  it, else `PACK`, else the `PACK` of `hoc-tang-cuong-cai-dat.bat`, else `<name>-xoi.zip` beside it, else another mod
+  zip there, and stops before taking any fighter when there is none. A slot whose machine cannot learn
+  (`hoc-tang-cuong.bat` stopped before its `tom-tat.txt`: no game, no scripts) gives its fighter back to the queue for
+  another machine (relay installer version 15: `POST /hoc/api/tra/<fighter>`); a fighter the mod does not have is
+  reported failed with that message (`hoc-tang-cuong.bat` writes `loi.txt`); the page `/hoc` hands every failed
+  fighter out again with one button (package 91).
 - `dua-bo-nao-vao-mod.bat`'s `BO_RA` (fighters to leave out of the mod) took a fighter's network out and put it back
   in at once when that fighter had a network that beat XOI (package 88); it leaves it out now. Its closing line
   printed "INSANE" for "INSANE!" (package 90).

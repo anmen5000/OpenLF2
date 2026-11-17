@@ -9,6 +9,8 @@ rem chon: khoang 1 MB) roi lay nhan vat tiep, toi khi het viec. Relay khong hoc 
 rem May chinh: dua-bo-nao-vao-mod.bat (co may-con-cai-dat.bat canh no) tai ket qua cua moi may con ve truoc khi dua
 rem bo nao vao ban mod. May chinh cung la may con duoc: chay ca file nay.
 rem Tam dung: dong cac cua so. Chay lai file nay: moi o lam tiep nhan vat cua no (cac vong da xong duoc giu).
+rem Ban mod (khi viec de "moi may tu co file zip ban mod"): keo tha file zip vao file nay, hay dat no canh file nay
+rem (uu tien <ten>-xoi.zip), hay ghi o dong PACK.
 rem Can Windows 10 ban 1803 tro len (co san curl.exe).
 rem ============ CHINH O DAY ============
 rem Dia chi viec va ma may con: lay file may-con-cai-dat.bat o trang /hoc cua relay (nut "Tai file
@@ -19,8 +21,8 @@ rem Ten may tren trang /hoc (de trong: ten Windows cua may)
 set "MAY="
 rem So luong CPU dung cho viec nay (de trong: tat ca)
 set "LUONG="
-rem File zip ban mod khi viec de "moi may tu co file zip ban mod" (de trong: PACK cua hoc-tang-cuong-cai-dat.bat,
-rem khong thi file zip ban mod dau tien canh file nay)
+rem File zip ban mod khi viec de "moi may tu co file zip ban mod" (de trong: file keo tha vao file nay, PACK cua
+rem hoc-tang-cuong-cai-dat.bat, khong thi file zip canh file nay - <ten>-xoi.zip truoc)
 set "PACK="
 rem =====================================
 if exist "%~dp0may-con-cai-dat.bat" call "%~dp0may-con-cai-dat.bat"
@@ -47,12 +49,16 @@ set /a O=LUONG / HOC_MOI_NV
 if !O! LSS 1 set /a O=1
 rem --- Ban mod: cua relay (tai mot lan, kiem bang SHA-256), hay file cua may nay ---
 set "HOC_PACK_FILE="
+if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" set "PACK=%~f1"
 if defined HOC_PACK_ID (
   set "HOC_PACK_FILE=%TAM%\ban-mod-!HOC_PACK_ID!.zip"
   call :ban_mod
   if errorlevel 1 (pause& exit /b 1)
 ) else (
-  if defined PACK set "HOC_PACK_FILE=!PACK!"
+  call :tim_ban_mod
+  if not defined PACK (echo [LOI] Khong thay file zip ban mod: keo tha no vao may-con.bat, dat no canh may-con.bat, hay ghi o dong PACK.& pause& exit /b 1)
+  set "HOC_PACK_FILE=!PACK!"
+  echo Ban mod: "!PACK!"
 )
 echo Viec: !HOC_VONG! vong, moi nhan vat !HOC_MOI_NV! tien trinh; may nay hoc !O! nhan vat mot luc ^(!LUONG! luong^).
 for /L %%i in (1,1,!O!) do (
@@ -127,18 +133,63 @@ if errorlevel 1 exit /b 1
 echo   Da gui ket qua cua nhan vat !NV! len relay.
 exit /b 0
 
-rem --- Bao relay nhan vat khong hoc xong (kem cuoi tom-tat.txt), de no cho o trang /hoc ---
+rem --- Nhan vat khong hoc xong. Chua bat dau hoc (khong co tom-tat.txt: thieu game, scripts...) la loi cua may nay:
+rem tra nhan vat ve hang doi cho may khac (relay tu goi 91). Nhan vat khong co trong ban mod (loi.txt) hay hoc do
+rem dang thi bao relay loi cua nhan vat (kem cuoi tom-tat.txt), de no cho o trang /hoc. ---
 :bao_loi
+set "TRA_XONG="
 set "DUOI=%TAM%\loi-%SO%.txt"
 set "TT=!LVN!\tom-tat.txt"
-if exist "!TT!" (
+if not exist "!LVN!\loi.txt" if not exist "!TT!" call :tra_lai
+if defined TRA_XONG exit /b 0
+if exist "!LVN!\loi.txt" (
+  copy /y "!LVN!\loi.txt" "!DUOI!" >nul
+) else if exist "!TT!" (
   powershell -NoProfile -Command "Get-Content -LiteralPath $env:TT -Tail 15" >"!DUOI!" 2>nul
 ) else (
-  >"!DUOI!" echo hoc-tang-cuong.bat dung truoc khi co tom-tat.txt - xem cua so o %SO% tren may %MAY%.
+  >"!DUOI!" echo hoc-tang-cuong.bat dung truoc khi bat dau hoc - xem cua so o %SO% tren may %MAY%.
 )
 curl.exe -s -m 60 -X POST -H "X-Hoc-Key: %HOC_KEY%" --data-binary "@!DUOI!" "%HOC_HUB%/api/loi/!NV!?may=%HOC_MAY%" >nul 2>&1
 echo.
-echo [LOI] Nhan vat !NV! khong hoc xong - da bao relay ^(trang /hoc: Hoc lai khi da sua^). O %SO% dung lai.
+echo [LOI] Nhan vat !NV! khong hoc xong - da bao relay ^(trang /hoc: nut Giao lai khi da sua^). O %SO% dung lai.
+exit /b 0
+
+rem --- Tra nhan vat ve hang doi (relay tu goi 91; relay cu hon thi khong duoc - bao loi nhu truoc) ---
+:tra_lai
+set "TRA_XONG="
+del /q "%TAM%\tra-%SO%.txt" 2>nul
+curl.exe -s -m 60 -X POST -H "X-Hoc-Key: %HOC_KEY%" -o "%TAM%\tra-%SO%.txt" "%HOC_HUB%/api/tra/!NV!?may=%HOC_MAY%" >nul 2>&1
+findstr /b /c:"OK=1" "%TAM%\tra-%SO%.txt" >nul 2>&1 || exit /b 0
+set "TRA_XONG=1"
+echo.
+echo [LOI] May nay chua hoc duoc - xem thong bao o tren. Nhan vat !NV! da tra ve hang doi cho may khac. O %SO% dung lai.
+exit /b 0
+
+rem --- Ban mod cua may nay: PACK (hay file keo tha vao file nay), PACK cua hoc-tang-cuong-cai-dat.bat, roi file zip
+rem canh file nay (<ten>-xoi.zip truoc: ban mod co bo nho XOI) ---
+:tim_ban_mod
+if defined PACK if not exist "!PACK!" (echo [CHU Y] Khong thay "!PACK!".& set "PACK=")
+if not defined PACK if exist "%KIT%hoc-tang-cuong-cai-dat.bat" call :pack_cai_dat
+if defined PACK if not exist "!PACK!" set "PACK="
+if defined PACK exit /b 0
+pushd "%KIT%"
+for %%z in (*-xoi.zip) do if not defined PACK set "PACK=%%~fz"
+for %%z in (*.zip) do if not defined PACK (
+  set "TEN=%%~nz"
+  set "BO="
+  if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
+  if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
+  if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
+  if not defined BO set "PACK=%%~fz"
+)
+popd
+exit /b 0
+
+:pack_cai_dat
+setlocal
+set "PACK="
+call "%KIT%hoc-tang-cuong-cai-dat.bat" >nul 2>&1
+endlocal & set "PACK=%PACK%"
 exit /b 0
 
 rem --- Ban mod cua relay: tai ve mot lan (kiem SHA-256) ---

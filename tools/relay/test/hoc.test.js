@@ -127,6 +127,13 @@ test('a job handed out to machines, its results kept and fetched', async () => {
     assert.equal((await admin(relay, 'POST', 'tra-lai/8')).status, 200);
     assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC3-o1')).values.NV, '8');
 
+    // A machine that cannot learn gives its fighter back; another slot takes it (package 91).
+    assert.equal((await machine(relay, key, 'POST', 'tra/8?may=PC9-o1')).status, 409, 'not its fighter');
+    assert.equal((await machine(relay, key, 'POST', 'tra/8?may=PC3-o1')).values.OK, '1');
+    status = (await admin(relay, 'GET', 'trang-thai')).body;
+    assert.equal(status.fighters.find((one) => one.id === '8').state, 'cho');
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC4-o1')).values.NV, '8');
+
     // What the owner's machine downloads (dua-bo-nao-vao-mod.bat).
     reply = await machine(relay, key, 'GET', 'ket-qua');
     assert.equal(reply.text, '16 bo-nao-500.txt tom-tat.txt xac-nhan.txt\n');
@@ -154,7 +161,7 @@ test('a job handed out to machines, its results kept and fetched', async () => {
   const again = await startRelay(packsDir);
   try {
     const status = (await admin(again, 'GET', 'trang-thai')).body;
-    assert.deepEqual(status.fighters.map((one) => [one.id, one.state, one.may]), [['25', 'dang', 'PC1-o2'], ['8', 'dang', 'PC3-o1']]);
+    assert.deepEqual(status.fighters.map((one) => [one.id, one.state, one.may]), [['25', 'dang', 'PC1-o2'], ['8', 'dang', 'PC4-o1']]);
     assert.equal(status.settings.VONG, 300);
     const reply = await machine(again, status.key, 'POST', 'nhan?may=PC1-o2');
     assert.equal(reply.values.NV, '25', 'the slot gets its fighter back after a restart');

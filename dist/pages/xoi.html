@@ -959,6 +959,12 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Each machine finds its mod</b> (package 91, relay installer version 15). On a job with each machine's own mod,
+          <code>may-con.bat</code> took no zip dragged onto it and passed over <code>&lt;name&gt;-xoi.zip</code> beside it, so every
+          slot stopped at once and marked its fighter failed. It now takes the dragged zip (or <code>PACK</code>, or the zip
+          beside it, <code>-xoi.zip</code> first) and checks it before taking any fighter; a slot whose machine cannot learn
+          gives its fighter back to the queue for another machine, and the page <code>/hoc</code> hands every failed fighter
+          out again with one button.</li>
         <li><b>Learning on many machines, the relay sharing out the work</b> (package 90, relay installer version 14). The
           relay keeps a job on its page <code>/hoc</code> (the admin key): the mod, the settings and the fighters to learn.
           Each machine runs the new <code>may-con.bat</code>: its CPU threads make slots of <code>MOI_NV</code> processes,
@@ -1076,6 +1082,11 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Mỗi máy tìm đúng file mod</b> (gói 91, trình cài đặt relay phiên bản 15). Với việc dùng file mod của mỗi máy,
+          <code>may-con.bat</code> trước không nhận file zip kéo thả vào nó và bỏ qua <code>&lt;tên&gt;-xoi.zip</code> đặt cạnh,
+          nên ô nào cũng dừng ngay và đánh dấu nhân vật là lỗi. Nay nó nhận file kéo thả (hay <code>PACK</code>, hay file zip
+          đặt cạnh, <code>-xoi.zip</code> trước) và kiểm tra trước khi nhận nhân vật; ô nào mà máy chưa học được thì trả nhân
+          vật về hàng đợi cho máy khác, và trang <code>/hoc</code> có nút giao lại mọi nhân vật lỗi một lần.</li>
         <li><b>Học tăng cường trên nhiều máy, relay chia việc</b> (gói 90, trình cài đặt relay phiên bản 14). Relay giữ một
           việc ở trang <code>/hoc</code> (mã quản trị): bản mod, cài đặt và các nhân vật cần học. Mỗi máy chạy
           <code>may-con.bat</code> mới: các luồng CPU chia thành các ô <code>MOI_NV</code> tiến trình, mỗi ô hỏi relay một

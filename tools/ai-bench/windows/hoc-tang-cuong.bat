@@ -159,6 +159,8 @@ rem Thu muc cua nhan vat: hoc-tang-cuong\<NHAN_VAT> (dau cach doi thanh dau gach
 set "TEN_NV=%NHAN_VAT: =-%"
 set "LV=%~dp0hoc-tang-cuong\%TEN_NV%"
 if not exist "%LV%" mkdir "%LV%"
+rem (loi.txt: nhan vat khong co trong ban mod - may-con.bat bao relay loi cua nhan vat, khong phai cua may.)
+del /q "%LV%\loi.txt" 2>nul
 rem Scripts cua game da cai, cap nhat bang scripts cua goi (goi co the chi chua file da doi). Mot lan hoc giu scripts
 rem cua no tu dau den cuoi (xoa hoc-tang-cuong\<NHAN_VAT>\scripts de lay scripts cua bo XOI moi).
 if not exist "%LV%\scripts\base\game\smart_ai.lua" (
@@ -185,6 +187,8 @@ for /f "tokens=2,*" %%a in ('findstr /b /c:"RLF " "%W0%\out.txt"') do set "TEN_T
 if not defined TEN_THAT (
   echo [LOI] Khong tim thay nhan vat "%NHAN_VAT%" trong ban mod "%PACK_1%":
   findstr /b /c:"RLF_ERROR" /c:"BENCH ERROR" "%W0%\out.txt"
+  >"%LV%\loi.txt" echo Khong tim thay nhan vat "%NHAN_VAT%" trong ban mod "%PACK_1%".
+  findstr /b /c:"RLF_ERROR" /c:"BENCH ERROR" "%W0%\out.txt" >>"%LV%\loi.txt"
   echo Sua dong NHAN_VAT o dau file ^(ten, dau ten hay so id; nhieu nhan vat thi cach nhau bang dau cach hay dau phay^).
   %DUNG%
   exit /b 1
