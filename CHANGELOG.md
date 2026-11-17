@@ -801,6 +801,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
   `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
 ### Fixed
+- A run of `hoc-tang-cuong.bat` cut short by a power cut could not go on when the last round's network had not
+  reached the disk yet: a file that began right but lacked numbers passed for a finished round, and the next round
+  stopped at once ("Khong tien trinh nao hoc xong", each process's network check failing) every time it was run again.
+  On starting, it now checks the networks of the two latest rounds (as many numbers as their `RLW_HEAD` line says) and
+  learns a damaged one's round again, its check and confirmation with it (package 92).
 - `may-con.bat` took no mod zip dragged onto it and passed over `<name>-xoi.zip` beside it, so on a job with each
   machine's own mod `hoc-tang-cuong.bat` stopped at once ("Khong thay file zip ban mod") and every slot marked its
   fighter failed — the project owner's first run left 14 fighters so (package 90). It now takes the zip dragged onto

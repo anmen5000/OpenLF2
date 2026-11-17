@@ -174,7 +174,8 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    package 89 a run ends with a confirmation: the last round's network and the best check's play TRAN_XAC_NHAN new
    games (720, shared out among the processes) and the better one on them is chosen (xac-nhan.txt; XAC NHAN lines in
    tom-tat.txt) - the best of many checks is mostly the luckiest. Close the window to pause; run it again to go on (a
-   finished run run again only plays the confirmation it lacks).
+   finished run run again only plays the confirmation it lacks). A run cut short by a power cut goes on the same way:
+   from package 92 it first checks the networks of the two latest rounds and learns a damaged one's round again.
    From package 88 the game uses them: dua-bo-nao-vao-mod.bat puts each fighter's network (from package 89 the
    confirmed one, else the latest check's) into the mod's <name>-xoi.zip as xoi/rl-<id>.txt - only those that beat
    XOI alone (the "greedy" line positive), and takes out those that do not (or the ids in BO_RA). XOI playing a fighter with such a
@@ -381,6 +382,8 @@ chơi được chính các file của bản mod.
    vòng cuối và bộ tốt nhất đánh TRAN_XAC_NHAN trận mới (720, chia cho các tiến trình), bộ nào hơn trên các trận ấy
    được chọn (xac-nhan.txt; các dòng XAC NHAN trong tom-tat.txt) - lần cao nhất trong nhiều lần kiểm tra thường là lần
    gặp may. Đóng cửa sổ để tạm dừng, chạy lại là làm tiếp (đã xong mà chạy lại thì chỉ làm bước xác nhận còn thiếu).
+   Máy tắt giữa chừng (mất điện) thì cũng chạy lại như vậy: từ gói 92 nó kiểm tra bộ não của hai vòng mới nhất trước,
+   bộ nào hỏng (chưa kịp ghi xuống đĩa) thì học lại vòng ấy.
    Từ gói 88 game dùng được các bộ não này: dua-bo-nao-vao-mod.bat đưa bộ não của từng nhân vật (từ gói 89: bộ đã
    xác nhận, không thì bộ của lần kiểm tra mới nhất) vào <tên>-xoi.zip của bản mod, thành xoi/rl-<id>.txt - chỉ bộ
    hơn XOI một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). XOI điều khiển nhân vật có file

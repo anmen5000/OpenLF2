@@ -213,6 +213,9 @@ del /q "%CANH_XONG%" 2>nul
 start "Hoc tang cuong - canh cua so" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 >>"%LV%\tom-tat.txt" echo === Bat dau luc %DATE% %TIME%: nhan vat !TEN_THAT!, ban mod %PACK_1%, %N% tien trinh x %TRAN% tran moi vong
 
+rem Mat dien hay may tat giua chung: bo nao vua ghi co the chua kip xuong dia (thieu so, hay toan so 0). Kiem bo nao
+rem cua hai vong moi nhat; hong thi xoa (ca lan kiem tra, xac nhan cua vong ay) de vong ay hoc lai.
+call :kiem_bo_nao_cuoi
 set /a E=1
 :vong_tiep
 if %E% GTR %VONG% goto xong
@@ -579,6 +582,23 @@ goto cho_dong_tiep
 :dong_ho
 call :giay BAY_GIO_DH
 set /a "DA_CHAY+=(BAY_GIO_DH-CHAY_LUC+86400) %% 86400, CHAY_LUC=BAY_GIO_DH"
+exit /b 0
+
+rem --- Bo nao cua hai vong moi nhat con nguyen khong: du bao nhieu so nhu dong RLW_HEAD ghi (tu goi 92) ---
+:kiem_bo_nao_cuoi
+set "BN_CUOI="
+for /L %%e in (1,1,%VONG%) do if exist "%LV%\bo-nao-%%e.txt" set "BN_CUOI=%%e"
+if not defined BN_CUOI exit /b 0
+set /a BN_TRUOC=BN_CUOI-1
+for %%e in (!BN_CUOI! !BN_TRUOC!) do if exist "%LV%\bo-nao-%%e.txt" (
+  set "BN_FILE=%LV%\bo-nao-%%e.txt"
+  powershell -NoProfile -Command "try { $l=@(Get-Content -LiteralPath $env:BN_FILE); $h=$l[0] -split ' '; if ($h[0] -ne 'RLW_HEAD') { exit 1 }; $n=0; foreach ($x in $l) { if ($x -match '^RLW [0-9]+ (.+)$') { $n += @($Matches[1].Trim() -split '\s+').Count } }; if ($n -eq [int]$h[4]) { exit 0 }; exit 1 } catch { exit 1 }" >nul 2>&1
+  if errorlevel 1 (
+    echo   [CHU Y] Bo nao vong %%e bi hong ^(co the do mat dien^) - hoc lai tu vong %%e.
+    >>"%LV%\tom-tat.txt" echo Bo nao vong %%e bi hong, co the do mat dien - hoc lai tu vong %%e
+    del /q "%LV%\bo-nao-%%e.txt" "%LV%\kiem-tra-%%e.txt" "%LV%\xac-nhan-%%e.txt" 2>nul
+  )
+)
 exit /b 0
 
 rem --- May con: bao relay mot lan kiem tra (tham so: file kiem-tra-<vong>.txt, vong); mat mang thi bo qua ---
