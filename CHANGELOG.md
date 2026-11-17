@@ -786,7 +786,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   fighter's network into the mod's `<name>-xoi.zip` - only those whose check beats XOI alone - and `hoc-tang-cuong.bat`
   now keeps the network of the best check so far (`bo-nao-tot-nhat.txt`, `tot-nhat.txt`; the bench's `rl` step `sum`
   prints `RLB` lines for it) and checks on 12 games a process instead of 6.
+- Reinforcement learning on many machines (package 90, relay installer version 14): the relay shares out a job of
+  fighters among the machines that ask and keeps the small files they send back; it learns nothing. Its page `/hoc`
+  (ADMIN_KEY) sets the mod (one of its packs, which each machine downloads once and checks by SHA-256, or each
+  machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`, `TRAN_KIEM_TRA`, `TRAN_XAC_NHAN`, and `MOI_NV`,
+  the processes a fighter gets) and the fighters, shows each one's state (waiting; learning on which machine, with
+  its last check; done, with the round chosen and its score on new games; failed, with the end of its account),
+  hands one out again or takes it off, and gives out `may-con-cai-dat.bat` with the relay's address and the
+  machines' own key (`X-Hoc-Key`; a new one shuts the old one out). The kit's new `may-con.bat` splits a machine's
+  threads into slots, each learning one fighter at a time with `hoc-tang-cuong.bat` (the job's settings, no pause,
+  each check reported) and sending back `tom-tat.txt`, `xac-nhan.txt`, `tot-nhat.txt` and the networks chosen; a
+  slot started again gets its fighter back and goes on from the rounds done. `dua-bo-nao-vao-mod.bat` fetches the
+  machines' results first when `may-con-cai-dat.bat` is beside it (a fighter learned on the machine itself keeps its
+  own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
+  `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
 ### Fixed
+- `dua-bo-nao-vao-mod.bat`'s `BO_RA` (fighters to leave out of the mod) took a fighter's network out and put it back
+  in at once when that fighter had a network that beat XOI (package 88); it leaves it out now. Its closing line
+  printed "INSANE" for "INSANE!" (package 90).
 - The learned network `dua-bo-nao-vao-mod.bat` put into a mod was the one of `hoc-tang-cuong.bat`'s best check
   (package 88), and the best of twenty checks is mostly the luckiest: every check plays the same games, and each is
   off by several points either way. The project owner's Ryozaki, whose last network did worse than XOI alone

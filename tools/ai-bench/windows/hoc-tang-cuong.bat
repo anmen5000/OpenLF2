@@ -57,6 +57,19 @@ if /i "%~1"=="mot_nv" (
   set "NHAN_VAT=%~2"
   set "SONG_SONG=%~3"
 )
+rem (May con, may-con.bat - tu goi 90: cai dat cua viec tren relay thay cac cai dat o tren, bao relay moi lan kiem
+rem tra, va khong dung lai cho bam phim khi xong hay loi.)
+set "DUNG=pause"
+if defined HOC_MAY (
+  set "DUNG=type nul"
+  if defined HOC_VONG set "VONG=!HOC_VONG!"
+  if defined HOC_TRAN set "TRAN=!HOC_TRAN!"
+  if defined HOC_KIEM_TRA_MOI set "KIEM_TRA_MOI=!HOC_KIEM_TRA_MOI!"
+  if defined HOC_TRAN_KIEM_TRA set "TRAN_KIEM_TRA=!HOC_TRAN_KIEM_TRA!"
+  if defined HOC_TRAN_XAC_NHAN set "TRAN_XAC_NHAN=!HOC_TRAN_XAC_NHAN!"
+  if defined HOC_PACK_FILE set "PACK=!HOC_PACK_FILE!"
+  set "GIO_CHAY="
+)
 
 rem (Moi tien trinh: file nay goi lai chinh no, trong cua so rieng: cmd /c call "<file nay>" chay1 <thu muc vong>
 rem <so tien trinh> <hat giong>. Duong dan lay tu bien cua cua so chinh: LV, GAME_DA_CHON, XS_DA_CHON, PACK_DA_CHON.)
@@ -82,7 +95,7 @@ if not defined PACK_1 (
   )
   popd
 )
-if not defined PACK_1 (echo Khong thay file zip ban mod: dat file zip ban mod canh file nay, keo tha no vao file nay, hoac sua dong PACK o dau file.& pause& exit /b 1)
+if not defined PACK_1 (echo Khong thay file zip ban mod: dat file zip ban mod canh file nay, keo tha no vao file nay, hoac sua dong PACK o dau file.& %DUNG%& exit /b 1)
 
 rem --- Game, bo chay thu, scripts ---
 if not defined GAME (
@@ -100,10 +113,10 @@ if not defined SCRIPTS (
   if exist "%~dp0scripts\base\game\smart_ai.lua" set "SCRIPTS=%~dp0scripts"
   if exist "%~dp0..\..\..\scripts\base\game\smart_ai.lua" set "SCRIPTS=%~dp0..\..\..\scripts"
 )
-if not exist "%GAME%" (echo Khong thay game "%GAME%": cai OpenLF2 ^(bo cai OpenLF2-Windows-x64.exe o muc Releases cua trang GitHub cua du an, chon Install for me only^), hoac sua dong GAME o dau file.& pause& exit /b 1)
-if not defined BENCH (echo Khong thay thu muc tools\ai-bench co rl.lua - can bo XOI cua goi 85 tro len.& pause& exit /b 1)
-if not exist "%BENCH%\rl.lua" (echo Khong thay "%BENCH%\rl.lua" - can bo XOI cua goi 85 tro len.& pause& exit /b 1)
-if not defined SCRIPTS (echo Khong thay thu muc scripts canh file nay - can bo XOI cua goi 85 tro len.& pause& exit /b 1)
+if not exist "%GAME%" (echo Khong thay game "%GAME%": cai OpenLF2 ^(bo cai OpenLF2-Windows-x64.exe o muc Releases cua trang GitHub cua du an, chon Install for me only^), hoac sua dong GAME o dau file.& %DUNG%& exit /b 1)
+if not defined BENCH (echo Khong thay thu muc tools\ai-bench co rl.lua - can bo XOI cua goi 85 tro len.& %DUNG%& exit /b 1)
+if not exist "%BENCH%\rl.lua" (echo Khong thay "%BENCH%\rl.lua" - can bo XOI cua goi 85 tro len.& %DUNG%& exit /b 1)
+if not defined SCRIPTS (echo Khong thay thu muc scripts canh file nay - can bo XOI cua goi 85 tro len.& %DUNG%& exit /b 1)
 set /a N=SONG_SONG
 if %N% LSS 1 set /a N=1
 rem Bo nho: mot tien trinh dung toi khoang 0,7 GB. SONG_SONG de mac dinh (moi luong CPU) ma may it RAM thi bot so
@@ -126,7 +139,7 @@ rem Nhieu nhan vat (cach nhau bang dau cach hay dau phay): moi nhan vat mot cua 
 rem luong; cua so nay chi mo cac cua so ay.
 set /a SO_NV=0
 for %%n in (%NHAN_VAT%) do set /a SO_NV+=1
-if !SO_NV! EQU 0 (echo Dong NHAN_VAT o dau file dang trong: ghi ten, dau ten hay so id cua nhan vat.& pause& exit /b 1)
+if !SO_NV! EQU 0 (echo Dong NHAN_VAT o dau file dang trong: ghi ten, dau ten hay so id cua nhan vat.& %DUNG%& exit /b 1)
 if !SO_NV! GTR 1 if /i not "%~1"=="mot_nv" (
   set /a "MOI_NV=N/SO_NV"
   if !MOI_NV! LSS 1 set /a MOI_NV=1
@@ -138,7 +151,7 @@ if !SO_NV! GTR 1 if /i not "%~1"=="mot_nv" (
     ping -n 4 127.0.0.1 >nul 2>&1
   )
   echo Ket qua cua moi nhan vat: hoc-tang-cuong\^<nhan vat^>\tom-tat.txt. Dong cua so nay duoc - cac cua so kia van chay.
-  pause
+  %DUNG%
   exit /b 0
 )
 
@@ -153,7 +166,7 @@ if not exist "%LV%\scripts\base\game\smart_ai.lua" (
   if exist "!CAI!\base\game\match.lua" xcopy /e /i /q /y "!CAI!" "%LV%\scripts" >nul
   xcopy /e /i /q /y "%SCRIPTS%" "%LV%\scripts" >nul
 )
-if not exist "%LV%\scripts\base\game\match.lua" (echo [LOI] Khong ghep duoc scripts vao "%LV%\scripts".& pause& exit /b 1)
+if not exist "%LV%\scripts\base\game\match.lua" (echo [LOI] Khong ghep duoc scripts vao "%LV%\scripts".& %DUNG%& exit /b 1)
 if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.lua" "%LV%\scripts\runtime\bootstrap.lua" >nul 2>nul
 set XS=--scripts "%LV%\scripts"
 set "GAME_DA_CHON=%GAME%"
@@ -173,7 +186,7 @@ if not defined TEN_THAT (
   echo [LOI] Khong tim thay nhan vat "%NHAN_VAT%" trong ban mod "%PACK_1%":
   findstr /b /c:"RLF_ERROR" /c:"BENCH ERROR" "%W0%\out.txt"
   echo Sua dong NHAN_VAT o dau file ^(ten, dau ten hay so id; nhieu nhan vat thi cach nhau bang dau cach hay dau phay^).
-  pause
+  %DUNG%
   exit /b 1
 )
 
@@ -326,6 +339,7 @@ for /f "tokens=1,* delims= " %%a in ('findstr /b /c:"RLC " "%M%\out.txt"') do (
 )
 if not defined KQ (echo [CHU Y] Khong cong duoc ket qua kiem tra vong %E% - xem "%M%\out.txt".& exit /b 0)
 move /y "%LV%\kiem-tra-%E%.tmp" "%LV%\kiem-tra-%E%.txt" >nul
+if defined HOC_MAY call :bao_hub "%LV%\kiem-tra-%E%.txt" %E%
 rem Bo nao tot nhat den nay: lan kiem tra "greedy" (nhu khi dau that) hon XOI nhieu nhat - bo-nao-tot-nhat.txt, va
 rem tot-nhat.txt = vong va diem (phan muoi diem moi 100 tran). dua-bo-nao-vao-mod.bat lay bo nay.
 set "DIEM="
@@ -437,13 +451,13 @@ echo.
 echo Gui file tom-tat.txt cho nguoi lam AI. Dong "greedy": "network - XOI" duong ^(+^) va lon hon phan +- la bo nao da hon
 echo XOI mot minh. Dua bo nao vao ban mod: chay dua-bo-nao-vao-mod.bat ^(chi nhan vat co bo nao hon XOI^).
 if defined CANH_XONG >"%CANH_XONG%" echo xong
-pause
+%DUNG%
 exit /b 0
 
 :loi
 echo [LOI] Dung o vong %E%. Chay lai file nay de lam tiep.
 if defined CANH_XONG >"%CANH_XONG%" echo xong
-pause
+%DUNG%
 exit /b 1
 
 :het_gio
@@ -451,7 +465,7 @@ echo.
 echo === Da chay du %GIO_CHAY% gio ^(%TIME:~0,8%^): tam dung. Chay lai file nay la lam tiep. ===
 >>"%LV%\tom-tat.txt" echo Tam dung luc %TIME:~0,8% sau %GIO_CHAY% gio ^(GIO_CHAY^)
 if defined CANH_XONG >"%CANH_XONG%" echo xong
-pause
+%DUNG%
 exit /b 0
 
 rem --- Mot file thanh mo dun Lua cua bo chay thu: %1 file, %2 file .lua, %3 ten mo dun (them vao package.manifest) ---
@@ -561,6 +575,11 @@ goto cho_dong_tiep
 :dong_ho
 call :giay BAY_GIO_DH
 set /a "DA_CHAY+=(BAY_GIO_DH-CHAY_LUC+86400) %% 86400, CHAY_LUC=BAY_GIO_DH"
+exit /b 0
+
+rem --- May con: bao relay mot lan kiem tra (tham so: file kiem-tra-<vong>.txt, vong); mat mang thi bo qua ---
+:bao_hub
+curl.exe -s -m 30 -X POST -H "X-Hoc-Key: %HOC_KEY%" --data-binary "@%~1" "%HOC_HUB%/api/bao/%NHAN_VAT%?may=%HOC_MAY%&vong=%~2" >nul 2>&1
 exit /b 0
 
 rem --- Mot tien trinh: %2 thu muc (vong-N hay kiem-tra-vong-N), %3 so tien trinh, %4 hat giong; xong thi dong cua so ---

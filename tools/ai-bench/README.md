@@ -394,6 +394,13 @@ better of the two there is the run's choice (`xac-nhan.txt`: its round and score
 puts in when that score is positive (without a confirmation, the latest check's network, which was not picked from
 many). The checks only measure: no round's learning reads them, and a round's network is the same with or without
 them.
+From package 90 many machines learn a mod's fighters together, the relay sharing out the work (`tools/relay/hoc.js`,
+its page `/hoc`): `windows/may-con.bat` splits a machine's threads into slots of the job's `MOI_NV` processes, each
+slot asks the relay for a fighter, runs `hoc-tang-cuong.bat mot_nv <fighter> <processes>` with the job's settings
+(`HOC_*` variables; no pause at the end, and each check reported to the relay), sends back `tom-tat.txt`,
+`xac-nhan.txt`, `tot-nhat.txt` and the networks of the confirmation and the latest check, and takes the next;
+`dua-bo-nao-vao-mod.bat` on the owner's machine fetches them first into `hoc-tang-cuong\<fighter>\` (marked
+`tu-vps.txt`; a fighter learned on that machine keeps its own) and packs the networks that beat XOI alone.
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
 was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),

@@ -32,6 +32,9 @@
 // Hero Fighter v0.7+ (the page runs it in Ruffle) plays here too: its rooms on the same WebSocket path,
 //   ws(s)://<server>/relay?game=hf&room=1
 // and stand-ins for herofighter.com's web services (accounts, room list) under /hf/ (see hf.js).
+//
+// The XOI kit's reinforcement learning on many machines meets here as well (hoc.js, page /hoc): the relay hands
+// the fighters of a job out to the machines that ask and keeps the small files they send back; it learns nothing.
 'use strict';
 
 const fs = require('node:fs');
@@ -39,6 +42,7 @@ const http = require('node:http');
 const { WebSocketServer, WebSocket } = require('ws');
 const { createPacks } = require('./packs.js');
 const { createHf } = require('./hf.js');
+const { createHoc } = require('./hoc.js');
 
 const INSTALLER_PATH = '/lf2-installer.data';
 
@@ -128,6 +132,9 @@ function readConfig(env = process.env) {
     hfRooms: number('HF_ROOMS', 4),
     hfRoomDescription: env.HF_ROOM_DESCRIPTION || 'OpenLF2 relay',
     hfDir: env.HF_DIR || '',
+    // Reinforcement learning on many machines (hoc.js): where the job and the machines' results are kept
+    // (empty: in <PACKS_DIR>/hoc, or nowhere without PACKS_DIR).
+    hocDir: env.HOC_DIR || '',
     quiet: env.QUIET === '1' || env.QUIET === 'true',
   };
 }
@@ -173,6 +180,7 @@ function createRelay(overrides = {}) {
     log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req),
     budget: (ws, bytes) => ws.messageBudget.take(1) && ws.byteBudget.take(bytes),
   });
+  const hoc = createHoc(config, { log, clientAddress: (req) => clientAddress(req) });
 
   const server = http.createServer((req, res) => {
     const { pathname } = new URL(req.url, 'http://relay.invalid');
@@ -196,6 +204,7 @@ function createRelay(overrides = {}) {
     const local = relayFolder !== '/' && pathname.startsWith(relayFolder) ? pathname.slice(relayFolder.length - 1) : pathname;
     if (packs.handle(req, res, local)) return;
     if (hf.handle(req, res, local)) return;
+    if (hoc.handle(req, res, local)) return;
     if (pathname === '/' || pathname === config.path) {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(`OpenLF2 relay is running. Connect with a WebSocket to ${config.path}\n`);
@@ -761,6 +770,7 @@ function createRelay(overrides = {}) {
     const now = Date.now();
     for (const [address, entry] of installerDownloads) if (entry.until <= now) installerDownloads.delete(address);
     packs.cleanup();
+    hoc.cleanup();
   }, config.pingIntervalMs);
   heartbeat.unref();
 

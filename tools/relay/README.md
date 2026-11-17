@@ -33,7 +33,7 @@ It prints the relay address (`wss://203-0-113-5.sslip.io/relay`), the address of
 page and its admin key. Settings go before `bash`: `DOMAIN=relay.example.com` uses your own domain,
 `ALLOWED_ORIGINS=https://you.github.io` limits who may use the relay. Running it again updates the
 installation and keeps the admin key; `… | bash -s -- --uninstall` removes it. The script embeds
-`server.js`, `packs.js`, `hf.js`, `hf-room.js` and `package.json`; after changing any of them, run
+`server.js`, `packs.js`, `hf.js`, `hf-room.js`, `hoc.js` and `package.json`; after changing any of them, run
 `node update-installer.js` (the tests check that it was run).
 
 Ports: with 80 and 443 free, Caddy takes both. When another web server (often Apache, `httpd`)
@@ -190,6 +190,30 @@ the game itself is not changed, except for two regular expressions Ruffle reads 
 Under Apache (`APACHE_SITE`) nothing changes: these are paths below `/lf2-relay/` like the others,
 and the rooms use the relay's WebSocket path.
 
+## Reinforcement learning on many machines
+
+From package 90 (installer version 14) the relay can share out the XOI kit's reinforcement learning
+(`hoc-tang-cuong.bat`, one fighter's network learned on one machine) among many machines: it keeps a
+job, a queue of fighters with the settings to learn them with, hands one fighter to each slot of a
+machine that asks (the kit's `may-con.bat`: as many slots as the machine has threads for), and keeps
+what the machine sends back when its fighter is done: `tom-tat.txt`, `xac-nhan.txt`, `tot-nhat.txt`
+and the networks chosen (`bo-nao-<round>.txt`), about 1 MB a fighter. The owner's machine fetches
+them (`dua-bo-nao-vao-mod.bat`, with `may-con-cai-dat.bat` beside it) and packs the networks that beat
+XOI alone into the mod. The relay learns nothing; besides those files it only hands the job's mod,
+one of its packs, to a machine that asks for it.
+
+The page `/hoc` (`ADMIN_KEY`, the one `/admin` remembers) sets the job: the mod (one of the relay's
+packs, or each machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`, `TRAN_KIEM_TRA`,
+`TRAN_XAC_NHAN`, and `MOI_NV`, the processes a fighter gets), the fighters (ids or names), and shows
+each one's state: waiting, learning on which slot (with its last check, which the slot reports),
+done (the round chosen and its score on new games), or failed (the end of its account). A fighter can
+be handed out again or taken off. The machines use the job's own key (`X-Hoc-Key`), which the page
+writes into the file `may-con-cai-dat.bat` it gives out; a new key shuts the old one out. A slot that
+asks again gets the fighter it holds back, so a machine started again goes on where it was (its
+`hoc-tang-cuong` folder keeps the rounds done). Kept in `HOC_DIR` (default `<PACKS_DIR>/hoc`):
+`viec.json` and `nv/<fighter>/`. The machines' requests answer in `KEY=value` lines (LF only), which a
+`.bat` file reads with `for /f`; the requests are listed at the top of [`hoc.js`](hoc.js).
+
 ## Settings (environment variables)
 
 | Variable | Default | Meaning |
@@ -215,6 +239,7 @@ and the rooms use the relay's WebSocket path.
 | `HF_ROOMS` | `4` | Hero Fighter rooms (1 to 20) |
 | `HF_ROOM_DESCRIPTION` | `OpenLF2 relay` | The description of those rooms in the game's room list |
 | `HF_DIR` | `<PACKS_DIR>/hf` | Where Hero Fighter accounts are kept (empty with no `PACKS_DIR`: in memory only) |
+| `HOC_DIR` | `<PACKS_DIR>/hoc` | Where the job of reinforcement learning on many machines and their results are kept (`/hoc`) |
 | `QUIET` | off | No log lines |
 
 `GET /healthz` answers `{"ok":true,"rooms":N,"clients":N,"installer":…,"protocols":[1,2],"players":8,"packs":…,"hf":{"rooms":4,"players":N}}`;

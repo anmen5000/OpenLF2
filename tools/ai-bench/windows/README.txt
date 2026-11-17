@@ -182,7 +182,24 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    (300,000 games a fighter): Keny 200-0 against XOI alone's 95-102, Khaoslong +8 points in 100 games, Ryozaki -6
    (left out).
 
-Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
+12. Reinforcement learning on many machines (package 90): may-con.bat, with the relay as the one that shares out
+   the work. The relay (your VPS, installer version 14) keeps a job - the mod, the settings, the fighters to learn -
+   on its page https://<relay>/hoc (ADMIN_KEY): choose the mod (one uploaded at /admin: each machine downloads it once;
+   or each machine's own zip beside may-con.bat), the settings (VONG, TRAN, the processes a fighter gets...) and add the
+   fighters (ids or names). The button "Tai file may-con-cai-dat.bat" gives the file with the relay's address and the
+   machines' key: put it in the kit folder of every machine (and of your own, beside dua-bo-nao-vao-mod.bat). On each
+   machine (OpenLF2 installed, this kit), double-click may-con.bat: it opens one window a slot (the CPU threads over
+   the processes a fighter gets: 100 threads with 33 each are 3 slots); each slot asks the relay for a fighter, learns
+   it with hoc-tang-cuong.bat (its results stay in hoc-tang-cuong\<fighter>\ as always), sends the results back
+   (tom-tat.txt, xac-nhan.txt, the chosen network: about 1 MB) and takes the next one, until none are left. The page
+   shows every fighter: waiting, learning on which machine (with its last check), done (with its score on new
+   games), or failed (the end of its account; "Giao lai" hands it out again). The relay learns nothing, it only
+   passes small files. On your machine, dua-bo-nao-vao-mod.bat downloads the machines' results first (fighters you
+   learned on that machine itself keep their own) and puts the networks that beat XOI into the mod. Closing a
+   slot's window pauses it; may-con.bat run again goes on (each slot gets its fighter back, the rounds done are
+   kept). Every machine needs its own name (MAY, its Windows name by default) and Windows 10 1803 or newer (curl.exe).
+
+Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), may-con.bat (a machine of the relay's job), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
@@ -367,7 +384,23 @@ chơi được chính các file của bản mod.
    án (300.000 trận mỗi nhân vật): Keny 200-0 so với XOI một mình 95-102, Khaoslong hơn 8 điểm mỗi 100 trận, Ryozaki
    kém 6 (không đưa vào).
 
-Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
+12. Học tăng cường trên nhiều máy (gói 90): may-con.bat, relay chia việc. Relay (VPS của bạn, trình cài đặt phiên
+   bản 14) giữ một việc - bản mod, cài đặt, các nhân vật cần học - ở trang https://<relay>/hoc (mã ADMIN_KEY): chọn
+   bản mod (một bản đã tải lên ở /admin: mỗi máy tự tải về một lần; hay mỗi máy tự có file zip cạnh may-con.bat), cài
+   đặt (VONG, TRAN, số tiến trình mỗi nhân vật...) và thêm các nhân vật (số id hay tên). Nút "Tải file
+   may-con-cai-dat.bat" cho file có địa chỉ relay và mã máy con: chép nó vào thư mục bộ XOI của mọi máy (cả máy của
+   bạn, cạnh dua-bo-nao-vao-mod.bat). Trên mỗi máy (đã cài OpenLF2, có bộ XOI này) nháy đúp may-con.bat: nó mở mỗi
+   "ô" một cửa sổ (số luồng CPU chia cho số tiến trình mỗi nhân vật: 100 luồng, mỗi nhân vật 33 là 3 ô); mỗi ô hỏi
+   relay một nhân vật, học nó bằng hoc-tang-cuong.bat (kết quả vẫn ở hoc-tang-cuong\<nhân vật>\ như thường), gửi kết
+   quả lên relay (tom-tat.txt, xac-nhan.txt, bộ não đã chọn: chừng 1 MB) rồi lấy nhân vật tiếp, tới khi hết. Trang
+   /hoc cho thấy từng nhân vật: chờ, đang học trên máy nào (kèm lần kiểm tra mới nhất), xong (kèm điểm trên trận
+   mới), hay lỗi (kèm cuối tom-tat; nút "Giao lại" để giao lại). Relay không học gì, chỉ chuyển các file nhỏ. Trên
+   máy của bạn, dua-bo-nao-vao-mod.bat tải kết quả của các máy con về trước (nhân vật học ngay trên máy ấy thì giữ
+   kết quả của máy ấy) rồi đưa các bộ não hơn XOI vào bản mod. Đóng cửa sổ một ô là tạm dừng; chạy lại may-con.bat
+   là làm tiếp (mỗi ô nhận lại nhân vật của nó, các vòng đã xong được giữ). Mỗi máy cần một tên riêng (MAY, mặc
+   định là tên Windows của máy) và Windows 10 bản 1803 trở lên (có curl.exe).
+
+Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), may-con.bat (máy con của việc trên relay), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
 tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

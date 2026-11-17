@@ -959,6 +959,15 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Learning on many machines, the relay sharing out the work</b> (package 90, relay installer version 14). The
+          relay keeps a job on its page <code>/hoc</code> (the admin key): the mod, the settings and the fighters to learn.
+          Each machine runs the new <code>may-con.bat</code>: its CPU threads make slots of <code>MOI_NV</code> processes,
+          each slot asks the relay for a fighter, learns it with <code>hoc-tang-cuong.bat</code>, sends the results back
+          (about 1 MB) and takes the next one, until none are left; a slot started again goes on with its fighter. The page
+          shows every fighter (waiting, learning on which machine with its last check, done with its score on new games,
+          failed) and gives out <code>may-con-cai-dat.bat</code>, the relay's address and the machines' key; on your own
+          machine <code>dua-bo-nao-vao-mod.bat</code> fetches the machines' results first. The relay learns nothing, it
+          passes small files. Also: <code>BO_RA</code> of <code>dua-bo-nao-vao-mod.bat</code> leaves a fighter out again.</li>
         <li><b>The chosen network is confirmed on new games</b> (package 89, <code>hoc-tang-cuong.bat</code>). Package 88
           kept the network of the best check and put it in a mod when that check beat XOI alone; but every check plays the
           same games and is off by several points either way, so the best of twenty is mostly the luckiest (the project
@@ -1067,6 +1076,15 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Học tăng cường trên nhiều máy, relay chia việc</b> (gói 90, trình cài đặt relay phiên bản 14). Relay giữ một
+          việc ở trang <code>/hoc</code> (mã quản trị): bản mod, cài đặt và các nhân vật cần học. Mỗi máy chạy
+          <code>may-con.bat</code> mới: các luồng CPU chia thành các ô <code>MOI_NV</code> tiến trình, mỗi ô hỏi relay một
+          nhân vật, học nó bằng <code>hoc-tang-cuong.bat</code>, gửi kết quả lên (chừng 1 MB) rồi lấy nhân vật tiếp, tới khi
+          hết; một ô chạy lại thì học tiếp nhân vật của nó. Trang cho thấy từng nhân vật (chờ, đang học trên máy nào kèm lần
+          kiểm tra mới nhất, xong kèm điểm trên trận mới, lỗi) và cho file <code>may-con-cai-dat.bat</code> có địa chỉ
+          relay và mã máy con; trên máy của bạn, <code>dua-bo-nao-vao-mod.bat</code> tải kết quả của các máy con về trước.
+          Relay không học gì, chỉ chuyển các file nhỏ. Thêm: <code>BO_RA</code> của <code>dua-bo-nao-vao-mod.bat</code>
+          nay bỏ được nhân vật ra thật.</li>
         <li><b>Bộ não được chọn được xác nhận trên trận mới</b> (gói 89, <code>hoc-tang-cuong.bat</code>). Gói 88 giữ bộ
           não có lần kiểm tra cao nhất và đưa vào bản mod nếu lần ấy hơn XOI một mình; nhưng mọi lần kiểm tra đánh cùng một
           bộ trận và lệch vài điểm do may rủi, nên lần cao nhất trong 20 lần thường là lần gặp may (Ryozaki của chủ dự án,

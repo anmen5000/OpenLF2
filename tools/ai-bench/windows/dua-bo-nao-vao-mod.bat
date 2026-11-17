@@ -39,7 +39,14 @@ if not defined PACK (
 if not defined PACK (echo Khong thay file zip ban mod: dat no canh file nay, keo tha no vao file nay, hoac sua dong PACK o dau file.& pause& exit /b 1)
 if not exist "%PACK%" (echo Khong thay "%PACK%".& pause& exit /b 1)
 set "RL_DIR=%KIT%hoc-tang-cuong"
-if not exist "%RL_DIR%" (echo Khong thay thu muc "%RL_DIR%" - chay hoc-tang-cuong.bat truoc.& pause& exit /b 1)
+rem (Tu goi 90: co file may-con-cai-dat.bat canh file nay - hoc tang cuong tren nhieu may, trang /hoc cua relay - thi
+rem tai ket qua cua cac may con ve hoc-tang-cuong\<nhan vat>\ truoc. Nhan vat da hoc tren chinh may nay thi giu ket
+rem qua cua may nay.)
+set "HOC_HUB="
+set "HOC_KEY="
+if exist "%KIT%may-con-cai-dat.bat" call "%KIT%may-con-cai-dat.bat"
+if defined HOC_HUB if defined HOC_KEY call :tai_vps
+if not exist "%RL_DIR%" (echo Khong thay thu muc "%RL_DIR%" - chay hoc-tang-cuong.bat ^(hay may-con.bat^) truoc.& pause& exit /b 1)
 for %%z in ("%PACK%") do (
   set "XTEN=%%~nz"
   set "XDIR=%%~dpz"
@@ -55,9 +62,44 @@ set "RL_BO_RA=%BO_RA%"
 echo Ban mod: "%PACK%"
 echo Bo nao lay tu: "%RL_DIR%"
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $inv=[Globalization.CultureInfo]::InvariantCulture; $chi=@(); if ($env:RL_CHI) { $chi=@($env:RL_CHI -split '[ ,;]+' | Where-Object { $_ }) }; $bora=@(); if ($env:RL_BO_RA) { $bora=@($env:RL_BO_RA -split '[ ,;]+' | Where-Object { $_ }) }; $add=@(); $drop=@($bora); foreach ($d in (Get-ChildItem -LiteralPath $env:RL_DIR -Directory)) { if ($chi.Count -gt 0 -and -not ($chi -contains $d.Name)) { continue }; $tt=Join-Path $d.FullName 'tom-tat.txt'; if (-not (Test-Path -LiteralPath $tt)) { continue }; $lines=@(Get-Content -LiteralPath $tt); $id=$null; $name=$d.Name; foreach ($l in $lines) { if ($l -match 'nhan vat (.+) \(id (-?\d+)\)') { $name=$Matches[1]; $id=$Matches[2]; break } }; if ($id -eq $null) { Write-Host ('  ' + $d.Name + ': khong thay so id trong tom-tat.txt - bo qua'); continue }; $file=$null; $round=$null; $score=$null; $how=''; $xn=Join-Path $d.FullName 'xac-nhan.txt'; if (Test-Path -LiteralPath $xn) { $t=@(([string](Get-Content -LiteralPath $xn -TotalCount 1)).Trim() -split '\s+'); if ($t.Count -ge 2 -and $t[0] -match '^\d+$') { $f=Join-Path $d.FullName ('bo-nao-' + $t[0] + '.txt'); if (Test-Path -LiteralPath $f) { $file=$f; $round=[int]$t[0]; $score=[double]::Parse($t[1], $inv) / 10; $how=', xac nhan tren tran moi' } } }; if ($null -eq $file) { foreach ($l in $lines) { if ($l -match '^KIEM TRA vong (\d+), greedy .*network - XOI ([+-]?[0-9.]+) points') { $r=[int]$Matches[1]; $f=Join-Path $d.FullName ('bo-nao-' + $r + '.txt'); if ((Test-Path -LiteralPath $f) -and (($null -eq $round) -or ($r -ge $round))) { $file=$f; $round=$r; $score=[double]::Parse($Matches[2], $inv); $how=', lan kiem tra moi nhat, chua xac nhan' } } } }; if ($null -eq $file) { Write-Host ('  ' + $name + ' (id ' + $id + '): chua co bo nao nao duoc kiem tra - bo qua'); continue }; $first=Get-Content -LiteralPath $file -TotalCount 1; if ($first -notmatch '^RLW_HEAD ') { Write-Host ('  ' + $name + ' (id ' + $id + '): file bo nao hong - bo qua'); continue }; if ($score -le 0) { Write-Host ('  ' + $name + ' (id ' + $id + '): bo nao vong ' + $round + ' khong hon XOI (' + $score.ToString('+0.0;-0.0;0.0', $inv) + ' diem moi 100 tran' + $how + ') - khong dua vao'); $drop += $id; continue }; Write-Host ('  ' + $name + ' (id ' + $id + '): bo nao vong ' + $round + ', hon XOI ' + $score.ToString('+0.0', $inv) + ' diem moi 100 tran' + $how + ' - dua vao'); $add += ,@($id, $file) }; if ($add.Count -eq 0 -and $drop.Count -eq 0) { Write-Host 'Khong co gi de dua vao.'; exit 0 }; if (Test-Path -LiteralPath $env:RL_OUT) { Copy-Item -LiteralPath $env:RL_OUT -Destination $env:RL_TRUOC -Force } else { Copy-Item -LiteralPath $env:RL_PACK -Destination $env:RL_OUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:RL_OUT, 'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($id in $drop) { $entry=$root + 'xoi/rl-' + $id + '.txt'; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $entry })) { $old.Delete(); Write-Host ('     Da go ' + $entry) } }; foreach ($a in $add) { $entry=$root + 'xoi/rl-' + $a[0] + '.txt'; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $entry })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $a[1], $entry); Write-Host ('     Da them ' + $entry) } } finally { $z.Dispose() }; Write-Host ''; Write-Host ('Xong: ' + $env:RL_OUT)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $inv=[Globalization.CultureInfo]::InvariantCulture; $chi=@(); if ($env:RL_CHI) { $chi=@($env:RL_CHI -split '[ ,;]+' | Where-Object { $_ }) }; $bora=@(); if ($env:RL_BO_RA) { $bora=@($env:RL_BO_RA -split '[ ,;]+' | Where-Object { $_ }) }; $add=@(); $drop=@($bora); foreach ($d in (Get-ChildItem -LiteralPath $env:RL_DIR -Directory)) { if ($chi.Count -gt 0 -and -not ($chi -contains $d.Name)) { continue }; $tt=Join-Path $d.FullName 'tom-tat.txt'; if (-not (Test-Path -LiteralPath $tt)) { continue }; $lines=@(Get-Content -LiteralPath $tt); $id=$null; $name=$d.Name; foreach ($l in $lines) { if ($l -match 'nhan vat (.+) \(id (-?\d+)\)') { $name=$Matches[1]; $id=$Matches[2]; break } }; if ($id -eq $null) { Write-Host ('  ' + $d.Name + ': khong thay so id trong tom-tat.txt - bo qua'); continue }; if ($bora -contains $id) { Write-Host ('  ' + $name + ' (id ' + $id + '): co trong BO_RA - khong dua vao'); continue }; $file=$null; $round=$null; $score=$null; $how=''; $xn=Join-Path $d.FullName 'xac-nhan.txt'; if (Test-Path -LiteralPath $xn) { $t=@(([string](Get-Content -LiteralPath $xn -TotalCount 1)).Trim() -split '\s+'); if ($t.Count -ge 2 -and $t[0] -match '^\d+$') { $f=Join-Path $d.FullName ('bo-nao-' + $t[0] + '.txt'); if (Test-Path -LiteralPath $f) { $file=$f; $round=[int]$t[0]; $score=[double]::Parse($t[1], $inv) / 10; $how=', xac nhan tren tran moi' } } }; if ($null -eq $file) { foreach ($l in $lines) { if ($l -match '^KIEM TRA vong (\d+), greedy .*network - XOI ([+-]?[0-9.]+) points') { $r=[int]$Matches[1]; $f=Join-Path $d.FullName ('bo-nao-' + $r + '.txt'); if ((Test-Path -LiteralPath $f) -and (($null -eq $round) -or ($r -ge $round))) { $file=$f; $round=$r; $score=[double]::Parse($Matches[2], $inv); $how=', lan kiem tra moi nhat, chua xac nhan' } } } }; if ($null -eq $file) { Write-Host ('  ' + $name + ' (id ' + $id + '): chua co bo nao nao duoc kiem tra - bo qua'); continue }; $first=Get-Content -LiteralPath $file -TotalCount 1; if ($first -notmatch '^RLW_HEAD ') { Write-Host ('  ' + $name + ' (id ' + $id + '): file bo nao hong - bo qua'); continue }; if ($score -le 0) { Write-Host ('  ' + $name + ' (id ' + $id + '): bo nao vong ' + $round + ' khong hon XOI (' + $score.ToString('+0.0;-0.0;0.0', $inv) + ' diem moi 100 tran' + $how + ') - khong dua vao'); $drop += $id; continue }; Write-Host ('  ' + $name + ' (id ' + $id + '): bo nao vong ' + $round + ', hon XOI ' + $score.ToString('+0.0', $inv) + ' diem moi 100 tran' + $how + ' - dua vao'); $add += ,@($id, $file) }; if ($add.Count -eq 0 -and $drop.Count -eq 0) { Write-Host 'Khong co gi de dua vao.'; exit 0 }; if (Test-Path -LiteralPath $env:RL_OUT) { Copy-Item -LiteralPath $env:RL_OUT -Destination $env:RL_TRUOC -Force } else { Copy-Item -LiteralPath $env:RL_PACK -Destination $env:RL_OUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:RL_OUT, 'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($id in $drop) { $entry=$root + 'xoi/rl-' + $id + '.txt'; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $entry })) { $old.Delete(); Write-Host ('     Da go ' + $entry) } }; foreach ($a in $add) { $entry=$root + 'xoi/rl-' + $a[0] + '.txt'; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $entry })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $a[1], $entry); Write-Host ('     Da them ' + $entry) } } finally { $z.Dispose() }; Write-Host ''; Write-Host ('Xong: ' + $env:RL_OUT)"
 if errorlevel 1 (echo [LOI] Khong dua duoc bo nao vao ban mod. Tu lam: mo file zip ban mod, vao thu muc co thu muc data, tao thu muc xoi, chep bo-nao-^<vong^>.txt cua nhan vat vao do voi ten rl-^<id^>.txt.& pause& exit /b 1)
 echo.
 echo Choi bang file zip nay ^(may nao trong phong cung phai co dung file nay^). XOI dung bo nao hoc tang cuong cua
-echo nhan vat co file xoi/rl-^<id^>.txt; INSANE! khong dung.
+echo nhan vat co file xoi/rl-^<id^>.txt; INSANE^^! khong dung.
 pause
+exit /b 0
+
+rem --- Ket qua cua cac may con tren relay (may-con.bat): ve hoc-tang-cuong\<nhan vat>\ (danh dau tu-vps.txt) ---
+:tai_vps
+where curl.exe >nul 2>&1 || (echo [CHU Y] Khong co curl.exe ^(can Windows 10 ban 1803 tro len^) - khong tai duoc ket qua tu relay.& exit /b 0)
+echo Tai ket qua cua cac may con tu relay "%HOC_HUB%"...
+if not exist "%RL_DIR%" mkdir "%RL_DIR%"
+set "DS=%RL_DIR%\ket-qua-relay.txt"
+del /q "%DS%" 2>nul
+curl.exe -s -S -m 120 -H "X-Hoc-Key: %HOC_KEY%" -o "%DS%" "%HOC_HUB%/api/ket-qua"
+if errorlevel 1 (echo [CHU Y] Khong noi duoc voi relay - chi dung ket qua tren may nay.& exit /b 0)
+if not exist "%DS%" (echo   Relay chua co nhan vat nao xong.& exit /b 0)
+findstr /b /c:"LOI=" "%DS%" >nul 2>&1 && (echo [CHU Y] Relay bao loi:& type "%DS%"& del /q "%DS%"& exit /b 0)
+for /f "usebackq tokens=1,*" %%a in ("%DS%") do call :tai_mot "%%a" "%%b"
+del /q "%DS%" 2>nul
+echo.
+exit /b 0
+
+:tai_mot
+set "ID=%~1"
+set "TEPS=%~2"
+set "D=%RL_DIR%\%ID%"
+if exist "%D%\" if not exist "%D%\tu-vps.txt" (echo   %ID%: da hoc tren may nay - giu ket qua cua may nay.& exit /b 0)
+if not exist "%D%" mkdir "%D%"
+set "HONG="
+for %%t in (%TEPS%) do (
+  curl.exe -s -S -f -m 300 -H "X-Hoc-Key: %HOC_KEY%" -o "%D%\%%t.tai" "%HOC_HUB%/api/tep/%ID%/%%t" && move /y "%D%\%%t.tai" "%D%\%%t" >nul || set "HONG=1"
+)
+if defined HONG (
+  echo   %ID%: tai chua du file - chay lai file nay sau.
+) else (
+  >"%D%\tu-vps.txt" echo ket qua tai tu relay
+  echo   %ID%: da tai ket qua tu relay.
+)
+exit /b 0
