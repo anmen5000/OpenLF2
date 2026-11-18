@@ -64,6 +64,7 @@ test('a job handed out to machines, its results kept and fetched', async () => {
     const key = answer.body.key;
     answer = await admin(relay, 'POST', 'them', { fighters: '16, 25 8 16' });
     assert.deepEqual(answer.body.added, ['16', '25', '8']);
+    assert.deepEqual(answer.body.skipped, [], 'a name twice in one list is not one the job had');
     assert.equal((await admin(relay, 'POST', 'them', { fighters: '../x' })).status, 400);
 
     // The machines.
@@ -170,6 +171,62 @@ test('a job handed out to machines, its results kept and fetched', async () => {
   }
 });
 
+test('a new job takes every fighter off, with its files (package 94)', async () => {
+  const packsDir = tempDir();
+  const relay = await startRelay(packsDir);
+  try {
+    const key = (await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 200 } })).body.key;
+    await admin(relay, 'POST', 'them', { fighters: '16 25' });
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC1-o1')).values.NV, '16');
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC1-o2')).values.NV, '25');
+    const brain = 'RLW_HEAD 105 64 23 12504\r\nRLW 1 0.5\r\n';
+    await machine(relay, key, 'PUT', 'nop/16/tom-tat.txt?may=PC1-o1', ACCOUNT);
+    await machine(relay, key, 'PUT', 'nop/16/xac-nhan.txt?may=PC1-o1', '200 381\r\n');
+    await machine(relay, key, 'PUT', 'nop/16/bo-nao-200.txt?may=PC1-o1', brain);
+    assert.equal((await machine(relay, key, 'POST', 'xong/16?may=PC1-o1')).values.OK, '1');
+    let status = (await admin(relay, 'GET', 'trang-thai')).body;
+    assert.equal(status.bytes, Buffer.byteLength(ACCOUNT) + Buffer.byteLength('200 381\r\n') + Buffer.byteLength(brain),
+      'the size of the results kept');
+
+    // Fighters the job has already are not added again, and the page is told which.
+    const answer = (await admin(relay, 'POST', 'them', { fighters: '16 30 16' })).body;
+    assert.deepEqual(answer.added, ['30']);
+    assert.deepEqual(answer.skipped, ['16']);
+
+    // Only the page may start a new job.
+    const byMachine = await fetch(`${relay.base}/hoc/api/viec-moi`, { method: 'POST', headers: { 'x-hoc-key': key } });
+    assert.equal(byMachine.status, 401);
+    assert.match((await byMachine.json()).error, /ADMIN_KEY|quan tri/i);
+    const fresh = await admin(relay, 'POST', 'viec-moi');
+    assert.equal(fresh.status, 200);
+    assert.equal(fresh.body.removed, 3);
+    status = (await admin(relay, 'GET', 'trang-thai')).body;
+    assert.deepEqual(status.fighters, []);
+    assert.equal(status.bytes, 0);
+    assert.equal(status.key, key, 'the machines keep their key');
+    assert.equal(status.settings.VONG, 200, 'and the settings stay');
+    assert.equal(fs.existsSync(path.join(packsDir, 'hoc', 'nv')), false);
+    assert.equal((await machine(relay, key, 'GET', 'ket-qua')).text, '');
+
+    // A slot still learning a fighter of the old job: its results are refused, it takes the next fighter.
+    const late = await machine(relay, key, 'PUT', 'nop/25/tom-tat.txt?may=PC1-o2', ACCOUNT);
+    assert.equal(late.status, 404);
+    assert.match(late.values.LOI, /Khong co nhan vat 25/);
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC1-o2')).values.HET, '1');
+    assert.deepEqual((await admin(relay, 'POST', 'them', { fighters: '16' })).body.added, ['16'], 'the next mod\'s 16');
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC1-o2')).values.NV, '16');
+  } finally {
+    await relay.close();
+  }
+  const again = await startRelay(packsDir);
+  try {
+    const status = (await admin(again, 'GET', 'trang-thai')).body;
+    assert.deepEqual(status.fighters.map((one) => [one.id, one.state, one.may]), [['16', 'dang', 'PC1-o2']], 'kept on disk');
+  } finally {
+    await again.close();
+  }
+});
+
 test('the job\'s mod handed to the machines from the relay\'s packs', async () => {
   const packsDir = tempDir();
   const zip = Buffer.from('PK pretend zip of a mod');
@@ -197,7 +254,9 @@ test('the page is served, and the hub is off the other paths', async () => {
   try {
     const page = await fetch(`${relay.base}/hoc`);
     assert.equal(page.status, 200);
-    assert.match(await page.text(), /may-con-cai-dat\.bat/);
+    const html = await page.text();
+    assert.match(html, /may-con-cai-dat\.bat/);
+    assert.match(html, /Bắt đầu việc mới/);
     assert.equal((await fetch(`${relay.base}/hocx`)).status, 404);
     assert.equal((await fetch(`${relay.base}/hoc/api/nothing`, { headers: { 'x-admin-key': ADMIN } })).status, 404);
   } finally {

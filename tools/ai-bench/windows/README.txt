@@ -180,7 +180,10 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    from package 92 it first checks the networks of the two latest rounds and learns a damaged one's round again.
    From package 88 the game uses them: dua-bo-nao-vao-mod.bat puts each fighter's network (from package 89 the
    confirmed one, else the latest check's) into the mod's <name>-xoi.zip as xoi/rl-<id>.txt - only those that beat
-   XOI alone (the "greedy" line positive), and takes out those that do not (or the ids in BO_RA). XOI playing a fighter with such a
+   XOI alone (the "greedy" line positive), and takes out those that do not (or the ids in BO_RA). From package 94
+   tom-tat.txt carries the mod's code ([ma-mod ...], from its data\data.txt): a fighter folder holding another
+   fighter's results (another mod with the same id) is renamed <folder>.cu-<n> (nothing is deleted) and the fighter
+   learns from the start, and only networks learned on a mod go into it. XOI playing a fighter with such a
    file plays its network; INSANE! does not. Every player of a room needs that same zip. The owner's first run
    (300,000 games a fighter): Keny 200-0 against XOI alone's 95-102, Khaoslong +8 points in 100 games, Ryozaki -6
    (left out).
@@ -205,6 +208,15 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    or set PACK; may-con.bat checks it before it takes any fighter. From package 91 (relay installer 15) a slot whose
    machine cannot learn (no game, no scripts: hoc-tang-cuong.bat stops before its tom-tat.txt) gives its fighter back
    to the queue for another machine, and the page has "Giao lai cac nhan vat loi" for the failed ones.
+   From one mod to the next (package 94, relay installer 16): the mod done (dua-bo-nao-vao-mod.bat run on your
+   machine), press "Bat dau viec moi" on the page before adding the next mod's fighters - every fighter goes, with its
+   results on the relay (the key, the mod and the settings stay). The results are kept by fighter id, and two mods
+   mostly share ids; with the mod's code in tom-tat.txt a machine that learned id 16 of another mod renames that
+   folder hoc-tang-cuong\16.cu-1 and learns the new 16 from the start. Space: on the relay a fighter's results take
+   under 0.3 MB (the page shows the total); on a machine a fighter's folder keeps every round's network (about 70 MB
+   for 500 rounds) - once the mod has its networks, a machine's hoc-tang-cuong folder can be deleted. Results from
+   before package 94 carry no code: once the current mod is packed, rename your machine's hoc-tang-cuong folder
+   (hoc-tang-cuong-naruto, say).
 
 Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), may-con.bat (a machine of the relay's job), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
 its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
@@ -390,7 +402,10 @@ chơi được chính các file của bản mod.
    bộ nào hỏng (chưa kịp ghi xuống đĩa) thì học lại vòng ấy.
    Từ gói 88 game dùng được các bộ não này: dua-bo-nao-vao-mod.bat đưa bộ não của từng nhân vật (từ gói 89: bộ đã
    xác nhận, không thì bộ của lần kiểm tra mới nhất) vào <tên>-xoi.zip của bản mod, thành xoi/rl-<id>.txt - chỉ bộ
-   hơn XOI một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). XOI điều khiển nhân vật có file
+   hơn XOI một mình (dòng "greedy" dương), và gỡ ra những bộ không hơn (hay các id ở BO_RA). Từ gói 94 tom-tat.txt
+   ghi mã bản mod ([ma-mod ...], từ file data\data.txt của nó): thư mục nhân vật đang có kết quả của nhân vật khác
+   (bản mod khác có cùng số id) được đổi tên thành <thư mục>.cu-<số> (không xóa gì) và nhân vật học từ đầu, và chỉ
+   bộ não học trên chính bản mod nào mới được đưa vào bản mod ấy. XOI điều khiển nhân vật có file
    ấy thì dùng bộ não của nó; INSANE! thì không. Mọi người trong phòng cần cùng file zip ấy. Lần chạy đầu của chủ dự
    án (300.000 trận mỗi nhân vật): Keny 200-0 so với XOI một mình 95-102, Khaoslong hơn 8 điểm mỗi 100 trận, Ryozaki
    kém 6 (không đưa vào).
@@ -414,6 +429,15 @@ chơi được chính các file của bản mod.
    <tên>-xoi.zip), hay ghi ở dòng PACK; may-con.bat kiểm tra trước khi nhận nhân vật. Từ gói 91 (relay phiên bản 15),
    ô nào mà máy chưa học được (thiếu game, scripts: hoc-tang-cuong.bat dừng trước khi có tom-tat.txt) thì trả nhân
    vật về hàng đợi cho máy khác, và trang /hoc có nút "Giao lại các nhân vật lỗi".
+   Từ bản mod này sang bản mod khác (gói 94, relay phiên bản 16): xong một bản mod (đã chạy dua-bo-nao-vao-mod.bat
+   trên máy của bạn) thì bấm "Bắt đầu việc mới" trên trang /hoc trước khi thêm nhân vật của bản mod kế - nó bỏ hết
+   nhân vật và kết quả trên relay (mã máy con, bản mod và cài đặt giữ nguyên). Kết quả được ghi theo số id nhân vật,
+   mà hai bản mod thường dùng chung số id; có mã bản mod trong tom-tat.txt, máy nào từng học id 16 của bản mod khác
+   sẽ đổi tên thư mục ấy thành hoc-tang-cuong\16.cu-1 rồi học id 16 mới từ đầu. Chỗ trống: trên relay kết quả mỗi
+   nhân vật chưa tới 0,3 MB (trang /hoc ghi tổng); trên máy con, thư mục mỗi nhân vật giữ bộ não của từng vòng (500
+   vòng chừng 70 MB) - bản mod đã có bộ não thì xóa thư mục hoc-tang-cuong của máy con được. Kết quả trước gói 94
+   không có mã: đóng gói xong bản mod hiện tại thì đổi tên thư mục hoc-tang-cuong trên máy của bạn (ví dụ
+   hoc-tang-cuong-naruto).
 
 Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), may-con.bat (máy con của việc trên relay), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm

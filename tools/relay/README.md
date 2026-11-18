@@ -208,7 +208,12 @@ packs, or each machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`
 each one's state: waiting, learning on which slot (with its last check, which the slot reports),
 done (the round chosen and its score on new games), or failed (the end of its account). A fighter can
 be handed out again (every failed one with one button) or taken off; a slot whose machine cannot learn
-(no game, no mod) gives its fighter back to the queue itself (`POST /hoc/api/tra/<fighter>`, package 91). The machines use the job's own key (`X-Hoc-Key`), which the page
+(no game, no mod) gives its fighter back to the queue itself (`POST /hoc/api/tra/<fighter>`, package 91).
+A mod done, "Bat dau viec moi" (`POST /hoc/api/viec-moi`, package 94) takes every fighter off with its
+files, keeping the key, the mod and the settings: the results are kept by fighter (an id, or a name),
+and two mods mostly share ids, so the next mod's fighters would otherwise be taken for done (a fighter
+the job has is not added again: the page says which) and the old results fetched for the new mod. The
+page shows the size of the results kept (`trang-thai`'s `bytes`). The machines use the job's own key (`X-Hoc-Key`), which the page
 writes into the file `may-con-cai-dat.bat` it gives out; a new key shuts the old one out. A slot that
 asks again gets the fighter it holds back, so a machine started again goes on where it was (its
 `hoc-tang-cuong` folder keeps the rounds done). Kept in `HOC_DIR` (default `<PACKS_DIR>/hoc`):

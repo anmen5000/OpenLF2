@@ -17,6 +17,9 @@ rem cao hon duoc chon (xac-nhan.txt: vong va diem). dua-bo-nao-vao-mod.bat lay b
 rem Dua bo nao vao ban mod (tu goi 88 game dung duoc): chay dua-bo-nao-vao-mod.bat - chi nhan vat co bo nao hon XOI.
 rem Tam dung: dong cua so nay (cac game cua no tu dung theo), hay dat GIO_CHAY. Lam tiep: chay lai file nay - cac
 rem vong da xong duoc giu, vong dang do danh lai. Hoc lai tu dau: xoa thu muc hoc-tang-cuong\<NHAN_VAT>.
+rem Ma ban mod (tu goi 94): tom-tat.txt ghi ma cua ban mod (tu file data\data.txt cua no). Thu muc cua nhan vat dang
+rem co ket qua cua nhan vat khac - ban mod khac co cung so id - thi duoc doi ten thanh <thu muc>.cu-<so> (khong xoa
+rem gi) va nhan vat hoc tu dau; dua-bo-nao-vao-mod.bat chi dua vao ban mod cac bo nao hoc tren chinh ban mod ay.
 rem ============ CHINH O DAY ============
 rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
 set "GAME="
@@ -158,6 +161,7 @@ if !SO_NV! GTR 1 if /i not "%~1"=="mot_nv" (
 rem Thu muc cua nhan vat: hoc-tang-cuong\<NHAN_VAT> (dau cach doi thanh dau gach).
 set "TEN_NV=%NHAN_VAT: =-%"
 set "LV=%~dp0hoc-tang-cuong\%TEN_NV%"
+:thu_muc_nv
 if not exist "%LV%" mkdir "%LV%"
 rem (loi.txt: nhan vat khong co trong ban mod - may-con.bat bao relay loi cua nhan vat, khong phai cua may.)
 del /q "%LV%\loi.txt" 2>nul
@@ -193,6 +197,21 @@ if not defined TEN_THAT (
   %DUNG%
   exit /b 1
 )
+rem Ma ban mod (tu goi 94): 12 chu so dau cua SHA-256 file data\data.txt trong file zip ban mod - cung mot ma voi moi
+rem file zip cua cung ban mod (ca <ten>-xoi.zip, ca ban relay gui). Ghi o dong "Bat dau luc" cua tom-tat.txt.
+set "MA_MOD="
+for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [IO.Compression.ZipFile]::OpenRead($env:PACK_1); try { $e = @($z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length }); if ($e.Count -gt 0) { $s = $e[0].Open(); try { $h = [Security.Cryptography.SHA256]::Create().ComputeHash($s) } finally { $s.Close() }; -join ($h[0..5] | ForEach-Object { $_.ToString('x2') }) } } finally { $z.Dispose() }" 2^>nul`) do set "MA_MOD=%%h"
+rem Thu muc nay dang co ket qua cua nhan vat khac (ban mod khac co cung so id, hay cung nhan vat tren ban mod khac
+rem ma): doi ten no thanh <thu muc>.cu-<so> (khong xoa gi) roi hoc tu dau. Truoc goi 94, may con nhan so id ay cua
+rem ban mod moi tuong nhan vat da hoc xong va gui lai ket qua cu.
+powershell -NoProfile -Command "$t = Join-Path $env:LV 'tom-tat.txt'; if (-not (Test-Path -LiteralPath $t)) { exit 0 }; $b = @(Select-String -LiteralPath $t -Pattern '^=== Bat dau luc ' | Select-Object -Last 1); if ($b.Count -eq 0) { exit 0 }; $s = $b[0].Line; $khac = ''; if ($s -match 'nhan vat (.+?) \(id (-?\d+)\)') { $cu = $Matches[1] + ' (id ' + $Matches[2] + ')'; if ($cu -ne $env:TEN_THAT) { $khac = $cu } }; if (-not $khac -and $env:MA_MOD -and $s -match '\[ma-mod ([0-9a-f]+)\]') { if ($Matches[1] -ne $env:MA_MOD) { $khac = $env:TEN_THAT + ' tren ban mod khac (ma ' + $Matches[1] + ')' } }; if (-not $khac) { exit 0 }; $k = 1; while (Test-Path -LiteralPath ($env:LV + '.cu-' + $k)) { $k++ }; $moi = (Split-Path -Leaf $env:LV) + '.cu-' + $k; try { Rename-Item -LiteralPath $env:LV -NewName $moi -ErrorAction Stop } catch { Write-Host ('[LOI] ' + $_.Exception.Message); exit 1 }; Write-Host ('[CHU Y] Thu muc ' + $env:LV + ' co ket qua cua ' + $khac + ': da doi ten thanh ' + $moi + ' (khong xoa gi) - hoc ' + $env:TEN_THAT + ' tu dau.'); exit 2"
+if errorlevel 2 goto thu_muc_nv
+if errorlevel 1 (
+  >"%LV%\loi.txt" echo Thu muc "%LV%" co ket qua cua nhan vat khac hay ban mod khac, ma khong doi ten duoc - dong cac chuong trinh dang mo file trong do roi chay lai.
+  echo [LOI] Thu muc "%LV%" co ket qua cua nhan vat khac hay ban mod khac, ma khong doi ten duoc - dong cac chuong trinh dang mo file trong do roi chay lai.
+  %DUNG%
+  exit /b 1
+)
 
 echo Hoc tang cuong ^(thu nghiem^): nhan vat !TEN_THAT!, ban mod "%PACK_1%"
 echo %VONG% vong, moi vong %N% tien trinh x %TRAN% tran ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
@@ -211,7 +230,9 @@ set "CANH=%LV%\"
 set "CANH_XONG=%LV%\canh-xong.txt"
 del /q "%CANH_XONG%" 2>nul
 start "Hoc tang cuong - canh cua so" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
->>"%LV%\tom-tat.txt" echo === Bat dau luc %DATE% %TIME%: nhan vat !TEN_THAT!, ban mod %PACK_1%, %N% tien trinh x %TRAN% tran moi vong
+set "MA_GHI="
+if defined MA_MOD set "MA_GHI= [ma-mod !MA_MOD!]"
+>>"%LV%\tom-tat.txt" echo === Bat dau luc %DATE% %TIME%: nhan vat !TEN_THAT!, ban mod %PACK_1%!MA_GHI!, %N% tien trinh x %TRAN% tran moi vong
 
 rem Mat dien hay may tat giua chung: bo nao vua ghi co the chua kip xuong dia (thieu so, hay toan so 0). Kiem bo nao
 rem cua hai vong moi nhat; hong thi xoa (ca lan kiem tra, xac nhan cua vong ay) de vong ay hoc lai.

@@ -963,6 +963,18 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>From one mod to the next</b> (package 94, relay installer version 16). A fighter's results are kept by its
+          id, and two mods mostly share ids: with the next mod, the relay's job kept the old mod's fighters, a machine that
+          had learned id 16 of the old mod sent those results back for the new 16, and <code>dua-bo-nao-vao-mod.bat</code>
+          could put the old mod's networks into the new one. Now <code>tom-tat.txt</code> carries the mod's code (from its
+          <code>data\data.txt</code>): a machine renames another mod's folder, say <code>hoc-tang-cuong\16.cu-1</code> (nothing
+          is deleted), and learns from the start, and only networks learned on a mod go into it. A mod done, press
+          <b>Bắt đầu việc mới</b> on the page <code>/hoc</code>: every fighter goes with its results, in one click (the key, the
+          mod and the settings stay); the page shows what the results take, under 0.3 MB a fighter. On a machine a
+          fighter's folder keeps every round's network (about 70 MB for 500 rounds): once the mod has its networks, the
+          machines' <code>hoc-tang-cuong</code> folders can go. Results from before package 94 carry no code: once the
+          current mod is packed, rename your machine's <code>hoc-tang-cuong</code> folder. Update the relay (its version
+          16).</li>
         <li><b>The game opens on an older Windows</b> (package 93). On a Windows whose Visual C++ runtime was older than the
           game's compiler (<code>MSVCP140.dll</code> before 14.40, like a server's 14.24 of 2019), the game closed at once without a
           word, in every renderer. Its installer now carries the game's own runtime beside <code>openlf2.exe</code>, so there is
@@ -1096,6 +1108,17 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Từ bản mod này sang bản mod khác</b> (gói 94, trình cài đặt relay phiên bản 16). Kết quả của nhân vật được ghi
+          theo số id, mà hai bản mod thường dùng chung số id: sang bản mod kế, việc trên relay vẫn giữ nhân vật của bản cũ,
+          máy con từng học id 16 của bản cũ gửi lại kết quả ấy cho id 16 mới, và <code>dua-bo-nao-vao-mod.bat</code> có thể
+          đưa bộ não của bản cũ vào bản mới. Nay <code>tom-tat.txt</code> ghi mã bản mod (từ file <code>data\data.txt</code> của
+          nó): máy con đổi tên thư mục của bản mod khác, ví dụ thành <code>hoc-tang-cuong\16.cu-1</code> (không xóa gì), rồi
+          học từ đầu, và chỉ bộ não học trên chính bản mod nào mới được đưa vào bản mod ấy. Xong một bản mod thì bấm
+          <b>Bắt đầu việc mới</b> trên trang <code>/hoc</code>: bỏ hết nhân vật cùng kết quả của chúng trong một lần bấm (mã máy
+          con, bản mod và cài đặt giữ nguyên); trang ghi kết quả chiếm bao nhiêu, mỗi nhân vật chưa tới 0,3 MB. Trên máy
+          con, thư mục mỗi nhân vật giữ bộ não của từng vòng (500 vòng chừng 70 MB): bản mod đã có bộ não thì xóa thư mục
+          <code>hoc-tang-cuong</code> của các máy con được. Kết quả trước gói 94 không có mã: đóng gói xong bản mod hiện tại
+          thì đổi tên thư mục <code>hoc-tang-cuong</code> trên máy của bạn. Cập nhật relay (phiên bản 16).</li>
         <li><b>Game mở được trên Windows cũ</b> (gói 93). Trên Windows có bộ thư viện Visual C++ cũ hơn trình biên dịch
           của game (<code>MSVCP140.dll</code> trước bản 14.40, như máy chủ có bản 14.24 năm 2019), game tắt ngay không báo gì, với
           mọi cách vẽ. Nay bộ cài mang sẵn bộ thư viện của game, đặt cạnh <code>openlf2.exe</code>, nên không phải cài thêm gì;

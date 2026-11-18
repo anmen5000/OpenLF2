@@ -401,6 +401,11 @@ slot asks the relay for a fighter, runs `hoc-tang-cuong.bat mot_nv <fighter> <pr
 `xac-nhan.txt`, `tot-nhat.txt` and the networks of the confirmation and the latest check, and takes the next;
 `dua-bo-nao-vao-mod.bat` on the owner's machine fetches them first into `hoc-tang-cuong\<fighter>\` (marked
 `tu-vps.txt`; a fighter learned on that machine keeps its own) and packs the networks that beat XOI alone.
+Results are kept by fighter (an id, mostly), and two mods mostly share ids, so from package 94 `tom-tat.txt` carries
+the mod's code (`[ma-mod <code>]`, the first 12 hex digits of the SHA-256 of the mod's `data/data.txt`):
+`hoc-tang-cuong.bat` renames a fighter folder holding another fighter's results (another name or id, or another
+code) `<folder>.cu-<n>` and learns from the start, and `dua-bo-nao-vao-mod.bat` packs only the networks learned on
+the mod it packs (one an id); a mod done, the page's "Bat dau viec moi" takes the job's fighters and results off.
 In the lab (2 processes, 120 rounds of 20 games, KhaosLong of the project owner's pack) the network learned to keep
 out of XOI's way - its moves fell from 1.0% to about 0.4% of the frames asked, walks forward and waits most of what
 was left - and played as XOI: -0.5 +- 1.7 points per 100 games with its likeliest moves (192 games of 200 the same),

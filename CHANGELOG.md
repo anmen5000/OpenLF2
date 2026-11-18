@@ -800,7 +800,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   machines' results first when `may-con-cai-dat.bat` is beside it (a fighter learned on the machine itself keeps its
   own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
   `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
+- A new job in one click on the relay's page `/hoc` (package 94, relay installer version 16): "Bat dau viec moi"
+  (`POST /hoc/api/viec-moi`) takes every fighter off with its results, keeping the machines' key, the mod and the
+  settings. The page shows the size of the results kept (a fighter's are under 0.3 MB: its account, its confirmation
+  and one or two networks of about 125 KB) and, when fighters are added, which ones the job had already and so are not
+  added again.
 ### Fixed
+- The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
+  mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the
+  next mod's same ids did nothing), a machine that had learned id 16 of the old mod took the new mod's 16 for learned
+  and sent the old results back, and `dua-bo-nao-vao-mod.bat` put every network in `hoc-tang-cuong\` into whichever
+  mod it packed. From package 94 `hoc-tang-cuong.bat` writes the mod's code into `tom-tat.txt` (`[ma-mod <code>]`:
+  the first 12 hex digits of the SHA-256 of the mod's `data/data.txt`, the same for every zip of one mod) and, when a
+  fighter's folder holds another fighter's results (another name or id, or the same fighter on a mod of another
+  code), renames the folder `<folder>.cu-<n>` (nothing is deleted) and learns from the start; `may-con.bat` sends
+  nothing back when `hoc-tang-cuong.bat` failed; `dua-bo-nao-vao-mod.bat` leaves out networks learned on another mod,
+  old folders moved aside whose mod is not known, and a second network for one id, and renames a local folder aside
+  when the relay's results for its id are another fighter's or another mod's. Results from before package 94 carry
+  no code: they go in as before, with a note.
 - The Windows game closed at once, without a message, on a Windows whose Visual C++ runtime was older than the
   compiler the game is built with: the project owner's server had `MSVCP140.dll` 14.24 (2019), and the game crashed
   in it as it started (0xC0000005, every renderer, with or without a window). A program needs a runtime at least as

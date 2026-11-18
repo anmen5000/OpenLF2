@@ -100,8 +100,13 @@ title May con %MAY% - o %SO% - nhan vat !NV!
 echo.
 echo ===== O %SO%: hoc nhan vat !NV! ^(!HOC_VONG! vong, !HOC_MOI_NV! tien trinh^) - %DATE% %TIME:~0,8% =====
 call "%KIT%hoc-tang-cuong.bat" mot_nv !NV! !HOC_MOI_NV!
+set "HOC_KQ=!errorlevel!"
 set "LVN=%KIT%hoc-tang-cuong\!NV!"
-if not exist "!LVN!\xac-nhan.txt" (
+rem (Tu goi 94: hoc-tang-cuong.bat bao loi thi khong gui gi - thu muc co the con ket qua cu cua ban mod khac.)
+set "LOI_HOC="
+if not "!HOC_KQ!"=="0" set "LOI_HOC=1"
+if not exist "!LVN!\xac-nhan.txt" set "LOI_HOC=1"
+if defined LOI_HOC (
   call :bao_loi
   pause
   exit /b 1

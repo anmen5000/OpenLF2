@@ -16,6 +16,10 @@
 //   POST   /hoc/api/them                  add fighters: {"fighters":"16 25 8"} (X-Admin-Key)
 //   POST   /hoc/api/tra-lai/<fighter>     hand it out again (X-Admin-Key)
 //   DELETE /hoc/api/nv/<fighter>          take it off the job, with its files (X-Admin-Key)
+//   POST   /hoc/api/viec-moi              a new job: every fighter goes, with its files - the key, the mod and the
+//                                         settings stay (X-Admin-Key; package 94). The results are kept by fighter
+//                                         (an id, or a name), and two mods mostly share ids: the job of a mod done,
+//                                         a new one keeps its results from being taken for the next mod's.
 //   POST   /hoc/api/doi-ma                a new key for the machines (X-Admin-Key)
 // The machines' requests (X-Hoc-Key, or X-Admin-Key; answers as KEY=value lines, which a .bat file reads, and
 // LOI=<what went wrong> with an error status):
@@ -259,7 +263,9 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
     if (what === 'trang-thai' && parts.length === 1 && method === 'GET') {
       authorize(req, false);
       const fighters = job.order.map((one) => ({ id: one, ...job.fighters[one] }));
-      json(res, 200, { key: job.key, pack: job.pack, settings: job.settings, fighters, stored: Boolean(directory) });
+      let bytes = 0;
+      if (directory) for (const one of job.order) bytes += await sizeOf(folder(one));
+      json(res, 200, { key: job.key, pack: job.pack, settings: job.settings, fighters, stored: Boolean(directory), bytes });
       return;
     }
     if (what === 'cai-dat' && parts.length === 1 && method === 'PUT') {
@@ -282,8 +288,13 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       const bad = names.filter((name) => !FIGHTER.test(name));
       if (bad.length) throw new Answer(400, `Ten khong hop le: ${bad.slice(0, 5).join(' ')}`);
       const added = [];
+      const skipped = []; // in the job before: not added again (a name twice in the list is only added once)
+      const before = new Set(job.order);
       for (const name of names) {
-        if (job.fighters[name]) continue;
+        if (job.fighters[name]) {
+          if (before.has(name) && !skipped.includes(name)) skipped.push(name);
+          continue;
+        }
         if (job.order.length >= MAX_FIGHTERS) throw new Answer(400, `Toi da ${MAX_FIGHTERS} nhan vat.`);
         job.order.push(name);
         job.fighters[name] = cleanFighter({});
@@ -291,7 +302,7 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       }
       if (!job.key) job.key = crypto.randomBytes(16).toString('hex');
       save();
-      json(res, 200, { ok: true, added });
+      json(res, 200, { ok: true, added, skipped });
       return;
     }
     if (what === 'tra-lai' && parts.length === 2 && method === 'POST') {
@@ -312,6 +323,19 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       save();
       if (directory) await fsp.rm(folder(id), { recursive: true, force: true });
       json(res, 200, { ok: true });
+      return;
+    }
+    if (what === 'viec-moi' && parts.length === 1 && method === 'POST') {
+      authorize(req, false);
+      const removed = job.order.length;
+      job.order = [];
+      job.fighters = {};
+      save();
+      // A machine still learning one of them is told it is not the job's any more when it sends its results, and
+      // takes the next fighter.
+      if (directory) await fsp.rm(path.join(directory, 'nv'), { recursive: true, force: true });
+      log(`hoc: a new job (${removed} fighters taken off)`);
+      json(res, 200, { ok: true, removed });
       return;
     }
     if (what === 'doi-ma' && parts.length === 1 && method === 'POST') {
@@ -479,7 +503,8 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       }
       const message = error instanceof Answer ? error.message : (status === 400 ? 'Yeu cau hong.' : 'Loi tren relay.');
       if (pathname.startsWith('/hoc/api/trang-thai') || pathname.startsWith('/hoc/api/cai-dat') || pathname.startsWith('/hoc/api/them')
-        || pathname.startsWith('/hoc/api/tra-lai') || pathname.startsWith('/hoc/api/nv') || pathname.startsWith('/hoc/api/doi-ma')) {
+        || pathname.startsWith('/hoc/api/tra-lai') || pathname.startsWith('/hoc/api/nv') || pathname.startsWith('/hoc/api/doi-ma')
+        || pathname.startsWith('/hoc/api/viec-moi')) {
         json(res, status, { error: message });
       } else {
         lines(res, status, [`LOI=${message}`]);
@@ -564,6 +589,12 @@ const PAGE = `<!doctype html>
     <p id="summary" class="note"></p>
     <p><button id="retryall" class="secondary" hidden>Giao lại các nhân vật lỗi</button></p>
     <div class="wrap"><table><thead><tr><th>Nhân vật</th><th>Trạng thái</th><th></th></tr></thead><tbody id="list"></tbody></table></div>
+    <div id="newjob" hidden>
+      <p class="note">Xong một bản mod: chạy <code>dua-bo-nao-vao-mod.bat</code> trên máy chính (tải kết quả về, đưa bộ não vào bản
+        mod), rồi bấm nút dưới trước khi thêm nhân vật của bản mod khác. Kết quả được ghi theo số id (hay tên) nhân vật, mà hai
+        bản mod thường dùng chung số id. Mã máy con, bản mod và cài đặt giữ nguyên.</p>
+      <p><button id="newjobbtn" class="secondary">Bắt đầu việc mới (bỏ hết nhân vật và kết quả trên relay)</button></p>
+    </div>
   </div>
 </main>
 <script>
@@ -589,6 +620,7 @@ const PAGE = `<!doctype html>
   }
   const time = (iso) => { if (!iso) return ''; const d = new Date(iso); return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }); };
   const points = (value) => (value === null || value === undefined) ? '' : ((value > 0 ? '+' : '') + value.toFixed(1).replace('.', ','));
+  const megabytes = (bytes) => (bytes / 1e6).toFixed(bytes < 1e7 ? 1 : 0).replace('.', ',') + ' MB';
   function describe(f) {
     if (f.state === 'cho') return ['Chờ máy', 'note'];
     if (f.state === 'dang') {
@@ -622,8 +654,9 @@ const PAGE = `<!doctype html>
     }
     $('list').innerHTML = rows.join('') || '<tr><td colspan="3" class="note">Chưa có nhân vật nào: thêm ở trên.</td></tr>';
     $('retryall').hidden = counts.loi === 0;
+    $('newjob').hidden = state.fighters.length === 0;
     $('summary').textContent = state.fighters.length + ' nhân vật: ' + counts.xong + ' xong, ' + counts.dang + ' đang học, '
-      + counts.cho + ' chờ, ' + counts.loi + ' lỗi.';
+      + counts.cho + ' chờ, ' + counts.loi + ' lỗi.' + (state.bytes ? ' Kết quả trên relay: ' + megabytes(state.bytes) + '.' : '');
   }
   async function packs() {
     try {
@@ -657,7 +690,10 @@ const PAGE = `<!doctype html>
   });
   $('addbtn').addEventListener('click', async () => {
     try { const data = await call('POST', 'them', { fighters: $('add').value }); $('add').value = '';
-      status(data.added.length ? 'Đã thêm: ' + data.added.join(' ') : 'Không có nhân vật mới.', 'ok'); load(true); }
+      const had = (data.skipped || []).length ? ' Đã có trong việc (không thêm lại): ' + data.skipped.join(' ')
+        + ' — nhân vật của bản mod khác cùng số id thì bấm "Bắt đầu việc mới" trước.' : '';
+      status((data.added.length ? 'Đã thêm: ' + data.added.join(' ') + '.' : 'Không có nhân vật mới.') + had, data.added.length ? 'ok' : 'note');
+      load(true); }
     catch (error) { status(error.message, 'bad'); }
   });
   $('list').addEventListener('click', async (event) => {
@@ -679,6 +715,17 @@ const PAGE = `<!doctype html>
     try {
       for (const f of failed) await call('POST', 'tra-lai/' + encodeURIComponent(f.id));
       status('Đã đưa ' + failed.length + ' nhân vật về hàng đợi.', 'ok');
+    } catch (error) { status(error.message, 'bad'); }
+    load(true);
+  });
+  $('newjobbtn').addEventListener('click', async () => {
+    const learning = state.fighters.filter((f) => f.state === 'dang').length;
+    if (!confirm('Bắt đầu việc mới: bỏ hết ' + state.fighters.length + ' nhân vật và kết quả của chúng trên relay? Chạy '
+      + 'dua-bo-nao-vao-mod.bat trên máy chính trước để tải kết quả về.'
+      + (learning ? ' ' + learning + ' nhân vật đang học trên máy con: kết quả của chúng sẽ không được nhận.' : ''))) return;
+    try {
+      const data = await call('POST', 'viec-moi');
+      status('Đã bắt đầu việc mới (bỏ ' + data.removed + ' nhân vật). Chọn bản mod mới ở trên nếu cần, rồi thêm nhân vật.', 'ok');
     } catch (error) { status(error.message, 'bad'); }
     load(true);
   });
