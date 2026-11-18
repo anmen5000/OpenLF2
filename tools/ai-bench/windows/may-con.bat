@@ -61,6 +61,8 @@ if defined HOC_PACK_ID (
   echo Ban mod: "!PACK!"
 )
 echo Viec: !HOC_VONG! vong, moi nhan vat !HOC_MOI_NV! tien trinh; may nay hoc !O! nhan vat mot luc ^(!LUONG! luong^).
+rem (Dung som - tu goi 97: relay cu khong gui DUNG_SOM, hoc-tang-cuong.bat dung cai dat cua no.)
+if defined HOC_DUNG_SOM if not "!HOC_DUNG_SOM!"=="0" echo Dung som: nhan vat qua !HOC_DUNG_SOM! vong khong tien bo thi thoi hoc, o ay lay nhan vat ke.
 for /L %%i in (1,1,!O!) do (
   start "May con %MAY% - o %%i" cmd /c call "%SELF%" o %%i
   ping -n 4 127.0.0.1 >nul 2>&1
@@ -76,7 +78,7 @@ set "SO=%~2"
 set "HOC_MAY=%MAY%-o%SO%"
 set /a THU=0
 :o_tiep
-for %%v in (NV HET LOI VONG TRAN KIEM_TRA_MOI TRAN_KIEM_TRA TRAN_XAC_NHAN MOI_NV) do set "HOC_%%v="
+for %%v in (NV HET LOI VONG TRAN KIEM_TRA_MOI TRAN_KIEM_TRA TRAN_XAC_NHAN MOI_NV DUNG_SOM) do set "HOC_%%v="
 call :hoi POST "%HOC_HUB%/api/nhan?may=%HOC_MAY%" "%TAM%\nhan-%SO%.txt"
 if errorlevel 1 (
   if defined HOC_LOI (echo [LOI] O %SO% dung lai.& pause& exit /b 1)

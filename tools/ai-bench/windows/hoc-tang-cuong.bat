@@ -15,6 +15,9 @@ rem kiem tra "greedy" tot nhat (tu goi 88): bo-nao-tot-nhat.txt (vong va diem cu
 rem Xac nhan (tu goi 89): het vong cuoi, bo nao vong cuoi va bo tot nhat danh lai tren nhung tran moi; bo co ket qua
 rem cao hon duoc chon (xac-nhan.txt: vong va diem). dua-bo-nao-vao-mod.bat lay bo nay.
 rem Dua bo nao vao ban mod (tu goi 88 game dung duoc): chay dua-bo-nao-vao-mod.bat - chi nhan vat co bo nao hon XOI.
+rem Dung som (tu goi 97): nhan vat da toi gioi han - qua DUNG_SOM vong ma diem kiem tra khong cao them - thi thoi hoc,
+rem xac nhan nhu khi het vong cuoi; con dang len thi hoc tiep toi VONG. May con (may-con.bat) xong som thi lay ngay
+rem nhan vat ke.
 rem Tam dung: dong cua so nay (cac game cua no tu dung theo), hay dat GIO_CHAY. Lam tiep: chay lai file nay - cac
 rem vong da xong duoc giu, vong dang do danh lai. Hoc lai tu dau: xoa thu muc hoc-tang-cuong\<NHAN_VAT>.
 rem Ma ban mod (tu goi 94): tom-tat.txt ghi ma cua ban mod (tu file data\data.txt cua no). Thu muc cua nhan vat dang
@@ -31,7 +34,8 @@ rem nhau bang dau cach hay dau phay, vi du  set "NHAN_VAT=2 19 55"  - moi nhan v
 rem CPU (3 nhan vat tren may 99 luong: moi nhan vat 33).
 set "NHAN_VAT=khaos"
 rem So vong, so tran moi tien trinh moi vong (moi tran ~1-2 giay, them vai giay hoc moi vong: mot vong chung nua
-rem phut; 500 vong khoang 5-6 gio)
+rem phut; 500 vong khoang 5-6 gio). Co dung som (DUNG_SOM) thi VONG la so vong toi da: dat cao (vi du 1500), nhan vat
+rem nao toi gioi han som thi dung som, nhan vat con len thi hoc tiep.
 set "VONG=500"
 set "TRAN=20"
 set "SONG_SONG=%NUMBER_OF_PROCESSORS%"
@@ -41,6 +45,12 @@ rem va chon bo nao. Moi lan kiem tra, moi tran danh 3 lan (XOI mot minh, greedy,
 rem vong la them chung 7 phan tram thoi gian, moi 50 vong chung 3-4 phan tram.
 set "KIEM_TRA_MOI=25"
 set "TRAN_KIEM_TRA=12"
+rem Dung som: qua bay nhieu vong ma diem kiem tra "greedy" (trung binh hai lan kiem tra lien nhau) khong cao them duoc
+rem it nhat 0,5 diem moi 100 tran so voi lan cao nhat thi dung (can it nhat ba lan kiem tra, hai lan sau lan cao nhat;
+rem khong dung o vong cuoi). 0 = khong dung som. Can KIEM_TRA_MOI tren 0. It tien trinh thi moi lan kiem tra it tran,
+rem diem hay "hen xui" hon: tang TRAN_KIEM_TRA (moi lan kiem tra nen co tu 300 tran: so tien trinh x TRAN_KIEM_TRA).
+rem Hoc tiep sau khi da dung som: xoa file dung-som.txt trong thu muc cua nhan vat (hay dat DUNG_SOM=0) roi chay lai.
+set "DUNG_SOM=400"
 rem Xac nhan sau vong cuoi: tong so tran (chia deu cho cac tien trinh; moi tran danh 2 lan, XOI mot minh va greedy).
 set "TRAN_XAC_NHAN=720"
 rem Hen gio tam dung: chay chung ay gio roi tu dung (vi du 8; de trong: chay den het)
@@ -70,6 +80,7 @@ if defined HOC_MAY (
   if defined HOC_KIEM_TRA_MOI set "KIEM_TRA_MOI=!HOC_KIEM_TRA_MOI!"
   if defined HOC_TRAN_KIEM_TRA set "TRAN_KIEM_TRA=!HOC_TRAN_KIEM_TRA!"
   if defined HOC_TRAN_XAC_NHAN set "TRAN_XAC_NHAN=!HOC_TRAN_XAC_NHAN!"
+  if defined HOC_DUNG_SOM set "DUNG_SOM=!HOC_DUNG_SOM!"
   if defined HOC_PACK_FILE set "PACK=!HOC_PACK_FILE!"
   set "GIO_CHAY="
 )
@@ -136,6 +147,8 @@ if !RAM_GB! GEQ 2 (
 )
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
 if not defined KIEM_TRA_MOI set "KIEM_TRA_MOI=0"
+if not defined DUNG_SOM set "DUNG_SOM=0"
+set /a DUNG_SOM=DUNG_SOM
 if not defined TRAN_XAC_NHAN set "TRAN_XAC_NHAN=720"
 
 rem Nhieu nhan vat (cach nhau bang dau cach hay dau phay): moi nhan vat mot cua so rieng chay file nay, chia deu cac
@@ -237,6 +250,20 @@ if defined MA_MOD set "MA_GHI= [ma-mod !MA_MOD!]"
 rem Mat dien hay may tat giua chung: bo nao vua ghi co the chua kip xuong dia (thieu so, hay toan so 0). Kiem bo nao
 rem cua hai vong moi nhat; hong thi xoa (ca lan kiem tra, xac nhan cua vong ay) de vong ay hoc lai.
 call :kiem_bo_nao_cuoi
+rem Vong cuoi cua lan hoc: VONG, hay vong dung som. Da dung som o lan chay truoc (dung-som.txt: vong ay va vong co
+rem diem cao nhat) ma DUNG_SOM con bat: sang buoc xac nhan, khong hoc them.
+set "VONG_CUOI=%VONG%"
+set "DUNG_LAI="
+set "DS_E="
+rem (DUNG_SOM=0: hoc tiep qua vong da dung som - bo dau dung som cu, de lan chay sau khong quay ve vong ay.)
+if %DUNG_SOM% LEQ 0 if exist "%LV%\dung-som.txt" del /q "%LV%\dung-som.txt" 2>nul
+if %DUNG_SOM% GTR 0 if exist "%LV%\dung-som.txt" for /f "usebackq tokens=1" %%a in ("%LV%\dung-som.txt") do set "DS_E=%%a"
+if defined DS_E if exist "%LV%\bo-nao-%DS_E%.txt" (
+  set "VONG_CUOI=%DS_E%"
+  set "DUNG_LAI=1"
+  echo Da dung som o vong %DS_E% ^(lan chay truoc: khong con tien bo^). Hoc tiep: xoa "%LV%\dung-som.txt" roi chay lai.
+)
+if defined DUNG_LAI goto xong
 set /a E=1
 :vong_tiep
 if %E% GTR %VONG% goto xong
@@ -245,6 +272,7 @@ if exist "%LV%\bo-nao-%E%.txt" (
   findstr /b /c:"RLW_HEAD" "%LV%\bo-nao-%E%.txt" >nul 2>nul && (
     call :kiem_neu_can
     if defined HET_GIO goto het_gio
+    if defined DUNG_LAI goto xong
     set /a E+=1
     goto vong_tiep
   )
@@ -259,6 +287,7 @@ if defined HET_GIO goto het_gio
 if errorlevel 1 goto loi
 call :kiem_neu_can
 if defined HET_GIO goto het_gio
+if defined DUNG_LAI goto xong
 set /a E+=1
 goto vong_tiep
 
@@ -384,7 +413,24 @@ if defined DIEM (
     echo   ^(bo nao tot nhat den nay: vong %E%^)
   )
 )
+call :xet_dung_som
 rmdir /s /q "%K%" 2>nul
+exit /b 0
+
+rem --- Dung som (tu goi 97): sau moi lan kiem tra, tu cac file kiem-tra-<vong>.txt (dong "greedy": network - XOI) -
+rem diem trung binh hai lan kiem tra lien nhau; lan cao nhat la lan cao hon lan cao nhat truoc no it nhat 0,5 diem. Da
+rem qua DUNG_SOM vong tu lan cao nhat (va co it nhat hai lan kiem tra sau no) thi dung: dung-som.txt = vong nay va vong
+rem cao nhat, mot dong DUNG SOM trong tom-tat.txt. ---
+:xet_dung_som
+if %DUNG_SOM% LEQ 0 exit /b 0
+if %KIEM_TRA_MOI% LEQ 0 exit /b 0
+if %E% GEQ %VONG% exit /b 0
+set "XET_E=%E%"
+powershell -NoProfile -Command "$inv=[Globalization.CultureInfo]::InvariantCulture; $dung=[int]$env:DUNG_SOM; $e=[int]$env:XET_E; $d=@{}; foreach ($f in @(Get-ChildItem -LiteralPath $env:LV -Filter 'kiem-tra-*.txt' -File)) { if ($f.Name -match '^kiem-tra-([0-9]+)\.txt$') { $r=[int]$Matches[1]; if ($r -le $e) { foreach ($l in @(Get-Content -LiteralPath $f.FullName)) { if ($l -match '^greedy games [0-9]+: .*network - XOI ([+-]?[0-9.]+) points per 100 games') { $d[$r]=[double]::Parse($Matches[1], $inv); break } } } } }; $rs=@($d.Keys | Sort-Object); if ($rs.Count -lt 3) { exit 0 }; $ref=$null; $refR=0; $prev=$null; foreach ($r in $rs) { $s=$d[$r]; if ($null -eq $prev) { $avg=$s } else { $avg=($prev + $s) / 2 }; $prev=$s; if (($null -eq $ref) -or ($avg -ge $ref + 0.5)) { $ref=$avg; $refR=$r } }; $sau=@($rs | Where-Object { $_ -gt $refR }).Count; $cao=$ref.ToString('+0.0;-0.0;0.0', $inv); if (($e - $refR -ge $dung) -and ($sau -ge 2)) { $msg='DUNG SOM o vong ' + $e + ': ' + ($e - $refR) + ' vong khong tien bo - diem kiem tra greedy (trung binh hai lan lien nhau) cao nhat ' + $cao + ' diem moi 100 tran, o vong ' + $refR; Add-Content -LiteralPath (Join-Path $env:LV 'tom-tat.txt') -Value $msg; Set-Content -LiteralPath (Join-Path $env:LV 'dung-som.txt') -Value ([string]$e + ' ' + $refR); Write-Host ('  ' + $msg); exit 2 }; Write-Host ('  (Dung som: diem trung binh cao nhat ' + $cao + ' o vong ' + $refR + '; khong cao them it nhat 0,5 diem thi dung o vong ' + [math]::Max($refR + $dung, $e + 1) + ')'); exit 0"
+if errorlevel 2 (
+  set "DUNG_LAI=1"
+  set "VONG_CUOI=%E%"
+)
 exit /b 0
 
 rem --- Xac nhan (tu goi 89), sau vong cuoi: bo nao vong cuoi va bo tot nhat (neu khac) danh lai tren nhung tran moi,
@@ -393,18 +439,18 @@ rem nhat trong nhieu lan thuong la lan gap may; tren tran moi moi ra diem that. 
 rem (bang nhau: bo vong cuoi): xac-nhan.txt = vong va diem (phan muoi diem moi 100 tran); dua-bo-nao-vao-mod.bat lay
 rem bo nay. Bo nao da xac nhan (xac-nhan-<vong>.txt) thi khong danh lai. ---
 :xac_nhan
-if not exist "%LV%\bo-nao-%VONG%.txt" exit /b 0
+if not exist "%LV%\bo-nao-%VONG_CUOI%.txt" exit /b 0
 set "XN_TOT="
 if exist "%LV%\tot-nhat.txt" for /f "usebackq tokens=1" %%a in ("%LV%\tot-nhat.txt") do set "XN_TOT=%%a"
-if "!XN_TOT!"=="%VONG%" set "XN_TOT="
+if "!XN_TOT!"=="%VONG_CUOI%" set "XN_TOT="
 if defined XN_TOT if not exist "%LV%\bo-nao-!XN_TOT!.txt" set "XN_TOT="
-call :xn_mot %VONG%
+call :xn_mot %VONG_CUOI%
 if defined HET_GIO exit /b 0
 if defined XN_TOT call :xn_mot !XN_TOT!
 if defined HET_GIO exit /b 0
 set "XN_CHON="
 set "XN_DIEM="
-for %%r in (%VONG% !XN_TOT!) do if exist "%LV%\xac-nhan-%%r.txt" for /f "usebackq tokens=1,2" %%a in ("%LV%\xac-nhan-%%r.txt") do (
+for %%r in (%VONG_CUOI% !XN_TOT!) do if exist "%LV%\xac-nhan-%%r.txt" for /f "usebackq tokens=1,2" %%a in ("%LV%\xac-nhan-%%r.txt") do (
   if not defined XN_CHON (
     set "XN_CHON=%%a"
     set "XN_DIEM=%%b"
@@ -472,9 +518,19 @@ exit /b 0
 :xong
 call :xac_nhan
 if defined HET_GIO goto het_gio
+rem (Dong KET THUC: so vong da hoc, va dung som hay khong - trang /hoc cua relay doc dong cuoi cung.)
+if defined DUNG_LAI (
+  >>"%LV%\tom-tat.txt" echo KET THUC: %VONG_CUOI% vong - dung som ^(khong con tien bo^), toi da %VONG%
+) else (
+  >>"%LV%\tom-tat.txt" echo KET THUC: %VONG_CUOI% vong
+)
 echo.
-echo ===== Xong %VONG% vong. Ket qua: "%LV%\tom-tat.txt" =====
-findstr /c:"KIEM TRA" /c:"XAC NHAN" "%LV%\tom-tat.txt"
+if defined DUNG_LAI (
+  echo ===== Dung som o vong %VONG_CUOI%/%VONG%: khong con tien bo. Ket qua: "%LV%\tom-tat.txt" =====
+) else (
+  echo ===== Xong %VONG% vong. Ket qua: "%LV%\tom-tat.txt" =====
+)
+findstr /c:"KIEM TRA" /c:"XAC NHAN" /c:"DUNG SOM" "%LV%\tom-tat.txt"
 echo.
 echo Gui file tom-tat.txt cho nguoi lam AI. Dong "greedy": "network - XOI" duong ^(+^) va lon hon phan +- la bo nao da hon
 echo XOI mot minh. Dua bo nao vao ban mod: chay dua-bo-nao-vao-mod.bat ^(chi nhan vat co bo nao hon XOI^).

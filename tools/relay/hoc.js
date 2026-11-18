@@ -54,7 +54,9 @@ const FIGHTER_LIMIT = 64 * MIB;
 const TEXT_LIMIT = 64 * 1024;
 const MAX_FIGHTERS = 2000;
 // The settings a machine learns a fighter with (hoc-tang-cuong.bat's names): default, least, most. MOI_NV is
-// how many processes a fighter gets: a machine takes as many fighters at once as it has threads for.
+// how many processes a fighter gets: a machine takes as many fighters at once as it has threads for. DUNG_SOM
+// (package 97): a fighter whose checks have not got better for that many rounds stops early (0: never), and its
+// slot takes the next one; VONG is then the most it learns.
 const SETTINGS = {
   VONG: [500, 1, 100000],
   TRAN: [20, 1, 1000],
@@ -62,6 +64,7 @@ const SETTINGS = {
   TRAN_KIEM_TRA: [12, 1, 1000],
   TRAN_XAC_NHAN: [720, 0, 1000000],
   MOI_NV: [33, 1, 1024],
+  DUNG_SOM: [400, 0, 100000],
 };
 const STATES = new Set(['cho', 'dang', 'xong', 'loi']);
 
@@ -100,6 +103,8 @@ function cleanFighter(given) {
     ten: text(given.ten, 60), // the fighter's name in the mod, from tom-tat.txt
     chon: Number.isInteger(given.chon) ? given.chon : 0, // the round of the network chosen (xac-nhan.txt)
     diem: number(given.diem), // its score on new games, points per 100 games
+    cuoi: Number.isInteger(given.cuoi) ? given.cuoi : 0, // the rounds it learned (tom-tat.txt's last KET THUC line)
+    dung: given.dung === true, // it stopped early: no better for DUNG_SOM rounds
     files: Array.isArray(given.files) ? given.files.filter((name) => RESULT.test(name)) : [],
     loi: text(given.loi, 2000),
     xong: text(given.xong, 40),
@@ -427,6 +432,11 @@ function createHoc(config, { log = () => {}, clientAddress = (req) => req.socket
       fighter.ten = name ? name[1].slice(0, 60) : fighter.ten;
       fighter.chon = 0;
       fighter.diem = null;
+      // The rounds learned and whether it stopped early: the last KET THUC line (package 97; none before).
+      const ends = [...account.matchAll(/^KET THUC: (\d+) vong( - dung som)?/gm)];
+      const end = ends.length ? ends[ends.length - 1] : null;
+      fighter.cuoi = end ? Number(end[1]) : 0;
+      fighter.dung = Boolean(end && end[2]);
       try {
         const [round, tenths] = (await fsp.readFile(path.join(dir, 'xac-nhan.txt'), 'utf8')).trim().split(/\s+/).map(Number);
         if (Number.isInteger(round) && Number.isFinite(tenths)) {
@@ -570,8 +580,13 @@ const PAGE = `<!doctype html>
       <div><label for="KIEM_TRA_MOI">Kiểm tra mỗi (vòng)</label><input id="KIEM_TRA_MOI" type="number" min="0"></div>
       <div><label for="TRAN_KIEM_TRA">Trận kiểm tra</label><input id="TRAN_KIEM_TRA" type="number" min="1"></div>
       <div><label for="TRAN_XAC_NHAN">Trận xác nhận</label><input id="TRAN_XAC_NHAN" type="number" min="0"></div>
+      <div><label for="DUNG_SOM">Dừng sớm sau (vòng)</label><input id="DUNG_SOM" type="number" min="0"></div>
     </div>
     <p class="note">Mỗi máy con học cùng lúc (số luồng CPU ÷ tiến trình mỗi nhân vật) nhân vật: máy 100 luồng với 33 là 3 nhân vật.</p>
+    <p class="note">Dừng sớm: nhân vật nào qua ngần ấy vòng mà điểm kiểm tra không cao thêm (đã tới giới hạn) thì thôi học, máy
+      con lấy ngay nhân vật kế; nhân vật còn lên thì học tới Số vòng — nên đặt Số vòng cao (ví dụ 1500). 0 = không dừng sớm.
+      Cần kiểm tra (Kiểm tra mỗi trên 0); ít tiến trình thì tăng Trận kiểm tra (mỗi lần kiểm tra nên có từ 300 trận:
+      tiến trình × trận kiểm tra).</p>
     <p><button id="save">Lưu cài đặt</button></p>
     <label for="add">Thêm nhân vật (số id hoặc tên, cách nhau bằng dấu cách)</label>
     <input id="add" type="text" placeholder="ví dụ: 1 3 4 5 6 7 9 10">
@@ -603,7 +618,7 @@ const PAGE = `<!doctype html>
   const api = base + '/api/';
   const root = base.replace(/\\/hoc$/, '');
   $('adminlink').href = root + '/admin';
-  const NAMES = ['VONG', 'TRAN', 'MOI_NV', 'KIEM_TRA_MOI', 'TRAN_KIEM_TRA', 'TRAN_XAC_NHAN'];
+  const NAMES = ['VONG', 'TRAN', 'MOI_NV', 'KIEM_TRA_MOI', 'TRAN_KIEM_TRA', 'TRAN_XAC_NHAN', 'DUNG_SOM'];
   let state = null;
   let timer = 0;
   try { $('key').value = localStorage.getItem('lf2-admin-key') || ''; } catch (error) {}
@@ -632,7 +647,8 @@ const PAGE = `<!doctype html>
     }
     if (f.state === 'xong') {
       const text = 'Xong trên ' + f.may + ' lúc ' + time(f.xong) + ': ' + (f.chon ? ('bộ não vòng ' + f.chon + ', trên trận mới ' + points(f.diem) + ' điểm/100 trận'
-        + (f.diem > 0 ? ' — sẽ vào bản mod' : ' — không hơn XOI, không vào bản mod')) : 'chưa xác nhận');
+        + (f.diem > 0 ? ' — sẽ vào bản mod' : ' — không hơn XOI, không vào bản mod')) : 'chưa xác nhận')
+        + (f.dung ? ' (dừng sớm ở vòng ' + f.cuoi + ': không còn tiến bộ)' : (f.cuoi ? ' (học ' + f.cuoi + ' vòng)' : ''));
       return [text, f.diem > 0 ? 'ok' : 'note'];
     }
     return ['Lỗi trên ' + f.may + ': ' + f.loi.split(/\\r?\\n/).filter(Boolean).slice(-3).join(' / '), 'bad'];

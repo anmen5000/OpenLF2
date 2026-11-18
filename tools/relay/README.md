@@ -204,9 +204,11 @@ one of its packs, to a machine that asks for it.
 
 The page `/hoc` (`ADMIN_KEY`, the one `/admin` remembers) sets the job: the mod (one of the relay's
 packs, or each machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`, `TRAN_KIEM_TRA`,
-`TRAN_XAC_NHAN`, and `MOI_NV`, the processes a fighter gets), the fighters (ids or names), and shows
+`TRAN_XAC_NHAN`, `MOI_NV`, the processes a fighter gets, and from package 97 `DUNG_SOM`, the rounds with
+no better check after which a fighter stops early: 400, 0 never), the fighters (ids or names), and shows
 each one's state: waiting, learning on which slot (with its last check, which the slot reports),
-done (the round chosen and its score on new games), or failed (the end of its account). A fighter can
+done (the round chosen and its score on new games, and where it stopped early: the last `KET THUC`
+line of its `tom-tat.txt`), or failed (the end of its account). A fighter can
 be handed out again (every failed one with one button) or taken off; a slot whose machine cannot learn
 (no game, no mod) gives its fighter back to the queue itself (`POST /hoc/api/tra/<fighter>`, package 91).
 A mod done, "Bat dau viec moi" (`POST /hoc/api/viec-moi`, package 94) takes every fighter off with its

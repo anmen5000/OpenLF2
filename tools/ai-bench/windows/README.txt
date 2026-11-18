@@ -187,6 +187,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    file plays its network; INSANE! does not. Every player of a room needs that same zip. The owner's first run
    (300,000 games a fighter): Keny 200-0 against XOI alone's 95-102, Khaoslong +8 points in 100 games, Ryozaki -6
    (left out).
+   Early stop (package 97): a fighter that has reached its limit - DUNG_SOM rounds (400) with no better check -
+   stops learning and goes to the confirmation as after its last round; one still getting better learns on to VONG,
+   which is then the most rounds a fighter gets: set it high (1500, say). A check is "better" when the "greedy" line,
+   averaged over two checks in a row, beats the best such average by 0.5 point in 100 games; there must be three
+   checks at least, two of them after the best, and none of this on the last round. The window and tom-tat.txt say
+   where it would stop (a DUNG SOM line when it does; dung-som.txt keeps its round, so a run again only confirms);
+   to learn on after all, delete dung-som.txt (or set DUNG_SOM=0) and run it again. DUNG_SOM=0: no early stop. It
+   needs checks (KIEM_TRA_MOI above 0); with few processes a check has few games and its score more luck - raise
+   TRAN_KIEM_TRA (300 games a check or more: processes x TRAN_KIEM_TRA). A trial on made-up learning curves (the
+   check's luck as measured): with VONG 1500 and DUNG_SOM 400, a fighter that stops getting better early stops at
+   750-950 rounds, one that never beats XOI at about 700, and the network chosen is within 0.6 point of the one 1500
+   rounds give (1.3 points for one still gaining slowly at round 1000).
 
 12. Reinforcement learning on many machines (package 90): may-con.bat, with the relay as the one that shares out
    the work. The relay (your VPS, installer version 14) keeps a job - the mod, the settings, the fighters to learn -
@@ -409,6 +421,17 @@ chơi được chính các file của bản mod.
    ấy thì dùng bộ não của nó; INSANE! thì không. Mọi người trong phòng cần cùng file zip ấy. Lần chạy đầu của chủ dự
    án (300.000 trận mỗi nhân vật): Keny 200-0 so với XOI một mình 95-102, Khaoslong hơn 8 điểm mỗi 100 trận, Ryozaki
    kém 6 (không đưa vào).
+   Dừng sớm (gói 97): nhân vật đã tới giới hạn - qua DUNG_SOM vòng (400) mà điểm kiểm tra không cao thêm - thì thôi
+   học, sang bước xác nhận như khi hết vòng cuối; nhân vật còn đang lên thì học tiếp tới VONG, lúc ấy là số vòng tối
+   đa: đặt cao (ví dụ 1500). "Cao thêm" là dòng "greedy", lấy trung bình hai lần kiểm tra liền nhau, hơn lần trung
+   bình cao nhất ít nhất 0,5 điểm mỗi 100 trận; cần ít nhất ba lần kiểm tra, hai lần sau lần cao nhất, và không dừng ở
+   vòng cuối. Cửa sổ và tom-tat.txt ghi sẽ dừng ở vòng nào (dừng thì có dòng DUNG SOM; dung-som.txt giữ vòng ấy, nên
+   chạy lại chỉ làm bước xác nhận); muốn học tiếp: xóa dung-som.txt (hay đặt DUNG_SOM=0) rồi chạy lại. DUNG_SOM=0:
+   không dừng sớm. Cần có kiểm tra (KIEM_TRA_MOI trên 0); ít tiến trình thì mỗi lần kiểm tra ít trận, điểm hên xui
+   hơn - tăng TRAN_KIEM_TRA (mỗi lần kiểm tra từ 300 trận: số tiến trình x TRAN_KIEM_TRA). Thử trên các đường học giả
+   lập (độ hên xui của kiểm tra như đo được): VONG 1500, DUNG_SOM 400 thì nhân vật sớm thôi lên dừng ở 750-950 vòng,
+   nhân vật không hơn được XOI dừng chừng 700, và bộ não được chọn kém bộ của 1500 vòng không quá 0,6 điểm (1,3 điểm
+   với nhân vật vẫn lên chậm ở vòng 1000).
 
 12. Học tăng cường trên nhiều máy (gói 90): may-con.bat, relay chia việc. Relay (VPS của bạn, trình cài đặt phiên
    bản 14) giữ một việc - bản mod, cài đặt, các nhân vật cần học - ở trang https://<relay>/hoc (mã ADMIN_KEY): chọn

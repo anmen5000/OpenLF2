@@ -968,6 +968,13 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Reinforcement learning stops early</b> (package 97, relay installer version 18). A fighter that has reached
+          its limit - <code>DUNG_SOM</code> rounds (400) with no better check: the "greedy" score, averaged over two
+          checks in a row, beating its best by 0.5 point in 100 games - stops learning and goes to the confirmation as
+          after its last round; one still getting better learns on to <code>VONG</code>, which is then the most rounds a
+          fighter gets: set it high (1500, say). On the relay's job (<code>/hoc</code>) it is a setting like the others
+          and a slot whose fighter stopped early takes the next one at once. <code>DUNG_SOM=0</code>: no early stop; to
+          learn on after an early stop, delete <code>dung-som.txt</code> in the fighter's folder and run again.</li>
         <li><b>Gemini plays along</b> (package 96, relay installer version 17). On the game page, the panel <b>Gemini chơi
           cùng</b> above the game lets Google's Gemini command the computer players: every few seconds the page sends what
           the match looks like (each fighter's HP, MP, place and state) through the relay, and Gemini chooses for each
@@ -1126,6 +1133,13 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Học tăng cường dừng sớm</b> (gói 97, trình cài đặt relay phiên bản 18). Nhân vật đã tới giới hạn - qua
+          <code>DUNG_SOM</code> vòng (400) mà điểm kiểm tra không cao thêm: điểm "greedy", lấy trung bình hai lần kiểm
+          tra liền nhau, không hơn lần cao nhất được 0,5 điểm mỗi 100 trận - thì thôi học, sang bước xác nhận như khi hết
+          vòng cuối; nhân vật còn đang lên thì học tiếp tới <code>VONG</code>, lúc ấy là số vòng tối đa: đặt cao (ví dụ
+          1500). Ở việc trên relay (<code>/hoc</code>) đây là một cài đặt như các cài đặt khác, và ô nào có nhân vật dừng
+          sớm thì lấy ngay nhân vật kế. <code>DUNG_SOM=0</code>: không dừng sớm; muốn học tiếp sau khi đã dừng sớm: xóa
+          <code>dung-som.txt</code> trong thư mục của nhân vật rồi chạy lại.</li>
         <li><b>Gemini chơi cùng</b> (gói 96, trình cài đặt relay phiên bản 17). Trên trang game, phần <b>Gemini chơi cùng</b>
           (ngay trên khung game) cho Gemini của Google chỉ huy các máy: mỗi vài giây trang gửi tình hình trận đấu (máu, mana,
           vị trí, trạng thái từng nhân vật) qua relay, Gemini chọn cho mỗi máy đánh ai, chế độ (tấn công, cân bằng, phòng thủ,

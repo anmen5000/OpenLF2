@@ -839,6 +839,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   address) and the players' access code, with a test call. With no order, a fighter plays exactly as before: the
   bench's duels are the same frame for frame; with fixed orders, eight duels against INSANE! went 5-3 for XOI as it
   is, 6-2 attacking, 6-2 defending, 2-6 kiting (INSANE! version 51).
+- Reinforcement learning stops early (package 97, relay installer version 18): a fighter whose checks have not got
+  better for `DUNG_SOM` rounds (400) - the "greedy" score averaged over two checks in a row, beating the best such
+  average by 0.5 point in 100 games; three checks at least, two after the best, never on the last round - stops
+  learning and goes to the confirmation as after its last round (`hoc-tang-cuong.bat`: a DUNG SOM line and a closing
+  KET THUC line in `tom-tat.txt`, `dung-som.txt` so that a run again only confirms; `DUNG_SOM=0`, or deleting
+  `dung-som.txt`, learns on), while one still getting better learns on to `VONG`, then the most rounds a fighter gets.
+  On the relay's job (`/hoc`) it is a setting like the others; the page says where a fighter stopped, and the slot
+  takes the next fighter at once. On made-up learning curves with the checks' measured luck, `VONG` 1500 and
+  `DUNG_SOM` 400: a fighter that stops getting better early stops at 750-950 rounds, one that never beats XOI at about
+  700, the network chosen within 0.6 point of the one 1500 rounds give (1.3 for one still gaining slowly at 1000).
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the

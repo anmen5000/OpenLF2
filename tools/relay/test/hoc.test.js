@@ -269,3 +269,49 @@ test('a check line read for the page', () => {
   assert.equal(checkScore('sample games 1: network - XOI -2.5 points\r\ngreedy games 1: network - XOI -6.4 points per 100 games'), -6.4);
   assert.equal(checkScore('nothing'), null);
 });
+
+test('early stop (package 97): the setting goes to the machines, the page shows where a fighter stopped', async () => {
+  const relay = await startRelay(tempDir());
+  try {
+    let answer = await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 1500 } });
+    assert.equal(answer.body.settings.DUNG_SOM, 400, 'on by default');
+    answer = await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 1500, DUNG_SOM: 300 } });
+    const key = answer.body.key;
+    assert.equal(answer.body.settings.DUNG_SOM, 300);
+    await admin(relay, 'POST', 'them', { fighters: '16 25' });
+    let reply = await machine(relay, key, 'GET', 'viec');
+    assert.equal(reply.values.DUNG_SOM, '300');
+    reply = await machine(relay, key, 'POST', 'nhan?may=PC1-o1');
+    assert.equal(reply.values.NV, '16');
+    assert.equal(reply.values.DUNG_SOM, '300');
+    assert.equal((await machine(relay, key, 'POST', 'nhan?may=PC1-o2')).values.NV, '25');
+
+    // Stopped early in a first run (a KET THUC line of a run before stays in tom-tat.txt: the last one counts).
+    const early = ACCOUNT
+      + 'DUNG SOM o vong 650: 300 vong khong tien bo - diem kiem tra greedy (trung binh hai lan lien nhau) cao nhat +12.5 diem moi 100 tran, o vong 350\r\n'
+      + 'XAC NHAN: chon bo nao vong 350 - dua-bo-nao-vao-mod.bat dua no vao neu network - XOI tren tran moi duong.\r\n'
+      + 'KET THUC: 650 vong - dung som (khong con tien bo), toi da 1500\r\n';
+    await machine(relay, key, 'PUT', 'nop/16/tom-tat.txt?may=PC1-o1', early);
+    await machine(relay, key, 'PUT', 'nop/16/xac-nhan.txt?may=PC1-o1', '350 118\r\n');
+    assert.equal((await machine(relay, key, 'POST', 'xong/16?may=PC1-o1')).values.OK, '1');
+    // Learned to the end after the early stop was taken back (dung-som.txt deleted, run again).
+    const full = early + '=== Bat dau luc Wed 11/18/2026: nhan vat Davis (id 25), ban mod C:\\x.zip, 10 tien trinh x 20 tran moi vong\r\n'
+      + 'KET THUC: 1500 vong\r\n';
+    await machine(relay, key, 'PUT', 'nop/25/tom-tat.txt?may=PC1-o2', full);
+    await machine(relay, key, 'PUT', 'nop/25/xac-nhan.txt?may=PC1-o2', '1500 90\r\n');
+    assert.equal((await machine(relay, key, 'POST', 'xong/25?may=PC1-o2')).values.OK, '1');
+    const status = (await admin(relay, 'GET', 'trang-thai')).body;
+    const stopped = status.fighters.find((one) => one.id === '16');
+    assert.equal(stopped.cuoi, 650);
+    assert.equal(stopped.dung, true);
+    assert.equal(stopped.chon, 350);
+    const whole = status.fighters.find((one) => one.id === '25');
+    assert.equal(whole.cuoi, 1500);
+    assert.equal(whole.dung, false);
+    const page = await (await fetch(`${relay.base}/hoc`)).text();
+    assert.match(page, /id="DUNG_SOM"/);
+    assert.match(page, /dừng sớm ở vòng/);
+  } finally {
+    await relay.close();
+  }
+});
