@@ -801,6 +801,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
   `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
 ### Fixed
+- The Windows game closed at once, without a message, on a Windows whose Visual C++ runtime was older than the
+  compiler the game is built with: the project owner's server had `MSVCP140.dll` 14.24 (2019), and the game crashed
+  in it as it started (0xC0000005, every renderer, with or without a window). A program needs a runtime at least as
+  new as its compiler, and from MSVC 14.40 an older `MSVCP140.dll` fails as soon as a `std::mutex` is locked. The
+  installer now carries the runtime beside `openlf2.exe`, where Windows looks before System32: `dist/build-windows.ps1`
+  copies the `Microsoft.VC143.CRT` DLLs of the Visual Studio that built the game, checked to be no older than its
+  compiler (package 93). `kiem-tra.bat` (`check.bat`) names the runtime the game uses and, when it is too old, says
+  what to install.
 - A run of `hoc-tang-cuong.bat` cut short by a power cut could not go on when the last round's network had not
   reached the disk yet: a file that began right but lacked numbers passed for a finished round, and the next round
   stopped at once ("Khong tien trinh nao hoc xong", each process's network check failing) every time it was run again.

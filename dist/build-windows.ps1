@@ -53,6 +53,35 @@ Invoke-Checked 'cmake' @('--build', $nativeDir, '--config', 'Release', '--parall
 $binaryDir = Join-Path $nativeDir 'Release'
 $dlls = @(Get-ChildItem -Path $runtimeDir -Filter '*.dll' -File -Recurse)
 if ($dlls.Count -eq 0) { throw 'Conan did not deploy any runtime DLLs.' }
+
+# The Visual C++ runtime goes beside openlf2.exe too, where Windows looks for a DLL before System32. A program needs a
+# runtime at least as new as the compiler that built it (from MSVC 14.40 an older MSVCP140.dll crashes it as soon as it
+# locks a std::mutex), and Windows may carry an old one: MSVCP140.dll 14.24 of 2019 closed the game at once, without a
+# message, on the project owner's server. It is the redistributable of the Visual Studio that CMake built with.
+$generatorInstance = Select-String -LiteralPath (Join-Path $nativeDir 'CMakeCache.txt') `
+    -Pattern '^CMAKE_GENERATOR_INSTANCE:[A-Z]+=(.+)$' | Select-Object -First 1
+$visualStudio = if ($generatorInstance) { $generatorInstance.Matches[0].Groups[1].Value } else {
+    & (Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe') -latest -products '*' `
+        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+}
+if (-not $visualStudio) { throw 'The Visual Studio that built the game was not found.' }
+$redistVersion = (Get-Content -TotalCount 1 -LiteralPath (
+    Join-Path $visualStudio 'VC/Auxiliary/Build/Microsoft.VCRedistVersion.default.txt')).Trim()
+$crtDir = Get-ChildItem -LiteralPath (Join-Path $visualStudio "VC/Redist/MSVC/$redistVersion/$Architecture") `
+    -Directory -Filter 'Microsoft.VC*.CRT' | Sort-Object Name | Select-Object -Last 1
+if (-not $crtDir) { throw "Visual Studio's redistributable $redistVersion has no Visual C++ runtime for $Architecture." }
+$crtDlls = @(Get-ChildItem -LiteralPath $crtDir.FullName -Filter '*.dll' -File)
+$compilerFile = Get-ChildItem -LiteralPath (Join-Path $nativeDir 'CMakeFiles') -Filter 'CMakeCXXCompiler.cmake' -File `
+    -Recurse | Select-Object -First 1
+$compilerVersion = [version](Select-String -LiteralPath $compilerFile.FullName `
+    -Pattern 'set\(CMAKE_CXX_COMPILER_VERSION "([0-9.]+)"\)').Matches[0].Groups[1].Value
+$runtime = (Get-Item -LiteralPath (Join-Path $crtDir.FullName 'msvcp140.dll')).VersionInfo
+if ($runtime.FileMinorPart -lt $compilerVersion.Minor) {
+    throw "The Visual C++ runtime in $($crtDir.FullName) ($($runtime.FileVersion)) is older than the compiler ($compilerVersion)."
+}
+Write-Host "Visual C++ runtime $($runtime.FileVersion) for compiler $compilerVersion, from $($crtDir.FullName):" `
+    (($crtDlls | ForEach-Object Name) -join ', ')
+$dlls += $crtDlls
 foreach ($dll in $dlls) {
     Copy-Item -Force $dll.FullName $binaryDir
 }

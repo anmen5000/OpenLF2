@@ -126,7 +126,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    xuat-ban.bat answers it beforehand.
    Publish your own mod, or one whose author allows it; keep the licenses folder in it.
 7. The game does not open, or closes at once: put a mod's .zip next to kiem-tra.bat, double-click it, wait
-   about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt.
+   about 2 minutes (game windows may open and close by themselves) and send kiem-tra.txt. Its "Visual C++" lines
+   name the runtime the game uses; a "THIEU" (missing) line means it is too old: install the newest game (from
+   package 93 its installer carries its own) or https://aka.ms/vc14/vc_redist.x64.exe (as administrator).
 8. Watch two computer players fight in the game's window (to record a clip): open xem.bat in Notepad, set QUAN1
    and QUAN2 to two fighters - by name as the game shows it (Crimson, Deep; capitals or not; the first letters
    are enough) or by id - and NAO1, NAO2 (xoi, smart = INSANE!, classic), then double-click it. VAN games, sides
@@ -336,7 +338,9 @@ chơi được chính các file của bản mod.
    ở đầu xuat-ban.bat trả lời sẵn câu này.
    Chỉ xuất bản bản mod của bạn, hoặc khi tác giả cho phép; giữ thư mục licenses trong đó.
 7. Game không mở được, hay mở rồi tắt ngay: đặt file .zip bản mod cạnh kiem-tra.bat, nháy đúp, đợi khoảng
-   2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt.
+   2 phút (cửa sổ game có thể tự hiện rồi tự tắt) rồi gửi file kiem-tra.txt. Các dòng "Visual C++" trong đó ghi bộ
+   thư viện game đang dùng; có dòng "THIEU" là bộ ấy quá cũ: cài game mới nhất (từ gói 93 bộ cài mang sẵn bộ thư
+   viện của nó) hay https://aka.ms/vc14/vc_redist.x64.exe (cần quyền admin).
 8. Xem hai máy đánh nhau trong cửa sổ game (để quay clip): mở xem.bat bằng Notepad, sửa QUAN1 và QUAN2 thành
    hai nhân vật - gõ tên như trong game (Crimson, Deep; hoa thường đều được; vài chữ đầu cũng được) hoặc id -
    và NAO1, NAO2 (xoi, smart = INSANE!, classic), lưu lại rồi nháy đúp. VAN trận, mỗi trận đổi bên; NEN là màn

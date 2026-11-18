@@ -134,7 +134,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    LOCK_HIDDEN at the top of publish.bat answers it beforehand.
    Publish your own mod, or one whose author allows it; keep the licenses folder in it.
 7. The game does not open, or closes at once: put a mod's .zip next to check.bat, double-click it, wait
-   about 2 minutes (game windows may open and close by themselves) and send check.txt.
+   about 2 minutes (game windows may open and close by themselves) and send check.txt. Its "Visual C++" lines
+   name the runtime the game uses; a "MISSING" line means it is too old: install the newest game (from package 93
+   its installer carries its own) or https://aka.ms/vc14/vc_redist.x64.exe (as administrator).
 8. Watch two computer players fight in the game's window (to record a clip): open watch.bat in Notepad, set
    FIGHTER1 and FIGHTER2 to two fighters - by name as the game shows it (Crimson, Deep; capitals or not; the
    first letters are enough) or by id - and BRAIN1, BRAIN2 (xoi, smart = INSANE!, classic), then double-click
