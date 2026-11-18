@@ -30,6 +30,11 @@ This repository is **LF2 Online**, Xôi's build of OpenLF2, played at
   your own relay when you fork; installed from the browser, the site is an app that opens with no
   network (`dist/pages/sw.js`, `dist/pages/pwa.js`, `dist/pages/manifest.webmanifest`, put together by
   `dist/pages/make-pwa.py`);
+- **Gemini plays along**: on the web page, Google's Gemini can command the computer players
+  (`dist/pages/gemini.js`): every few seconds the page sends the match to the relay, which asks Gemini
+  with its owner's API key (`tools/relay/gemini.js`, page `/gemini`), and XOI plays every frame by the
+  orders that come back - whom to go for, how boldly, how much MP to keep (`smart.page_kit` in
+  `scripts/base/game/smart_ai.lua`); never in network rooms or replays;
 - a page that plays mods whose program OpenLF2 cannot read in a Windows emulator in the browser
   (`dist/pages/windows.html`, `dist/boxedwine/`), and a Hero Fighter page (`dist/pages/hero-fighter.js`),
   where a slow computer can play through a faster one (`dist/pages/hf-remote.js`);

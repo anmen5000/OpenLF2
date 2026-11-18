@@ -41,7 +41,7 @@ jobs:
           from zipfile import ZipFile
 
           with ZipFile('out/OpenLF2-Web.zip') as bundle:
-              expected = {'index.html', 'installer-store.js', 'icon.svg', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png',
+              expected = {'index.html', 'installer-store.js', 'gemini.js', 'icon.svg', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png',
                           'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
                           'openlf2.js', 'openlf2.wasm', 'openlf2.data'}
               assert expected <= set(bundle.namelist())

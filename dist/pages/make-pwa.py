@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CORE = [
     "index.html", "xoi.html", "insane.html",
     "openlf2.js", "openlf2.wasm", "openlf2.data",
-    "installer-store.js", "online.js", "hero-fighter.js", "hf-direct.js", "hf-remote.js", "hf-ver.txt",
+    "installer-store.js", "online.js", "gemini.js", "hero-fighter.js", "hf-direct.js", "hf-remote.js", "hf-ver.txt",
     "insane-version.json", "pwa.js", "manifest.webmanifest",
     "icon.svg", "favicon.ico", "favicon-32.png", "apple-touch-icon.png",
     "icon-192.png", "icon-512.png", "icon-maskable-512.png",

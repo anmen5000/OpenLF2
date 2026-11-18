@@ -35,6 +35,9 @@
 //
 // The XOI kit's reinforcement learning on many machines meets here as well (hoc.js, page /hoc): the relay hands
 // the fighters of a job out to the machines that ask and keeps the small files they send back; it learns nothing.
+//
+// And Gemini plays along (gemini.js, page /gemini): the game page sends what a match looks like, the relay asks
+// Google's Gemini with the owner's API key (kept here, never sent to the page) and hands the answer back.
 'use strict';
 
 const fs = require('node:fs');
@@ -43,6 +46,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 const { createPacks } = require('./packs.js');
 const { createHf } = require('./hf.js');
 const { createHoc } = require('./hoc.js');
+const { createGemini } = require('./gemini.js');
 
 const INSTALLER_PATH = '/lf2-installer.data';
 
@@ -135,6 +139,10 @@ function readConfig(env = process.env) {
     // Reinforcement learning on many machines (hoc.js): where the job and the machines' results are kept
     // (empty: in <PACKS_DIR>/hoc, or nowhere without PACKS_DIR).
     hocDir: env.HOC_DIR || '',
+    // Gemini plays along (gemini.js): where the owner's Gemini API key and the settings of the page /gemini are kept
+    // (empty: in <PACKS_DIR>/gemini, or only in memory without PACKS_DIR); GEMINI_API_BASE for tests.
+    geminiDir: env.GEMINI_DIR || '',
+    geminiApiBase: env.GEMINI_API_BASE || '',
     quiet: env.QUIET === '1' || env.QUIET === 'true',
   };
 }
@@ -181,6 +189,7 @@ function createRelay(overrides = {}) {
     budget: (ws, bytes) => ws.messageBudget.take(1) && ws.byteBudget.take(bytes),
   });
   const hoc = createHoc(config, { log, clientAddress: (req) => clientAddress(req) });
+  const gemini = createGemini(config, { log, clientAddress: (req) => clientAddress(req), allowOrigin: (req) => allowOrigin(req) });
 
   const server = http.createServer((req, res) => {
     const { pathname } = new URL(req.url, 'http://relay.invalid');
@@ -205,6 +214,7 @@ function createRelay(overrides = {}) {
     if (packs.handle(req, res, local)) return;
     if (hf.handle(req, res, local)) return;
     if (hoc.handle(req, res, local)) return;
+    if (gemini.handle(req, res, local)) return;
     if (pathname === '/' || pathname === config.path) {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(`OpenLF2 relay is running. Connect with a WebSocket to ${config.path}\n`);
@@ -771,6 +781,7 @@ function createRelay(overrides = {}) {
     for (const [address, entry] of installerDownloads) if (entry.until <= now) installerDownloads.delete(address);
     packs.cleanup();
     hoc.cleanup();
+    gemini.cleanup();
   }, config.pingIntervalMs);
   heartbeat.unref();
 

@@ -33,7 +33,7 @@ It prints the relay address (`wss://203-0-113-5.sslip.io/relay`), the address of
 page and its admin key. Settings go before `bash`: `DOMAIN=relay.example.com` uses your own domain,
 `ALLOWED_ORIGINS=https://you.github.io` limits who may use the relay. Running it again updates the
 installation and keeps the admin key; `… | bash -s -- --uninstall` removes it. The script embeds
-`server.js`, `packs.js`, `hf.js`, `hf-room.js`, `hoc.js` and `package.json`; after changing any of them, run
+`server.js`, `packs.js`, `hf.js`, `hf-room.js`, `hoc.js`, `gemini.js` and `package.json`; after changing any of them, run
 `node update-installer.js` (the tests check that it was run).
 
 Ports: with 80 and 443 free, Caddy takes both. When another web server (often Apache, `httpd`)
@@ -220,6 +220,27 @@ asks again gets the fighter it holds back, so a machine started again goes on wh
 `viec.json` and `nv/<fighter>/`. The machines' requests answer in `KEY=value` lines (LF only), which a
 `.bat` file reads with `for /f`; the requests are listed at the top of [`hoc.js`](hoc.js).
 
+## Gemini plays along
+
+From package 96 (installer version 17) the game page can let Google's Gemini command the computer players: its
+panel **Gemini chơi cùng** (`dist/pages/gemini.js`) sends what the match looks like every few seconds (each fighter's
+slot, team, HP, MP, place, state), the relay asks Gemini with the owner's API key, and the page turns the answer into
+orders that XOI plays by every frame (`scripts/base/game/smart_ai.lua`, `smart.page_kit`): whom to go for, how boldly
+and from how far (attack, balanced, defend, kite, retreat), how much MP to keep. Only at the INSANE! and XOI levels,
+never in a network room (every computer there must play alike) nor in a replay.
+
+The page `/gemini` (`ADMIN_KEY`) keeps the API key (from [Google AI Studio](https://aistudio.google.com/apikey);
+write-only: the page shows its last four characters), the model (default `gemini-3.5-flash-lite`, fast enough for a
+match; the page lists the ones the key may use), the thinking level (default `minimal`), the limits (calls a minute,
+default 15, and a day, default 1000), whether the game page may use it, and the players' access code, which the game
+page sends as `X-Gemini-Code` (a new code shuts the old one out). It also makes one test call and shows the day's
+calls and the last error. The game page writes what Gemini is asked (`{"system","prompt","schema"}`: the instruction,
+the match, the JSON schema of the answer) so that it can improve with the site; the relay passes it on within set
+sizes, without `temperature` (Gemini 3 models ignore it), and when a model refuses a setting (HTTP 400) tries plainer
+forms of the request in turn: the schema and the thinking level, JSON alone, plain text. One call at a time and 1.5 s
+between two from one address. Kept in `GEMINI_DIR` (default `<PACKS_DIR>/gemini`): `gemini.json`, mode 0600; the key
+is never logged nor sent to a page. The requests are listed at the top of [`gemini.js`](gemini.js).
+
 ## Settings (environment variables)
 
 | Variable | Default | Meaning |
@@ -246,6 +267,8 @@ asks again gets the fighter it holds back, so a machine started again goes on wh
 | `HF_ROOM_DESCRIPTION` | `OpenLF2 relay` | The description of those rooms in the game's room list |
 | `HF_DIR` | `<PACKS_DIR>/hf` | Where Hero Fighter accounts are kept (empty with no `PACKS_DIR`: in memory only) |
 | `HOC_DIR` | `<PACKS_DIR>/hoc` | Where the job of reinforcement learning on many machines and their results are kept (`/hoc`) |
+| `GEMINI_DIR` | `<PACKS_DIR>/gemini` | Where the Gemini API key and the settings of `/gemini` are kept (empty with no `PACKS_DIR`: in memory only) |
+| `GEMINI_API_BASE` | Google's `v1beta` | Testing aid: another address for the Gemini API |
 | `QUIET` | off | No log lines |
 
 `GET /healthz` answers `{"ok":true,"rooms":N,"clients":N,"installer":…,"protocols":[1,2],"players":8,"packs":…,"hf":{"rooms":4,"players":N}}`;

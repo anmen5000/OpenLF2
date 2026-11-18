@@ -22,6 +22,9 @@ local function new_array(capacity)
     return {}
 end
 local network, network_time = openlf2_network, openlf2_network_time
+-- The web page's orders for computer players and what it is told of the match (web build only: base/game/smart_ai's
+-- page_kit, dist/pages/gemini.js).
+local page_plan, page_post = openlf2_page_plan, openlf2_page_post
 local set_environment = setfenv
 local unpack_values = unpack or table.unpack
 local traceback = debug.traceback
@@ -74,7 +77,8 @@ local function evaluate(declaration, previous)
             random_state = random_state, set_random_state = set_random_state,
             reset_random_sequence = reset_random_sequence, save_recording = save_recording,
             take_recording = take_recording, local_time = local_time, build_label = build_label,
-            network = network, network_time = network_time, compile_text = compile_text, log = log},
+            network = network, network_time = network_time, compile_text = compile_text, log = log,
+            page_plan = page_plan, page_post = page_post},
     }
     environment.math.random = nil
     environment.math.randomseed = nil

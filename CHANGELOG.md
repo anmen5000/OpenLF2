@@ -817,6 +817,28 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   settings. The page shows the size of the results kept (a fighter's are under 0.3 MB: its account, its confirmation
   and one or two networks of about 125 KB) and, when fighters are added, which ones the job had already and so are not
   added again.
+- Gemini plays along (package 96, relay installer version 17): Google's Gemini can command the computer players of a
+  match in the web build. The game tells the page what the match looks like about once a second (each fighter's slot,
+  team, HP, MP, place and state, and what was learned of its moves before the match: a cheap ranged shot, the least MP
+  of a far-reaching move and of a special; `smart.page_kit.report` in `scripts/base/game/smart_ai.lua`, through
+  `engine.page_post`); the page's panel **Gemini chơi cùng** (`dist/pages/gemini.js`, above the game) sends it every
+  few seconds (4 by default) with an instruction to the relay, which asks Gemini with its owner's API key, and makes
+  orders of the answer for the fighters it commands: whom to go for, a mode (attack, balanced, defend, kite, retreat:
+  the bar a move's score must clear, the distance kept, how much of a free enemy's reach is left alone, each times
+  XOI's own) and how much MP to keep. The game reads them a few times a second (`engine.page_plan`; the EM_JS bridge
+  in `src/adapters/luajit/runtime.cpp`) and XOI plays every frame by them, without its learned network for a fighter
+  under orders (the network would undo them); orders not renewed lapse, a new match drops them, and they never apply
+  in a network game or a replay, where every computer must play alike (the game sends no report there either; a
+  recording of a match Gemini commanded replays without its orders, so it plays out otherwise). The
+  panel chooses whom Gemini commands (every XOI computer, the players' allies or their opponents, or one team: Gemini's
+  team against plain XOI's shows what it adds), shows what Gemini says of its plan and the orders in force, and keeps a
+  tally of the matches won and lost by the side it commanded. The relay's page `/gemini` (`ADMIN_KEY`;
+  `tools/relay/gemini.js`) keeps the API key, write-only, in a file only the relay reads (`<PACKS_DIR>/gemini`, mode
+  0600), the model (default `gemini-3.5-flash-lite`; it lists the ones the key may use), the thinking level (default
+  `minimal`), the limits (15 calls a minute, 1000 a day by default; one call at a time and 1.5 s between two from one
+  address) and the players' access code, with a test call. With no order, a fighter plays exactly as before: the
+  bench's duels are the same frame for frame; with fixed orders, eight duels against INSANE! went 5-3 for XOI as it
+  is, 6-2 attacking, 6-2 defending, 2-6 kiting (INSANE! version 51).
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the

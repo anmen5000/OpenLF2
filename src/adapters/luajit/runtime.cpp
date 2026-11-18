@@ -26,6 +26,9 @@ extern "C" {
 #include <luajit.h>
 #endif
 }
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 namespace openlf2 {
 namespace {
@@ -698,6 +701,75 @@ int random_number(lua_State* state) {
     lua_pushnumber(state, static_cast<lua_Number>(bridge->random.next(static_cast<std::int32_t>(range))));
     return 1;
 }
+#ifdef __EMSCRIPTEN__
+// The page's orders for the computer players and what the game tells the page (the web build only: the page's Gemini
+// panel, dist/pages/gemini.js; the computer player's page_kit, scripts/base/game/smart_ai.lua). The page keeps its
+// orders as text in globalThis.OpenLF2AiPlan with a number, OpenLF2AiPlanSeq, that changes with them, and takes the
+// game's lines through globalThis.OpenLF2AiState. Reading is a length probe then a copy into a buffer Lua owns, as
+// in src/adapters/web/settings.cpp; each call is wrapped in try/catch, a page without the panel answers nothing.
+EM_JS(int, page_plan_seq_js, (), {
+    try {
+        const seq = globalThis.OpenLF2AiPlanSeq;
+        return typeof seq === 'number' && isFinite(seq) ? seq | 0 : 0;
+    } catch (error) {
+        return 0;
+    }
+});
+EM_JS(int, page_plan_length_js, (), {
+    try {
+        const text = globalThis.OpenLF2AiPlan;
+        return typeof text === 'string' ? lengthBytesUTF8(text) : -1;
+    } catch (error) {
+        return -1;
+    }
+});
+EM_JS(void, page_plan_copy_js, (char* buffer, int capacity), {
+    try {
+        const text = globalThis.OpenLF2AiPlan;
+        if (typeof text === 'string') stringToUTF8(text, buffer, capacity);
+    } catch (error) {
+        // The length was taken right before; a page that changed it in between is read again next time.
+    }
+});
+EM_JS(void, page_post_js, (const char* text), {
+    try {
+        if (typeof globalThis.OpenLF2AiState === 'function') globalThis.OpenLF2AiState(UTF8ToString(text));
+    } catch (error) {
+        // The page's business.
+    }
+});
+constexpr int page_text_limit = 64 * 1024;
+// openlf2_page_plan(known): the orders' number, and their text when it is not `known` (nil when the page has none).
+int page_plan(lua_State* state) {
+    const lua_Number known = lua_type(state, 1) == LUA_TNUMBER ? lua_tonumber(state, 1) : -1;
+    const int seq = page_plan_seq_js();
+    if (static_cast<lua_Number>(seq) == known) {
+        lua_pushnumber(state, static_cast<lua_Number>(seq));
+        return 1;
+    }
+    const int length = page_plan_length_js();
+    if (length < 0 || length > page_text_limit) {
+        lua_pushnumber(state, static_cast<lua_Number>(seq));
+        lua_pushnil(state);
+        return 2;
+    }
+    auto* buffer = static_cast<char*>(lua_newuserdata(state, static_cast<std::size_t>(length) + 1));
+    buffer[0] = '\0';
+    page_plan_copy_js(buffer, length + 1);
+    lua_pushnumber(state, static_cast<lua_Number>(seq));
+    lua_pushlstring(state, buffer, std::strlen(buffer));
+    return 2;
+}
+// openlf2_page_post(text): a few lines on the match for the page.
+int page_post(lua_State* state) {
+    if (lua_type(state, 1) != LUA_TSTRING) return luaL_error(state, "page message must be a string");
+    std::size_t size = 0;
+    const char* text = lua_tolstring(state, 1, &size);
+    if (size > static_cast<std::size_t>(page_text_limit)) return luaL_error(state, "page message too long");
+    page_post_js(text);
+    return 0;
+}
+#endif
 int crt_random_number(lua_State* state) {
     auto* bridge = resource_bridge(state);
     lua_pushnumber(state, static_cast<lua_Number>(bridge->random.crt()));
@@ -757,6 +829,12 @@ int open_libraries(lua_State* state) {
         lua_setglobal(state, name);
     }
     lua_pop(state, 1);
+#ifdef __EMSCRIPTEN__
+    lua_pushcfunction(state, page_plan);
+    lua_setglobal(state, "openlf2_page_plan");
+    lua_pushcfunction(state, page_post);
+    lua_setglobal(state, "openlf2_page_post");
+#endif
     return 0;
 }
 // This C trampoline has no C++ objects requiring destruction. All Lua allocations

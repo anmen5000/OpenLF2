@@ -505,8 +505,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 50
+smart.version = 51
 smart.history = {
+    {51, "2026-11-19", "Gemini plays along: on the web page, Google's Gemini can command computer players at INSANE! and XOI (the panel Gemini choi cung, through the relay's page /gemini). The game tells the page what the match looks like about once a second; every few seconds Gemini answers with an order for each fighter it commands - whom to go for, a mode and how much MP to keep - and the fighter plays by it every frame: attack lowers the bar a move must clear (x0.6) and comes nearer, defend raises it (x1.7) and keeps further, kite keeps twice as far, retreat stays away and starts almost nothing, balanced is the fighter's own play; no move that would leave less MP than asked; without its learned network while under orders (smart.page_kit). Orders that are not renewed lapse, a new match drops them, and they never apply in a network game or a replay. With no orders a fighter plays exactly as version 50 (the bench's duels the same frame for frame); with fixed orders, eight duels of XOI against INSANE!: 5-3 as it is, 6-2 attacking, 6-2 defending, 2-6 kiting."},
     {50, "2026-11-17", "Learned brains: a mod may give a fighter a network of reinforcement learning (xoi/rl-<id>.txt, as the kit's hoc-tang-cuong.bat learns it beside XOI), and XOI playing that fighter plays it: where a key can change something the network sees the situation and XOI's keys, and lets them through or plays one of its 22 moves instead (smart.rl_kit). The project owner's first run (300,000 games a fighter against XOI without a brain, on 30 threads a fighter) checked in the lab against XOI alone, each game twice from the same start, version 49 and the owner's brain on both sides: Keny 200-0 where XOI alone went 95-102 (his network calls up his unseen heavy weapon - D, A, then A to pick it up - whose A is a guard-breaking punch that ends in a grab, and walks in); Khaoslong 64.3% where XOI alone won 56.0% (+8.3 points in 100 games, +- 3.4, 1,000 games), mostly by waiting where XOI would act; Ryozaki -6.0 (+- 5.8), left out. The game plays exactly the games of the learning job's own check (60 Khaoslong and 30 Keny games the same, one by one); tanh made of + - * / alone, so every machine of a room plays the same keys, and replays stay in step. Without such files XOI plays as version 49. INSANE! does not use them."},
     {49, "2026-11-16", "Guard locks broken. The project owner's clip: XOI's Khaoslong in mode Convergence guarded Keny's balls one after another until he died, his MP full. Keny throws them for nothing (40 HP, no MP, no defence points), one every 29 frames, each striking twice as it passes; the guard frame (110, 12 frames) was struck again just as it would end, so that only a D-move could leave it, and the guard was the cheapest answer to every ball: the in-match lessons counted blows of 5 HP and more, and a guard lets a tenth through, 4 HP. Nor did XOI see anything to strike: it foresaw Keny back in his standing frames after his D>J (frames no blow touches), where he goes on into its second half with attack, and from its end straight into it again. Guarded blows are counted now, by attacker (a thrown thing's thrower): six or more no more than 30 frames apart, while the attacker's MP has not gone down by 60, are a lock, and in a gap between them the fighter strikes out of the guard with the blow of its own that lands on the attacker soonest, the attacker taken to go on as it is, and not into a blow on its way (lesson_kit.strike_out). The clip's game rebuilt in the lab (the owner's numbers and brain on both sides): the lock of 146 blows (584 HP) ends at the sixth with Khaoslong's D+J+A on Keny, and Khaoslong wins that game. Over 30 games against Keny Khaoslong guarded 187 blows (498 before), his longest run 61 (152); Winnie 520 (1,257), her longest 27 (298); both still lose to him, as before (9 and 0 games of 30). A lock that no blow of the fighter's reaches out of is kept: Keny's D>A strikes 18 pixels off in depth, out of reach of Khaoslong's D-moves, and pulls, so the guard holds whichever way he faces (once in those 30 games). The 2,000 games of the regular roster against version 48: 1,996 the same, -0.1 +- 0.1 points per 100 games."},
     {48, "2026-11-15", "A fighter flipping back onto its feet is followed to where it lands. The project owner's question: Khaoslong of mode Convergence grabs and kicks with D^J, the last kick knocking the opponent up; one that flips up out of it lands within reach of his D>J, whose last frame stays out 50 ticks, and one that does not is struck by D^A — and XOI did neither. With his numbers and brain, after 310 such flips XOI's Khaoslong started nothing 101 times, 15 HP of follow-up on average: from the roll's frames on, where nothing can hit it, the opponent was taken to stay in that frame for good, and to be free to act at once. A fighter flipping already (a rowing frame in the air) now has its roll followed as the game plays it — the roll's frame that goes on to frame 0 held until the landing (base/game/animation), the crouch it lands in, frame 215 (base/game/physics), then standing — and is held until that crouch is over (target_lock_of); the flip foreseen from the frame of descent (182 or 188) is played so too (up to now it stood in the air from its roll's end, hittable, and landed in frame 219). After 206 flips XOI's Khaoslong started nothing 3 times, 47.9 HP of follow-up on average (D+J+A 62, D>A 49, D>J 33), and won 52 games to 20 against the same opponents on the same seeds (37 to 35 before). The D^A on an opponent that stays down: started as soon as he is free it brings 86 HP (98 times in 155 against opponents that never flip), but it has to be started before the opponent's choice shows — a frame later it no longer reaches (made to, nothing in 6) — so against one that flips as a rule it is not thrown. A grab's own follow-ups are not learned yet (the keys its holding frames take: Khaoslong's D^A out of the last kick, frame 280 — made to, 58 HP on an opponent that stays down, 2.5 on one that flips). Over 2,000 games against version 47, both with the owner's brain: 1.2 games in 100 more than version 47 against itself (± 1.3), HP margin +8.6 a game (± 5.8), Khaoslong's 12.9 more; without a brain 0.3 more (± 1.2), Khaoslong's 11.3. INSANE! has it as well."},
@@ -3141,6 +3142,9 @@ local exposed_states = {[states.broken_defend] = true, [states.injured] = true, 
 local function can_start(self, frame, fstate, move)
     local entry = move.entry
     if self.mp < move.mp or (move.hp > 0 and self.hp <= move.hp + 20) then return false end
+    -- (MP the page wants kept: smart.page_kit.)
+    local order = self.smart_memory and self.smart_memory.order
+    if order and order.reserve > 0 and move.mp > 0 and self.mp - move.mp < order.reserve then return false end
     if entry.mode then
         -- A mode's move: the mode's item in hand, from the mode's resting frames (or standing, walking, running in
         -- it, in the air for its air moves).
@@ -4935,6 +4939,8 @@ local function starts_airborne(self, move, air_frame)
     local entry = move.entry
     if entry.parent or not move.first then return false end
     if self.mp < move.mp or (move.hp > 0 and self.hp <= move.hp + 20) then return false end
+    local order = self.smart_memory and self.smart_memory.order
+    if order and order.reserve > 0 and move.mp > 0 and self.mp - move.mp < order.reserve then return false end
     if entry.mode then
         -- A mode's air move: the attack key in the air, with the mode's item in hand (a light one: the jump is
         -- the fighter's own).
@@ -5259,6 +5265,15 @@ end
 
 local function choose_target(state, index, self, memory)
     local items = state.items
+    -- The page's target (smart.page_kit), while it is an enemy on its feet or down.
+    local order = memory.order
+    if order and order.target >= 0 and order.target ~= index then
+        local value = items[order.target]
+        if value and value.hp > 0 and value.record.kind == record_kinds.character and hostile(state, self, value) then
+            memory.target = order.target
+            return order.target
+        end
+    end
     local best, best_score
     for other = 0, constants.item_slots - 1 do
         local value = items[other]
@@ -6740,12 +6755,14 @@ function smart.control(state, index)
     local overdue = context.overdue
     if overdue and (state.frame_number + index) % rare.overdue_turn ~= 0 then overdue = nil end
     local floor = overdue and -math.huge or nil
+    -- (The page's mode raises or lowers the bar: smart.page_kit.)
+    local bar = memory.order and memory.order.threshold or 1
     local function threshold(chosen)
-        if overdue then return tune.attack_threshold * context.momentum_threshold - overdue * rare.overdue_bar end
+        if overdue then return tune.attack_threshold * context.momentum_threshold * bar - overdue * rare.overdue_bar end
         if chosen and chosen.answers and standing_now and #standing_now > 0 then
-            return tune.attack_threshold * setup_kit.eager * context.momentum_threshold
+            return tune.attack_threshold * setup_kit.eager * context.momentum_threshold * bar
         end
-        return tune.attack_threshold * context.momentum_threshold
+        return tune.attack_threshold * context.momentum_threshold * bar
     end
     local move, t, score = best_attack(context, self, frame, fstate, target, horizon_ticks - 5, danger, nil, floor)
     -- A dizzy target is grabbed (grab_kit: walked into, held, punched and thrown) when the hold is worth more than
@@ -6996,6 +7013,7 @@ function smart.control(state, index)
     local keep_facing = false
     -- How much a free enemy's quick blows must threaten a spot for it to be left (more as a standoff drags on).
     local keep_out = (tune.keep_out_base + tune.keep_out_aggression * context.aggression) * context.momentum_keep
+        * (memory.order and memory.order.keep_out or 1)
     -- (Against loops: in a standoff long enough to be one, no spot is left for the enemy's blows — one of the two has
     -- to come in.)
     if (memory.quiet or 0) >= tune.loop_calm then keep_out = math.huge end
@@ -7143,6 +7161,8 @@ function smart.control(state, index)
             local away = dx > 0 and -1 or 1
             if walled then memory.walled_at, memory.walled_side = state.frame_number, away
             elseif memory.walled_side == away and state.frame_number - (memory.walled_at or -999) < 30 then walled = true end
+            -- (The page's mode: nearer or farther, smart.page_kit.)
+            if memory.order then hold = hold * memory.order.range end
             want_dx = positioning.keep_distance(self, dx, distance, max(hold - tune.band_near, 8), max(hold - tune.band_far, 10), target_lock == 0 and not walled) * (dx > 0 and 1 or -1)
             -- Nor a step back into where the blows of a target getting up strike (just stepped out of: they reach
             -- further as we near it): we wait at their edge, turned toward it (turning round, a step toward it,
@@ -7773,10 +7793,133 @@ function smart.rl_kit.after(state, index)
     local last = run.last
     for _, key in ipairs(item.keys) do last[key] = self.keys[key] end
 end
+-- The page's orders (package 96). In the web build the page can command the computer players it names - the
+-- Gemini panel (dist/pages/gemini.js) asks Gemini every few seconds - and XOI plays them every frame as ever, by
+-- those orders: whom to go for (`target`, a slot), how boldly and from how far (`mode`, below), how much MP to keep
+-- (`reserve`: no move that would leave less). The page is told what the match looks like, a few lines a second
+-- (report). Only where the engine has the page (engine.page_plan and engine.page_post: openlf2_page_plan and
+-- openlf2_page_post, src/adapters/luajit/runtime.cpp; the bench puts its own in plan and post), never in a network
+-- game (every computer of it must play alike) nor a replay; with no order a fighter plays as before, its learned
+-- network included; with one, without it (the orders are XOI's: the network would undo them).
+smart.page_kit = {seq = -1, orders = {}, polled = -1, posted = -1, plan = engine.page_plan, post = engine.page_post}
+-- A mode: the bar a move's score must clear (times XOI's own), the distance kept from the target (times XOI's own),
+-- and how much of a free enemy's reach is left alone (times XOI's own: less, more of it is left).
+smart.page_kit.modes = {
+    attack = {threshold = 0.6, range = 0.85, keep_out = 1.6},
+    balanced = {threshold = 1, range = 1, keep_out = 1},
+    defend = {threshold = 1.7, range = 1.35, keep_out = 0.75},
+    kite = {threshold = 1.25, range = 2.2, keep_out = 0.8},
+    retreat = {threshold = 4, range = 3.5, keep_out = 0.5},
+}
+-- The page's text: a line "order <slot> <target slot, or -1> <mode> <MP to keep>" a fighter.
+function smart.page_kit.parse(text)
+    local orders = {}
+    if type(text) ~= "string" then return orders end
+    for slot, target, mode, reserve in text:gmatch("order (%d+) (%-?%d+) (%a+) (%d+)") do
+        local factors = smart.page_kit.modes[mode]
+        if factors then
+            orders[tonumber(slot)] = {target = tonumber(target), mode = mode, reserve = min(tonumber(reserve), 500),
+                threshold = factors.threshold, range = factors.range, keep_out = factors.keep_out}
+        end
+    end
+    return orders
+end
+-- The order for the fighter at `index`, if the page gave one and may.
+function smart.page_kit.order_of(state, index)
+    local order = smart.page_kit.orders[index]
+    if not order then return nil end
+    if (state.held and state.held.network) or state.replay or state.replay_demo then return nil end
+    return order
+end
+-- What the page is told of a fighter's moves, from what was learned of them before the match (nothing is learned
+-- here, and nothing is told of a fighter not learned): " <a cheap shot from its feet 0|1> <the least MP of a move that
+-- strikes far off, or -1> <the least MP of a move that costs any, or -1>" (positioning.ranged_shot; far off: something
+-- sent 250 pixels and beyond).
+function smart.page_kit.moves(record)
+    local analysis = analyses[record.data]
+    if not analysis or not analysis.moves or #analysis.moves == 0 then return "" end
+    if analysis.page_moves then return analysis.page_moves end
+    local ranged, cheapest
+    for _, move in ipairs(analysis.moves) do
+        local mp = move.mp or 0
+        if mp > 0 and (not cheapest or mp < cheapest) then cheapest = mp end
+        local far = 0
+        for _, box in ipairs(move.boxes or {}) do
+            if not box.own then far = max(far, box.x2 or 0) end
+        end
+        if far >= 250 and (not ranged or mp < ranged) then ranged = mp end
+    end
+    analysis.page_moves = string.format(" %d %d %d", positioning.ranged_shot(analysis) and 1 or 0, ranged or -1, cheapest or -1)
+    return analysis.page_moves
+end
+-- What the page is told: "frame <n> width <stage>", then a line a fighter: "f <slot> <team> <human> <commandable>
+-- <hp> <max hp> <mp> <x> <z> <y> <facing L|R> <state> <weapon in hand 0|1> <id> <name> <moves>" (moves above).
+function smart.page_kit.report(state)
+    local kit = smart.page_kit
+    if not kit.state_names then
+        -- (In the kit, not a local of this file: the file is at Lua's 200 locals.)
+        kit.state_names = {}
+        for name, value in pairs(states) do kit.state_names[value] = name end
+    end
+    if not kit.names then
+        kit.names = {}
+        local ok, fighters = pcall(function() return require("base/game/catalog").load() end)
+        if ok and type(fighters) == "table" then
+            for _, fighter in ipairs(fighters) do kit.names[fighter.id] = fighter.name end
+        end
+    end
+    local width = (state.stage_bound or 0) > 0 and state.stage_bound or ((state.stage and state.stage.width) or constants.view.width)
+    local lines = {string.format("frame %d width %d", state.frame_number, width)}
+    for index = 0, constants.item_slots - 1 do
+        local value = state.items[index]
+        if value and value.record.kind == record_kinds.character and value.owner == index then
+            local fstate = value.record.frame(value.frame).state
+            local name = (tostring(kit.names[value.record.id] or "?"):gsub("%s", "_"))
+            lines[#lines + 1] = string.format("f %d %d %d %d %d %d %d %d %d %d %s %s %d %d %s%s", index, value.team or 0,
+                value.human and 1 or 0, (not value.human and smart.enabled(state, value, index)) and 1 or 0,
+                value.hp, value.max_hp or constants.points.full, value.mp, value.x_int, value.z_int, value.y_int,
+                value.facing == facing_right and "R" or "L", kit.state_names[fstate] or ("s" .. tostring(fstate)),
+                value.weapon ~= weapon_none and 1 or 0, value.record.id, name, kit.moves(value.record))
+        end
+    end
+    return table.concat(lines, "\n")
+end
+-- Once a frame (the first computer player of the frame): the page's orders every 6 frames, the report every 30.
+function smart.page_kit.poll(state)
+    local kit = smart.page_kit
+    local plan, post = kit.plan, kit.post
+    if not plan then return end
+    local frame = state.frame_number
+    if frame == kit.polled then return end
+    if frame < kit.polled then
+        -- A new match counts its frames from 0 again: the page hears of it at once, and the last match's orders
+        -- (for the fighters of its slots) go until the page sends new ones.
+        kit.posted, kit.orders = -1000, {}
+    end
+    kit.polled = frame
+    if frame % 6 == 0 then
+        local seq, text = plan(kit.seq)
+        if seq ~= kit.seq then
+            kit.seq = seq
+            kit.orders = kit.parse(text)
+        end
+    end
+    if post and frame - kit.posted >= 30 and not (state.held and state.held.network) and not state.replay
+       and not state.replay_demo then
+        kit.posted = frame
+        post(kit.report(state))
+    end
+end
+
 smart.rl_kit.xoi_control = smart.control
 function smart.control(state, index)
+    smart.page_kit.poll(state)
+    local self = state.items[index]
+    local memory = self and self.smart_memory
+    local order = smart.page_kit.order_of(state, index)
+    if memory then memory.order = order end
     smart.rl_kit.xoi_control(state, index)
-    smart.rl_kit.after(state, index)
+    if not order then smart.rl_kit.after(state, index) end
 end
 
 -- For the test bench.
