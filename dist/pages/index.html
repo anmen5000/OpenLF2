@@ -10,6 +10,11 @@
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="alternate icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- The site as an app (package 95): dist/pages/make-pwa.py puts the manifest, pwa.js and the service worker (sw.js)
+     beside this page. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1226">
+<script src="pwa.js" defer></script>
 <style>
   :root {
     --bg: #0d1226;
@@ -206,6 +211,7 @@
   .note { font-size: .85rem; color: var(--text-dim); }
 
   .hero p.by { margin: -1rem 0 1.6rem; color: var(--accent-2); font-size: .95rem; letter-spacing: .02em; }
+  .hero p.install-hint { margin: 1.1rem auto 0; max-width: 32rem; color: var(--text-dim); font-size: .95rem; }
   .features .card.insane { border-color: rgba(255,107,107,.55); background: linear-gradient(160deg, rgba(255,107,107,.14), var(--card) 60%); }
   .features .card.insane h3 { color: #ff8a8a; }
   .features .card a.more { display: inline-block; margin-top: .6rem; font-size: .9rem; }
@@ -230,7 +236,10 @@
         <a class="btn secondary" href="insane.html">INSANE! AI — how it works</a>
         <a class="btn secondary" href="https://github.com/anmen5000/OpenLF2">View source on GitHub</a>
         <a class="btn secondary" href="xoi.html">On your PC: mods with INSANE! &amp; XOI</a>
+        <button class="btn secondary" id="install-app" type="button" hidden>Install the app</button>
       </div>
+      <p class="install-hint" id="install-ios" hidden>On an iPhone or iPad: tap <b>Share</b>, then <b>Add to Home Screen</b> to
+        install the app.</p>
     </div>
   </header>
 
@@ -288,6 +297,11 @@
         from archive.org, or select your own
         <code>LF2_v2.0a.exe</code> or <code>lf2_v20a_Setup.exe</code> installer manually. Your browser
         saves the installer for future visits; a selected file is never uploaded anywhere.</p>
+      <p class="lede"><b>As an app:</b> install the site (<b>Install the app</b> above, the browser's own Install, or on an
+        iPhone or iPad <b>Add to Home Screen</b>) and it opens from its own icon, in its own window, even with no
+        network: the game, the LF2 data and the mods it has played stay on your device (Hero Fighter's player is kept
+        the first time you play it). It updates itself when a new version is out; network rooms still need the
+        network, and everyone in a room plays the same version.</p>
       <p class="lede">Mods that come as a whole game folder (their own program, data and pictures) can be played too:
         pick one in <b>Game</b> (the online relay keeps them), or select its <code>.zip</code> file. Everyone in a network
         room must play the same game; invite links carry the choice. A mod whose program is packed or protected
@@ -1061,6 +1075,8 @@
   const chosen = document.getElementById('chosen');
   const progress = document.getElementById('progress');
   let downloading = false;
+  // A game running, or the LF2 data on its way: a new version of the app waits for the player (pwa.js).
+  window.OpenLF2Busy = () => started || downloading;
   chooseButton.addEventListener('click', () => installer.click());
   installer.addEventListener('change', async () => {
     selectionChanged = true;

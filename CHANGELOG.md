@@ -800,6 +800,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   machines' results first when `may-con-cai-dat.bat` is beside it (a fighter learned on the machine itself keeps its
   own). The relay's job is `HOC_DIR` (default `<PACKS_DIR>/hoc`); its requests answer in `KEY=value` lines that a
   `.bat` file reads with `for /f` (tools/relay/hoc.js, tests in test/hoc.test.js).
+- LF2 Online as an app (package 95): the site can be installed from the browser ("Install the app" on the page, the
+  browser's own Install, or Add to Home Screen on an iPhone or iPad) and then opens from its own icon, in its own
+  window, with no network. A service worker (`dist/pages/sw.js`) keeps the site's "core" files - the pages, the
+  game's program (`openlf2.js`, `.wasm`, `.data`), the small scripts and the icons, 12.4 MB - when a version
+  installs, all of them or none, each checked against the SHA-256 that `dist/pages/make-pwa.py` writes into it when
+  the "pages" job puts the site together, so a page and the program it runs always come from one version; Hero
+  Fighter's Ruffle and the licences are kept the first time they are used; the relay, the XOI kits and the Windows
+  emulator come from the network as before (the LF2 installer and the mods were already kept by the page). Files are
+  kept by their SHA-256, so an update downloads only what changed. A new version reloads a page nobody has touched
+  yet, and waits for "Update now" while a game is running (`window.OpenLF2Busy`, `dist/pages/pwa.js`). The manifest
+  (`dist/pages/manifest.webmanifest`) takes 192 and 512 px icons and a full-bleed one that `tools/icons/make_icons.py`
+  renders from the project's SVG.
 - A new job in one click on the relay's page `/hoc` (package 94, relay installer version 16): "Bat dau viec moi"
   (`POST /hoc/api/viec-moi`) takes every fighter off with its results, keeping the machines' key, the mod and the
   settings. The page shows the size of the results kept (a fighter's are under 0.3 MB: its account, its confirmation

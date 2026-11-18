@@ -42,6 +42,7 @@ jobs:
 
           with ZipFile('out/OpenLF2-Web.zip') as bundle:
               expected = {'index.html', 'installer-store.js', 'icon.svg', 'favicon.ico', 'favicon-32.png', 'apple-touch-icon.png',
+                          'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
                           'openlf2.js', 'openlf2.wasm', 'openlf2.data'}
               assert expected <= set(bundle.namelist())
               licenses = {'LICENSE-OpenLF2.txt', 'THIRD-PARTY-NOTICES.md', 'CONTENTS.txt',
@@ -148,6 +149,9 @@ jobs:
           bash dist/make-xoi-kit.sh --en site/xoi-kit-en.zip
           bash dist/make-xoi-kit.sh --balance site/balance-kit.zip
           if [ -f out/windows/build.json ]; then cp -r out/windows site/windows; else echo "No Windows emulator in this site"; fi
+          # The site as an app that opens without the network: its manifest, pwa.js and the service worker sw.js,
+          # which lists the site's files with their SHA-256 (dist/pages/make-pwa.py).
+          python3 dist/pages/make-pwa.py site
       # The kit as a file of this run too, for "Upload to latest release" to put beside the Windows installers.
       - uses: actions/upload-artifact@v4
         with:

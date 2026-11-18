@@ -9,6 +9,11 @@
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="alternate icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- The site as an app (package 95): dist/pages/make-pwa.py puts the manifest, pwa.js and the service worker (sw.js)
+     beside this page. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1226">
+<script src="pwa.js" defer></script>
 <script>
   // The language before anything is drawn: ?lang=vi or ?lang=en, else the last one picked here, else the browser's.
   (function () {
@@ -963,6 +968,11 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>LF2 Online as an app</b> (package 95). Open the site and press <b>Install the app</b> (or the browser's own
+          Install; on an iPhone or iPad: Share, then <b>Add to Home Screen</b>): it opens from its own icon, in its own
+          window, even with no network - the game, the LF2 data and the mods it has played stay on your device, and
+          Hero Fighter's player is kept the first time you play it. It updates itself when a new version is out (during
+          a game it waits for <b>Update now</b>); network rooms still need the network.</li>
         <li><b>From one mod to the next</b> (package 94, relay installer version 16). A fighter's results are kept by its
           id, and two mods mostly share ids: with the next mod, the relay's job kept the old mod's fighters, a machine that
           had learned id 16 of the old mod sent those results back for the new 16, and <code>dua-bo-nao-vao-mod.bat</code>
@@ -1108,6 +1118,11 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>LF2 Online thành ứng dụng</b> (gói 95). Mở trang game rồi bấm <b>Install the app</b> (hay nút Cài đặt của
+          trình duyệt; trên iPhone, iPad: Chia sẻ rồi <b>Thêm vào MH chính</b>): game mở từ biểu tượng riêng, trong cửa sổ
+          riêng, kể cả khi không có mạng - game, dữ liệu LF2 và các bản mod đã chơi nằm sẵn trên máy, Hero Fighter được
+          giữ lại từ lần chơi đầu. Có bản mới thì ứng dụng tự cập nhật (đang chơi thì chờ bạn bấm <b>Update now</b>);
+          phòng chơi mạng vẫn cần mạng.</li>
         <li><b>Từ bản mod này sang bản mod khác</b> (gói 94, trình cài đặt relay phiên bản 16). Kết quả của nhân vật được ghi
           theo số id, mà hai bản mod thường dùng chung số id: sang bản mod kế, việc trên relay vẫn giữ nhân vật của bản cũ,
           máy con từng học id 16 của bản cũ gửi lại kết quả ấy cho id 16 mới, và <code>dua-bo-nao-vao-mod.bat</code> có thể

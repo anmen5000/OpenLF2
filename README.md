@@ -27,7 +27,9 @@ This repository is **LF2 Online**, Xôi's build of OpenLF2, played at
 - the web site (`dist/pages/`), built and published by the WebAssembly workflow on every push to
   `main`; its network rooms and library of mods run on a relay (`tools/relay/`) whose address is the
   `window.OPENLF2_RELAY` line in `dist/pages/index.html` and `dist/pages/windows.html` — change it to
-  your own relay when you fork;
+  your own relay when you fork; installed from the browser, the site is an app that opens with no
+  network (`dist/pages/sw.js`, `dist/pages/pwa.js`, `dist/pages/manifest.webmanifest`, put together by
+  `dist/pages/make-pwa.py`);
 - a page that plays mods whose program OpenLF2 cannot read in a Windows emulator in the browser
   (`dist/pages/windows.html`, `dist/boxedwine/`), and a Hero Fighter page (`dist/pages/hero-fighter.js`),
   where a slow computer can play through a faster one (`dist/pages/hf-remote.js`);

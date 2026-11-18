@@ -199,6 +199,9 @@ cp "$repo_root/dist/web/installer-store.js" "$build_dir/native/installer-store.j
 cp "$repo_root/dist/web/online.js" "$build_dir/native/online.js"
 cp "$build_dir/icons/web/favicon.ico" "$build_dir/icons/web/favicon-32.png" \
     "$build_dir/icons/web/apple-touch-icon.png" "$build_dir/native/"
+# The site's app icons (dist/pages/manifest.webmanifest; the "pages" job makes the site an app with dist/pages/make-pwa.py).
+cp "$build_dir/icons/web/icon-192.png" "$build_dir/icons/web/icon-512.png" \
+    "$build_dir/icons/web/icon-maskable-512.png" "$build_dir/native/"
 # Hero Fighter on the site page (dist/pages/index.html): its scripts (the game in Ruffle; the rooms' direct links;
 # remote play), the version check it answers, and Ruffle.
 cp "$repo_root/dist/pages/hero-fighter.js" "$repo_root/dist/pages/hf-direct.js" "$repo_root/dist/pages/hf-remote.js" \
@@ -239,6 +242,7 @@ python3 "$repo_root/dist/collect-licenses.py" "$build_dir/native/licenses" \
 (
     cd "$build_dir/native"
     python3 -m zipfile -c ../OpenLF2-Web.zip index.html installer-store.js online.js icon.svg favicon.ico favicon-32.png apple-touch-icon.png \
+        icon-192.png icon-512.png icon-maskable-512.png \
         openlf2.js openlf2.wasm openlf2.data licenses "${bundle_extra[@]}"
 )
 printf 'Web bundle: %s\n' "$build_dir/OpenLF2-Web.zip"

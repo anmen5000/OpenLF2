@@ -29,6 +29,7 @@ Output layout under OUT_DIR:
     switch/icon.jpg               Nintendo Switch (256 px JPEG; needs Pillow or ImageMagick)
     vita/icon0.png                PlayStation Vita (128 px, palette PNG)
     web/favicon.ico, web/favicon-32.png, web/apple-touch-icon.png
+    web/icon-192.png, web/icon-512.png, web/icon-maskable-512.png   the site's app icons (its manifest)
 """
 import hashlib
 import math
@@ -586,6 +587,11 @@ def generate(svg, out):
     write(os.path.join(out, "web", "favicon.ico"), ico([(s, png_of(s)) for s in (16, 32, 48)]))
     write(os.path.join(out, "web", "favicon-32.png"), png_of(32))
     write(os.path.join(out, "web", "apple-touch-icon.png"), png_of(180, square=True, opaque=True))
+    # The site as an installed app (dist/pages/manifest.webmanifest): the icon as it is, and full-bleed for the
+    # systems that cut their own shape out of it (purpose "maskable").
+    write(os.path.join(out, "web", "icon-192.png"), png_of(192))
+    write(os.path.join(out, "web", "icon-512.png"), png_of(512))
+    write(os.path.join(out, "web", "icon-maskable-512.png"), png_of(512, square=True, opaque=True))
 
 
 def main(argv):
