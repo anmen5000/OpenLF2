@@ -23,6 +23,8 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const http = require('node:http');
+const https = require('node:https');
 const path = require('node:path');
 
 const MODEL = /^[a-z0-9][a-z0-9._-]{0,79}$/;
@@ -70,11 +72,47 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// What fetch does here, for a Node.js without it (install-vps.sh falls back to Node.js 16 on CentOS 7 when no newer
+// build runs there): one request, the answer's status and text.
+function nodeFetch(url, { method = 'GET', headers = {}, body, signal } = {}) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const client = target.protocol === 'http:' ? http : https;
+    const sent = body === undefined ? undefined : Buffer.from(String(body), 'utf8');
+    const request = client.request(target, {
+      method,
+      headers: { ...headers, ...(sent ? { 'content-length': String(sent.length) } : {}) },
+    }, (response) => {
+      const chunks = [];
+      let size = 0;
+      response.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > 8 * 1024 * 1024) request.destroy(new Error('answer too large'));
+        else chunks.push(chunk);
+      });
+      response.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        const status = response.statusCode || 0;
+        resolve({ ok: status >= 200 && status < 300, status, text: async () => text });
+      });
+      response.on('error', reject);
+    });
+    request.on('error', reject);
+    if (signal) {
+      const abort = () => request.destroy(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      if (signal.aborted) abort();
+      else signal.addEventListener('abort', abort, { once: true });
+    }
+    if (sent) request.write(sent);
+    request.end();
+  });
+}
+
 function createGemini(config, {
   log = () => {},
   clientAddress = (req) => req.socket.remoteAddress || 'unknown',
   allowOrigin = () => ({ 'access-control-allow-origin': '*' }),
-  fetchImpl = (...args) => globalThis.fetch(...args),
+  fetchImpl = typeof globalThis.fetch === 'function' ? (...args) => globalThis.fetch(...args) : nodeFetch,
 } = {}) {
   const directory = config.geminiDir || (config.packsDir ? path.join(config.packsDir, 'gemini') : '');
   const file = directory ? path.join(directory, 'gemini.json') : '';
@@ -645,4 +683,4 @@ const PAGE = `<!doctype html>
 </body></html>
 `;
 
-module.exports = { createGemini, newCode, SUGGESTED, DEFAULTS };
+module.exports = { createGemini, newCode, nodeFetch, SUGGESTED, DEFAULTS };

@@ -12,6 +12,7 @@ const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const { createRelay } = require('../server.js');
+const { nodeFetch } = require('../gemini.js');
 
 const ADMIN = 'admin-key-for-tests';
 const KEY = 'AIzaSyTEST-key_for-the-relay-0123456789';
@@ -274,6 +275,30 @@ test('the models the key may use, and the test call of the page /gemini', async 
     assert.equal((await admin(relay, 'PUT', 'cai-dat', { apiKey: 'short' })).status, 400);
   } finally {
     await relay.close();
+    await google.close();
+  }
+});
+
+test('without fetch (Node.js 16): the relay\'s own request does the same', async () => {
+  const google = await startGoogle((request) => (request.method === 'GET' ? [200, { models: [] }]
+    : request.body.contents ? answer(ORDERS) : [400, { error: { code: 400, message: 'no' } }]));
+  try {
+    const listed = await nodeFetch(`${google.base}/models?pageSize=200`, { headers: { 'x-goog-api-key': KEY } });
+    assert.equal(listed.ok, true);
+    assert.deepEqual(JSON.parse(await listed.text()), { models: [] });
+    const asked = await nodeFetch(`${google.base}/models/m:generateContent`, { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY }, body: JSON.stringify({ contents: [{ parts: [{ text: 'Đánh' }] }] }) });
+    assert.equal(asked.status, 200);
+    assert.equal(JSON.parse(await asked.text()).candidates[0].content.parts[0].text, ORDERS);
+    assert.equal(google.seen[1].body.contents[0].parts[0].text, 'Đánh', 'UTF-8 and its length');
+    assert.equal(google.seen[1].headers['x-goog-api-key'], KEY);
+    const refused = await nodeFetch(`${google.base}/x`, { method: 'POST', body: '{}' });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.status, 400);
+    const controller = new AbortController();
+    controller.abort();
+    await assert.rejects(nodeFetch(`${google.base}/models`, { signal: controller.signal }), { name: 'AbortError' });
+  } finally {
     await google.close();
   }
 });
