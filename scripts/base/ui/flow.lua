@@ -532,7 +532,10 @@ function flow.update(state, raw, context)
         if state.session and state.active == "match" and late < 250 and network.bots_host(state.session) then
             local current = state.match.match
             if not current.paused and not current.finished and current.bots_remote then
-                local sent, problem = network.send_bots(state.session, require("base/game/smart_ai").remote_keys(current))
+                -- (Thinking for the characters that came into the match - puppets, a stage's enemies - takes its
+                -- turns within 16 ms a frame, 6 while the host runs behind: smart.remote_keys.)
+                local budget = late < 100 and 16 or 6
+                local sent, problem = network.send_bots(state.session, require("base/game/smart_ai").remote_keys(current, budget))
                 if not sent then disconnect(state, problem) end
             end
         end

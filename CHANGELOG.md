@@ -1277,6 +1277,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   network's messages); "Show FPS" counts the pictures shown. Two pages of one computer in a room, two humans and six
   XOI players on Wharf: behind 20 s as the match began and 43 s after 40 s before, 0.0-0.3 s from the fifth second
   now; with the selection's learning ahead (above), the match begins in time
+- A room's host thought for every computer player each frame, however many (package 105, the project owner's room:
+  Sasori spamming his puppets in NTSD 2.6's stage 2, the host choppy while the joining computer, which only plays the
+  keys, was smooth): every puppet is an INSANE! or XOI player, and thinking for 30 players takes 12.6 ms a frame in
+  Lua 5.2 on a fast computer (28 at the longest), two to three times that in a browser, where the host drew fewer
+  pictures to keep up. Now the players of the match's slots think every frame and the characters that came into it
+  (puppets, a stage's enemies: items 50 and on) take turns, from the one after the last that thought, within 16 ms a
+  frame (6 while the host runs 0.1 s late; one at least): those left out hold their keys a frame more on every
+  computer, as when keys come late (`smart.remote_keys`, `base/ui/flow`). In a browser, two pages of one computer, six
+  XOI players and 24 puppets kept standing: the host's thinking 24.7-28.9 ms a frame before (99 at the longest), 13-16
+  now; the same match on both pages frame for frame. (Letting the joining computers think for some players instead
+  was weighed: their keys would come a network trip later, freeze with a computer that falls behind or leaves, and
+  have them learn the fighters again.)
 - NTSD 2.6's Deidara was gone once his D^J had put him on his bird (package 104, the project owner's report), and stayed
   gone when he got off it; Kimimaro in his D^A form too (his second report), 29 of the mod's 39 changes of record. Such
   a change (states 8000-8999) sets the picture offset to 140 (the second colour set of the original's soldiers), as the

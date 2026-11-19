@@ -8211,43 +8211,68 @@ end
 -- every computer of the room alike. (What else a decision might change of the fighter, nothing measured, is put back
 -- too: the room's computers stay in step whatever.) The bytes for room.send_bots: the count (2), then per player its
 -- item (2), keys, previous keys, the number of sequences set and each sequence and its state.
-function smart.remote_keys(state)
+-- `budget` (ms, package 105): the players of the match's slots decide every frame; the characters that came into it
+-- (Sasori's puppets, a stage's enemies: items 50 and on) decide in turn, from the one after the last that did, for as
+-- long as the budget lasts (one at least) - those left out hold their keys a frame more on every computer. The
+-- project owner's room, Sasori spamming puppets in stage 2: the host fell behind (thinking for 30 players is 10.7 ms
+-- a frame in Lua 5.2 on a fast computer, two to three times that in a browser) while the joining computer, which
+-- only plays the keys, did not; and a host behind sends no keys at all (base/ui/flow).
+function smart.remote_keys(state, budget)
     local frame_number, input_phase = state.frame_number, state.input_phase
     state.frame_number, state.input_phase = frame_number + 1, (input_phase + 1) % 2
-    local parts, count = {}, 0
+    local deadline = budget and engine.network_time() + budget
+    local slotted, came = {}, {}
     for index = 10, constants.item_slots - 1 do
         local value = state.items[index]
         if value and value.record.kind == record_kinds.character and smart.enabled(state, value, index) then
-            local keys, previous, sequences, fields = {}, {}, {}, {}
-            for _, key in ipairs(item.keys) do keys[key], previous[key] = value.keys[key], value.previous_keys[key] end
-            for sequence, phase in pairs(value.sequences) do sequences[sequence] = phase end
-            for name, field in pairs(value) do
-                if type(field) ~= "table" then fields[name] = field end
-            end
-            smart.control(state, index)
-            local key_bits, previous_bits, bit = 0, 0, 1
-            for _, key in ipairs(item.keys) do
-                if value.keys[key] then key_bits = key_bits + bit end
-                if value.previous_keys[key] then previous_bits = previous_bits + bit end
-                bit = bit * 2
-            end
-            local set = {}
-            for sequence, phase in pairs(value.sequences) do
-                if sequences[sequence] ~= phase and type(sequence) == "number" and sequence >= 0 and sequence < 256
-                   and type(phase) == "number" and phase >= 0 and phase < 256 then
-                    set[#set + 1] = string.char(sequence, phase)
-                end
-            end
-            for _, key in ipairs(item.keys) do value.keys[key], value.previous_keys[key] = keys[key], previous[key] end
-            for sequence in pairs(value.sequences) do value.sequences[sequence] = sequences[sequence] end
-            for sequence, phase in pairs(sequences) do value.sequences[sequence] = phase end
-            for name, field in pairs(value) do
-                if type(field) ~= "table" and fields[name] == nil then value[name] = nil end
-            end
-            for name, field in pairs(fields) do value[name] = field end
-            count = count + 1
-            parts[count] = string.char(index % 256, floor(index / 256), key_bits, previous_bits, #set) .. table.concat(set)
+            if index < 50 then slotted[#slotted + 1] = index else came[#came + 1] = index end
         end
+    end
+    -- (Turns go on from the item after the last that had one: the host's own match keeps it, no other computer's.)
+    local first = 1
+    for position, index in ipairs(came) do
+        if index > (state.bots_turn or -1) then first = position break end
+    end
+    local order = {}
+    for _, index in ipairs(slotted) do order[#order + 1] = index end
+    for step = 0, #came - 1 do order[#order + 1] = came[(first - 1 + step) % #came + 1] end
+    local parts, count, turns = {}, 0, 0
+    for _, index in ipairs(order) do
+        local value = state.items[index]
+        if index >= 50 then
+            if turns > 0 and deadline and engine.network_time() > deadline then break end
+            turns = turns + 1
+            state.bots_turn = index
+        end
+        local keys, previous, sequences, fields = {}, {}, {}, {}
+        for _, key in ipairs(item.keys) do keys[key], previous[key] = value.keys[key], value.previous_keys[key] end
+        for sequence, phase in pairs(value.sequences) do sequences[sequence] = phase end
+        for name, field in pairs(value) do
+            if type(field) ~= "table" then fields[name] = field end
+        end
+        smart.control(state, index)
+        local key_bits, previous_bits, bit = 0, 0, 1
+        for _, key in ipairs(item.keys) do
+            if value.keys[key] then key_bits = key_bits + bit end
+            if value.previous_keys[key] then previous_bits = previous_bits + bit end
+            bit = bit * 2
+        end
+        local set = {}
+        for sequence, phase in pairs(value.sequences) do
+            if sequences[sequence] ~= phase and type(sequence) == "number" and sequence >= 0 and sequence < 256
+               and type(phase) == "number" and phase >= 0 and phase < 256 then
+                set[#set + 1] = string.char(sequence, phase)
+            end
+        end
+        for _, key in ipairs(item.keys) do value.keys[key], value.previous_keys[key] = keys[key], previous[key] end
+        for sequence in pairs(value.sequences) do value.sequences[sequence] = sequences[sequence] end
+        for sequence, phase in pairs(sequences) do value.sequences[sequence] = phase end
+        for name, field in pairs(value) do
+            if type(field) ~= "table" and fields[name] == nil then value[name] = nil end
+        end
+        for name, field in pairs(fields) do value[name] = field end
+        count = count + 1
+        parts[count] = string.char(index % 256, floor(index / 256), key_bits, previous_bits, #set) .. table.concat(set)
     end
     state.frame_number, state.input_phase = frame_number, input_phase
     return string.char(count % 256, floor(count / 256)) .. table.concat(parts)

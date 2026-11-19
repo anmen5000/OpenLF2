@@ -127,7 +127,9 @@ frames, which every computer plays as it plays the players' keys. The other comp
 fighters and decide nothing, so a weak one keeps up with as many of those players as the host
 manages. Make the strongest computer the host and keep its game in front: while it is minimized or
 far behind, the computer players wait. Such matches are not recorded. Through the relay's beat every
-computer thinks for them as before (the relay itself is not changed).
+computer thinks for them as before (the relay itself is not changed). From package 105 the host
+thinks within 16 ms a frame: the fighters of the match's slots every frame, the characters that came
+into it (Sasori's puppets, a stage's enemies) in turns when there are many.
 
 When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
