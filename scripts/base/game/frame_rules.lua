@@ -23,6 +23,8 @@ local same_frame_transform = false
 function frame_rules.set_executable_patches(options)
     same_frame_transform = (options or {}).transform_same_frame == true
 end
+-- Whether states 4000-4999 change records (above): what a fighter can become (base/game/smart_ai brings).
+function frame_rules.transforms_same_frame() return same_frame_transform end
 
 -- Followers (+0x2f4 = index) that are alive take the new record, airborne ones in frame 212.
 local function pass_record(state, index, record)

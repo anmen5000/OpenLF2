@@ -121,6 +121,14 @@ browsers that hand data channels to a worker (Chromium), the channels and the be
 (`online.js` loaded again as one), so the page's own work never delays a beat; elsewhere the beat runs on
 the page as before.
 
+With the host keeping the beat, the host's game also thinks for INSANE!'s and XOI's computer players
+(package 103): after each frame it works out their keys for the next, and its page puts them in the
+frames, which every computer plays as it plays the players' keys. The other computers learn no
+fighters and decide nothing, so a weak one keeps up with as many of those players as the host
+manages. Make the strongest computer the host and keep its game in front: while it is minimized or
+far behind, the computer players wait. Such matches are not recorded. Through the relay's beat every
+computer thinks for them as before (the relay itself is not changed).
+
 When anyone in the room has the hidden characters unlocked (the **Unlock hidden characters**
 option, or LF2.NET typed), the whole room gets them; after leaving, each computer has its own
 setting again.

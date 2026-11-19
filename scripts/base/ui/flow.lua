@@ -86,8 +86,15 @@ function flow.create(options)
 end
 local function with_recording(state, options)
     options.network = state.session ~= nil
+    -- (A room whose host thinks for INSANE!'s players, base/game/room bots: their keys are the host's, which no
+    -- recording keeps - its replay would have them decide anew. A match with such players is not recorded.)
+    options.bots_remote = state.session ~= nil and network.bots_remote(state.session) or nil
+    options.bots_host = state.session ~= nil and network.bots_host(state.session) or nil
+    options.bots_since = options.bots_remote and network.frame_number(state.session) or nil
     local settings = controls.current()
-    if settings.record == 0 then return options end
+    if settings.record == 0 or (options.bots_remote and require("base/game/smart_ai").levels[options.difficulty]) then
+        return options
+    end
     local names = {}
     for slot = 0, 7 do names[slot + 1] = controls.name(slot) end
     options.record = {names = names, version = state.options.recording_version or 0, time = engine.local_time(),
@@ -346,6 +353,8 @@ end
 -- levels can be chosen (base/game/unlock).
 learn_ahead = function(state, milliseconds, waiting)
     if state.active ~= "characters" or not state.characters or not require("base/game/unlock").hard_levels() then return end
+    -- (Nothing to learn where the room's host thinks for the computer players: base/game/room bots.)
+    if state.session and network.bots_remote(state.session) and not network.bots_host(state.session) then return end
     if waiting then
         local next_late = network.next_late(state.session)
         if next_late then milliseconds = math.min(milliseconds, -next_late - 3) end
@@ -517,6 +526,16 @@ function flow.update(state, raw, context)
             screen_context.sound, screen_context.rumble = function() end, function() end
         end
         route(state, input, screen_context)
+        -- The room's host thinks for INSANE!'s players (base/game/room bots): their keys for the next frame, decided
+        -- now, go to its page's beat and come back with that frame to every computer. (Not while it runs its frames
+        -- far behind their time: they would come long after the frame they were decided for, and it catches up sooner.)
+        if state.session and state.active == "match" and late < 250 and network.bots_host(state.session) then
+            local current = state.match.match
+            if not current.paused and not current.finished and current.bots_remote then
+                local sent, problem = network.send_bots(state.session, require("base/game/smart_ai").remote_keys(current))
+                if not sent then disconnect(state, problem) end
+            end
+        end
     end
     if joining_cli then
         if state.network.session.error then error(state.network.session.error) end

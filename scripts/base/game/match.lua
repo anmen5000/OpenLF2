@@ -170,8 +170,12 @@ function match.create(options)
     elseif options.record then
         start_recording(state, options)
     end
-    -- INSANE!'s computer players learn the fighters' moves: now, before the fight, rather than in it.
-    if smart_ai.levels[state.difficulty] then smart_ai.prepare(state) end
+    -- INSANE!'s computer players learn the fighters' moves: now, before the fight, rather than in it - on this
+    -- computer only when it thinks for them (in a room whose host does, the host alone: base/game/room bots).
+    state.bots_remote = options.bots_remote == true
+    -- (Keys of the frames before this match, still in the frames for a while, are the last match's.)
+    state.bots_frame = state.bots_remote and options.bots_since or nil
+    if smart_ai.levels[state.difficulty] and (not state.bots_remote or options.bots_host) then smart_ai.prepare(state) end
     return state
 end
 
@@ -354,6 +358,28 @@ local function each_item(state, callback)
     end
 end
 
+-- The keys of a computer player the room's host thinks for (base/game/room bots), as smart_ai.control sets them: the
+-- keys, the previous keys and the D-sequences. One the frame brings none for (they did not come in time) holds its
+-- keys a frame more, as a player does; after half a second without (`idle`: the host busy, learning a fighter that
+-- came into the match, or far behind), it lets go of them and waits.
+local function remote_control(value, entry, idle)
+    if not entry then
+        for _, key in ipairs(item.keys) do
+            value.previous_keys[key] = value.keys[key]
+            if idle then value.keys[key] = false end
+        end
+        return
+    end
+    local bit = 1
+    for _, key in ipairs(item.keys) do
+        value.keys[key] = math.floor(entry.keys / bit) % 2 == 1
+        value.previous_keys[key] = math.floor(entry.previous / bit) % 2 == 1
+        bit = bit * 2
+    end
+    local list = entry.sequences
+    for position = 1, #list - 1, 2 do value.sequences[list[position]] = list[position + 1] end
+end
+
 local function read_input(state, held)
     for index = 0, 7 do
         local value = state.items[index]
@@ -372,6 +398,17 @@ local function read_input(state, held)
         end
     end
     local scan
+    -- (In a room whose host thinks for INSANE!'s players: its keys for them that came with this frame, if newer than
+    -- the last played - the same on every computer.)
+    local bots
+    if state.bots_remote then
+        local section = held.bots
+        if section and section.frame > (state.bots_frame or -1) then
+            bots, state.bots_frame, state.bots_waited = section, section.frame, 0
+        else
+            state.bots_waited = (state.bots_waited or 0) + 1
+        end
+    end
     for index = 10, 399 do
         local value = state.items[index]
         if value then
@@ -379,7 +416,9 @@ local function read_input(state, held)
                 if not scan and ai.prepare then scan = ai.prepare(state) end
                 -- INSANE!'s computer players (base/game/smart_ai); otherwise a mod's AI script with id() takes the
                 -- place of the whole AI (base/game/ai_scripts).
-                if smart_ai.enabled(state, value, index) then smart_ai.control(state, index)
+                if smart_ai.enabled(state, value, index) then
+                    if state.bots_remote then remote_control(value, bots and bots[index], state.bots_waited > 15)
+                    else smart_ai.control(state, index) end
                 elseif not ai_scripts.id(state, index) then ai.control(state, index, state.mode, scan) end
             elseif value.record.frame(value.frame).hits.Fa > 0 then
                 objects.update(state, index)

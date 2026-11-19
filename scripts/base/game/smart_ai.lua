@@ -1510,7 +1510,7 @@ end
 -- pieces the game runs on. The copy's random numbers and what a mod's AI script last looked at are the copy's own:
 -- kept for the next piece, the game's put back meanwhile (smart.ahead_kit.resume). (In the module's table: the file's
 -- main chunk is at Lua's limit of locals.)
-smart.ahead_kit = {queue = {}, queued = {}}
+smart.ahead_kit = {queue = {}, queued = {}, later = {}, later_queued = {}, later_done = {}, brought = {}}
 function smart.ahead_kit.pause()
     local kit = smart.ahead_kit
     if not kit.deadline or coroutine.running() ~= kit.thread or engine.network_time() < kit.deadline then return end
@@ -7517,6 +7517,37 @@ end
 -- finds learned it does not learn again. What is learned depends on the fighter's data alone, so it is the same
 -- whenever it is learned, and every computer of a room plays the same; a match, or anything else that needs the
 -- moves, first finishes what was begun (smart.ahead_kit.finish).
+-- What a fighter can become or bring in during a match, learned ahead after the fighters chosen (in a match they
+-- were learned as they first came: Deidara's second form, 1.7 seconds in Lua 5.2 on a fast computer and more in a
+-- browser, the match standing still). The characters its frames change it into (base/game/frame_rules: states
+-- 8000-8999, and 4000-4999 where the mod's program has them; Louis's 9995) or bring in (an opoint of a character),
+-- as the catalog lists them ({id, path}, by id); read once a fighter's data.
+function smart.ahead_kit.brings(data)
+    local kit = smart.ahead_kit
+    local found = kit.brought[data]
+    if found then return found end
+    local ids = {}
+    local same_frame = require("base/game/frame_rules").transforms_same_frame()
+    local ranges = constants.frame_state_ranges
+    for _, frame in pairs(data.frames or {}) do
+        local state = frame.state or 0
+        if state >= ranges.record_transform_start and state < ranges.record_transform_end_exclusive then
+            ids[state - ranges.record_transform_start] = true
+        elseif same_frame and state >= 4000 and state < 5000 then ids[state - 4000] = true
+        elseif state == constants.frame_states.transform_louis_ex then ids[constants.fighter_ids.louis_ex] = true end
+        local point = frame.opoint
+        if point and (point.kind or 0) > 0 and (point.oid or 0) > 0 then ids[point.oid] = true end
+    end
+    found = {}
+    local by_id = require("base/game/catalog").objects().by_id
+    for id in pairs(ids) do
+        local entry = by_id[id]
+        if entry and entry.kind == record_kinds.character then found[#found + 1] = {id = id, path = entry.path} end
+    end
+    table.sort(found, function(a, b) return a.id < b.id end)
+    kit.brought[data] = found
+    return found
+end
 -- Fighters to learn ahead, as the catalog lists them ({id, path}; those already learned or waiting are left out).
 function smart.learn_ahead(fighters)
     local kit = smart.ahead_kit
@@ -7532,12 +7563,30 @@ end
 function smart.learn_ahead_run(milliseconds)
     local kit = smart.ahead_kit
     if not kit.thread then
-        if #kit.queue == 0 then return false end
+        if #kit.queue == 0 and #kit.later == 0 then return false end
         kit.thread = coroutine.create(function()
             while not kit.stop do
+                -- The fighters chosen first, then what they can become or bring in (smart.ahead_kit.brings), and so on.
                 local record = table.remove(kit.queue, 1)
-                if not record then return end
-                kit.queued[record.data] = nil
+                if record then
+                    kit.queued[record.data] = nil
+                else
+                    local entry = table.remove(kit.later, 1)
+                    if not entry then return end
+                    kit.later_queued[entry.path] = nil
+                    -- (Reading its data takes a while too.)
+                    kit.pause()
+                    if kit.stop then return end
+                    kit.later_done[entry.path] = true
+                    record = item.record({id = entry.id, kind = record_kinds.character},
+                        require("base/game/object_data").load(entry.path))
+                end
+                for _, other in ipairs(kit.brings(record.data)) do
+                    if not kit.later_done[other.path] and not kit.later_queued[other.path] then
+                        kit.later_queued[other.path] = true
+                        kit.later[#kit.later + 1] = other
+                    end
+                end
                 if not analyses[record.data] then
                     kit.record = record
                     learn(record)
@@ -7547,7 +7596,7 @@ function smart.learn_ahead_run(milliseconds)
         end)
     end
     kit.resume(engine.network_time() + milliseconds)
-    return kit.thread ~= nil or #kit.queue > 0
+    return kit.thread ~= nil or #kit.queue > 0 or #kit.later > 0
 end
 function smart.ahead_kit.resume(deadline)
     local kit = smart.ahead_kit
@@ -7571,7 +7620,7 @@ end
 function smart.ahead_kit.finish()
     local kit = smart.ahead_kit
     if not kit.thread or coroutine.running() == kit.thread then return end
-    kit.queue, kit.queued, kit.stop = {}, {}, true
+    kit.queue, kit.queued, kit.later, kit.later_queued, kit.stop = {}, {}, {}, {}, true
     while kit.thread do kit.resume(nil) end
     kit.stop = false
 end
@@ -8018,6 +8067,55 @@ function smart.control(state, index)
     if memory then memory.order = order end
     smart.rl_kit.xoi_control(state, index)
     if not order then smart.rl_kit.after(state, index) end
+end
+
+-- The host's keys for the computer players of a room (base/game/room bots): after a frame, every INSANE! and XOI
+-- player decides as it would at the start of the next (meanwhile the match's frame number and input phase are the
+-- next frame's, as base/game/match read_input sees them), and what it decided - its keys, its previous keys, the
+-- D-sequences it set - is noted and put back as it was: the match plays them when they come back in the frames, on
+-- every computer of the room alike. (What else a decision might change of the fighter, nothing measured, is put back
+-- too: the room's computers stay in step whatever.) The bytes for room.send_bots: the count (2), then per player its
+-- item (2), keys, previous keys, the number of sequences set and each sequence and its state.
+function smart.remote_keys(state)
+    local frame_number, input_phase = state.frame_number, state.input_phase
+    state.frame_number, state.input_phase = frame_number + 1, (input_phase + 1) % 2
+    local parts, count = {}, 0
+    for index = 10, constants.item_slots - 1 do
+        local value = state.items[index]
+        if value and value.record.kind == record_kinds.character and smart.enabled(state, value, index) then
+            local keys, previous, sequences, fields = {}, {}, {}, {}
+            for _, key in ipairs(item.keys) do keys[key], previous[key] = value.keys[key], value.previous_keys[key] end
+            for sequence, phase in pairs(value.sequences) do sequences[sequence] = phase end
+            for name, field in pairs(value) do
+                if type(field) ~= "table" then fields[name] = field end
+            end
+            smart.control(state, index)
+            local key_bits, previous_bits, bit = 0, 0, 1
+            for _, key in ipairs(item.keys) do
+                if value.keys[key] then key_bits = key_bits + bit end
+                if value.previous_keys[key] then previous_bits = previous_bits + bit end
+                bit = bit * 2
+            end
+            local set = {}
+            for sequence, phase in pairs(value.sequences) do
+                if sequences[sequence] ~= phase and type(sequence) == "number" and sequence >= 0 and sequence < 256
+                   and type(phase) == "number" and phase >= 0 and phase < 256 then
+                    set[#set + 1] = string.char(sequence, phase)
+                end
+            end
+            for _, key in ipairs(item.keys) do value.keys[key], value.previous_keys[key] = keys[key], previous[key] end
+            for sequence in pairs(value.sequences) do value.sequences[sequence] = sequences[sequence] end
+            for sequence, phase in pairs(sequences) do value.sequences[sequence] = phase end
+            for name, field in pairs(value) do
+                if type(field) ~= "table" and fields[name] == nil then value[name] = nil end
+            end
+            for name, field in pairs(fields) do value[name] = field end
+            count = count + 1
+            parts[count] = string.char(index % 256, floor(index / 256), key_bits, previous_bits, #set) .. table.concat(set)
+        end
+    end
+    state.frame_number, state.input_phase = frame_number, input_phase
+    return string.char(count % 256, floor(count / 256)) .. table.concat(parts)
 end
 
 -- For the test bench.

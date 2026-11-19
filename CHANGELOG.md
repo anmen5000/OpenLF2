@@ -872,6 +872,29 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   pieces with the game's random numbers drawn between them, and only partly then the match, played the same matches
   frame for frame as the match learning them itself (NTSD 2.6 with LuaJIT and Lua 5.2, Sauce's pack with its AI
   scripts, One Piece GrandWorld with its forms). Scripts get the `coroutine` library for it
+- In a room played direct, the host thinks for INSANE!'s and XOI's computer players (package 103, the project owner's
+  question: can the weak computers use the strong one's thinking?). Every computer of a room worked out the whole game,
+  those players' decisions too - with many of them most of a frame's time, which a weak computer has not - and learned
+  their fighters as the match began. When the host's page keeps the beat (direct play, `dist/web/online.js`), the host's
+  game works out their keys for the next frame after each frame (`smart.remote_keys`: every such player decides as it
+  would then, and the match is put back as it was) and sends them to its page (`BOTS`, `base/game/room`), which puts the
+  newest after the players' inputs of every frame; every computer, the host's too, plays them as they come
+  (`base/game/match`), so all stay in step whoever works them out. The others learn no fighters and decide nothing. The
+  host says so in its first input (events bit 3); keys from before a match are left alone; a player whose keys did not
+  come in time holds them, and after half a second without lets go and waits; while the host runs a quarter of a second
+  behind and more it decides nothing and catches up sooner. The host should be the strongest computer, its game kept in
+  front. Such matches are not recorded there (a replay would have the players decide anew); through the relay's beat every
+  computer decides as before, and the relay is not changed. Two pages of one computer in a direct room, two humans and six
+  XOI players, the joining page slowed down twice: it began the match at once (2 ms, against 38 s through the relay's
+  beat) and stayed 0.0-0.2 s behind, the same match as the host's frame for frame
+- What a fighter can become or bring in is learned ahead too (package 103): after the fighters chosen on the selection
+  screen, the characters their frames change them into (states 8000-8999, 4000-4999 where the mod's program has them,
+  Louis's 9995) or bring in (an opoint of a character), and theirs (`smart.ahead_kit.brings`). The match learned them as
+  they first came, the game standing still meanwhile: in NTSD 2.6 Deidara's bird took 1.7 s in Lua 5.2 on a fast
+  computer, more in a browser; the room test's eight fighters bring Naruto's Kyuubi, four tails and clone, Sasuke's curse
+  seal, Hidan's and Pain (Deva)'s others, 4.6 s of learning besides their own 7.2. Learned ahead in 0.2-0.5 ms pieces with
+  the game's random numbers drawn between them, the match is the same frame for frame as one learning them as they come
+  (Lua 5.2 and LuaJIT)
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the

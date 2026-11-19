@@ -23,9 +23,10 @@ local i18n = require("base/i18n/i18n")
 local unlock = require("base/game/unlock")
 local room = {}
 
-local kinds = {hello = 0x01, start = 0x02, input = 0x03, ready = 0x04, check = 0x05,
+local kinds = {hello = 0x01, start = 0x02, input = 0x03, ready = 0x04, check = 0x05, bots = 0x06,
     welcome = 0x81, lobby = 0x82, started = 0x83, frame = 0x84, checked = 0x85, left = 0x86,
-    stamp = 0x90} -- stamp: the web page's note of when the next frame arrived (dist/web/online.js)
+    stamp = 0x90, -- stamp: the web page's note of when the next frame arrived (dist/web/online.js)
+    beat_here = 0x91} -- the host's page keeps the beat: see room.send_bots
 local slot_count = 8
 local most_players = 8
 local connect_timeout, frame_timeout = 30000, 30000 -- ms
@@ -134,6 +135,7 @@ function room.start(state, host, address)
     state.next_frame, state.next_run, state.frames = 0, 0, 0
     state.history, state.checks = {}, {}
     state.sent, state.sent_at, state.events, state.late = nil, 0, 0, nil
+    state.beat_here, state.bots_remote, state.bots_announced = false, false, false
     state.offsets, state.offset_next, state.offset_count, state.target = {}, 1, 0, nil
     local started, problem = engine.network(host and "host" or "join", address, state.port)
     if not started then return failed(state, problem) end
@@ -210,7 +212,10 @@ end
 local function handle(state, kind, payload)
     local stamp = state.stamp
     state.stamp = nil
-    if kind == kinds.stamp then
+    if kind == kinds.beat_here then
+        state.beat_here = true
+        return true
+    elseif kind == kinds.stamp then
         -- When the next frame reached the page: performance.now() in whole milliseconds and thousandths,
         -- the same clock as engine.network_time() in the web build (checked: within ten seconds of it).
         if #payload == 6 then
@@ -249,10 +254,11 @@ local function handle(state, kind, payload)
             inputs[index] = payload:sub(at + 1, at + length)
             at = at + 1 + length
         end
-        if at ~= #payload + 1 then return nil, "Invalid network frame" end
+        -- (After the inputs, from a beat on the host's page: the host's keys for the computer players, room.send_bots.)
+        local bots = at <= #payload and payload:sub(at) or nil
         state.next_frame = number + 1
         state.queue_last = state.queue_last + 1
-        state.queue[state.queue_last] = {number = number, inputs = inputs, present = payload:byte(7)}
+        state.queue[state.queue_last] = {number = number, inputs = inputs, present = payload:byte(7), bots = bots}
         if state.queue_last - state.queue_first + 1 > max_backlog then
             return nil, "Network: this computer fell too far behind the game"
         end
@@ -357,6 +363,11 @@ end
 local function send_input(state, input, now, running)
     local keys = local_input(state, input)
     state.events = bit_or(state.events, input.unlock_bits or 0)
+    -- The host whose page keeps the beat thinks for the room's computer players (room.send_bots): said once, in its
+    -- input's events (bit 3), so that every computer knows it from the same frame on.
+    if state.host and state.beat_here and not state.bots_announced then
+        state.events, state.bots_announced = bit_or(state.events, 8), true
+    end
     if keys == state.sent and state.events == 0 and not (running and now - state.sent_at >= heartbeat) then
         return true
     end
@@ -387,7 +398,10 @@ local function combine(state, frame)
         end
         combined.unlock_bits = bit_or(combined.unlock_bits, events % 4)
         shared = shared or has(events, 3)
+        if has(events, 4) and player.host then state.bots_remote = true end
     end
+    combined.bots_remote = state.bots_remote
+    if state.bots_remote and frame.bots then combined.bots = room.read_bots(frame.bots) end
     -- Hidden characters some computer came with: off until now on every computer alike, they turn on
     -- here as if LF2.NET was typed (so that a recording of the match replays the same).
     if shared and unlock.flags.characters == 0 and not has(combined.unlock_bits, 1) then
@@ -448,6 +462,45 @@ end
 
 -- Frames received and not run yet.
 function room.backlog(state) return state.queue_last - state.queue_first + 1 end
+
+-- Computer players thought for by the host (OpenLF2 extension). In a room every computer works out every frame, the
+-- INSANE! and XOI players' decisions too: a weak computer has to think for all of them, and learn their fighters'
+-- moves as a match begins (15 to 45 seconds in a browser) - it falls behind with many of them. When the host's page
+-- keeps the beat (direct play, dist/web/online.js), the host alone thinks for them: after each frame it works out
+-- their keys for the next (base/game/smart_ai remote_keys) and sends them to its page (BOTS), which puts the newest
+-- after the players' inputs of every frame; every computer, the host's too, plays them as they come in the frames
+-- (base/game/match), as it plays the players' keys, so all stay in step whoever works them out. The others learn no
+-- moves and work out no decisions. BOTS: the frame they are for (4 bytes), then per computer player its item (2), its
+-- keys and its previous keys (one byte each: up, down, left, right, attack, jump, defend from bit 0) and the
+-- D-sequences it set (a count, then sequence and state, a byte each).
+function room.bots_remote(state) return state.bots_remote == true end
+-- The number of the frame being run (or last run): what BOTS older than a match's beginning belong to another match.
+function room.frame_number(state) return (state.next_run or 0) - 1 end
+function room.bots_host(state) return state.bots_remote == true and state.host == true and state.beat_here == true end
+function room.send_bots(state, body)
+    if not room.bots_host(state) or state.phase ~= "ready" then return true end
+    return send(state, message(kinds.bots, u32(state.next_run) .. body))
+end
+-- BOTS as the match plays them: {frame = n, [item] = {keys = byte, previous = byte, sequences = {sequence, state, ...}}};
+-- nil when they cannot be read (then nobody's keys are taken from them, on every computer alike).
+function room.read_bots(bytes)
+    if #bytes < 6 then return nil end
+    local bots = {frame = read_u32(bytes, 1)}
+    local count, at = read_u16(bytes, 5), 7
+    for _ = 1, count do
+        if at + 4 > #bytes then return nil end
+        local index, keys, previous, sequences = read_u16(bytes, at), bytes:byte(at + 2), bytes:byte(at + 3), bytes:byte(at + 4)
+        at = at + 5
+        local list = {}
+        for _ = 1, sequences do
+            if at + 1 > #bytes then return nil end
+            list[#list + 1], list[#list + 2] = bytes:byte(at), bytes:byte(at + 1)
+            at = at + 2
+        end
+        bots[index] = {keys = keys, previous = previous, sequences = list}
+    end
+    return bots
+end
 -- How late the frame room.exchange gave last runs (ms past its time; 0 or below when on time), and how late the next
 -- frame received is by now (nil while none waits): a computer that has fallen behind - too slow for the frames for a
 -- while, or busy as a match began - runs its frames without drawing them until it is in time again (base/ui/flow).

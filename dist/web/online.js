@@ -66,6 +66,11 @@
     // This page's own, before each FRAME it gives the game: when the frame arrived here (performance.now(),
     // whole milliseconds u32 and thousandths u16), for the game's pacing (room.lua; older games skip it).
     stamp: 0x90,
+    // With the host keeping the beat: the host's game is told that the beat is on its page (BEAT_HERE, empty), and
+    // may then send BOTS - the keys of the computer players for a frame, which it alone works out - that the beat
+    // puts after the players' inputs of every FRAME, the newest it has (room.lua). Never to the relay.
+    bots: 0x06,
+    beatHere: 0x91,
   });
   const DIRECT = Object.freeze({
     // Public STUN servers: how a direct connection crosses home routers when the players are not on one LAN.
@@ -79,6 +84,7 @@
     // this (a broken route) — players abroad then play without the relay in between, wherever it stands.
     preferSlack: 150,
     input: 16, queue: 64, // the relay's limits (ROOM_LIMITS)
+    bots: 4096, // bytes of a BOTS message at most (some 5 bytes a computer player)
     // Version 2 links (both pages say so on the link): the game's messages numbered, each on the reliable
     // channel once and on a second channel that never sends again what was lost (a datagram), together
     // with the few before it. A lost packet on the reliable channel holds up everything after it until it
@@ -270,6 +276,9 @@
           // (The relay confirms the choice to every page, this one too, just before STARTED.)
           socket.send(JSON.stringify({ t: 'beat', by: this.chooseBeat() }));
           socket.send(whole.slice());
+        } else if (kind === KIND.bots) {
+          // (Only for a beat on this page: the relay does not know them.)
+          if (this.beatBy === 'host' && this.role === 'host' && this.beat) this.beat.receive(this.id, kind, payload.slice());
         } else if (this.beatBy === 'host' && (kind === KIND.input || kind === KIND.ready || kind === KIND.check)) {
           if (this.role === 'host') {
             if (this.beat) this.beat.receive(this.id, kind, payload.slice());
@@ -588,6 +597,7 @@
           const order = readPlayers(payload);
           if (this.beatBy === 'host' && this.role === 'host' && !this.beat) {
             this.beat = this.worker ? new WorkerBeat(this, order) : new Beat(this, order);
+            this.receive(packet(KIND.beatHere, EMPTY));
           }
         }
       }));
@@ -703,7 +713,9 @@
       if (!this.rules) return '';
       if (this.started) {
         if (this.beatBy !== 'host') return 'through the relay';
-        return this.role === 'host' ? 'direct: your computer keeps the beat' : 'direct: the host keeps the beat';
+        // (And thinks for INSANE!'s and XOI's computer players: room.lua, BOTS.)
+        return this.role === 'host' ? 'direct: your computer keeps the beat and thinks for the computer players'
+          : 'direct: the host keeps the beat and thinks for the computer players';
       }
       if (this.role === 'host') {
         const others = this.lobbyIds.filter((id) => id !== this.id);
@@ -1102,6 +1114,9 @@
         if (payload.length > DIRECT.input) return this.drop(member);
         member.queue.push(payload);
         if (member.queue.length > DIRECT.queue) member.queue = [mergeInputs(member.queue.slice(0, -1)), member.queue[member.queue.length - 1]];
+      } else if (kind === KIND.bots) {
+        // The host's own game alone: the newest goes after the players' inputs of every frame from now on.
+        if (id === this.host.id && payload.length <= DIRECT.bots) this.bots = payload;
       } else if (kind === KIND.ready) {
         member.ready = true;
         if (this.members.every((other) => other.ready || !other.present)) this.startBeat();
@@ -1181,6 +1196,7 @@
         }
         parts.push(Uint8Array.of(input.length), input);
       }
+      if (this.bots) parts.push(this.bots);
       const header = new Uint8Array(7);
       const frame = this.frame % 4294967296;
       header[0] = frame & 255;
