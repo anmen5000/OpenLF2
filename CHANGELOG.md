@@ -1278,10 +1278,14 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   XOI players on Wharf: behind 20 s as the match began and 43 s after 40 s before, 0.0-0.3 s from the fifth second
   now; with the selection's learning ahead (above), the match begins in time
 - NTSD 2.6's Deidara was gone once his D^J had put him on his bird (package 104, the project owner's report), and stayed
-  gone when he got off it. The bird is another record (state 8058), and a record transform sets the picture offset to
-  140 (the second colour set of the original's soldiers) as the original does, but the bird's pictures go to 34 and
-  Deidara's to 109: the original draws nothing then, and neither did OpenLF2. A record without a picture at the offset
-  now shows its own (`object_data.picture`); what is drawn only, the game plays as before
+  gone when he got off it; Kimimaro in his D^A form too (his second report), 29 of the mod's 39 changes of record. Such
+  a change (states 8000-8999) sets the picture offset to 140 (the second colour set of the original's soldiers), as the
+  original does, but the bird's pictures go to 34 and Deidara's to 119: the original draws nothing then, or other
+  pictures of the record (Rock Lee changed into Might Guy: 31 frames of Guy's other pictures, nothing in the rest), and
+  so did OpenLF2. The mod has the sheets of its other changes declared again from 140 (Sasuke's curse seal, the Sound
+  Four's) or a second set there (Itachi's, who changes into himself to show it). Now a record shows its pictures at the
+  offset only when most of its frames have one there, and a frame without one shows its own (`object_data.picture`);
+  what is drawn only, the game plays as before
 
 ## [1.1.2] - 2026-10-26
 
