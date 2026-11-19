@@ -51,11 +51,14 @@ local function bytes_to_string(bytes, first, last)
 end
 
 local data_checksum
-function recording.data_checksum()
+-- (`between`, if given, is called after each object's data is read: the learning ahead of base/game/smart_ai pauses
+-- there, the whole taking half a second in Lua 5.2 on a fast computer for a big mod.)
+function recording.data_checksum(between)
     if data_checksum then return data_checksum end
     local sum = catalog.words_checksum() % 4294967296
     for _, entry in ipairs(catalog.objects().list) do
         sum = (sum + object_data.load(entry.path).token_checksum) % 4294967296
+        if between then between() end
     end
     for _, entry in ipairs(catalog.backgrounds()) do
         sum = (sum + engine.read_background_data(entry.path).token_checksum) % 4294967296

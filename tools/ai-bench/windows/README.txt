@@ -237,8 +237,18 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    before package 94 carry no code: once the current mod is packed, rename your machine's hoc-tang-cuong folder
    (hoc-tang-cuong-naruto, say).
 
+13. Learn the moves once (package 104): hoc-chieu.bat. Before a match INSANE! and XOI learn every fighter's moves
+   from the mod's data - 15 to 45 seconds for a match of eight in a browser, on every computer of a room. Put the mod's
+   .zip (better: <mod>-xoi.zip) next to hoc-chieu.bat and double-click it, or drag the zip onto it: it learns every
+   fighter of the mod once (their transformations too: a few minutes for a big mod) and puts what it learned into
+   <mod>-xoi.zip (xoi/learned-<id>.txt; an existing <mod>-xoi.zip is updated, its notes, numbers and brains kept, the
+   one before kept as <mod>-xoi-truoc.zip). Upload that zip to the relay as usual: the game reads the files and the
+   match begins at once, the computer players playing exactly as when they learn. Run it again after changing the
+   mod's data, or after an OpenLF2 package that learns differently (the game's log then says "learned by another
+   version"; meanwhile it learns as before, nothing breaks). NTSD 2.6: 77 fighters, 21 MB of files, 1.7 MB in the zip.
+
 Files: choi.bat (play), xoi-hoc.bat (train), dau-nhieu.bat (measure), spsa.bat (tune), hoc-sau.bat (the brain), hoc-tang-cuong.bat (reinforcement learning, a trial), dua-bo-nao-vao-mod.bat (its networks into the mod), may-con.bat (a machine of the relay's job), xem.bat (watch), can-bang.bat (balance), xuat-ban.bat (publish;
-its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check),
+its work is in xuat-ban.ps1, the published README comes from xuat-ban-README.txt), kiem-tra.bat (check), hoc-chieu.bat (learn the moves once),
 scripts\ (the game's scripts with the computer players, laid over the installed game's), tools\ai-bench\ (the
 training and measuring jobs), version.txt (which version this kit is).
 
@@ -476,7 +486,17 @@ chơi được chính các file của bản mod.
    không có mã: đóng gói xong bản mod hiện tại thì đổi tên thư mục hoc-tang-cuong trên máy của bạn (ví dụ
    hoc-tang-cuong-naruto).
 
+13. Học chiêu một lần (gói 104): hoc-chieu.bat. Trước mỗi trận INSANE! và XOI học chiêu của từng nhân vật từ dữ liệu
+   bản mod - một trận 8 nhân vật mất 15-45 giây trên trình duyệt, và máy nào trong phòng cũng phải học. Đặt file .zip
+   bản mod (tốt hơn: <tên>-xoi.zip) cạnh hoc-chieu.bat rồi nháy đúp, hoặc kéo thả file zip vào: nó học một lần mọi
+   nhân vật của bản mod (cả các dạng biến hình: bản mod lớn mất vài phút) rồi ghi vào <tên>-xoi.zip
+   (xoi/learned-<id>.txt; đã có <tên>-xoi.zip thì cập nhật chính nó, giữ bộ nhớ, bộ số, bộ não của nó; bản trước giữ ở
+   <tên>-xoi-truoc.zip). Tải file zip ấy lên relay như mọi khi: game đọc thẳng các file này, vào trận ngay, bot đánh y
+   hệt như khi tự học. Chạy lại khi đổi dữ liệu bản mod, hoặc khi lên gói OpenLF2 có cách học mới (nhật ký game ghi
+   "learned by another version"; trong lúc đó game tự học như cũ, không lỗi gì). NTSD 2.6: 77 nhân vật, 21 MB file,
+   1,7 MB trong file zip.
+
 Các file: choi.bat (chơi), xoi-hoc.bat (huấn luyện), dau-nhieu.bat (đo), spsa.bat (chỉnh số), hoc-sau.bat (bộ não), hoc-tang-cuong.bat (học tăng cường, thử nghiệm), dua-bo-nao-vao-mod.bat (đưa các bộ não ấy vào bản mod), may-con.bat (máy con của việc trên relay), xem.bat (xem), can-bang.bat (cân bằng), xuat-ban.bat (xuất
 bản; phần việc trong xuat-ban.ps1, README của bản xuất bản lấy từ xuat-ban-README.txt), kiem-tra.bat (kiểm
-tra), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
+tra), hoc-chieu.bat (học chiêu một lần), scripts\ (scripts của game có máy INSANE!/XOI, ghép lên scripts của game đã cài), tools\ai-bench\ (việc
 huấn luyện và đo), version.txt (bộ này là phiên bản nào).

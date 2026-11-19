@@ -211,6 +211,7 @@
       <a href="#watch"><span class="en">Watch</span><span class="vi">Xem</span></a>
       <a href="#tune"><span class="en">Tune XOI</span><span class="vi">Chỉnh XOI</span></a>
       <a href="#brain"><span class="en">XOI's brain</span><span class="vi">Bộ não XOI</span></a>
+      <a href="#learnonce"><span class="en">Learn once</span><span class="vi">Học chiêu một lần</span></a>
       <a href="#share"><span class="en">Share</span><span class="vi">Chia sẻ</span></a>
       <a href="#publish"><span class="en">Publish</span><span class="vi">Xuất bản</span></a>
       <a href="#kit"><span class="en">Inside the kit</span><span class="vi">Trong bộ XOI</span></a>
@@ -983,6 +984,12 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Learn the moves once</b> (package 104). Every match began with INSANE! and XOI learning its fighters' moves
+          (15-45 seconds for eight in a browser, on every computer of a room). The kit's new <code>hoc-chieu.bat</code>
+          (<code>learn-moves.bat</code>) learns every fighter of a mod once and puts the files into its <code>-xoi.zip</code>
+          (<code>xoi/learned-&lt;id&gt;.txt</code>; NTSD 2.6: 1.7 MB): the game reads them, the match begins at once and plays the
+          same frame for frame — see <a href="#learnonce">Learn the moves once</a>. And NTSD 2.6's Deidara no longer vanishes on
+          his bird (D^J): a transformed fighter without pictures in its second colour set shows its own.</li>
         <li><b>Online, the host thinks for the computer players</b> (package 103). In a room every computer worked out the
           whole game, INSANE!'s and XOI's decisions too - with many of them most of a frame's time, which a weak computer has
           not - and learned their fighters as the match began. Now, in a room played direct (the Online panel says
@@ -1187,6 +1194,12 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Học chiêu một lần</b> (gói 104). Trước đây trận nào cũng bắt đầu bằng việc INSANE! và XOI học chiêu của các nhân
+          vật (8 nhân vật mất 15-45 giây trên trình duyệt, máy nào trong phòng cũng phải học). <code>hoc-chieu.bat</code> mới của bộ
+          XOI học một lần mọi nhân vật của bản mod rồi ghi vào file <code>-xoi.zip</code> của nó (<code>xoi/learned-&lt;id&gt;.txt</code>;
+          NTSD 2.6: 1,7 MB): game đọc thẳng, vào trận ngay, trận đấu y hệt từng khung hình — xem mục
+          <a href="#learnonce">Học chiêu một lần</a>. Và Deidara của NTSD 2.6 không còn mất hình khi leo lên chim (D^J): nhân vật
+          biến hình mà không có hình ở bộ màu thứ hai thì hiện hình của chính nó.</li>
         <li><b>Chơi online, máy chủ phòng nghĩ thay cho bot</b> (gói 103). Trước đây trong phòng online máy nào cũng tự tính
           cả trận, kể cả từng quyết định của bot INSANE! và XOI - nhiều bot thì việc này chiếm gần hết thời gian của mỗi khung
           hình, máy yếu không kham nổi - và còn phải học nhân vật lúc trận bắt đầu. Nay trong phòng chơi trực tiếp (bảng Online
@@ -1341,6 +1354,51 @@
         <li><b>Mỗi thư mục một bộ bản mod:</b> thư mục <code>hoc-sau</code> giữ dữ liệu của từng bản mod theo thứ tự của nó trong
           lần chạy (bản mod 1, bản mod 2...). Chạy cho các bản mod khác thì đổi tên nó trước (ví dụ <code>hoc-sau-sauce</code>);
           từ gói 71 <code>hoc-sau.bat</code> dừng và báo thay vì trộn dữ liệu của chúng.</li>
+      </ul>
+    </section>
+
+    <section id="learnonce">
+      <h2><span class="en">Learn the moves once (hoc-chieu.bat)</span><span class="vi">Học chiêu một lần (hoc-chieu.bat)</span></h2>
+      <p class="lede en">Before a match INSANE! and XOI learn every fighter's moves from the mod's data: 15 to 45 seconds for a
+        match of eight in a browser, on every computer of a room. <code>hoc-chieu.bat</code> (<code>learn-moves.bat</code> in the
+        English kit, package 104) has your computer learn every fighter of the mod once and puts what it learned into the mod's
+        <code>-xoi.zip</code>: the game reads it, and the match begins at once.</p>
+      <p class="lede vi">Trước mỗi trận INSANE! và XOI học chiêu của từng nhân vật từ dữ liệu bản mod: một trận 8 nhân vật mất
+        15-45 giây trên trình duyệt, và máy nào trong phòng cũng phải học. <code>hoc-chieu.bat</code> (gói 104) cho máy bạn học một
+        lần mọi nhân vật của bản mod rồi ghi vào file <code>-xoi.zip</code> của bản mod: game đọc thẳng, vào trận ngay.</p>
+      <ol class="steps en">
+        <li><b>Put the mod's zip</b> (better: <code>&lt;mod&gt;-xoi.zip</code>, with XOI's notes) next to <code>hoc-chieu.bat</code>
+          and double-click it, or drag the zip onto it. Every fighter is learned once, their transformations too — about a minute
+          for NTSD 2.6's 77 fighters on a fast PC.</li>
+        <li><b>It updates <code>&lt;mod&gt;-xoi.zip</code></b> (or makes it): one file a fighter, <code>xoi/learned-&lt;id&gt;.txt</code>
+          (NTSD 2.6: 21 MB of text, 1.7 MB in the zip), the zip's other <code>xoi</code> files kept; the one before is kept as
+          <code>&lt;mod&gt;-xoi-truoc.zip</code>.</li>
+        <li><b>Upload that zip to the relay</b> as usual (the admin page, the old mod's id): every computer of a room reads the
+          moves instead of learning them.</li>
+      </ol>
+      <ol class="steps vi">
+        <li><b>Đặt file zip bản mod</b> (tốt hơn: <code>&lt;tên&gt;-xoi.zip</code>, có bộ nhớ XOI) cạnh <code>hoc-chieu.bat</code> rồi nháy
+          đúp, hoặc kéo thả file zip vào nó. Mọi nhân vật được học một lần, cả các dạng biến hình — 77 nhân vật của NTSD 2.6 mất chừng
+          một phút trên máy mạnh.</li>
+        <li><b>Nó cập nhật <code>&lt;tên&gt;-xoi.zip</code></b> (chưa có thì tạo): mỗi nhân vật một file
+          <code>xoi/learned-&lt;id&gt;.txt</code> (NTSD 2.6: 21 MB chữ, 1,7 MB trong file zip), giữ nguyên các file <code>xoi</code> khác;
+          bản trước giữ ở <code>&lt;tên&gt;-xoi-truoc.zip</code>.</li>
+        <li><b>Tải file zip ấy lên relay</b> như mọi khi (trang admin, cùng id với bản mod cũ): máy nào trong phòng cũng đọc chiêu đã
+          học, khỏi học lại.</li>
+      </ol>
+      <ul class="plain en">
+        <li><b>The same game:</b> what is read is exactly what would be learned — the same matches frame for frame, the same file
+          whether learned with LuaJIT (Windows) or Lua 5.2 (the browser).</li>
+        <li><b>When to run it again:</b> after changing the mod's data, or after an OpenLF2 package that learns differently. A file
+          that no longer fits is left alone (the game's log: <code>learned by another version</code> or <code>learned on other
+          data</code>) and that fighter is learned as before: nothing breaks, it is only slower.</li>
+      </ul>
+      <ul class="plain vi">
+        <li><b>Y hệt như tự học:</b> chiêu đọc ra đúng là chiêu game tự học — trận đấu giống hệt từng khung hình, file giống nhau dù
+          học bằng LuaJIT (Windows) hay Lua 5.2 (trình duyệt).</li>
+        <li><b>Khi nào chạy lại:</b> khi đổi dữ liệu bản mod, hoặc khi lên gói OpenLF2 có cách học mới. File không còn hợp thì game bỏ
+          qua (nhật ký ghi <code>learned by another version</code> hay <code>learned on other data</code>) và tự học nhân vật ấy như
+          cũ: không lỗi gì, chỉ chậm hơn.</li>
       </ul>
     </section>
 

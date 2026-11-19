@@ -184,10 +184,21 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    kit's dua-bo-nao-vao-mod.bat puts in those that beat XOI alone). The owner's first run: Keny 200-0 against XOI
    alone's 95-102, Khaoslong +8 points in 100 games.
 
+12. Learn the moves once (package 104): learn-moves.bat. Before a match INSANE! and XOI learn every fighter's moves
+   from the mod's data - 15 to 45 seconds for a match of eight in a browser, on every computer of a room. Put the mod's
+   .zip (better: <mod>-xoi.zip) next to learn-moves.bat and double-click it, or drag the zip onto it: it learns every
+   fighter of the mod once (their transformations too: a few minutes for a big mod) and puts what it learned into
+   <mod>-xoi.zip (xoi/learned-<id>.txt; an existing <mod>-xoi.zip is updated, its notes, numbers and brains kept, the
+   one before kept as <mod>-xoi-previous.zip). Upload that zip to the relay as usual: the game reads the files and the
+   match begins at once, the computer players playing exactly as when they learn. Run it again after changing the
+   mod's data, or after an OpenLF2 package that learns differently (the game's log then says "learned by another
+   version"; meanwhile it learns as before, nothing breaks). NTSD 2.6: 77 fighters, 21 MB of files, 1.7 MB in the zip.
+
 Files: play.bat (play), train.bat (train XOI), measure.bat (measure), spsa.bat (tune), brain.bat (the brain), watch.bat (watch), balance.bat (balance),
 publish.bat (publish; its work is in publish.ps1, the published README comes from publish-README.txt),
-check.bat (check why the game does not open), scripts\ (the game's scripts with the computer players, laid over
+check.bat (check why the game does not open), learn-moves.bat (learn the moves once), scripts\ (the game's scripts
+with the computer players, laid over
 the installed game's), tools\ai-bench\ (the training and measuring jobs), version.txt (which version this kit is).
 The Vietnamese kit's names, for the guide: choi.bat = play.bat, xoi-hoc.bat = train.bat, dau-nhieu.bat =
-measure.bat, xem.bat = watch.bat, can-bang.bat = balance.bat, xuat-ban.bat = publish.bat, kiem-tra.bat = check.bat; ket-qua.txt = results.txt,
+measure.bat, xem.bat = watch.bat, can-bang.bat = balance.bat, xuat-ban.bat = publish.bat, kiem-tra.bat = check.bat, hoc-chieu.bat = learn-moves.bat; ket-qua.txt = results.txt,
 danh-sach.txt = fighters.txt, <mod>-xoi-truoc.zip = <mod>-xoi-previous.zip, kiem-tra.txt = check.txt.

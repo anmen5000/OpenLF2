@@ -18,6 +18,7 @@ module=ui/touch_gamepad|ui/touch_gamepad.lua
 module=ui/character_select|ui/character_select.lua
 module=game/catalog|game/catalog.lua
 module=game/object_data|game/object_data.lua
+module=game/learned|game/learned.lua
 module=game/background|game/background.lua
 module=ui/background_preview|ui/background_preview.lua
 module=game/item|game/item.lua

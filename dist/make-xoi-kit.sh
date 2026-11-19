@@ -12,10 +12,13 @@
 # each fighter's win rate against every other and what each of its moves brings, XOI playing both sides),
 # xuat-ban.bat (publish a mod for its players: the mod's own folder with OpenLF2
 # put in it, unpacked and played as it is; its work in xuat-ban.ps1, its players' README from xuat-ban-README.txt) and
-# kiem-tra.bat (find out why the game does not open on a PC), beside this checkout's game scripts and AI bench, which
+# kiem-tra.bat (find out why the game does not open on a PC) and hoc-chieu.bat (every fighter's moves learned once and
+# put into the mod's -xoi.zip, xoi/learned-<id>.txt, for the game to read), beside this checkout's game scripts and AI
+# bench, which
 # they lay over the installed game's scripts.
 # make-xoi-kit.sh --en OUT.zip: the English edition (tools/ai-bench/windows/en: the same tools under English names —
-# play.bat, train.bat, measure.bat, spsa.bat, brain.bat, watch.bat, balance.bat, publish.bat, check.bat — with English
+# play.bat, train.bat, measure.bat, spsa.bat, brain.bat, watch.bat, balance.bat, publish.bat, check.bat, learn-moves.bat
+# — with English
 # settings and messages),
 # folder LF2-XOI-kit-en.
 # make-xoi-kit.sh --balance OUT.zip: the fighter balance kit on its own, in English, for any mod's maker: balance.bat,
@@ -50,12 +53,13 @@ windows = root / "tools/ai-bench/windows"
 # texts: (name in the kit, file in the windows folder)
 if edition == "vi":
     bats = ("choi.bat", "xoi-hoc.bat", "dau-nhieu.bat", "spsa.bat", "hoc-sau.bat", "hoc-tang-cuong.bat",
-            "dua-bo-nao-vao-mod.bat", "may-con.bat", "xem.bat", "can-bang.bat", "xuat-ban.bat", "kiem-tra.bat")
+            "dua-bo-nao-vao-mod.bat", "may-con.bat", "xem.bat", "can-bang.bat", "xuat-ban.bat", "kiem-tra.bat",
+            "hoc-chieu.bat")
     texts = (("README.txt",) * 2, ("xuat-ban.ps1",) * 2, ("xuat-ban-README.txt",) * 2)
 elif edition == "en":
     windows = windows / "en"
     bats = ("play.bat", "train.bat", "measure.bat", "spsa.bat", "brain.bat", "watch.bat", "balance.bat", "publish.bat",
-            "check.bat")
+            "check.bat", "learn-moves.bat")
     texts = (("README.txt",) * 2, ("publish.ps1",) * 2, ("publish-README.txt",) * 2)
 else:
     windows = windows / "en"

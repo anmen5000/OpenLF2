@@ -2316,6 +2316,9 @@ local function analyze(record)
     local data = record.data
     local found = analyses[data]
     if found then return found end
+    -- (Learned once and written to the mod, xoi/learned-<id>.txt: smart.learned_kit.)
+    found = smart.learned_kit.read(record)
+    if found then return found end
     local analysis = {moves = {}, frames = {}, lock = {}, modes = {}}
     analyses[data] = analysis
     if record.kind ~= record_kinds.character then return analysis end
@@ -7623,6 +7626,138 @@ function smart.ahead_kit.finish()
     kit.queue, kit.queued, kit.later, kit.later_queued, kit.stop = {}, {}, {}, {}, true
     while kit.thread do kit.resume(nil) end
     kit.stop = false
+end
+
+-- Learned once (OpenLF2 extension): what is learned of a fighter - its moves, and those of its modes - depends on its
+-- data and the game's alone, and took 0.2 to 2 seconds a fighter in Lua 5.2 on a fast computer, 15 to 45 for a match
+-- of eight in a browser, on every computer that plays it. The kit's hoc-chieu.bat learns every fighter of a mod once
+-- (the bench's job learned, smart.learned_kit.write) and puts the files into the mod (xoi/learned-<id>.txt); a match
+-- reads them instead (smart.learned_kit.read, from analyze): what it finds there is what it would have learned. A file
+-- is taken only for this way of learning (`version`, raised whenever the learning or the game's rules change what is
+-- learned) and the mod's data as it is (every object's and background's, recording.data_checksum); otherwise the
+-- fighter is learned as before. The file: a header line, then the moves as base/game/learned writes them, records and
+-- objects' data by name (R<kind>:<id>:<path>, D<path>).
+smart.learned_kit = {format = 1, version = 1, tried = {}, ignore_files = false}
+function smart.learned_kit.path(record) return "xoi/learned-" .. tostring(record.id) .. ".txt" end
+function smart.learned_kit.checksum() return require("base/game/recording").data_checksum(smart.ahead_kit.pause) end
+-- What a file says of `record`: {analysis = ..., modes = {[mode's data] = armed analysis}}; nil and why not, when it
+-- is not one to take.
+function smart.learned_kit.decode(record, text)
+    local kit = smart.learned_kit
+    local object_data = require("base/game/object_data")
+    local header, body = text:match("^([^\n]*)\n(.*)$")
+    if not header then return nil, "not a file of learned moves" end
+    local fields = {}
+    for word in header:gmatch("%S+") do fields[#fields + 1] = word end
+    if fields[1] ~= "OPENLF2-LEARNED" or tonumber(fields[2]) ~= kit.format then return nil, "not a file of learned moves" end
+    if tonumber(fields[3]) ~= kit.version then return nil, "learned by another version of the game (the kit's hoc-chieu.bat or learn-moves.bat again)" end
+    if tonumber(fields[4]) ~= record.kind or tonumber(fields[5]) ~= record.id or fields[6] ~= object_data.path_of(record.data) then
+        return nil, "another fighter's"
+    end
+    if tonumber(fields[7]) ~= kit.checksum() then return nil, "learned on other data of the mod (the kit's hoc-chieu.bat or learn-moves.bat again)" end
+    local records = {}
+    -- (An object's data by its path, nil for one the mod has not: the file is then not taken.)
+    local function load(where)
+        local ok, data = pcall(object_data.load, where)
+        if ok and type(data) == "table" then return data end
+        return nil
+    end
+    local function resolve(token)
+        local first = token:sub(1, 1)
+        if first == "D" then return load(token:sub(2)) end
+        if first == "R" then
+            local found = records[token]
+            if found then return found end
+            local kind, id, where = token:match("^R(%-?%d+):(%-?%d+):(.+)$")
+            local data = kind and load(where)
+            if not data then return nil end
+            found = item.record({id = tonumber(id), kind = tonumber(kind)}, data)
+            records[token] = found
+            return found
+        end
+        return nil
+    end
+    -- (Not in a pcall: in learning ahead the reading pauses every 256 lines, and a coroutine is best not left in one.)
+    local root, problem = require("base/game/learned").decode(body, tonumber(fields[8]) or -1, resolve, smart.ahead_kit.pause)
+    if not root then return nil, tostring(problem) end
+    if type(root.analysis) ~= "table" or type(root.modes) ~= "table" then return nil, "not a file of learned moves" end
+    return root
+end
+-- The file's text for what was learned of `record` (`root` as decode gives it); nil and a message when it cannot be
+-- written: something in it that is not data, or a part of an object's data (only whole data are written, by name).
+function smart.learned_kit.encode(record, root)
+    local kit = smart.learned_kit
+    local object_data = require("base/game/object_data")
+    local path = object_data.path_of(record.data)
+    if not path then return nil, "a fighter whose data was not loaded from a file" end
+    local checksum = kit.checksum()
+    -- (The tables of every object's data - all loaded by the checksum - which the moves must not hold but by name.)
+    local inside = kit.inside
+    if not inside then
+        inside = {}
+        local function mark(value)
+            if inside[value] then return end
+            inside[value] = true
+            for _, field in pairs(value) do if type(field) == "table" then mark(field) end end
+        end
+        for _, data in pairs(object_data.loaded()) do mark(data) end
+        kit.inside = inside
+    end
+    local problem
+    local function describe(value)
+        local where = object_data.path_of(value)
+        if where then return "D" .. where end
+        if type(value.frame) == "function" and type(value.data) == "table" then
+            where = object_data.path_of(value.data)
+            if where then return string.format("R%d:%d:%s", value.kind, value.id, where) end
+            problem = problem or "a record of data not loaded from a file"
+            return "F"
+        end
+        if inside[value] then problem = problem or "a part of an object's data" end
+        return nil
+    end
+    local body, count = require("base/game/learned").encode(root, describe)
+    if not body then return nil, count end
+    if problem then return nil, problem end
+    return string.format("OPENLF2-LEARNED %d %d %d %d %s %d %d", kit.format, kit.version, record.kind, record.id, path,
+        checksum, count) .. "\n" .. body
+end
+-- The analysis in the mod's file for `record`, put where analyze finds it; nil if there is none to take (looked for
+-- once a fighter's data).
+function smart.learned_kit.read(record)
+    local kit = smart.learned_kit
+    local data = record.data
+    -- (Not for the bench's job that writes the files: it learns anew.)
+    if kit.tried[data] or kit.ignore_files or record.kind ~= record_kinds.character then return nil end
+    kit.tried[data] = true
+    if not require("base/game/object_data").path_of(data) then return nil end
+    local ok, text = pcall(engine.read_resource, kit.path(record))
+    if not ok or type(text) ~= "string" then return nil end
+    local root, why = kit.decode(record, text)
+    if not root then
+        engine.log(string.format("INSANE! %s: %s - learned anew", kit.path(record), why))
+        return nil
+    end
+    analyses[data] = root.analysis
+    local by_fighter = weapon_analyses[data] or {}
+    weapon_analyses[data] = by_fighter
+    for mode_data, armed in pairs(root.modes) do by_fighter[mode_data] = armed end
+    return root.analysis
+end
+-- The file of `record`'s learned moves: its moves and its modes', learned now if not before (the bench's job learned).
+function smart.learned_kit.write(record)
+    learn(record)
+    local analysis = analyses[record.data]
+    local by_fighter = weapon_analyses[record.data] or {}
+    local modes = {}
+    for mode_data in pairs(analysis.modes or {}) do modes[mode_data] = by_fighter[mode_data] end
+    return smart.learned_kit.encode(record, {analysis = analysis, modes = modes})
+end
+-- A file read back and written again (the bench's check: it must give the same text).
+function smart.learned_kit.check(record, text)
+    local root, why = smart.learned_kit.decode(record, text)
+    if not root then return nil, why end
+    return smart.learned_kit.encode(record, root)
 end
 
 function smart.prepare(state)

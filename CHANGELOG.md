@@ -895,6 +895,22 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   seal, Hidan's and Pain (Deva)'s others, 4.6 s of learning besides their own 7.2. Learned ahead in 0.2-0.5 ms pieces with
   the game's random numbers drawn between them, the match is the same frame for frame as one learning them as they come
   (Lua 5.2 and LuaJIT)
+- What INSANE! and XOI learn of a mod's fighters, learned once and shipped with the mod (package 104, the project
+  owner's idea: "compute it once on my machine, export it and have the game read it, like the tune and brain files").
+  A match learned every fighter's moves as it began, or the selection screen did: 0.2 to 2 seconds a fighter in Lua 5.2
+  on a fast computer, 15 to 45 for a match of eight in a browser, on every computer of a room. The kit's
+  `hoc-chieu.bat` (`learn-moves.bat`) learns every fighter of the mod once - their forms too - with the bench's job
+  `learned`, and puts the files into the mod's `-xoi.zip` (`xoi/learned-<id>.txt`, its other files kept); a match reads
+  them instead of learning (`smart.learned_kit`, from `analyze`; in learning ahead in pieces too). What is learned is a
+  web of tables, written by `base/game/learned` as a line a table, in the order a walk from the root finds them,
+  shared tables one again, numbers to 17 digits, records and objects' data by name, nothing in it run: read back and
+  written again it gives the same text. A file is taken only for this way of learning (`version`, raised whenever the
+  learning or the rules change what is learned) and for the mod's data as it is (every object's and background's,
+  `recording.data_checksum`), the fighter's id and path; otherwise the fighter is learned as before, a line in the log.
+  NTSD 2.6: 77 fighters, 21 MB of text, 1.7 MB zipped, 13 s with LuaJIT; the same files with Lua 5.2. A match of eight
+  learned in 7.4 s in Lua 5.2 reads them in 0.75 s (the data checksum half of it) and plays the same match frame for
+  frame; in a browser, two pages of one computer, two humans and six XOI players, the joining page slowed down twice:
+  the match began at once on both, through the relay's beat too (38 s before), every check the same on both
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the
@@ -1261,6 +1277,11 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   network's messages); "Show FPS" counts the pictures shown. Two pages of one computer in a room, two humans and six
   XOI players on Wharf: behind 20 s as the match began and 43 s after 40 s before, 0.0-0.3 s from the fifth second
   now; with the selection's learning ahead (above), the match begins in time
+- NTSD 2.6's Deidara was gone once his D^J had put him on his bird (package 104, the project owner's report), and stayed
+  gone when he got off it. The bird is another record (state 8058), and a record transform sets the picture offset to
+  140 (the second colour set of the original's soldiers) as the original does, but the bird's pictures go to 34 and
+  Deidara's to 109: the original draws nothing then, and neither did OpenLF2. A record without a picture at the offset
+  now shows its own (`object_data.picture`); what is drawn only, the game plays as before
 
 ## [1.1.2] - 2026-10-26
 
