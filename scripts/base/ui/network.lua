@@ -8,8 +8,12 @@ local i18n = require("base/i18n/i18n")
 local sounds = require("base/game/sounds")
 local navigation = require("base/ui/navigation")
 local constants = require("base/game/constants")
+local mod_settings = require("base/game/mod_settings")
 local virtual_keys = constants.virtual_keys
 local screen = {}
+-- How much lower LF2 1.9's program (a mod made from it: base/game/mod_settings.classic_menus) draws the network
+-- page's box, its entries and the line above them, and its logo twice as much; the boxes over it stay where they are.
+local function lower() return mod_settings.classic_menus() and 15 or 0 end
 local frames = {[1] = {0, 41, 434, 80}, [2] = {434, 41, 62, 68}, [3] = {0, 247, 304, 126}, [4] = {0, 376, 363, 123},
     [5] = {500, 42, 291, 27}, [6] = {500, 72, 291, 27}, [10] = {460, 203, 334, 108},
     [11] = {460, 313, 334, 108}, [12] = {643, 426, 151, 26}, [13] = {489, 426, 151, 26},
@@ -50,8 +54,9 @@ local function navigation_spec(state)
         return {page = page, autofocus = true,
             targets = {target(0xef, 0x165, 0x185, 0x17e), target(0x19b, 0x165, 0x231, 0x17e)}}
     end
-    return {page = page, targets = {target(0x104, 0x112, 0x223, 0x12c), target(0x104, 0x131, 0x223, 0x14a),
-        target(0x104, 0x150, 0x223, 0x169)}}
+    local dy = lower()
+    return {page = page, targets = {target(0x104, 0x112 + dy, 0x223, 0x12c + dy), target(0x104, 0x131 + dy, 0x223, 0x14a + dy),
+        target(0x104, 0x150 + dy, 0x223, 0x169 + dy)}}
 end
 function screen.update(state, flow_input, context)
     local input = navigation.apply(state.nav, flow_input, navigation_spec(state))
@@ -92,11 +97,12 @@ function screen.update(state, flow_input, context)
             screen.begin(state, false, state.address)
         end
     else
-        cancel = cancel or input.click and inside(input, 0x104, 0x150, 0x223, 0x169)
-        if input.click and inside(input, 0x104, 0x112, 0x223, 0x12c) then
+        local dy = lower()
+        cancel = cancel or input.click and inside(input, 0x104, 0x150 + dy, 0x223, 0x169 + dy)
+        if input.click and inside(input, 0x104, 0x112 + dy, 0x223, 0x12c + dy) then
             sounds.direct(state, "ok")
             screen.begin(state, true, state.bind)
-        elseif input.click and inside(input, 0x104, 0x131, 0x223, 0x14a) then
+        elseif input.click and inside(input, 0x104, 0x131 + dy, 0x223, 0x14a + dy) then
             sounds.direct(state, "ok")
             state.page = "join"
         end
@@ -154,20 +160,27 @@ local function draw_lobby(state, context)
 end
 function screen.draw(state, context)
     local function sprite(frame, x, y) context.sprite("pe/menu_clip", frames[frame], x, y, true) end
-    context.viewport(constants.screen.width, constants.screen.height, 16, 32, 108)
-    context.image("pe/menu_back" .. state.background, 0, 0, true)
-    -- The logo without the version in its bottom-right corner.
-    sprite(1, 0x9b, 0x69)
-    sprite(2, 0x9b + 434, 0x69)
-    sprite(3, 0xfd, 0xde)
-    sprite(14, 0xfd, 0x14f)
+    local dy = lower()
+    if dy > 0 then
+        -- LF2 1.9's: on black, the logo whole (the mod's own version in it).
+        context.viewport(constants.screen.width, constants.screen.height, 0, 0, 0)
+        context.sprite("pe/menu_clip", {0, 41, 496, 80}, 0x9b, 0x69 + 2 * dy, true)
+    else
+        context.viewport(constants.screen.width, constants.screen.height, 16, 32, 108)
+        context.image("pe/menu_back" .. state.background, 0, 0, true)
+        -- The logo without the version in its bottom-right corner.
+        sprite(1, 0x9b, 0x69)
+        sprite(2, 0x9b + 434, 0x69)
+    end
+    sprite(3, 0xfd, 0xde + dy)
+    sprite(14, 0xfd, 0x14f + dy)
     -- The original writes " Your IP Address: <address>" here on an opaque box, which also hides
     -- the art's own label; OpenLF2 has no address to show, so it shows its TCP port instead, or
     -- for a relay room what the room holds.
     if state.session.relay then
-        font.gdi(context, " " .. i18n.tr("Online: up to 8 players per room"), 0x121, 0xfb, 0xffffff, 0x001e50)
+        font.gdi(context, " " .. i18n.tr("Online: up to 8 players per room"), 0x121, 0xfb + dy, 0xffffff, 0x001e50)
     else
-        font.gdi(context, " " .. i18n.tr("Your TCP port: %s", state.session.port), 0x121, 0xfb, 0xffffff, 0x001e50)
+        font.gdi(context, " " .. i18n.tr("Your TCP port: %s", state.session.port), 0x121, 0xfb + dy, 0xffffff, 0x001e50)
     end
     if state.page == "waiting" and state.session.relay then
         draw_lobby(state, context)
@@ -186,9 +199,9 @@ function screen.draw(state, context)
         end
     else
         local input = {pointer_x = state.pointer_x, pointer_y = state.pointer_y}
-        if inside(input, 0x104, 0x112, 0x223, 0x12c) then sprite(5, 0x103, 0x112) end
-        if inside(input, 0x104, 0x131, 0x223, 0x14a) then sprite(6, 0x103, 0x130) end
-        if inside(input, 0x104, 0x150, 0x223, 0x169) then sprite(12, 0x149, 0x150) end
+        if inside(input, 0x104, 0x112 + dy, 0x223, 0x12c + dy) then sprite(5, 0x103, 0x112 + dy) end
+        if inside(input, 0x104, 0x131 + dy, 0x223, 0x14a + dy) then sprite(6, 0x103, 0x130 + dy) end
+        if inside(input, 0x104, 0x150 + dy, 0x223, 0x169 + dy) then sprite(12, 0x149, 0x150 + dy) end
     end
     if state.message then font.gdi(context, i18n.clip(state.message, 94), 10, 510) end
     context.image("pe/lf2_cursor", math.min(state.pointer_x, 0x307), math.min(state.pointer_y + 2, 0x217), true)

@@ -968,6 +968,12 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Mods made from LF2 1.9 play</b> (package 98). Such a mod - the source release of Naruto: The Setting Dawn,
+          whose <code>NTSD.exe</code> is LF2 1.9c's - stopped on a black screen (<i>resource RVA outside backed PE
+          sections</i>): the game read LF2 2.0a's recording key from its program, which LF2 1.9 does not have. It now
+          plays (its recordings and network games OpenLF2's own), and its menus are drawn as LF2 1.9 draws them: a main
+          menu of three entries, a mode menu without <i>Playback Recording</i>, on black. A mod made from LF2 2.0a plays
+          exactly as before.</li>
         <li><b>Reinforcement learning stops early</b> (package 97, relay installer version 18). A fighter that has reached
           its limit - <code>DUNG_SOM</code> rounds (400) with no better check: the "greedy" score, averaged over two
           checks in a row, beating its best by 0.5 point in 100 games - stops learning and goes to the confirmation as
@@ -1133,6 +1139,11 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Bản mod làm từ LF2 1.9 chơi được</b> (gói 98). Bản mod kiểu này - bản mã nguồn công khai của Naruto: The
+          Setting Dawn, có <code>NTSD.exe</code> là của LF2 1.9c - dừng ở màn hình đen (<i>resource RVA outside backed PE
+          sections</i>): game đọc khóa ghi hình của LF2 2.0a trong chương trình, thứ LF2 1.9 không có. Nay nó chơi được
+          (ghi hình và chơi mạng theo kiểu riêng của OpenLF2), menu vẽ như LF2 1.9 vẽ: menu chính ba mục, menu chế độ không
+          có <i>Playback Recording</i>, nền đen. Bản mod làm từ LF2 2.0a chơi y như cũ.</li>
         <li><b>Học tăng cường dừng sớm</b> (gói 97, trình cài đặt relay phiên bản 18). Nhân vật đã tới giới hạn - qua
           <code>DUNG_SOM</code> vòng (400) mà điểm kiểm tra không cao thêm: điểm "greedy", lấy trung bình hai lần kiểm
           tra liền nhau, không hơn lần cao nhất được 0,5 điểm mỗi 100 trận - thì thôi học, sang bước xác nhận như khi hết
@@ -1370,7 +1381,7 @@
           licences to travel with them.</li>
         <li><b>Players' settings</b> (keys, language) are kept in <code>%APPDATA%\OpenLF2</code>, shared with an installed OpenLF2.
           <i>Windows protected your PC</i> on first start: <i>More info</i>, <i>Run anyway</i> (the program is not signed).</li>
-        <li><b>A mod whose <code>.exe</code> is packed or protected</b> (Naruto: The Setting Dawn's <code>NTSD.exe</code>, say) has its
+        <li><b>A mod whose <code>.exe</code> is packed or protected</b> (Naruto: The Setting Dawn 2.6's <code>NTSD.exe</code>, say) has its
           pictures where OpenLF2 cannot read them: <code>xuat-ban.bat</code> stops with the game's words, nothing made.</li>
         <li><b>Elsewhere than Windows:</b> OpenLF2 plays the game folder its program lies in (or a <code>game.zip</code> beside it,
           as published before package 50) whenever it is started without <code>--pack</code> or <code>--installer</code>.</li>
@@ -1381,7 +1392,7 @@
           phép đi kèm.</li>
         <li><b>Cài đặt của người chơi</b> (phím, ngôn ngữ) lưu ở <code>%APPDATA%\OpenLF2</code>, chung với OpenLF2 nếu máy có cài.
           Lần đầu mở mà Windows báo <i>Windows protected your PC</i>: <i>More info</i>, <i>Run anyway</i> (chương trình chưa ký số).</li>
-        <li><b>Bản mod có file <code>.exe</code> bị nén hay khóa</b> (ví dụ <code>NTSD.exe</code> của Naruto: The Setting Dawn) để hình
+        <li><b>Bản mod có file <code>.exe</code> bị nén hay khóa</b> (ví dụ <code>NTSD.exe</code> của Naruto: The Setting Dawn 2.6) để hình
           ở chỗ OpenLF2 không đọc được: <code>xuat-ban.bat</code> dừng, in lời báo của game, không làm gì.</li>
         <li><b>Ngoài Windows:</b> OpenLF2 chơi thư mục game mà chương trình nằm trong (hoặc file <code>game.zip</code> nằm cạnh
           nó, như bản xuất bản trước gói 50) mỗi khi được mở mà không có <code>--pack</code> hay <code>--installer</code>.</li>

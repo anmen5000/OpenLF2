@@ -12,6 +12,7 @@ local sounds = require("base/game/sounds")
 local rumble = require("base/game/rumble")
 local controls = require("base/ui/controls")
 local options = require("base/game/options")
+local mod_settings = require("base/game/mod_settings")
 local screen = {}
 local replay_lines, mode_line
 -- The picture the match is drawn on (constants.view): the classic screen, or a mod's own (openlf2.txt). The
@@ -586,7 +587,10 @@ function screen.draw(state, context, window_bounds)
     draw_scoreboard(centre, current)
     local replaying = current.replay and not current.replay_ended
     if replaying then
-        context.sprite("pe/menu_clip4", {2, 586, 725, 12}, 0x43, 0x216 + bottom_shift(), false)
+        -- The keys' line under a replay (LF2 1.9's MENU_CLIP4 has none: its menus, base/game/mod_settings).
+        if not mod_settings.classic_menus() then
+            context.sprite("pe/menu_clip4", {2, 586, 725, 12}, 0x43, 0x216 + bottom_shift(), false)
+        end
         if current.replay_status then replay_lines(context, current) end
     end
     mode_line(context, current, replaying)

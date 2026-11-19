@@ -12,6 +12,8 @@
 --                                794x550 (Naruto: The Setting Dawn 2.6: stages 1330 wide, 730 deep, backgrounds
 --                                735 tall); the match is drawn on it here too (constants.view), the window opens
 --                                with it, and the web page shapes its canvas to it. Menus keep the classic screen.
+--   menus = 1.9 (or 2.0)         the menus as LF2 1.9 or 2.0a draws them; without it, as the mod's pictures show
+--                                (mod_settings.classic_menus)
 -- The original game's installer, and a mod without the file, have no settings. Read once, from the game's files,
 -- so every computer playing the same mod has the same.
 local constants = require("base/game/constants")
@@ -47,6 +49,24 @@ function mod_settings.screen()
         return constants.screen.width, constants.screen.height
     end
     return width, height
+end
+-- Whether the menus are LF2 1.9's: a mod whose program is made from LF2 1.9 (the source release of Naruto: The
+-- Setting Dawn, whose NTSD.exe is LF2 1.9c's) has its menu pictures, laid out otherwise in places: no MENU_CLIP5 (2.0a's
+-- main menu, with "recording info" and "official website"), MENU_WAIT or MENU_BACK, and a mode menu without "Playback
+-- Recording", its entries lower in MENU_CLIP3. The screens then draw them where LF2 1.9's program does. Asked of the
+-- pictures once the game's files are open (a mod may say so in openlf2.txt: menus = 1.9 or 2.0).
+local classic
+function mod_settings.classic_menus()
+    if classic ~= nil then return classic end
+    local setting = load().menus
+    if setting == "1.9" or setting == "2.0" then
+        classic = setting == "1.9"
+        return classic
+    end
+    local ok, problem = pcall(engine.read_resource, "pe/menu_clip5")
+    if not ok and tostring(problem):find("not loaded", 1, true) then return false end
+    classic = not ok
+    return classic
 end
 -- Sets constants.view to the mod's screen; once (the same every time: the setting is read once).
 function mod_settings.apply_view()

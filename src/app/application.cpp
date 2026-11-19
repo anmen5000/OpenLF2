@@ -1094,7 +1094,7 @@ Result<void> run(const Configuration& config) {
     auto executable = archive->read("lf2.exe");
     if (!executable) return std::unexpected(executable.error());
     // Some mods ship their executable packed or protected, with LF2's pictures and the mod's own files compressed
-    // or encrypted inside it (Naruto: The Setting Dawn's NTSD.exe). Nothing in it can be read, so say so rather
+    // or encrypted inside it (Naruto: The Setting Dawn 2.6's NTSD.exe). Nothing in it can be read, so say so rather
     // than stop at the first picture. (A program whose pictures were moved out to the pack's UI/ folder plays,
     // its pictures read from there: see GameResources.)
     if (config.pack && !bitmap_resource(*executable, "WORDS0") && !archive->read("ui/words0.bmp")
@@ -1103,6 +1103,14 @@ Result<void> run(const Configuration& config) {
             "packed or protected, with the game's files inside it, where OpenLF2 cannot read them");
     }
     auto constants = recording_constants(*executable);
+    if (!constants && config.pack) {
+        // A mod's program made from an LF2 older than 2.0a (the source release of Naruto: The Setting Dawn: its
+        // NTSD.exe is LF2 1.9c's) has no recordings, so neither their key nor their version: the recordings made
+        // here are then OpenLF2's own (no key, version 0), as are its network games, among players of this pack.
+        std::cout << pack_executable << " is not made from LF2 2.0a: it has no LF2 recordings; those made here are "
+                     "OpenLF2's own\n";
+        constants = std::pair{std::string{}, std::int32_t{0}};
+    }
     if (!constants) return std::unexpected(constants.error());
     // Some mods changed how their lf2.exe plays (Dragon Ball Super Edition: armor for some fighters; Sauce's
     // "lf2-AI VS and Stage Challenge": itr kind 8 as a detector); the scripts play the same where they know the change.

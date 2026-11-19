@@ -1161,6 +1161,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
 - Builds: `dist/collect-licenses.py` tries a dropped or stalled download of a license source again (after 15, 30,
   60 and 120 seconds) instead of failing the build — GitHub's Windows arm64 runner lost ffmpeg.org's archive in the
   last three Windows runs, which marked them failed although x86 and x64 had built
+- A mod whose program is made from LF2 1.9 stopped on a black screen ("resource RVA outside backed PE sections",
+  package 98): the source release of Naruto: The Setting Dawn, whose `NTSD.exe` is LF2 1.9c's (its files, data and
+  pictures outside it). The game read LF2 2.0a's recording key and version from the program, data that LF2 1.9 does
+  not have, as it has no recordings: a game pack's program without them now plays, its recordings OpenLF2's own (no
+  key, version 0) and so its network games, among players of the same pack. Its menus are LF2 1.9's pictures, laid
+  out otherwise in places, so they are drawn as LF2 1.9's program draws them (positions read from its code):
+  MENU_CLIP's main menu of three entries, the mode menu's seven entries without "Playback Recording", lower in
+  MENU_CLIP3 and higher on the screen, the network page 15 pixels lower, the "Now Loading" box instead of
+  MENU_WAIT, no link bar under the control settings or keys line under a replay, on black with the logo whole (the
+  mod's own version in it). `base/game/mod_settings.classic_menus` tells them apart by MENU_CLIP5, which only LF2
+  2.0a has; a mod's `openlf2.txt` may say `menus = 1.9` or `menus = 2.0`. A mod made from LF2 2.0a plays exactly
+  as before (the bench's duels and the menus' traces the same)
 
 ## [1.1.2] - 2026-10-26
 

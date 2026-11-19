@@ -16,6 +16,14 @@ local menu_clip = {[7] = {535, 105, 256, 26}, [8] = {535, 137, 256, 26},
     [9] = {535, 168, 256, 29}, [12] = {643, 426, 151, 26}, [13] = {489, 426, 151, 26}}
 local menu_clip2 = {[0] = {0, 0, 704, 353}, {0, 354, 494, 23}, {0, 379, 494, 23}}
 local menu_clip5 = {[0] = {0, 0, 282, 181}, {285, 0, 240, 27}, {285, 32, 240, 27}}
+-- The main menu: LF2 2.0a's, MENU_CLIP5's box of five entries; or LF2 1.9's (a mod whose program is made from it,
+-- base/game/mod_settings.classic_menus), MENU_CLIP's box of three (game start, network game, control settings) lower
+-- on the screen, the logo too. The entries sit as far into either box.
+local menu_layouts = {
+    [false] = {top = 0xca, logo = 0x60, box = {"pe/menu_clip5", menu_clip5[0]}, entries = 5},
+    [true] = {top = 0xf2, logo = 0x87, box = {"pe/menu_clip", {0, 125, 282, 119}}, entries = 3},
+}
+local function menu_layout() return menu_layouts[mod_settings.classic_menus()] end
 local devices = {[constants.input_devices.keyboard] = "pe/cs6",
     [constants.input_devices.controller_one] = "pe/cs2", [constants.input_devices.controller_two] = "pe/cs3",
     [constants.input_devices.controller_three] = "pe/cs4", [constants.input_devices.controller_four] = "pe/cs5"}
@@ -46,8 +54,9 @@ local function sprite(state, sheet, rectangle, x, y, keyed, mirrored, flipped)
     add(state, {"sprite", sheet, rectangle, x, y, keyed, mirrored, flipped})
 end
 local function image(state, path, x, y, keyed) add(state, {"image", path, x, y, keyed}) end
--- The logo without the version in its bottom-right corner.
+-- The logo without the version in its bottom-right corner (LF2 1.9's menus: whole, the mod's own version in it).
 local function logo(state, y)
+    if mod_settings.classic_menus() then return sprite(state, "pe/menu_clip", {0, 41, 496, 80}, 0x9b, y, true) end
     sprite(state, "pe/menu_clip", {0, 41, 434, 80}, 0x9b, y, true)
     sprite(state, "pe/menu_clip", {434, 41, 62, 68}, 0x9b + 434, y, true)
 end
@@ -63,7 +72,9 @@ local function inside(input, left, top, right, bottom)
     return input.pointer_x >= left and input.pointer_x <= right and input.pointer_y >= top and input.pointer_y <= bottom
 end
 
+-- LF2 1.9's menus are on black, without a picture.
 local function background(state)
+    if mod_settings.classic_menus() then return add(state, {"fill", 0, 0, constants.screen.width, constants.screen.height, 0, 0, 0}) end
     add(state, {"fill", 0, 0, constants.screen.width, constants.screen.height, 0x10, 0x20, 0x6c})
     image(state, "pe/menu_back" .. state.background, 0, 0, true)
 end
@@ -95,9 +106,10 @@ local function menu(state, input, context)
             x = x + width + (entry[3] or 0)
         end
     end
-    logo(state, 0x60)
-    local top = 0xca
-    sprite(state, "pe/menu_clip5", menu_clip5[0], 0x107, top, true)
+    local layout = menu_layout()
+    logo(state, layout.logo)
+    local top = layout.top
+    sprite(state, layout.box[1], layout.box[2], 0x107, top, true)
     if input.pointer_x < 0x114 or input.pointer_x > 0x208 then return end
     local y = input.pointer_y
     if y >= top + 0xf and y <= top + 0x27 then
@@ -119,6 +131,8 @@ local function menu(state, input, context)
             state.editing = controls.copy(controls.current())
             state.previous_keys = input.keys
         end
+    elseif layout.entries < 5 then
+        return
     elseif y >= top + 0x6b and y <= top + 0x84 then
         sprite(state, "pe/menu_clip5", menu_clip5[1], 0x117, top + 0x6b, true)
         if input.click then
@@ -140,8 +154,10 @@ local function menu(state, input, context)
 end
 
 -- OpenLF2's options entry (not in the original), spelled from the menu art's own letters;
--- 'p' is 'b' flipped vertically.
-local options_row = {top = 0xca + 0xa7, bottom = 0xca + 0xc0, baseline = 0xca + 157 + 31}
+-- 'p' is 'b' flipped vertically. Below LF2 1.9's box of three entries (which has no such letters), it is text.
+local options_rows = {[false] = {top = 0xca + 0xa7, bottom = 0xca + 0xc0, baseline = 0xca + 157 + 31},
+    [true] = {top = 0xf2 + 0x77, bottom = 0xf2 + 0x90}}
+local options_row = options_rows[false]
 local letters = {
     normal = {o = {20, 147, 10, 11}, t = {149, 144, 7, 14}, i = {144, 143, 2, 15}, s = {133, 147, 8, 11},
         n = {133, 116, 8, 11}, b = {122, 142, 9, 16}},
@@ -163,15 +179,23 @@ local function spell_options(state, set)
     end
 end
 local function options_entry(state, input)
+    local classic = mod_settings.classic_menus()
+    local row = options_rows[classic]
     local pointed = input.pointer_x >= 0x114 and input.pointer_x <= 0x208
-        and input.pointer_y >= options_row.top and input.pointer_y <= options_row.bottom
+        and input.pointer_y >= row.top and input.pointer_y <= row.bottom
     if i18n.active() or (state.game_pack and i18n.host_text()) then
         -- The letters only spell "options": a translated language draws the label as text like the other captions
         -- (size and colors of their baked text), centered in the row; so does a game pack, whose menu picture has
         -- other letters.
         local size = 18
-        add(state, {"text", i18n.tr("options"), 398, math.floor((options_row.top + options_row.bottom) / 2 - 0.63 * size + 0.5),
+        add(state, {"text", i18n.tr("options"), 398, math.floor((row.top + row.bottom) / 2 - 0.63 * size + 0.5),
             nil, pointed and 0xffffff or 0x5a77d8, nil, "center", size})
+    elseif classic then
+        -- The original's bitmap font, bold as the options page writes.
+        for _, offset in ipairs({{-1, 1}, {-1, 0}, {0, 1}, {0, 0}}) do
+            add(state, {"text", "options", 398 + offset[1], row.top + 6 + offset[2],
+                pointed and constants.font_variants.blue or constants.font_variants.white, nil, nil, "center"})
+        end
     else
         spell_options(state, pointed and letters.pointed or letters.normal)
     end
@@ -362,12 +386,14 @@ local function control_settings(state, input, context)
     background(state)
     logo(state, 0x23)
     sprite(state, "pe/menu_clip2", menu_clip2[0], 0x2e, 0x79, true)
-    -- The link bar opens the original game's special-move table.
-    local link = inside(input, 0x2e, 0x1db, 0x21c, 0x1f2) and 2 or 1
-    sprite(state, "pe/menu_clip2", menu_clip2[link], 0x2e, 0x1db, true)
-    if link == 2 and input.click then
-        sounds.direct(state, "ok")
-        context.action("open_special_moves")
+    -- The link bar opens the original game's special-move table (not in LF2 1.9's MENU_CLIP2, which ends above it).
+    if not mod_settings.classic_menus() then
+        local link = inside(input, 0x2e, 0x1db, 0x21c, 0x1f2) and 2 or 1
+        sprite(state, "pe/menu_clip2", menu_clip2[link], 0x2e, 0x1db, true)
+        if link == 2 and input.click then
+            sounds.direct(state, "ok")
+            context.action("open_special_moves")
+        end
     end
     local editing = state.editing
     -- A pending assignment takes the lowest held key/button; Escape cancels a keyboard set
@@ -599,7 +625,7 @@ local function navigation_page(state)
         end
         list[#list + 1] = target(0x195, 0x1b9, 0x195 + 0x9b, 0x1b9 + 0x18)
         list[#list + 1] = target(0x246, 0x1b9, 0x246 + 0x9b, 0x1b9 + 0x18)
-        list[#list + 1] = target(0x2e, 0x1db, 0x21c, 0x1f2)
+        if not mod_settings.classic_menus() then list[#list + 1] = target(0x2e, 0x1db, 0x21c, 0x1f2) end
         return {page = page, targets = list, locked = state.capture ~= nil or state.name_player > 0}
     elseif page == "recording" then
         return {page = page, locked = state.field ~= nil,
@@ -640,13 +666,17 @@ local function navigation_page(state)
         end
         return {page = page, targets = list, default = state.options_focus}
     end
-    -- Menu targets: Game Start, Network Game, Controls, Recording, Official Website,
-    -- Options (not in a mod that hides it: base/game/mod_settings), and Exit.
-    local top = 0xca
+    -- Menu targets: Game Start, Network Game, Controls, Recording, Official Website (LF2 1.9's menu: the first
+    -- three), Options (not in a mod that hides it: base/game/mod_settings), and Exit.
+    local layout = menu_layout()
+    local top = layout.top
     local targets = {target(0x114, top + 0xf, 0x208, top + 0x27), target(0x114, top + 0x2d, 0x208, top + 0x46),
-        target(0x114, top + 0x4d, 0x208, top + 0x66), target(0x114, top + 0x6b, 0x208, top + 0x84),
-        target(0x114, top + 0x89, 0x208, top + 0xa2)}
-    if not mod_settings.options_hidden() then targets[#targets + 1] = target(0x114, options_row.top, 0x208, options_row.bottom) end
+        target(0x114, top + 0x4d, 0x208, top + 0x66)}
+    if layout.entries == 5 then
+        targets[4], targets[5] = target(0x114, top + 0x6b, 0x208, top + 0x84), target(0x114, top + 0x89, 0x208, top + 0xa2)
+    end
+    local row = options_rows[mod_settings.classic_menus()]
+    if not mod_settings.options_hidden() then targets[#targets + 1] = target(0x114, row.top, 0x208, row.bottom) end
     targets[#targets + 1] = target(0, 0x202, 0x3e, 0x217)
     return {page = "menu", remember = true, targets = targets}
 end
@@ -659,8 +689,14 @@ function screen.update(state, flow_input, context)
         input = navigation.apply(state.nav, flow_input, navigation_page(state))
     end
     if state.page == "waiting" then
-        -- The Game Start frame: shows the wait image, then the title.
-        image(state, "pe/menu_wait", 0, 0, false)
+        -- The Game Start frame: shows the wait image, then the title (LF2 1.9 has none: its "Now Loading" box over the
+        -- menu's backdrop, where its program draws it).
+        if mod_settings.classic_menus() then
+            background(state)
+            sprite(state, "pe/menu_clip3", {0, 0, 334, 108}, 0xe6, 0xdd, true)
+        else
+            image(state, "pe/menu_wait", 0, 0, false)
+        end
         context.action("game_start")
     elseif state.page == "controls" then
         control_settings(state, input, context)
