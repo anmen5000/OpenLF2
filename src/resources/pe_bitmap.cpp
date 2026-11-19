@@ -110,6 +110,27 @@ Result<Bytes> executable_data(std::span<const char> executable, std::uint32_t ad
         return fail(ErrorCode::format, error.what());
     }
 }
+Result<Bytes> executable_code(std::span<const char> executable) {
+    if (executable.size() > 64 * 1024 * 1024) return fail(ErrorCode::limit, "PE file exceeds limit");
+    try {
+        const BinaryView file(executable);
+        if (file.text(0, 2) != "MZ") throw FormatError("not a PE executable");
+        const std::size_t pe = file.u32(0x3c);
+        if (file.text(pe, 4) != std::string("PE\0\0", 4)) throw FormatError("not a PE executable");
+        const std::size_t sections = pe + 24 + std::size_t{file.u16(pe + 20)};
+        const std::size_t count = file.u16(pe + 6);
+        for (std::size_t index = 0; index < count; ++index) {
+            const auto section = sections + index * 40;
+            // IMAGE_SCN_CNT_CODE or IMAGE_SCN_MEM_EXECUTE.
+            if ((file.u32(section + 36) & 0x20000020U) == 0) continue;
+            const auto code = file.slice(file.u32(section + 20), file.u32(section + 16));
+            return Bytes(code.begin(), code.end());
+        }
+        throw FormatError("no code section");
+    } catch (const FormatError& error) {
+        return fail(ErrorCode::format, error.what());
+    }
+}
 Result<Bytes> bitmap_resource(std::span<const char> executable, std::string_view name) {
     if (executable.size() > 64 * 1024 * 1024) return fail(ErrorCode::limit, "PE file exceeds limit");
     std::span<const char> dib;

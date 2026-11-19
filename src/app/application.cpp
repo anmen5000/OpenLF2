@@ -1128,6 +1128,8 @@ Result<void> run(const Configuration& config) {
     if (patches.heal_reach) executable_settings += ", heal_reach=true";
     if (patches.heal_moves) executable_settings += ", heal_moves=true";
     if (patches.heal_heavy_whole) executable_settings += ", heal_heavy_whole=true";
+    if (patches.transform_same_frame) executable_settings += ", transform_same_frame=true";
+    if (patches.effect_mp_frame) executable_settings += ", effect_mp_frame=true";
     const auto& resources = game_data.attach(std::make_unique<GameResources>(*archive, std::move(*executable), scripts->assets));
     auto bootstrap = read_file(config.scripts / "runtime/bootstrap.lua", 1024 * 1024);
     if (!bootstrap) return std::unexpected(bootstrap.error());

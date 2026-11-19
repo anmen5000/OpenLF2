@@ -15,6 +15,14 @@ local function cdiv(a, b)
 end
 local function random(range) return engine.random(range) end
 local function state_of(value) return value.record.frame(value.frame).state end
+-- Naruto: The Setting Dawn's own program (its team's code tool: transform_same_frame, read from the executable by
+-- the host; frame_rules.set_executable_patches) changes an object whose frame state is 4000-4999 into record
+-- state - 4000 in the same frame number, picture offset 0, before the original's 8000-8999 test (which it then
+-- skips). None for the original game, whose 4000-4999 are plain states.
+local same_frame_transform = false
+function frame_rules.set_executable_patches(options)
+    same_frame_transform = (options or {}).transform_same_frame == true
+end
 
 -- Followers (+0x2f4 = index) that are alive take the new record, airborne ones in frame 212.
 local function pass_record(state, index, record)
@@ -167,7 +175,10 @@ function frame_rules.before_advance(state, index, value)
         value.frame = 0
     end
     local current = state_of(value)
-    if current >= constants.frame_state_ranges.record_transform_start
+    if same_frame_transform and current >= 4000 and current < 5000 then
+        value.record = objects.record(state, current - 4000) or value.record
+        value.pic_offset = 0
+    elseif current >= constants.frame_state_ranges.record_transform_start
        and current < constants.frame_state_ranges.record_transform_end_exclusive then
         value.record = objects.record(state,
             current - constants.frame_state_ranges.record_transform_start) or value.record

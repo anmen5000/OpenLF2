@@ -102,7 +102,7 @@ local function recent_state(value) return value.record.frame(value.state_frame).
 
 -- Changes a mod made to its own lf2.exe that the scripts play the same way (combat.set_executable_patches, read from
 -- the executable by the host); none for the original game.
-local patched = {heal_reach = false, heal_moves = false, heal_heavy_whole = false}
+local patched = {heal_reach = false, heal_moves = false, heal_heavy_whole = false, effect_mp_frame = false}
 -- Itr kind 8 in a mod whose lf2.exe made it a detector (patched.heal_reach: Sauce's "lf2-AI VS and Stage
 -- Challenge", whose shadows his fighter's D+J+A finds and goes into): the itr's bdefend says what it touches (0 to 6
 -- that kind of object only, 0 the fighters as in the original; 7 weapons and drinks; 8 anything; others nothing),
@@ -384,6 +384,8 @@ function combat.set_executable_patches(options)
     patched.heal_reach = options.heal_reach == true
     patched.heal_moves = options.heal_moves == true
     patched.heal_heavy_whole = options.heal_heavy_whole == true
+    patched.effect_mp_frame = options.effect_mp_frame == true
+    require("base/game/frame_rules").set_executable_patches(options)
 end
 
 -- Characters that absorb hits while their defense meter is low.
@@ -680,6 +682,12 @@ local function plain_hit(state, p, v, attacker, victim, itr)
     if attacker.record.id == object_henry_arrow and victim_kind == record_kinds.character then objects.remove(state, p) end
     if attacker.record.id == object_john_biscuit and victim_kind == record_kinds.character then attacker.hp = 0 end
     if victim_kind == record_kinds.ball then ball_struck(state, p, attacker, victim, itr) end
+    -- Naruto: The Setting Dawn's own program (its team's code tool, patched.effect_mp_frame) tests its effects where the
+    -- original tests the freezing ones: 5000-5999 takes effect - 5000 MP from the object hit (whatever it is, with no
+    -- floor), 6000-6999 puts it in frame effect - 6000 (its wait counting on).
+    if patched.effect_mp_frame and itr.effect >= 5000 and itr.effect < 7000 then
+        if itr.effect < 6000 then victim.mp = victim.mp - (itr.effect - 5000) else victim.frame = itr.effect - 6000 end
+    end
     if (itr.effect == effects.freeze or itr.effect == effects.rebound) and victim_kind == record_kinds.character
        and victim.record.frame(victim.state_frame).state ~= state_frozen then
         victim.frame = character_frames.ice

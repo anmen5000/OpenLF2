@@ -53,4 +53,7 @@ private:
 Result<Bytes> bitmap_resource(std::span<const char> executable, std::string_view name);
 // Initialized data of a PE32 executable at a virtual address (e.g. the original game's recording key).
 Result<Bytes> executable_data(std::span<const char> executable, std::uint32_t address, std::size_t size);
+// The bytes of a PE32 executable's first code section as the file holds them, past its virtual size too (where a
+// mod's tool may have added routines of its own).
+Result<Bytes> executable_code(std::span<const char> executable);
 }

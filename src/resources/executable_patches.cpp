@@ -206,17 +206,70 @@ void read_heal(std::span<const char> executable, ExecutablePatches& patches) {
     auto heavy = executable_data(executable, heal_heavy_address, heal_heavy_code.size());
     if (heavy && same(*heavy, heal_heavy_code)) patches.heal_heavy_whole = true;
 }
+
+// Naruto: The Setting Dawn's code tool (see transform_same_frame and effect_mp_frame): its routines, past the end of
+// the code of the mod's LF2 1.9c program, sought by their code (-1: any byte, the jumps back to the original's).
+// The frame state test, reached from where the original tests 8000-8999 (eax = the state):
+//   cmp eax, 4000; jl back; cmp eax, 5000; jge back; ...
+//   mov edx, [ebx+0x7d4] (the records); lea esi, [eax-4000] (the id sought); xor eax, eax; ... (the record found
+//   becomes the object's [+0x368]), then
+//   mov edx, [ebx+edi*4+0x194] (the object); seven nops where the 8000 test sets the frame ([+0x70]) to 0;
+//   mov eax, [ebx+edi*4+0x194]; mov dword [eax+0x318], 0 (the picture offset, 140 after the 8000 test).
+constexpr std::array<int, 22> transform_range{0x3d, 0xa0, 0x0f, 0x00, 0x00, 0x0f, 0x8c, -1, -1, -1, -1,
+    0x3d, 0x88, 0x13, 0x00, 0x00, 0x0f, 0x8d, -1, -1, -1, -1};
+constexpr std::array<int, 14> transform_lookup{0x8b, 0x93, 0xd4, 0x07, 0x00, 0x00, 0x8d, 0xb0, 0x60, 0xf0, 0xff, 0xff,
+    0x33, 0xc0};
+constexpr std::array<int, 31> transform_keep_frame{0x8b, 0x94, 0xbb, 0x94, 0x01, 0x00, 0x00,
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x8b, 0x84, 0xbb, 0x94, 0x01, 0x00, 0x00,
+    0xc7, 0x80, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+// The hit code's effect test (eax = the itr's effect, [ebx] the object hit): cmp eax, 3; je freeze; cmp eax, 30;
+// je freeze; cmp eax, 5000; jl on; cmp eax, 6000; jge the next test ... then
+//   sub eax, 5000; pusha; mov ebx, [ebx]; mov ecx, [ebx+0x308] (its MP); sub ecx, eax (... stored back) and
+//   cmp eax, 7000; jge on; sub eax, 6000; pusha; mov ebx, [ebx]; mov ecx, [ebx+0x70]; mov ecx, eax;
+//   mov [ebx+0x70], ecx (its frame).
+constexpr std::array<int, 34> effect_range{0x83, 0xf8, 0x03, 0x0f, 0x84, -1, -1, -1, -1, 0x83, 0xf8, 0x1e,
+    0x0f, 0x84, -1, -1, -1, -1, 0x3d, 0x88, 0x13, 0x00, 0x00, 0x0f, 0x8c, -1, -1, -1, -1, 0x3d, 0x70, 0x17, 0x00, 0x00};
+constexpr std::array<int, 16> effect_mp{0x2d, 0x88, 0x13, 0x00, 0x00, 0x60, 0x8b, 0x1b, 0x8b, 0x8b, 0x08, 0x03, 0x00,
+    0x00, 0x29, 0xc1};
+constexpr std::array<int, 27> effect_frame{0x3d, 0x58, 0x1b, 0x00, 0x00, 0x0f, 0x8d, -1, -1, -1, -1,
+    0x2d, 0x70, 0x17, 0x00, 0x00, 0x60, 0x8b, 0x1b, 0x8b, 0x4b, 0x70, 0x89, 0xc1, 0x89, 0x4b, 0x70};
+
+bool holds(std::span<const char> code, std::span<const int> pattern) {
+    return std::search(code.begin(), code.end(), pattern.begin(), pattern.end(), [](char byte, int wanted) {
+        return wanted < 0 || static_cast<unsigned char>(byte) == wanted;
+    }) != code.end();
+}
+
+void read_code_tool(std::span<const char> executable, ExecutablePatches& patches) {
+    auto code = executable_code(executable);
+    if (!code) return;
+    const bool range = holds(*code, transform_range), lookup = holds(*code, transform_lookup);
+    if (range && lookup && holds(*code, transform_keep_frame)) {
+        patches.transform_same_frame = true;
+    } else if (range && lookup) {
+        patches.problems.push_back("lf2.exe: frame states 4000-4999 change the object in a way OpenLF2 does not know");
+    }
+    const bool effects = holds(*code, effect_range);
+    if (effects && holds(*code, effect_mp) && holds(*code, effect_frame)) {
+        patches.effect_mp_frame = true;
+    } else if (effects) {
+        patches.problems.push_back("lf2.exe: itr effects from 5000 do something OpenLF2 does not know");
+    }
+}
 }
 
 ExecutablePatches read_executable_patches(std::span<const char> executable) {
     ExecutablePatches patches;
     read_armor(executable, patches);
     read_heal(executable, patches);
+    read_code_tool(executable, patches);
     std::vector<std::string> parts;
     if (!patches.armor_by_id.empty()) parts.push_back("armor for " + std::to_string(patches.armor_by_id.size()) + " fighters");
     if (patches.heal_reach) parts.push_back("itr kind 8 touches what its bdefend and respond say");
     if (patches.heal_moves) parts.push_back("itr kind 8 moves by its injury, dvx and dvy");
     if (patches.heal_heavy_whole) parts.push_back("heavy weapons touched by kind 8 keep its dvx and dvy whole");
+    if (patches.transform_same_frame) parts.push_back("frame states 4000-4999 change the object in the same frame");
+    if (patches.effect_mp_frame) parts.push_back("itr effects 5000-5999 take MP, 6000-6999 set the frame");
     for (const auto& part : parts) patches.description += (patches.description.empty() ? "" : "; ") + part;
     return patches;
 }

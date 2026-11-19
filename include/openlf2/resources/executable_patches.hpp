@@ -32,6 +32,15 @@ struct ExecutablePatches {
     // And a heavy weapon touched by kind 8 keeps the itr's dvx and dvy whole (0x42e55a), where the original halves
     // them for any itr that reaches one.
     bool heal_heavy_whole = false;
+    // Naruto: The Setting Dawn's own program (LF2 1.9c's, changed with its team's code tool), found by the routines
+    // the tool added past the end of the code, wherever they lie. Where the original tests a frame's state for
+    // 8000-8999 (the object becomes record state - 8000, at frame 0, picture offset 140), the tool tests 4000-4999
+    // first: the object becomes record state - 4000 in the same frame number, picture offset 0 (Sasori out of his
+    // puppet, Kisame's water clones, Naruto's fox).
+    bool transform_same_frame = false;
+    // Where the original's hit code tests the freezing effects (3 and 30), the tool's routine makes itr effects
+    // 5000-5999 take effect - 5000 MP from the object hit and 6000-6999 put it in frame effect - 6000.
+    bool effect_mp_frame = false;
     // What was recognised, for the log; empty for an unchanged executable.
     std::string description;
     // Spots changed in a way this reader does not understand, each a sentence for the log: the game plays them as the

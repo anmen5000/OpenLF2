@@ -1173,6 +1173,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   mod's own version in it). `base/game/mod_settings.classic_menus` tells them apart by MENU_CLIP5, which only LF2
   2.0a has; a mod's `openlf2.txt` may say `menus = 1.9` or `menus = 2.0`. A mod made from LF2 2.0a plays exactly
   as before (the bench's duels and the menus' traces the same)
+- The same mod's moves that change a fighter played otherwise than in its own program (package 99): Sasori's D^J
+  left him in his broken puppet instead of coming out of it, Kisame's D^J raised two Shinos instead of his water
+  clones, and so for Naruto's fox, Sasuke's curse seal, Deidara and his bird, Hidan and Kakuzu. Its NTSD.exe was
+  changed with its team's code tool, whose routines past the end of the code the game now finds there (by their
+  code, read statically: `read_executable_patches`) and plays as they do: a frame state 4000-4999 changes the object
+  into the record with id state - 4000 in the same frame number, picture offset 0, before the original's test of
+  8000-8999 (record state - 8000 at frame 0, offset 140), which it then skips (`frame_rules`); where the hit code
+  tests the freezing effects, itr effect 5000-5999 takes effect - 5000 MP from the object hit (Kisame's sword, Shino's
+  bugs, Neji) and 6000-6999 puts it in frame effect - 6000 (`combat`). Only a program with those routines plays so:
+  any other mod, LF2 and the 2.0a program of Naruto: The Setting Dawn 2.4 (which has neither) as before
 
 ## [1.1.2] - 2026-10-26
 
