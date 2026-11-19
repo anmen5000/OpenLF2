@@ -1205,6 +1205,13 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   Every other mod (Dragon Ball Super, whose one deep stage is a template, One Piece, KT, Hell, Convergence, Sauce's,
   NTSD 2.4 and the source release) keeps the classic screen. Lee On Road on such a screen has its railing's posts
   across it, not to x = 792 only; the bench's status line in `show` (`xem.bat`) is at the bottom of the match
+- The same mod's Pain (Deva) charged no MP (package 101, the project owner's clip; since package 58): his chakra
+  charge (D+J+A), like every fighter's there, holds an invisible drink and drinks MP from it, but his holds it in
+  frame 75, which the drink's file does not have, and OpenLF2 removed an object in a frame its file lacks (a rule of
+  its own against objects stuck there for good, One Piece GrandWorld's Enel), so the drink was gone the next tick and
+  only the usual MP came back. An item held is kept now: its holder's wpoint sets its frame every tick, and it works
+  on in the hand as in the original - Pain (Deva) fills his MP, and Jirobo's absorbing (frame 10) works too. Every
+  other mod plays as before (the bench's duels on nine mods the same)
 
 ## [1.1.2] - 2026-10-26
 

@@ -710,11 +710,15 @@ local function physics_item(state, index, value)
     physics.step(state, value)
     local frame = value.record.frame(value.frame)
     if frame.state == constants.frame_states.removed then objects.remove(state, index)
-    elseif frame.undefined and index >= first_spawned_slot and value.record.kind ~= record_kinds.character then
+    elseif frame.undefined and index >= first_spawned_slot and value.record.kind ~= record_kinds.character
+           and value.weapon >= 0 then
         -- A spawned object sent to a frame its file does not have (OpenLF2 extension). The original keeps it:
         -- an undefined frame is all zeros, so the object stays there, invisible and inert, for the rest of the
         -- match, and a mod that does this often (One Piece GrandWorld's Enel lying spawns enel_ball frame 112)
-        -- fills the 400 object slots in a long Survival stage, after which no move can spawn anything.
+        -- fills the 400 object slots in a long Survival stage, after which no move can spawn anything. An item
+        -- held is not: its holder's wpoint sets its frame every tick, often one its file lacks so that it is not
+        -- seen, and it works on in the hand - Naruto: The Setting Dawn 2.6 gives chakra with a drink held in
+        -- frame 75 (Pain (Deva)) or 10 (Jirobo's absorbing), which its file does not have.
         objects.remove(state, index)
     end
     frame_rules.after_physics(state, index, value)
