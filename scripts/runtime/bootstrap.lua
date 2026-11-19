@@ -69,6 +69,7 @@ local function evaluate(declaration, previous)
         next = next, select = select, tonumber = tonumber, tostring = tostring,
         type = type, unpack = unpack_values, pcall = pcall,
         math = copy_library(math), string = copy_library(string), table = copy_library(table),
+        coroutine = copy_library(coroutine),
         require = load_module,
         engine = {read_resource = read_resource, read_object_data = read_object_data,
             read_background_data = read_background_data, read_stage_data = read_stage_data,
@@ -137,6 +138,7 @@ local FrameOpcode = {
     viewport = 1, sprite = 2, fill = 3, overlay = 4, render_area = 5,
     clip = 6, sound = 7, rumble = 8, music = 9, speed = 10,
     render_filter = 11, text_input = 12, replay_drop = 13, fullscreen = 14, action = 15, text = 16, file_dialog = 17, world_sprite = 18,
+    unshown = 19,
 }
 local RumbleTarget = {gamepad = 0, phone = 1}
 local MusicKind = {play = 0, stop = 1, resume = 2, volume = 3}
@@ -225,8 +227,11 @@ local function render(input)
             i18n.paint_baked(context, scene, resource, nil, x, y, keyed)
         end
     end
-    if screen.update(state, input, context) == false then return false end
-    screen.draw(state, context)
+    local updated = screen.update(state, input, context)
+    if updated == false then return false end
+    -- "unshown": the frame ran, with nothing to draw (a network room catching up, base/ui/flow); its sounds and music
+    -- still go out.
+    if updated == "unshown" then command(FrameOpcode.unshown) else screen.draw(state, context) end
     for index = size + 1, previous_size do frame_batch[index] = nil end
     previous_size = size
     return frame_batch, size

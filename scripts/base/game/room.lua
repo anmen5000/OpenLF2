@@ -35,6 +35,7 @@ local history_size = 1024 -- frames whose own checks are kept for comparison
 local max_backlog = 9000 -- frames (5 minutes) received and not run yet
 local heartbeat = 25 -- ms: while frames run, an input goes to the relay at least this often
 local playout_window = 300 -- frames (10 seconds) whose arrival times set the pacing
+local busy_backlog, busy_late = 10, 1000 -- frames waiting, ms past the target: a frame read so says this computer was busy
 local powers = {1, 2, 4, 8, 16, 32, 64, 128}
 
 local function has(value, index) return math.floor(value / powers[index]) % 2 == 1 end
@@ -132,7 +133,7 @@ function room.start(state, host, address)
     state.queue, state.queue_first, state.queue_last = {}, 1, 0
     state.next_frame, state.next_run, state.frames = 0, 0, 0
     state.history, state.checks = {}, {}
-    state.sent, state.sent_at, state.events = nil, 0, 0
+    state.sent, state.sent_at, state.events, state.late = nil, 0, 0, nil
     state.offsets, state.offset_next, state.offset_count, state.target = {}, 1, 0, nil
     local started, problem = engine.network(host and "host" or "join", address, state.port)
     if not started then return failed(state, problem) end
@@ -172,18 +173,29 @@ end
 -- little early or late still run evenly: the latest frame of the last ten seconds sets the pace, as a
 -- frame later than the target is shown late, a visible hitch. The target rises at once and sinks slowly.
 -- Arrival times come from the page when it notes them (kinds.stamp: the moment a frame reached the
--- browser), else from the moment the game read the frame.
+-- browser), else from the moment the game read the frame. A frame read with many before it still waiting, or
+-- more than a second past the target, tells when this computer got to it rather than when it came: the time it
+-- was busy (a match beginning, its INSANE! players learning their fighters, 10 to 30 seconds in a browser) would
+-- hold the pace back by as much, for minutes as the target sinks, the game running seconds behind the others with
+-- its keys as late. Such frames do not set the pace; they run as soon as they can (see room.late).
 local function note_arrival(state, number, now)
-    state.offsets[state.offset_next] = now - state.tick * number
+    local offset = now - state.tick * number
+    if state.queue_last - state.queue_first + 1 > busy_backlog or (state.target and offset > state.target + busy_late) then
+        return
+    end
+    state.offsets[state.offset_next] = offset
     state.offset_next = state.offset_next % playout_window + 1
     state.offset_count = math.min(state.offset_count + 1, playout_window)
 end
 local function update_target(state)
-    local values = {}
-    for index = 1, state.offset_count do values[index] = state.offsets[index] end
-    table.sort(values)
-    local base = values[1]
-    local spread = values[#values] - base
+    local base, latest = math.huge, -math.huge
+    for index = 1, state.offset_count do
+        local offset = state.offsets[index]
+        if offset < base then base = offset end
+        if offset > latest then latest = offset end
+    end
+    if base == math.huge then return end
+    local spread = latest - base
     local wanted = base + math.min(spread + 2, 100)
     if not state.target or wanted > state.target then state.target = wanted
     else state.target = math.max(wanted, state.target - 0.25) end
@@ -412,6 +424,8 @@ function room.exchange(state, input, hp)
             if now - age < due - display_slack and now < due + display_catch_up then return nil end
         elseif now < due then return nil end
     end
+    -- (How late the frame runs, ms past its time: see room.late.)
+    state.late = state.target and now - (state.tick * frame.number + state.target) or 0
     state.queue[state.queue_first] = nil
     state.queue_first = state.queue_first + 1
     -- Desync check: this computer's state at the start of the frame, against the others'. Its own
@@ -434,4 +448,13 @@ end
 
 -- Frames received and not run yet.
 function room.backlog(state) return state.queue_last - state.queue_first + 1 end
+-- How late the frame room.exchange gave last runs (ms past its time; 0 or below when on time), and how late the next
+-- frame received is by now (nil while none waits): a computer that has fallen behind - too slow for the frames for a
+-- while, or busy as a match began - runs its frames without drawing them until it is in time again (base/ui/flow).
+function room.late(state) return state.late or 0 end
+function room.next_late(state)
+    local frame = state.queue and state.queue[state.queue_first]
+    if not frame or not state.target then return nil end
+    return engine.network_time() - (state.tick * frame.number + state.target)
+end
 return room

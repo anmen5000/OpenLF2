@@ -627,6 +627,22 @@ function selection.resume_options(state, outcome)
     return state
 end
 
+-- The fighters chosen so far, a human's or a computer's once its fighter is taken (a random one once drawn): INSANE!'s
+-- players learn their moves ahead, while the selection goes on (base/ui/flow, base/game/smart_ai learn_ahead).
+function selection.chosen_fighters(state)
+    local chosen = {}
+    for index = 0, 7 do
+        local slot = state.slots[index]
+        local phase = slot and slot.phase
+        local taken = phase == slot_phases.choosing_team or phase == slot_phases.ready
+            or phase == computer_team_phase or phase == computer_done
+        if taken and slot.fighter and slot.fighter > 0 and state.fighters[slot.fighter] then
+            chosen[#chosen + 1] = state.fighters[slot.fighter]
+        end
+    end
+    return chosen
+end
+
 -- Match setup for base/game/match: human slots are joined (1-10), computers 11 and up.
 function selection.match_options(state)
     local slots = {}

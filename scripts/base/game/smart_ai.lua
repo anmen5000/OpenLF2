@@ -1506,6 +1506,22 @@ local function mode_entries(data, mode)
     return entries
 end
 
+-- Learning ahead (smart.learn_ahead, below): the learning runs in pieces, one play in the copy each, and between two
+-- pieces the game runs on. The copy's random numbers and what a mod's AI script last looked at are the copy's own:
+-- kept for the next piece, the game's put back meanwhile (smart.ahead_kit.resume). (In the module's table: the file's
+-- main chunk is at Lua's limit of locals.)
+smart.ahead_kit = {queue = {}, queued = {}}
+function smart.ahead_kit.pause()
+    local kit = smart.ahead_kit
+    if not kit.deadline or coroutine.running() ~= kit.thread or engine.network_time() < kit.deadline then return end
+    local random_table_now, random_index, random_sequence = engine.random_state()
+    local runtime = require("base/game/ai_scripts").runtime
+    local self_o, self_n, target_o, target_n = runtime.self.o, runtime.self.n, runtime.target.o, runtime.target.n
+    coroutine.yield()
+    engine.set_random_state(random_table_now, random_index, random_sequence)
+    runtime.self.o, runtime.self.n, runtime.target.o, runtime.target.n = self_o, self_n, target_o, target_n
+end
+
 -- Learns a fighter's moves (mode == nil), or the moves of one of its modes (an item of its own making in hand:
 -- play), into `analysis`: every entry is played in the private copy, what the keys pressed during a move continue
 -- into is played too (chains, pick-ups), and the moves are indexed from `first_index`.
@@ -1616,12 +1632,14 @@ local function explore(record, analysis, mode, first_index)
     local index = 1
     while index <= #entries do
         local entry = entries[index]
+        smart.ahead_kit.pause()
         engine.set_random_state(random_table(), 0, 0)
         local ok, move = pcall(play, record, entry, nil, weapon_record)
         if ok and move and entry.back and not (move.first and max(move.damage or 0, move.hit_damage or 0) > 0) then move = nil end
         if ok and move and not move.first and move.mp == 0 and not move.transform and not move.teleport and not move.mode then
             -- Nothing seen with MP full: a move that fills MP (a chakra charge in Naruto: The Setting Dawn) only
             -- shows when there is room for it.
+            smart.ahead_kit.pause()
             engine.set_random_state(random_table(), 0, 0)
             local ok_again, again = pcall(play, record, entry, 150, weapon_record)
             if ok_again and again and again.mp < 0 then move = again end
@@ -1629,6 +1647,7 @@ local function explore(record, analysis, mode, first_index)
         -- Nor with HP full: a move whose frames restore HP (state 1700: Marco's phoenix in One Piece GrandWorld)
         -- only shows it when there is HP to restore.
         if ok and move and not move.first and move.self_heal and move.hp <= 0 and not move.mode and not move.transform then
+            smart.ahead_kit.pause()
             engine.set_random_state(random_table(), 0, 0)
             local ok_again, again = pcall(play, record, entry, nil, weapon_record, 150)
             if ok_again and again and again.hp < -20 then
@@ -1666,6 +1685,7 @@ local function explore(record, analysis, mode, first_index)
             for gap_index, gap in ipairs({150, 250, 350, 450}) do
                 local shown, first_seen = 0, nil
                 for _, start in ipairs({0, 7, 13, 29, 41, 53}) do
+                    smart.ahead_kit.pause()
                     engine.set_random_state(random_table(), start, 0)
                     local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap, gap_index == 1)
                     if ok_again and again and not again.transform
@@ -1681,6 +1701,7 @@ local function explore(record, analysis, mode, first_index)
                 end
                 if gap_index == 1 and stood and varied and next(shields) == nil then
                     for _, start in ipairs({3, 17, 23, 37, 47, 59}) do
+                        smart.ahead_kit.pause()
                         engine.set_random_state(random_table(), start, 0)
                         local ok_again, again = pcall(play, record, entry, nil, weapon_record, nil, gap, true)
                         if ok_again and again then probed(again) end
@@ -1767,6 +1788,7 @@ local function explore(record, analysis, mode, first_index)
                     if box.injury < 30 then
                         local total, trials = 0, 0
                         for _, start in ipairs({0, 7, 13, 29, 41, 53}) do
+                            smart.ahead_kit.pause()
                             engine.set_random_state(random_table(), start, 0)
                             local measured_ok, measured = pcall(measure_hit, record, entry, floor((box.x1 + box.x2) / 2), box.z,
                                 min(box.t + 30, horizon_ticks))
@@ -1782,6 +1804,7 @@ local function explore(record, analysis, mode, first_index)
             -- measured on a fighter standing where the grab first reaches.
             for _, box in ipairs(move.boxes) do
                 if box.own and box.kind == attack_kinds.catch then
+                    smart.ahead_kit.pause()
                     engine.set_random_state(random_table(), 0, 0)
                     local measured_ok, measured = pcall(measure_hit, record, entry,
                         floor((box.x1 + box.x2) / 2) + (move.traj_x[box.t] or 0), box.z + (move.traj_z[box.t] or 0),
@@ -2209,10 +2232,12 @@ function setup_kit.learn(record, analysis)
             if not tried[left.data] then fresh_kind = true end
         end
         if fresh_kind then
+            smart.ahead_kit.pause()
             engine.set_random_state(random_table(), 0, 0)
             local control_ok, control = pcall(setup_kit.probe, record, setup, nil)
             if control_ok and control then
                 for _, follow in ipairs(follows) do
+                    smart.ahead_kit.pause()
                     engine.set_random_state(random_table(), 0, 0)
                     local ok, standing = pcall(setup_kit.probe, record, setup, follow)
                     if ok and standing then
@@ -2286,6 +2311,8 @@ function setup_kit.learn(record, analysis)
 end
 
 local function analyze(record)
+    -- (Anything else that needs moves learned first finishes what learning ahead has begun: see smart.learn_ahead.)
+    if smart.ahead_kit.thread then smart.ahead_kit.finish() end
     local data = record.data
     local found = analyses[data]
     if found then return found end
@@ -2393,6 +2420,7 @@ end
 local weapon_analyses = {} -- [record.data][weapon_record.data]
 -- What `record` does with `weapon_record` in hand: moves (indexed after the fighter's own) and their frames.
 local function armed_analysis(record, weapon_record, first_index)
+    if smart.ahead_kit.thread then smart.ahead_kit.finish() end
     local by_fighter = weapon_analyses[record.data]
     if not by_fighter then by_fighter = {}; weapon_analyses[record.data] = by_fighter end
     local found = by_fighter[weapon_record.data]
@@ -7481,7 +7509,75 @@ local function learn(record)
     for _, mode in pairs(analysis.modes or {}) do armed_analysis(record, mode.record, #analysis.moves + 1) end
 end
 
+-- Learning ahead. A match with INSANE! or XOI players began by learning every fighter's moves at once: about a
+-- second a fighter on a fast computer, 15 to 45 seconds for a match of eight in a browser, the picture standing still
+-- - and in a network room the others' frames went on coming meanwhile, each computer that much behind them when the
+-- fight began, a slow one far behind for a long time after. The fighters chosen on the selection screen are learned
+-- there instead (base/ui/flow), in the time its frames leave over, a play in the copy at a time: what the match then
+-- finds learned it does not learn again. What is learned depends on the fighter's data alone, so it is the same
+-- whenever it is learned, and every computer of a room plays the same; a match, or anything else that needs the
+-- moves, first finishes what was begun (smart.ahead_kit.finish).
+-- Fighters to learn ahead, as the catalog lists them ({id, path}; those already learned or waiting are left out).
+function smart.learn_ahead(fighters)
+    local kit = smart.ahead_kit
+    for _, fighter in ipairs(fighters) do
+        local data = require("base/game/object_data").load(fighter.path)
+        if not analyses[data] and not kit.queued[data] then
+            kit.queued[data] = true
+            kit.queue[#kit.queue + 1] = item.record({id = fighter.id, kind = record_kinds.character}, data)
+        end
+    end
+end
+-- Learns ahead for about `milliseconds`; true while there is more to learn.
+function smart.learn_ahead_run(milliseconds)
+    local kit = smart.ahead_kit
+    if not kit.thread then
+        if #kit.queue == 0 then return false end
+        kit.thread = coroutine.create(function()
+            while not kit.stop do
+                local record = table.remove(kit.queue, 1)
+                if not record then return end
+                kit.queued[record.data] = nil
+                if not analyses[record.data] then
+                    kit.record = record
+                    learn(record)
+                    kit.record = nil
+                end
+            end
+        end)
+    end
+    kit.resume(engine.network_time() + milliseconds)
+    return kit.thread ~= nil or #kit.queue > 0
+end
+function smart.ahead_kit.resume(deadline)
+    local kit = smart.ahead_kit
+    -- (The game's random numbers and a mod's AI script context, as the game has them: put back after the piece.)
+    local random_table_now, random_index, random_sequence = engine.random_state()
+    local runtime = require("base/game/ai_scripts").runtime
+    local self_o, self_n, target_o, target_n = runtime.self.o, runtime.self.n, runtime.target.o, runtime.target.n
+    kit.deadline = deadline
+    local ok, problem = coroutine.resume(kit.thread)
+    kit.deadline = nil
+    engine.set_random_state(random_table_now, random_index, random_sequence)
+    runtime.self.o, runtime.self.n, runtime.target.o, runtime.target.n = self_o, self_n, target_o, target_n
+    if not ok then
+        -- (A failure: what was begun is dropped, for the match to learn it as before - and fail as it would have.)
+        engine.log("INSANE! learning ahead: " .. tostring(problem))
+        if kit.record then analyses[kit.record.data], weapon_analyses[kit.record.data] = nil, nil end
+    end
+    if not ok or coroutine.status(kit.thread) == "dead" then kit.thread, kit.record = nil, nil end
+end
+-- Finishes the fighter being learned ahead, at once, and forgets those still waiting (the match learns its own).
+function smart.ahead_kit.finish()
+    local kit = smart.ahead_kit
+    if not kit.thread or coroutine.running() == kit.thread then return end
+    kit.queue, kit.queued, kit.stop = {}, {}, true
+    while kit.thread do kit.resume(nil) end
+    kit.stop = false
+end
+
 function smart.prepare(state)
+    if smart.ahead_kit.thread then smart.ahead_kit.finish() end
     notes_checked = nil
     use_mod_tune()
     smart.brain_kit.use_mod()
@@ -7836,6 +7932,7 @@ end
 -- strikes far off, or -1> <the least MP of a move that costs any, or -1>" (positioning.ranged_shot; far off: something
 -- sent 250 pixels and beyond).
 function smart.page_kit.moves(record)
+    if smart.ahead_kit.thread then smart.ahead_kit.finish() end
     local analysis = analyses[record.data]
     if not analysis or not analysis.moves or #analysis.moves == 0 then return "" end
     if analysis.page_moves then return analysis.page_moves end
@@ -7913,6 +8010,7 @@ end
 
 smart.rl_kit.xoi_control = smart.control
 function smart.control(state, index)
+    if smart.ahead_kit.thread then smart.ahead_kit.finish() end
     smart.page_kit.poll(state)
     local self = state.items[index]
     local memory = self and self.smart_memory

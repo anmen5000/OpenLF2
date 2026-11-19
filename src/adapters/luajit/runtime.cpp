@@ -189,7 +189,7 @@ int create_bridge_slot(lua_State* state) {
 // Private protocol, matching the fixed-size opcodes in runtime/bootstrap.lua.
 enum class FrameOpcode {
     viewport = 1, sprite, fill, overlay, render_area, clip, sound, rumble,
-    music, speed, render_filter, text_input, replay_drop, fullscreen, action, text, file_dialog, world_sprite
+    music, speed, render_filter, text_input, replay_drop, fullscreen, action, text, file_dialog, world_sprite, unshown
 };
 class FrameReader {
 public:
@@ -307,7 +307,7 @@ Result<ScriptFrame> decode_frame(lua_State* state, int table, int count) {
         int commands = 0;
         while (reader.remaining()) {
             if (++commands > 4096) throw std::runtime_error("too many frame commands");
-            const auto opcode = static_cast<FrameOpcode>(reader.integer(1, 18));
+            const auto opcode = static_cast<FrameOpcode>(reader.integer(1, 19));
             switch (opcode) {
             case FrameOpcode::viewport:
                 if (frame.viewport.width) throw std::runtime_error("duplicate viewport");
@@ -412,9 +412,15 @@ Result<ScriptFrame> decode_frame(lua_State* state, int table, int count) {
                 frame.actions.emplace_back(name);
                 break;
             }
+            case FrameOpcode::unshown:
+                if (!frame.shown) throw std::runtime_error("duplicate frame flag");
+                frame.shown = false;
+                break;
             }
         }
-        if (!frame.viewport.width) throw std::runtime_error("screen must declare a viewport");
+        // (A frame that ran without a picture need not declare a viewport, and shows nothing it drew.)
+        if (frame.shown && !frame.viewport.width) throw std::runtime_error("screen must declare a viewport");
+        if (!frame.shown) frame.commands.clear();
         return frame;
     } catch (const std::exception& error) { return fail(ErrorCode::script, error.what()); }
 }

@@ -58,6 +58,9 @@ public:
 struct ScriptFrame {
     Viewport viewport;
     bool waiting = false;
+    // False for a frame that ran with nothing to show (a network room catching up): its sounds, music and actions
+    // count, its picture is the last one.
+    bool shown = true;
     std::optional<bool> fast, text_input, fullscreen, replay_drop;
     std::optional<RenderFilter> render_filter;
     std::vector<DrawCommand> commands;

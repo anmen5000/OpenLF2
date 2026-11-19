@@ -53,9 +53,13 @@
 
 namespace openlf2 {
 namespace {
+#ifdef __EMSCRIPTEN__
+double last_page_yield = 0; // emscripten_get_now() when the loop last let the browser run (wait_milliseconds)
+#endif
 void wait_milliseconds(std::uint32_t milliseconds) {
 #ifdef __EMSCRIPTEN__
     emscripten_sleep(static_cast<unsigned int>(milliseconds));
+    last_page_yield = emscripten_get_now();
 #else
     std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
 #endif
@@ -1397,6 +1401,11 @@ Result<void> run(const Configuration& config) {
         if (!saved) std::cerr << "Window settings: " << saved.error().message << '\n';
     };
     while (true) {
+#ifdef __EMSCRIPTEN__
+        // Frames run back to back (a network room catching up) still let the browser run now and then: it shows the
+        // last picture, and takes keys and the network's messages.
+        if (emscripten_get_now() - last_page_yield > 50.0) wait_milliseconds(0);
+#endif
         const auto input = platform->poll();
         if (input.chosen_file) chosen_file = input.chosen_file;
         if (input.dropped_file && accept_replay_drop && !dropped_file) {
@@ -1446,6 +1455,7 @@ Result<void> run(const Configuration& config) {
             display_paced = true;
             if (!pacer.due(now)) {
                 openlf2_wait_display(100);
+                last_page_yield = emscripten_get_now();
                 continue;
             }
         } else {
@@ -1460,14 +1470,6 @@ Result<void> run(const Configuration& config) {
             continue;
         }
         const auto frame_started = std::chrono::steady_clock::now();
-        if (!waiting_network && !draining) {
-            const auto now_ms = milliseconds();
-            if (last_frame_time_ms && now_ms > *last_frame_time_ms) {
-                const double instant_fps = 1000.0 / static_cast<double>(now_ms - *last_frame_time_ms);
-                measured_fps = measured_fps <= 0.0 ? instant_fps : measured_fps * 0.9 + instant_fps * 0.1;
-            }
-            last_frame_time_ms = now_ms;
-        }
         // Held keys as "k" and comma-separated virtual-key codes, then " m" with the pointer
         // position and left button; scripts map them to players and screens.
         std::string held = "k";
@@ -1644,6 +1646,27 @@ Result<void> run(const Configuration& config) {
                 continue;
             }
             std::cout << "Requested screen: " << action << " (not implemented yet)\n";
+        }
+        if (!frame->shown) {
+            // A frame that ran with nothing new to show (a network room catching up, base/ui/flow): its sounds and
+            // music, the last picture stays.
+            auto music = platform->music(frame->music);
+            if (!music) return std::unexpected(music.error());
+            auto played = platform->play(frame->sounds);
+            if (!played) return std::unexpected(played.error());
+            auto rumbled = platform->rumble(frame->rumbles);
+            if (!rumbled) return std::unexpected(rumbled.error());
+            if (frame->fast) fast = *frame->fast;
+            continue;
+        }
+        // "Show FPS": the time between the pictures shown.
+        if (!draining) {
+            const auto now_ms = milliseconds();
+            if (last_frame_time_ms && now_ms > *last_frame_time_ms) {
+                const double instant_fps = 1000.0 / static_cast<double>(now_ms - *last_frame_time_ms);
+                measured_fps = measured_fps <= 0.0 ? instant_fps : measured_fps * 0.9 + instant_fps * 0.1;
+            }
+            last_frame_time_ms = now_ms;
         }
         // All settings, replay offers and window actions above happen while Lua
         // is idle. Resource reads during presentation use immutable archive data

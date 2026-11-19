@@ -861,6 +861,17 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   On made-up learning curves with the checks' luck (60 rounds, 0.5 to 4.5 points of luck a check): a run that has
   stopped rising stops at 21-30 rounds, one that rises fast at first at 29-37 within 0.1 point of 60 rounds' numbers,
   one still rising slowly at 36-55 within 0.3 to 1.3 points
+- INSANE! and XOI learn the fighters chosen on the selection screen while it is still on (package 102): a match with
+  those players began by learning every fighter's moves at once, 15 to 45 seconds for eight fighters in a browser,
+  the picture standing still and, in a network room, the others' frames piling up meanwhile. The learning runs in
+  pieces (one play in the copy each) in the time the selection's frames leave over (and in a room while it waits for
+  its next frame), 12 ms of a frame at most besides, and the match finds them learned (`smart.learn_ahead`). Between
+  two pieces the game runs as before: the copy's random numbers and a mod's AI script context are put back as the
+  game had them, and the match, or anything else that needs the moves, first finishes what was begun. What is learned
+  depends on the fighter's data alone, so it is the same learned ahead or not: eight fighters learned ahead in 0.3-0.5 ms
+  pieces with the game's random numbers drawn between them, and only partly then the match, played the same matches
+  frame for frame as the match learning them itself (NTSD 2.6 with LuaJIT and Lua 5.2, Sauce's pack with its AI
+  scripts, One Piece GrandWorld with its forms). Scripts get the `coroutine` library for it
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the
@@ -1212,6 +1223,21 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   only the usual MP came back. An item held is kept now: its holder's wpoint sets its frame every tick, and it works
   on in the hand as in the original - Pain (Deva) fills his MP, and Jirobo's absorbing (frame 10) works too. Every
   other mod plays as before (the bench's duels on nine mods the same)
+- A network room left a computer seconds behind for good (package 102, the project owner's report: "behind 4.8 s"
+  with many XOI players, on a weak computer as on a Xeon that plays alone without a hitch). Alone, a computer that
+  manages 27 frames a second instead of 30 plays a little slower, which nobody sees; in a room the frames keep their
+  beat, and what it lacks adds up, its own keys acting as late. Two causes: (1) every frame was drawn, and the picture
+  costs as much as the frame or more (in a browser without a graphics card far more), so a computer that fell behind
+  - a match beginning, its INSANE! players learning their fighters - could never catch up; (2) the room's pacing took
+  the frames that came while the computer was busy for late frames from the network, and set the pace that much later,
+  sinking back at 7.5 ms a second: the computer ran its frames on time by its own pace, seconds behind the others.
+  Now a frame that runs while the next one is due already is not drawn (a picture every 100 ms all the same, 500 ms
+  when a second behind and more; `"unshown"` frames, whose sounds still play unless far behind), in a match and on the
+  selection screen; a frame read with ten or more waiting before it, or a second past the pace, does not set the pace
+  (`room.lua`); the page lets the browser in every 50 ms however busy (it shows the last picture, takes keys and the
+  network's messages); "Show FPS" counts the pictures shown. Two pages of one computer in a room, two humans and six
+  XOI players on Wharf: behind 20 s as the match began and 43 s after 40 s before, 0.0-0.3 s from the fifth second
+  now; with the selection's learning ahead (above), the match begins in time
 
 ## [1.1.2] - 2026-10-26
 

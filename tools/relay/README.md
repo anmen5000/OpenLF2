@@ -96,7 +96,11 @@ computers). The room waits up to 30 minutes for the start.
 Nobody waits for anybody: the relay sends a frame every 33 1/3 ms with whatever input it has, so a
 player far from the relay (or on a slow connection) only sees his own keys take effect about his
 ping later. A player whose connection cannot keep up with the frames at all is let go, and the
-others play on.
+others play on. A computer too slow for a while (many INSANE! or XOI players on a weak computer) or
+busy for a moment runs the frames it is behind without drawing them, a picture every 100 ms all the
+same, until it is in time again: it shows fewer pictures rather than the game ever later (the corner's
+`behind`). INSANE!'s and XOI's players learn the fighters chosen on the selection screen there, in the
+time its frames leave over, so a match need not stop to learn them as it begins.
 
 Direct connections: the game pages also connect to the host's page directly (WebRTC data channels,
 set up through the relay, with public STUN servers to cross home routers) and time both ways. When

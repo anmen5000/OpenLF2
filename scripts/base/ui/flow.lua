@@ -19,6 +19,7 @@ local user_options = require("base/game/options")
 local touch_gamepad = require("base/ui/touch_gamepad")
 local quit_dialog = require("base/ui/quit_dialog")
 local flow = {}
+local learn_ahead -- (below)
 local function screen_module(name)
     if name == "characters" then return require("base/ui/character_select") end
     if name == "backgrounds" then return require("base/ui/background_preview") end
@@ -338,6 +339,22 @@ local function escape_free(state)
     if state.active == "launch" then return state.launch.page == "menu" end
     return true
 end
+-- The fighters chosen on the selection screen are learned there by INSANE!'s and XOI's players, in what time its
+-- frames leave (base/game/smart_ai learn_ahead): the match need not stop to learn them as it begins - 15 to 45
+-- seconds for eight fighters in a browser, the others' frames piling up meanwhile in a network room. At most
+-- `milliseconds`; while a room waits for its next frame, not past the time it is due (`waiting`); only where those
+-- levels can be chosen (base/game/unlock).
+learn_ahead = function(state, milliseconds, waiting)
+    if state.active ~= "characters" or not state.characters or not require("base/game/unlock").hard_levels() then return end
+    if waiting then
+        local next_late = network.next_late(state.session)
+        if next_late then milliseconds = math.min(milliseconds, -next_late - 3) end
+    end
+    if milliseconds < 1 then return end
+    local smart_ai = require("base/game/smart_ai")
+    smart_ai.learn_ahead(require("base/ui/character_select").chosen_fighters(state.characters))
+    smart_ai.learn_ahead_run(milliseconds)
+end
 -- raw: the host's input; screens get it per player slot, with the last known pointer position
 -- and `click`, a fresh press of the left button.
 function flow.update(state, raw, context)
@@ -411,6 +428,8 @@ function flow.update(state, raw, context)
     end
     local local_keys = input.keys
     local left_room = false
+    -- (How late a relay room's frame runs, ms: see the end.)
+    local late = 0
     if state.session then
         unlock.observe(input)
         if network.takes_unlock_bits(state.session) then input.unlock_bits = unlock.take_pending() end
@@ -422,8 +441,14 @@ function flow.update(state, raw, context)
             local combined, problem = network.exchange(state.session, input, hp)
             if problem then
                 disconnect(state, problem)
-            elseif not combined then return false
-            else input = combined end
+            elseif not combined then
+                -- (Waiting for the room's next frame: time to learn ahead in.)
+                learn_ahead(state, 8, true)
+                return false
+            else
+                input = combined
+                late = network.late(state.session)
+            end
         end
     end
     local joining_cli = state.network_cli and state.active == "network"
@@ -483,7 +508,16 @@ function flow.update(state, raw, context)
     if state.swallow_pointer and not state.quit_dialog then
         if input.button then input.button, input.click = false, false else state.swallow_pointer = nil end
     end
-    if not state.quit_dialog and not closed_now then route(state, input, context) end
+    if not state.quit_dialog and not closed_now then
+        -- A frame run far behind its time: its sounds would all come at once, and late.
+        local screen_context = context
+        if late > 250 then
+            screen_context = {}
+            for key, value in pairs(context) do screen_context[key] = value end
+            screen_context.sound, screen_context.rumble = function() end, function() end
+        end
+        route(state, input, screen_context)
+    end
     if joining_cli then
         if state.network.session.error then error(state.network.session.error) end
         -- CLI traces start at the title; the handshake consumes no trace frames.
@@ -508,5 +542,23 @@ function flow.update(state, raw, context)
     context.speed(state.session and network.paced(state.session) or speed.fast)
     -- Show FPS (OpenLF2 extension): measured FPS, nil for a trace unless given; drawn in flow.draw.
     state.fps = input.fps
+    -- (A frame's own 12 ms besides, while a room is not much behind: a computer with no time left over still gets
+    -- its fighters learned, the selection running a little behind and its pictures fewer, as in a match below.)
+    if late < 300 then learn_ahead(state, 12) end
+    -- A relay room's frames come at their beat whatever this computer manages: one that falls behind (too slow for a
+    -- while - many INSANE! players on a weak computer - or busy as a match began, learning its fighters) would see
+    -- the game later and later, its own keys acting as late. In a match and on the selection screen, while the next
+    -- frame is due already, this one is not drawn (the game's picture costs as much as its frame, or more), a picture
+    -- every 100 ms all the same (500 ms when a second behind and more, to catch up sooner): the computer keeps up and
+    -- shows fewer pictures. Nothing in the game depends on what is drawn.
+    if state.session and (state.active == "match" or state.active == "characters") then
+        local next_late = network.next_late(state.session)
+        local now = engine.network_time()
+        if next_late and next_late >= 0 and state.drawn_at and now - state.drawn_at < (late > 1000 and 500 or 100)
+           and now >= state.drawn_at then
+            return "unshown"
+        end
+        state.drawn_at = now
+    end
 end
 return flow

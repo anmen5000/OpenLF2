@@ -206,6 +206,9 @@ end
 -- Whether the session sets the pace itself (a relay room runs its frames as they come): the
 -- host then asks for a tick as often as it can, and the session waits until a frame is due.
 function network.paced(state) return state.relay == true end
+-- Relay rooms only: how late the frame just given runs and how late the next one is by now (ms; base/game/room).
+function network.late(state) return state.relay and room.late(state) or 0 end
+function network.next_late(state) return state.relay and room.next_late(state) or nil end
 -- Relay rooms only: who is in the room, and the host's Start.
 function network.lobby(state) return state.relay and room.lobby(state) or nil end
 function network.begin(state) return state.relay and room.begin(state) or false end
