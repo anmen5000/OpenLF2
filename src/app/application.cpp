@@ -16,6 +16,7 @@
 #include "openlf2/ports/platform.hpp"
 #include "openlf2/ports/scripts.hpp"
 #include "openlf2/resources/background_data.hpp"
+#include "openlf2/resources/data_file.hpp"
 #include "openlf2/resources/stage_data.hpp"
 #include "openlf2/resources/bitmap.hpp"
 #include "openlf2/resources/installer.hpp"
@@ -788,7 +789,7 @@ Result<ScriptValue> load_settings_document(const SettingsStore& settings) {
 // mod's settings for OpenLF2, "key = value" lines, # a note), `screen = WIDTHxHEIGHT` (also "WIDTH HEIGHT" or
 // "WIDTH,HEIGHT"), each side 320 to 4096; Naruto: The Setting Dawn 2.6 is 1330x730. The scripts read the same
 // setting (base/game/mod_settings.lua) and draw the matches on it; here it sizes the window and the web page's canvas.
-std::optional<WindowSize> mod_screen_size(const ResourceSource& archive) {
+std::optional<WindowSize> configured_screen_size(const ResourceSource& archive) {
     auto text = archive.read("openlf2.txt");
     if (!text) return std::nullopt;
     std::string_view rest(reinterpret_cast<const char*>(text->data()), text->size());
@@ -824,6 +825,70 @@ std::optional<WindowSize> mod_screen_size(const ResourceSource& archive) {
         if (width < 320 || width > 4096 || height < 320 || height > 4096) return std::nullopt;
         return WindowSize{width, height};
     }
+    return std::nullopt;
+}
+// A mod's own screen read off its stages, when its openlf2.txt gives none (a copy without the file: Naruto: The
+// Setting Dawn 2.6 as its team gives it out). The classic screen shows a stage's ground down to z = 550, below every
+// stage of the original (the deepest, Lion Forest, ends at 517); a mod whose program draws its matches on a larger
+// picture has its stages made for it (NTSD 2.6: every stage 1330 wide, its ground ending at z = 540 to 730). When
+// more than half of the stages in data.txt end below the classic screen, the screen is as wide as the narrowest of
+// those (no narrower than the classic one) and as deep as the deepest stage (NTSD 2.6: 1330x730); otherwise it is the
+// classic one. The scripts read the same off the same files (base/game/mod_settings.lua: stage_screen).
+std::optional<WindowSize> stage_screen_size(const ResourceSource& archive, WindowSize classic) {
+    auto text = read_data_text(archive, "data/data.txt", 4 * 1024 * 1024);
+    if (!text) return std::nullopt;
+    const std::string_view source(text->data(), text->size());
+    const auto open = source.find("<background>");
+    if (open == std::string_view::npos) return std::nullopt;
+    const auto close = source.find("<background_end>", open);
+    if (close == std::string_view::npos) return std::nullopt;
+    const auto section = source.substr(open + 12, close - open - 12);
+    const auto space = [](char character) { return std::isspace(static_cast<unsigned char>(character)) != 0; };
+    // The records as the scripts' catalog reads them: "id:", a number, a word ("file:"), the file (at most 100).
+    std::vector<std::string> paths;
+    for (std::size_t at = 0; at + 3 <= section.size() && paths.size() < 100;) {
+        if (section.substr(at, 3) != "id:") { ++at; continue; }
+        std::size_t next = at + 3;
+        while (next < section.size() && space(section[next])) ++next;
+        const auto digits = next;
+        while (next < section.size() && std::isdigit(static_cast<unsigned char>(section[next]))) ++next;
+        bool matched = next > digits;
+        for (int part = 0; matched && part < 2; ++part) {
+            const auto gap = next;
+            while (next < section.size() && space(section[next])) ++next;
+            const auto word = next;
+            while (next < section.size() && !space(section[next])) ++next;
+            matched = next > gap && gap < word && next > word;
+            if (matched && part == 1) {
+                std::string path(section.substr(word, next - word));
+                for (auto& character : path) {
+                    character = character == '\\' ? '/' : static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+                }
+                paths.push_back(std::move(path));
+            }
+        }
+        at = matched ? next : at + 1;
+    }
+    int stages = 0;
+    int deep = 0;
+    int width = 0;
+    int depth = 0;
+    for (const auto& path : paths) {
+        const auto background = background_data::load(archive, path);
+        if (!background || !background->width || !background->zboundary[1]) continue;
+        ++stages;
+        depth = std::max(depth, *background->zboundary[1]);
+        if (*background->zboundary[1] <= classic.height) continue;
+        ++deep;
+        width = deep == 1 ? *background->width : std::min(width, *background->width);
+    }
+    if (deep * 2 <= stages) return std::nullopt;
+    return WindowSize{std::clamp(width, classic.width, 4096), std::min(depth, 4096)};
+}
+// The mod's own screen: its openlf2.txt's, else read off its stages; none for a mod on the classic screen.
+std::optional<std::pair<WindowSize, bool>> mod_screen_size(const ResourceSource& archive, WindowSize classic) {
+    if (const auto configured = configured_screen_size(archive)) return std::pair{*configured, true};
+    if (const auto staged = stage_screen_size(archive, classic)) return std::pair{*staged, false};
     return std::nullopt;
 }
 Result<std::optional<WindowPlacement>> load_window_placement(const SettingsStore& settings) {
@@ -1031,7 +1096,7 @@ Result<void> run(const Configuration& config) {
     }
 #endif
     // A game pack is opened before the window: the mod may draw its matches on a screen of its own (openlf2.txt,
-    // screen = 1330x730 for Naruto: The Setting Dawn 2.6), which the window opens with.
+    // screen = 1330x730 for Naruto: The Setting Dawn 2.6, else its stages' size), which the window opens with.
     std::error_code folder_error;
     if (config.pack && std::filesystem::is_directory(*config.pack, folder_error)) {
         // A game folder: the mod's own folder (--pack DIR, or the one the program lies in).
@@ -1051,8 +1116,13 @@ Result<void> run(const Configuration& config) {
         pack_executable = (*opened)->executable_name();
         archive = std::move(*opened);
     }
-    const auto mod_screen = archive ? mod_screen_size(*archive) : std::nullopt;
-    if (mod_screen) std::cout << "Mod screen: " << mod_screen->width << 'x' << mod_screen->height << '\n';
+    // (Measured against LF2's 794x550, as the scripts measure it: constants.screen.)
+    const auto screen_found = archive ? mod_screen_size(*archive, WindowSize{794, 550}) : std::nullopt;
+    const auto mod_screen = screen_found ? std::optional{screen_found->first} : std::nullopt;
+    if (mod_screen) {
+        std::cout << "Mod screen: " << mod_screen->width << 'x' << mod_screen->height
+                  << (screen_found->second ? "\n" : " (its stages' size)\n");
+    }
 #ifdef __EMSCRIPTEN__
     // The page shapes its canvas to the match's picture.
     openlf2_screen(mod_screen ? mod_screen->width : scripts->window.width, mod_screen ? mod_screen->height : scripts->window.height);

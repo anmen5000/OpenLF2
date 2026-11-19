@@ -62,6 +62,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    mods (dragged on or PACK: that one; else the mods beside it, as hoc-sau.bat picks them), with hoc-sau.bat's settings.
    A hoc-sau folder of an earlier run is renamed hoc-sau-truoc (hoc-sau-truoc-2...) so that the new brain starts from
    scratch; a brain run left half way goes on when spsa.bat or hoc-sau.bat is run again.
+   Early stop (package 100): after every round the numbers being tuned play the starting ones for PHUT_KIEM_VONG minutes
+   (a fifth of PHUT_VONG when empty, on the same pairs every time; a line "Kiem tra sau vong N" in ket-qua.txt). When
+   the mean of the last DUNG_SOM checks (10) is not above that of the DUNG_SOM before by 0.25 points, even granted
+   one standard error of luck, the numbers have hit their ceiling: the remaining rounds are skipped, the check and the
+   packing are done as after the last round, and hoc-sau.bat follows with TIEP_HOC_SAU=1 (a DUNG SOM line in
+   ket-qua.txt). Only when VONG is at least 2 x DUNG_SOM + 1, so the default 12 rounds lose no time. DUNG_SOM=0: no
+   early stop; to tune on after one, delete spsa\dung-som.txt and run spsa.bat again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to hoc-sau.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small
@@ -297,6 +304,13 @@ chơi được chính các file của bản mod.
    mod cạnh nó, như hoc-sau.bat tự chọn), với cài đặt của hoc-sau.bat. Thư mục hoc-sau của một lần chạy trước được đổi
    tên thành hoc-sau-truoc (hoc-sau-truoc-2...) để bộ não mới học từ đầu; hoc-sau đang dở thì chạy lại spsa.bat hay
    hoc-sau.bat là nó làm tiếp.
+   Dừng sớm (gói 100): sau mỗi vòng, bộ số đang chỉnh đấu với bộ số lúc bắt đầu trong PHUT_KIEM_VONG phút (để trống:
+   một phần năm PHUT_VONG; lần nào cũng các cặp trận ấy; dòng "Kiem tra sau vong N" trong ket-qua.txt). Trung bình
+   DUNG_SOM lần kiểm tra gần nhất (10) không cao hơn DUNG_SOM lần trước đó 0,25 điểm, kể cả khi tính thêm một lần sai
+   số do hên xui, thì bộ số đã chạm trần: bỏ các vòng còn lại, kiểm tra và gói số như khi hết vòng cuối, rồi tới
+   hoc-sau.bat nếu TIEP_HOC_SAU=1 (dòng DUNG SOM trong ket-qua.txt). Chỉ xét khi VONG từ 2 x DUNG_SOM + 1 trở lên, nên
+   12 vòng mặc định không tốn thêm giờ. DUNG_SOM=0: không dừng sớm; muốn chỉnh tiếp sau khi đã dừng sớm thì xóa
+   spsa\dung-som.txt rồi chạy lại spsa.bat.
 5b. Bộ não XOI (gói 67): đặt một hay nhiều file .zip bản mod cạnh hoc-sau.bat rồi nháy đúp. XOI ghi lại mọi lần
    ra đòn trong hàng nghìn trận (đánh với script AI riêng của bản mod nếu có, AI của Sauce, không thì với chính
    nó) cùng kết quả: máu gây được trừ máu mất trong 1,5 giây sau; rồi một mạng nơ-ron nhỏ được huấn luyện trên

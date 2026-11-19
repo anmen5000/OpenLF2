@@ -11,6 +11,8 @@ rem the processes are merged, the next round starts from there. After the last r
 rem original ones as a check. Result: spsa\results.txt (send this file to whoever maintains the AI). Each mod's numbers:
 rem xoi-<mod>\tune.txt, and <mod>-xoi.zip = the mod with those numbers (and XOI's notes, if trained) - uploaded to the
 rem relay, XOI plays that mod with its own numbers (package 38 on; from package 43 INSANE! does not use them). One mod only: the next run goes on from its numbers.
+rem Early stop (package 100): when the numbers have hit their ceiling - the small check after each round rises no more -
+rem the remaining rounds are skipped, the check and the packing are done, then the brain if THEN_BRAIN=1 (see EARLY_STOP).
 rem To pause: close this window - its games stop with it (package 73 on) - or set RUN_HOURS, or shut the PC down. To go
 rem on: run this file again - the
 rem finished rounds are kept, and so is what the round under way had played (but the last few pairs). To start over:
@@ -59,6 +61,16 @@ rem brain.bat's and brain-settings.bat's. The brain folder of an earlier run is 
 rem brain-previous-2...) so that the new brain learns from the start; a brain run left half way (its window closed) goes
 rem on when this file or brain.bat is run again. Empty or 0: it does not run.
 set "THEN_BRAIN="
+rem Early stop (EARLY_STOP, package 100): after every round the numbers being tuned play the starting numbers for
+rem ROUND_CHECK_MINUTES (a small check, on the same pairs every time). When the mean win share of the last EARLY_STOP
+rem rounds is not above that of the EARLY_STOP rounds before by at least 0.25 points - luck included - the numbers have
+rem hit their ceiling: the remaining rounds are skipped, the check and the packing are done as after the last round, and
+rem then the brain if THEN_BRAIN=1. Only when ROUNDS is at least 2 x EARLY_STOP + 1 (with fewer rounds there is no check
+rem after each round, no time lost). 0 = no early stop. To tune on after an early stop: delete spsa\early-stop.txt (or set
+rem EARLY_STOP=0) and run this file again.
+set "EARLY_STOP=10"
+rem Minutes of the small check after each round (empty: a fifth of ROUND_MINUTES, at least 1 minute - about 20%% more time)
+set "ROUND_CHECK_MINUTES="
 rem The tools\ai-bench and scripts folders of package 32 or later (left empty, they are looked for next to this .bat file)
 set "BENCH="
 set "SCRIPTS="
@@ -158,15 +170,39 @@ if defined TEST_SECONDS set /a GIAY_VONG=TEST_SECONDS, GIAY_KT=TEST_SECONDS
 if %GIAY_VONG% LSS 10 set /a GIAY_VONG=10
 set /a K_NOM=GIAY_VONG/2, TONG=ROUNDS*(GIAY_VONG/2)
 if not defined PRIORITY set "PRIORITY=NORMAL"
+rem Early stop: a small check after each round when an early stop can happen (EARLY_STOP above 0, ROUNDS at least
+rem 2 x EARLY_STOP + 1), GIAY_KV seconds.
+if not defined EARLY_STOP set "EARLY_STOP=0"
+set /a EARLY_STOP=EARLY_STOP
+set /a CAN_VONG=2*EARLY_STOP+1
+set "KIEM_VONG="
+if %EARLY_STOP% GTR 0 if %ROUNDS% GEQ %CAN_VONG% set "KIEM_VONG=1"
+if not defined ROUND_CHECK_MINUTES set /a ROUND_CHECK_MINUTES=ROUND_MINUTES/5
+set /a GIAY_KV=ROUND_CHECK_MINUTES*60
+if %GIAY_KV% LSS 60 set /a GIAY_KV=60
+if defined TEST_SECONDS set /a GIAY_KV=TEST_SECONDS
 
 if not exist "%LV%" mkdir "%LV%"
+rem The last round of this run: ROUNDS, or the round of an early stop in an earlier run (spsa\early-stop.txt, its first
+rem line that round) while EARLY_STOP is on - then only the check and the packing, no more tuning. (EARLY_STOP=0: tuning
+rem goes on past that round - the old early-stop mark goes, so that a later run does not go back to that round.)
+set "VONG_CUOI=%ROUNDS%"
+if %EARLY_STOP% LEQ 0 if exist "%LV%\early-stop.txt" del /q "%LV%\early-stop.txt" 2>nul
+set "DS_E="
+if %EARLY_STOP% GTR 0 if exist "%LV%\early-stop.txt" set /p DS_E=<"%LV%\early-stop.txt"
+if defined DS_E set /a DS_E=DS_E
+if defined DS_E if not exist "%LV%\round-%DS_E%\start-after.lua" set "DS_E="
+if defined DS_E (
+  set "VONG_CUOI=%DS_E%"
+  echo Stopped early at round %DS_E% ^(an earlier run: the numbers had hit their ceiling^). To tune on: delete "%LV%\early-stop.txt" and run this again.
+)
 rem Going on from a finished run (package 75 on): the run before was checked or packed, and ROUNDS is now more than the
 rem rounds played. The added rounds use this kit's scripts (the new AI - a run under way keeps its own to its end), and
 rem the run ends with a new check and new packages: the old copy of the scripts, the old check and the "packed" mark go.
 set "DA_XONG="
 if exist "%LV%\check\totals.txt" set "DA_XONG=1"
 if exist "%LV%\packed.txt" set "DA_XONG=1"
-if defined DA_XONG if not exist "%LV%\round-%ROUNDS%\start-after.lua" (
+if defined DA_XONG if not exist "%LV%\round-%VONG_CUOI%\start-after.lua" (
   echo The run before is finished, ROUNDS=%ROUNDS% is more than the rounds played: going on with this kit's scripts.
   if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
   if exist "%LV%\check" rmdir /s /q "%LV%\check"
@@ -217,6 +253,7 @@ rem (THU_GIOI_HAN: seconds, for trying this file.)
 if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
 if !GIOI_HAN! GTR 0 echo Timer: running %RUN_HOURS% hours, then pausing ^(RUN_HOURS^).
 if "%THEN_BRAIN%"=="1" echo Then the brain: brain.bat runs by itself once the tuning is done ^(THEN_BRAIN=1^).
+if defined KIEM_VONG echo Early stop: a check of %GIAY_KV% seconds after every round; when the last %EARLY_STOP% rounds are not above the %EARLY_STOP% before, the tuning stops ^(EARLY_STOP^).
 call :giay CHAY_LUC
 rem Window watch: a hidden PowerShell waits for this window to close - also by its X in the middle of a round - and then
 rem stops every game of this spsa folder (the game of packages 69-72 does not stop with its cmd window when its output
@@ -232,16 +269,21 @@ set XS_DA_CHON=%XS%
 set "TRUOC=%LV%\start.lua"
 rem K_DAU: the number of pairs every chain had played before this round (for the step size), from the previous round's after.txt.
 set /a E=1, K_DAU=0
+set "DUNG_LAI="
 :vong_tiep
-if %E% GTR %ROUNDS% goto kiem
+if %E% GTR %VONG_CUOI% goto kiem
 set "D=%LV%\round-%E%"
 rem A merged round: its numbers in start-after.lua (the --SPSA_START line). A broken file - the PC cut off while it was
 rem being written, Windows leaves a file of zeros - is dropped, and the round merged again from the processes that
-rem played it (not played again).
+rem played it (not played again). The small check after that round (early stop) left unfinished - the window closed
+rem half way - is made again, when the next round has not begun.
 if exist "%D%\start-after.lua" (
   findstr /c:"--SPSA_START" "%D%\start-after.lua" >nul 2>nul && (
     set "TRUOC=%D%\start-after.lua"
     call :doc_k "%D%"
+    call :sau_vong cu
+    if defined HET_GIO goto het_gio
+    if defined DUNG_LAI goto kiem
     set /a E+=1
     goto vong_tiep
   )
@@ -258,6 +300,9 @@ if defined HET_GIO goto het_gio
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-after.lua"
 call :doc_k "%D%"
+call :sau_vong
+if defined HET_GIO goto het_gio
+if defined DUNG_LAI goto kiem
 set /a E+=1
 goto vong_tiep
 
@@ -363,7 +408,7 @@ set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=ROUNDS-E, CON=CON_V
   echo.
   echo Settings: ROUNDS=%ROUNDS% ROUND_MINUTES=%ROUND_MINUTES% PARALLEL=%N% CHECK_MINUTES=%CHECK_MINUTES% FIRST_SEED=%FIRST_SEED% OPPONENT=%OPPONENT%; mods:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
-  findstr /c:"Round " /c:"process" "%LV%\timing.txt"
+  findstr /c:"Round " /c:"process" /c:"Check after round" "%LV%\timing.txt"
 ) >"%LV%\results.txt"
 echo Round %E% finished at %TIME%: !CO! chains, !CAP_V! pairs, took !PHUT_V! minutes; !CON_V! rounds left, about !CON_G! hours !CON_P! minutes ^(the check not counted^).
 echo Current numbers: "%LV%\results.txt"
@@ -513,6 +558,76 @@ if exist "%HS%\" (
   exit /b 1
 )
 echo The brain folder of an earlier run is renamed !TEN_CU!: the new brain learns from the start on the numbers just tuned.
+exit /b 0
+
+rem --- Early stop (package 100), after round %E% (folder %D%): the small check (the round's round-check.txt), then whether
+rem to stop - not after the last round (the check and the packing come right after it), nor once an earlier run stopped
+rem early (DS_E). %1 = cu: a round finished in an earlier run - only when the next round has not begun (the rounds of a
+rem run begun before package 100, or while EARLY_STOP was off, are not checked again). ---
+:sau_vong
+if not defined KIEM_VONG exit /b 0
+if defined DS_E exit /b 0
+if %E% GEQ %ROUNDS% exit /b 0
+set /a E1=E+1
+if /i "%~1"=="cu" if exist "%LV%\round-%E1%\" exit /b 0
+if not exist "%D%\round-check.txt" call :kiem_vong
+if defined HET_GIO exit /b 0
+if not exist "%D%\round-check.txt" exit /b 0
+call :xet_dung_som
+exit /b 0
+
+rem --- The small check after round %E%: the round's numbers (start-after.lua) against the starting numbers (start.lua) -
+rem against the opponent, if any - for GIAY_KV seconds, every process with the same seed every time (the same pairs, so
+rem that the checks compare). Result: the round's round-check.txt = the games won, lost and drawn by the numbers being
+rem tuned. ---
+:kiem_vong
+echo   Small check after round %E%: %N% processes for %GIAY_KV% seconds ^(early stop^)...
+set "KV=%D%\check"
+if exist "%KV%" rmdir /s /q "%KV%"
+mkdir "%KV%"
+call :chuan_bi "%KV%" "%D%\start-after.lua"
+set /a PI=0
+for /L %%k in (1,1,%N%) do (
+  set /a PI+=1
+  if !PI! GTR %NP% set /a PI=1
+  set /a SEED=FIRST_SEED+600000+%%k
+  copy /y "%LV%\start.lua" "%KV%\p%%k\spsa_base.lua" >nul
+  >>"%KV%\p%%k\package.manifest" echo module=spsa_base^|spsa_base.lua
+  >"%KV%\p%%k\config.lua" echo return {command = "spsa", step = "check", !DT_CFG!tuned_only = true, start = "spsa_start", base = "spsa_base", games = 1000000, seconds = %GIAY_KV%, seed = !SEED!, limit = 9000}
+  start "SPSA check after round %E% - %%k" /MIN /%PRIORITY% cmd /c call "%SELF%" chay1 round-%E%\check %%k !SEED! !PI!
+)
+call :cho "%KV%" "SPSA_CHECK "
+if defined HET_GIO exit /b 0
+set /a VW=0, VL=0, VD=0, VCO=0
+for /L %%k in (1,1,%N%) do (
+  if exist "%KV%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK " "%KV%\p%%k\out.txt"') do set /a VW+=%%a, VL+=%%b, VD+=%%c, VCO+=1
+)
+if !VCO! EQU 0 (
+  echo   [NOTE] The check after round %E% gave no result - see "%KV%\p1\out.txt"; this round does not count for the early stop.
+  exit /b 0
+)
+>"%D%\round-check.txt" echo !VW! !VL! !VD!
+set /a VT=VW+VL, VP=0
+if !VT! GTR 0 set /a VP=VW*1000/VT
+set /a VP1=VP/10, VP2=VP%%10
+>>"%LV%\timing.txt" echo   Check after round %E%: the numbers being tuned won !VP1!.!VP2!%% ^(won !VW!, lost !VL!, drawn !VD!^)
+>>"%LV%\results.txt" echo   Check after round %E%: the numbers being tuned won !VP1!.!VP2!%% ^(won !VW!, lost !VL!, drawn !VD!^)
+echo   Check after round %E%: the numbers being tuned won !VP1!.!VP2!%% of the games someone won ^(won !VW!, lost !VL!, drawn !VD!^)
+rmdir /s /q "%KV%" 2>nul
+exit /b 0
+
+rem --- Whether to stop early: from the round-check.txt files of the rounds up to round %E%, the win share of each check
+rem (percent of the games someone won). A = the mean of the last EARLY_STOP checks, B = the mean of the EARLY_STOP before,
+rem h = one standard error (luck) of A - B. A - B + h under 0.25 points (even granting it the luck, it rises 0.25 points
+rem no more): stop - DUNG_LAI, VONG_CUOI = this round, early-stop.txt, an EARLY STOP line in timing.txt and results.txt. ---
+:xet_dung_som
+set "XET_E=%E%"
+powershell -NoProfile -Command "$inv=[Globalization.CultureInfo]::InvariantCulture; $w=[int]$env:EARLY_STOP; $e=[int]$env:XET_E; $r=@(); foreach ($d in @(Get-ChildItem -LiteralPath $env:LV -Directory -Filter 'round-*')) { if ($d.Name -match '^round-([0-9]+)$') { $n=[int]$Matches[1]; $f=Join-Path $d.FullName 'round-check.txt'; if (($n -le $e) -and (Test-Path -LiteralPath $f)) { $t=@(([string](Get-Content -LiteralPath $f -TotalCount 1)).Trim() -split '\s+'); if ($t.Count -ge 2) { $a=[double]$t[0]; $b=[double]$t[1]; if ($a + $b -gt 0) { $p=100 * $a / ($a + $b); $r += [pscustomobject]@{n=$n; p=$p; v=$p * (100 - $p) / ($a + $b)} } } } } }; $r=@($r | Sort-Object n); $c=$r.Count; if ($c -lt 2 * $w) { Write-Host ('  (Early stop: ' + (2 * $w) + ' checks after rounds needed to compare, ' + $c + ' so far)'); exit 0 }; $A=@($r[($c - $w)..($c - 1)]); $B=@($r[($c - 2 * $w)..($c - $w - 1)]); $ma=($A | Measure-Object -Property p -Average).Average; $mb=($B | Measure-Object -Property p -Average).Average; $h=[math]::Sqrt((@($A + $B) | Measure-Object -Property v -Sum).Sum) / $w; $txt='the last ' + $w + ' rounds ' + $ma.ToString('0.0', $inv) + '%%, the ' + $w + ' rounds before ' + $mb.ToString('0.0', $inv) + '%% (luck +-' + $h.ToString('0.0', $inv) + ' points)'; if (($ma - $mb + $h) -lt 0.25) { $msg='EARLY STOP at round ' + $e + ': the numbers have hit their ceiling - the checks won ' + $txt + ': no longer rising by 0.25 points or more, the remaining rounds are skipped'; Add-Content -LiteralPath (Join-Path $env:LV 'timing.txt') -Value $msg; Add-Content -LiteralPath (Join-Path $env:LV 'results.txt') -Value $msg; Write-Host ('  ' + $msg); exit 2 }; Write-Host ('  (Early stop: ' + $txt + ' - still rising)'); exit 0"
+if errorlevel 2 (
+  set "DUNG_LAI=1"
+  set "VONG_CUOI=%E%"
+  >"%LV%\early-stop.txt" echo %E%
+)
 exit /b 0
 
 rem --- Appends to file %2 the last line of a chain in file %1: its end line, or (process stopped midway) its last

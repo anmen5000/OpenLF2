@@ -180,7 +180,9 @@ as with `--pack` when neither `--pack` nor `--installer` is given. A pack may ca
 `data` folder, `key = value` lines: `hidden_characters = locked` (no unlocking the hidden fighters, LF2.NET
 included), `options = hidden` (no options entry on the title screen) and `screen = 1330x730` (the picture the
 mod's own program draws its matches on, when it is not LF2's 794x550: the matches are drawn on it, the window
-opens with it; Naruto: The Setting Dawn 2.6). A mod whose program keeps LF2's pictures in files instead
+opens with it; Naruto: The Setting Dawn 2.6). Without that line, a mod most of whose stages reach below LF2's
+screen (`zboundary` past 550) plays on the screen its stages are made for: as wide as the narrowest of them, as
+deep as the deepest (Naruto: The Setting Dawn 2.6: 1330x730). A mod whose program keeps LF2's pictures in files instead
 (`UI/`, `sprite/ui/`) has them read from there, before the program's.
 
 ### Flatpak

@@ -214,7 +214,9 @@ function background.paint_lee_on_road(context, camera_x, bounds)
     rgb(context, left, 345, width, 156, 0x575757)
     rgb(context, left, 471, width, 30, 0x3f3f3f)
     rgb(context, left, 328, width, 2, 0x373737)
-    local first, last = cmod(900 - camera_x, 70), 792
+    -- The railing's posts across the picture: to 792 on the classic screen, as the original draws them; across a
+    -- mod's wider screen too (Naruto: The Setting Dawn 2.6's 1330).
+    local first, last = cmod(900 - camera_x, 70), view.width - 2
     if bounds then
         first = first + math.floor((bounds.left - first) / 70) * 70
         last = bounds.right

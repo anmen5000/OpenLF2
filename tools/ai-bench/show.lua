@@ -147,7 +147,8 @@ function show.draw(state, context)
     local text = string.format("%s  %d - %d  %s%s   game %d/%d%s", state.labels[1], state.wins[1], state.wins[2], state.labels[2],
         state.draws > 0 and ("  (draws " .. state.draws .. ")") or "", math.min(state.played + 1, state.config.games or 1), state.config.games or 1,
         state.finished and "  done" or "")
-    font.gdi(context, text, 3, 0x213, 0xffff00)
+    -- At the bottom of the match's picture (a mod's own screen too, constants.view), as the mode line.
+    font.gdi(context, text, 3, 0x213 + constants.view.height - constants.screen.height, 0xffff00)
 end
 
 function show.describe(state)

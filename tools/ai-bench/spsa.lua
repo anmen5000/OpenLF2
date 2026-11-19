@@ -36,6 +36,9 @@
 --   games      (check) game pairs to play (at most, with seconds)
 --   base       (check) module of this package with the numbers to check against (name = value; the run's start,
 --              say); XOI's own when absent
+--   tuned_only (check, against a fixed opponent) the tuned numbers alone play it, not the base after them: the small
+--              check spsa.bat makes after every round for its early stop, where the base would play the same games
+--              every time
 --   opponent   a brain both nudged sets play instead of each other: "classic" (the original computer player — a
 --              mod's own AI scripts, Sauce's lf2-AI, where it has them) or "smart@<module>" (a fixed version of the
 --              AI, its numbers untouched). An iteration is then two game pairs, one for each nudge, and the numbers
@@ -374,6 +377,7 @@ local function check(config)
         if config.self_instead then engine.log(string.format("SPSA_CHECK_BASE %d %d %d %.3f", losses, wins, draws, -sum)) end
     else
         run("SPSA_CHECK", config.seed or 1)
+        if config.tuned_only then return end
         smart.set_tune(base)
         run("SPSA_CHECK_BASE", config.seed or 1)
     end

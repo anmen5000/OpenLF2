@@ -65,6 +65,13 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    mods (dragged on or PACK: that one; else the mods beside it, as brain.bat picks them), with brain.bat's settings.
    A brain folder of an earlier run is renamed brain-previous (brain-previous-2...) so that the new brain starts from
    scratch; a brain run left half way goes on when spsa.bat or brain.bat is run again.
+   Early stop (package 100): after every round the numbers being tuned play the starting ones for ROUND_CHECK_MINUTES
+   minutes (a fifth of ROUND_MINUTES when empty, on the same pairs every time; a line "Check after round N" in
+   results.txt). When the mean of the last EARLY_STOP checks (10) is not above that of the EARLY_STOP before by 0.25
+   points, even granted one standard error of luck, the numbers have hit their ceiling: the remaining rounds are
+   skipped, the check and the packing are done as after the last round, and brain.bat follows with THEN_BRAIN=1 (an
+   EARLY STOP line in results.txt). Only when ROUNDS is at least 2 x EARLY_STOP + 1, so the default 12 rounds lose no
+   time. EARLY_STOP=0: no early stop; to tune on after one, delete spsa\early-stop.txt and run spsa.bat again.
 5b. XOI's brain (package 67): put one or more mods' .zip next to brain.bat and double-click it. XOI records
    every move it starts over thousands of games (against the mod's own AI scripts where it has them, Sauce's AI,
    else against itself) with what came of it, HP dealt minus HP taken over the next 1.5 seconds; then a small

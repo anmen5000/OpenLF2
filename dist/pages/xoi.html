@@ -813,6 +813,14 @@
           settings. A <code>hoc-sau</code> folder of an earlier run is renamed <code>hoc-sau-truoc</code> (<code>-2</code>,
           <code>-3</code>…) so that the new brain starts from scratch; a brain run left half way goes on when either file is run
           again.</li>
+        <li><b>Early stop</b> (package 100): <code>DUNG_SOM=10</code> (<code>EARLY_STOP</code> in the English kit) — after every
+          round the numbers being tuned play the starting ones for <code>PHUT_KIEM_VONG</code> minutes (a fifth of
+          <code>PHUT_VONG</code> when empty, the same pairs every time; a line "Kiem tra sau vong N" in <code>ket-qua.txt</code>).
+          When the mean of the last 10 checks is not above that of the 10 before by 0.25 points, even granted one standard
+          error of luck, the numbers have hit their ceiling: the remaining rounds are skipped, then the check, the packing
+          and, with <code>TIEP_HOC_SAU=1</code>, <code>hoc-sau.bat</code>. Only when <code>VONG</code> is at least 21 (2 × 10 + 1):
+          the default 12 rounds lose no time. <code>DUNG_SOM=0</code>: no early stop; to tune on after one, delete
+          <code>spsa\dung-som.txt</code>.</li>
       </ul>
       <ul class="plain vi">
         <li><code>VONG</code> số vòng (12), <code>PHUT_VONG</code> số phút mỗi vòng (5), <code>SONG_SONG</code> số tiến trình (mọi
@@ -843,6 +851,13 @@
           chỉnh: cùng các bản mod, với cài đặt của chính <code>hoc-sau.bat</code>. Thư mục <code>hoc-sau</code> của một lần chạy
           trước được đổi tên thành <code>hoc-sau-truoc</code> (<code>-2</code>, <code>-3</code>…) để bộ não mới học từ đầu;
           <code>hoc-sau</code> đang dở thì chạy lại file nào cũng làm tiếp.</li>
+        <li><b>Dừng sớm</b> (gói 100): <code>DUNG_SOM=10</code> (bộ tiếng Anh: <code>EARLY_STOP</code>) — sau mỗi vòng, bộ số
+          đang chỉnh đấu với bộ số lúc bắt đầu trong <code>PHUT_KIEM_VONG</code> phút (để trống: một phần năm
+          <code>PHUT_VONG</code>; lần nào cũng các cặp trận ấy; dòng "Kiem tra sau vong N" trong <code>ket-qua.txt</code>).
+          Trung bình 10 lần kiểm tra gần nhất không cao hơn 10 lần trước đó 0,25 điểm, kể cả khi tính thêm một lần sai số do
+          hên xui, thì bộ số đã chạm trần: bỏ các vòng còn lại, rồi kiểm tra, gói số và, nếu <code>TIEP_HOC_SAU=1</code>, chạy
+          <code>hoc-sau.bat</code>. Chỉ xét khi <code>VONG</code> từ 21 (2 × 10 + 1) trở lên: 12 vòng mặc định không tốn thêm giờ.
+          <code>DUNG_SOM=0</code>: không dừng sớm; muốn chỉnh tiếp sau khi đã dừng sớm thì xóa <code>spsa\dung-som.txt</code>.</li>
       </ul>
     </section>
 
@@ -968,6 +983,13 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>SPSA stops early, NTSD 2.6's wide maps whole</b> (package 100). <code>spsa.bat</code> checks the numbers after
+          every round (a fifth of the round's minutes): when the last <code>DUNG_SOM</code> checks (10) are not above the 10
+          before by 0.25 points, luck included, the numbers have hit their ceiling - the remaining rounds are skipped, the
+          check and the packing are done, and <code>hoc-sau.bat</code> follows with <code>TIEP_HOC_SAU=1</code>. Only for runs of
+          21 rounds or more. Naruto: The Setting Dawn 2.6 without an <code>openlf2.txt</code> played on LF2's 794x550: Wharf lost
+          the lower part of its ground, Akatsuki Cave most of it. The game now reads a mod's screen off its stages (1330x730
+          here); other mods keep LF2's.</li>
         <li><b>Naruto: The Setting Dawn's transformations</b> (package 99). In the mod's source release, Sasori's D^J left
           him in his broken puppet, Kisame's D^J raised two Shinos instead of his water clones (and so for Naruto's fox,
           Sasuke's curse seal, Deidara, Hidan and Kakuzu): its <code>NTSD.exe</code> was changed with its team's code tool,
@@ -1145,6 +1167,12 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>SPSA dừng sớm, map rộng của NTSD 2.6 hiện đủ</b> (gói 100). <code>spsa.bat</code> kiểm tra bộ số sau mỗi vòng
+          (một phần năm số phút của vòng): <code>DUNG_SOM</code> lần kiểm tra gần nhất (10) không cao hơn 10 lần trước đó 0,25
+          điểm, kể cả phần hên xui, thì bộ số đã chạm trần - bỏ các vòng còn lại, kiểm tra và gói số, rồi tới
+          <code>hoc-sau.bat</code> nếu <code>TIEP_HOC_SAU=1</code>. Chỉ khi chạy từ 21 vòng trở lên. Naruto: The Setting Dawn 2.6 không
+          có <code>openlf2.txt</code> thì chơi trên màn 794x550 của LF2: Wharf mất phần dưới của sân, Akatsuki Cave mất phần lớn.
+          Nay game đọc màn hình của bản mod từ các sân của nó (ở đây 1330x730); các bản mod khác giữ màn của LF2.</li>
         <li><b>Các chiêu biến hình của Naruto: The Setting Dawn</b> (gói 99). Ở bản mã nguồn công khai của bản mod này,
           D^J của Sasori để Sasori nằm lại trong con rối vỡ, D^J của Kisame gọi ra hai Shino thay vì hai phân thân nước
           (Naruto hóa cáo, Sasuke ấn chú, Deidara, Hidan, Kakuzu cũng vậy): <code>NTSD.exe</code> của bản mod đã được team

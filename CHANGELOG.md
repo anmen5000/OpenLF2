@@ -849,6 +849,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   takes the next fighter at once. On made-up learning curves with the checks' measured luck, `VONG` 1500 and
   `DUNG_SOM` 400: a fighter that stops getting better early stops at 750-950 rounds, one that never beats XOI at about
   700, the network chosen within 0.6 point of the one 1500 rounds give (1.3 for one still gaining slowly at 1000).
+- SPSA stops early (package 100), and the brain follows: after every round `spsa.bat` plays the numbers being tuned
+  against the starting ones for `PHUT_KIEM_VONG` minutes (a fifth of `PHUT_VONG` when empty; the same pairs every
+  time, the same seeds; with an opponent, the tuned numbers alone against it: `tuned_only` in the bench's check), a
+  line "Kiem tra sau vong N" in `ket-qua.txt`. When the mean win share of the last `DUNG_SOM` checks (10) is not above
+  that of the `DUNG_SOM` before by 0.25 points, even granted one standard error of luck, the numbers have hit their
+  ceiling: the remaining rounds are skipped, the check and the packing are done as after the last round, and
+  `hoc-sau.bat` follows with `TIEP_HOC_SAU=1` (a DUNG SOM line in `ket-qua.txt`, `dung-som.txt` so that a run again only
+  checks and packs; `DUNG_SOM=0`, or deleting `dung-som.txt`, tunes on). Only when `VONG` is at least `2 x DUNG_SOM + 1`,
+  so the default 12 rounds lose no time; a check left half way is made again, a run begun before stays unchecked.
+  On made-up learning curves with the checks' luck (60 rounds, 0.5 to 4.5 points of luck a check): a run that has
+  stopped rising stops at 21-30 rounds, one that rises fast at first at 29-37 within 0.1 point of 60 rounds' numbers,
+  one still rising slowly at 36-55 within 0.3 to 1.3 points
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the
@@ -1183,6 +1195,16 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   tests the freezing effects, itr effect 5000-5999 takes effect - 5000 MP from the object hit (Kisame's sword, Shino's
   bugs, Neji) and 6000-6999 puts it in frame effect - 6000 (`combat`). Only a program with those routines plays so:
   any other mod, LF2 and the 2.0a program of Naruto: The Setting Dawn 2.4 (which has neither) as before
+- Naruto: The Setting Dawn 2.6 without an `openlf2.txt` (as its team gives it out, package 100) played on LF2's
+  794x550, its stages made for its program's 1330x730: Wharf lost the lower part of its ground, where the fighters
+  walked out of sight, Akatsuki Cave most of it, on Windows and on the web. A mod's screen is now read off its stages
+  when its `openlf2.txt` gives none: when more than half of the stages in `data.txt` reach below the classic screen
+  (`zboundary` past 550; the original's deepest, Lion Forest, ends at 517), the screen is as wide as the narrowest of
+  those and as deep as the deepest stage (NTSD 2.6: every stage 1330 wide, reaching 540 to 730: 1330x730) — the host
+  for the window and the web page's canvas (`stage_screen_size`), the scripts for the match (`mod_settings.screen`).
+  Every other mod (Dragon Ball Super, whose one deep stage is a template, One Piece, KT, Hell, Convergence, Sauce's,
+  NTSD 2.4 and the source release) keeps the classic screen. Lee On Road on such a screen has its railing's posts
+  across it, not to x = 792 only; the bench's status line in `show` (`xem.bat`) is at the bottom of the match
 
 ## [1.1.2] - 2026-10-26
 

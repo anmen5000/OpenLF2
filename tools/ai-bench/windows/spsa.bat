@@ -11,6 +11,8 @@ rem cac tien trinh, vong sau bat dau tu do. Het moi vong: cho ban da chinh danh 
 rem spsa\ket-qua.txt (gui file nay cho nguoi lam AI). Bo so cua moi ban mod: xoi-<ten ban mod>\tune.txt, va
 rem <ten ban mod>-xoi.zip = ban mod co bo so ay (va bo nho XOI neu da hoc) - tai len relay thi XOI choi ban
 rem mod ay bang bo so rieng cua no (goi 38 tro len; tu goi 43 INSANE! khong dung bo so nay). Chi mot ban mod: lan sau chinh tiep tu bo so cua no.
+rem Dung som (goi 100): bo so da cham tran - kiem tra nho sau moi vong khong con tang - thi thoi cac vong con lai, kiem
+rem tra, goi so, roi hoc sau tiep neu dat TIEP_HOC_SAU=1 (xem DUNG_SOM).
 rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73) - hay dat GIO_CHAY, hay tat may. Lam tiep:
 rem chay lai file nay - cac vong da xong
 rem duoc giu, va ca phan da danh cua vong dang do (tru vai cap cuoi). Muon chinh lai tu dau: xoa thu muc spsa (hoac
@@ -56,6 +58,15 @@ rem hoc-sau.bat tu chon cac ban mod canh no nhu moi lan; cai dat la cua hoc-sau.
 rem hoc-sau cua mot lan chay truoc duoc doi ten (hoc-sau-truoc, hoc-sau-truoc-2...) de bo nao moi hoc tu dau; hoc-sau dang
 rem do (dong cua so giua chung) thi chay lai file nay hay hoc-sau.bat la no lam tiep. De trong hay 0: khong chay.
 set "TIEP_HOC_SAU="
+rem Dung som (DUNG_SOM, goi 100): sau moi vong, cac so dang chinh danh voi cac so luc bat dau trong PHUT_KIEM_VONG phut
+rem (mot lan kiem tra nho, moi lan cung cac cap tran). Ty le thang trung binh cua DUNG_SOM vong gan nhat khong cao hon
+rem cua DUNG_SOM vong truoc do it nhat 0,25 diem - ke ca phan hen xui - thi bo so da cham tran: thoi cac vong con lai,
+rem kiem tra va goi so nhu khi het vong cuoi, roi hoc sau tiep neu TIEP_HOC_SAU=1. Chi xet khi VONG tu 2 x DUNG_SOM + 1
+rem tro len (it vong hon thi khong kiem tra sau moi vong, khong ton them gio). 0 = khong dung som. Chinh tiep sau khi da
+rem dung som: xoa file spsa\dung-som.txt (hay dat DUNG_SOM=0) roi chay lai file nay.
+set "DUNG_SOM=10"
+rem So phut kiem tra nho sau moi vong (de trong: mot phan nam PHUT_VONG, it nhat 1 phut - them chung 20%% thoi gian)
+set "PHUT_KIEM_VONG="
 rem Thu muc tools\ai-bench va scripts cua goi ban 32 tro len (de trong thi tu tim canh file .bat nay)
 set "BENCH="
 set "SCRIPTS="
@@ -154,15 +165,38 @@ if defined THU_GIAY set /a GIAY_VONG=THU_GIAY, GIAY_KT=THU_GIAY
 if %GIAY_VONG% LSS 10 set /a GIAY_VONG=10
 set /a K_NOM=GIAY_VONG/2, TONG=VONG*(GIAY_VONG/2)
 if not defined UU_TIEN set "UU_TIEN=NORMAL"
+rem Dung som: kiem tra nho sau moi vong khi co the dung som (DUNG_SOM tren 0, VONG tu 2 x DUNG_SOM + 1), GIAY_KV giay.
+if not defined DUNG_SOM set "DUNG_SOM=0"
+set /a DUNG_SOM=DUNG_SOM
+set /a CAN_VONG=2*DUNG_SOM+1
+set "KIEM_VONG="
+if %DUNG_SOM% GTR 0 if %VONG% GEQ %CAN_VONG% set "KIEM_VONG=1"
+if not defined PHUT_KIEM_VONG set /a PHUT_KIEM_VONG=PHUT_VONG/5
+set /a GIAY_KV=PHUT_KIEM_VONG*60
+if %GIAY_KV% LSS 60 set /a GIAY_KV=60
+if defined THU_GIAY set /a GIAY_KV=THU_GIAY
 
 if not exist "%LV%" mkdir "%LV%"
+rem Vong cuoi cua dot nay: VONG, hay vong da dung som o lan chay truoc (spsa\dung-som.txt, dong dau la vong ay) khi
+rem DUNG_SOM con bat - thi chi kiem tra va goi so, khong chinh them. (DUNG_SOM=0: chinh tiep qua vong ay - bo dau dung
+rem som cu, de lan chay sau khong quay ve vong ay.)
+set "VONG_CUOI=%VONG%"
+if %DUNG_SOM% LEQ 0 if exist "%LV%\dung-som.txt" del /q "%LV%\dung-som.txt" 2>nul
+set "DS_E="
+if %DUNG_SOM% GTR 0 if exist "%LV%\dung-som.txt" set /p DS_E=<"%LV%\dung-som.txt"
+if defined DS_E set /a DS_E=DS_E
+if defined DS_E if not exist "%LV%\vong-%DS_E%\start-sau.lua" set "DS_E="
+if defined DS_E (
+  set "VONG_CUOI=%DS_E%"
+  echo Da dung som o vong %DS_E% ^(lan chay truoc: bo so da cham tran^). Chinh tiep: xoa "%LV%\dung-som.txt" roi chay lai.
+)
 rem Chinh tiep mot dot da xong (tu goi 75): dot truoc da kiem tra hay da goi so, ma VONG bay gio lon hon so vong da
 rem danh. Cac vong them dung scripts cua bo XOI nay (AI ban moi - mot dot dang do thi giu scripts cua no cho toi het),
 rem va cuoi dot kiem tra, goi so lai: bo ban sao scripts, phan kiem tra va dau "da goi" cua dot truoc.
 set "DA_XONG="
 if exist "%LV%\kiem-tra\tong.txt" set "DA_XONG=1"
 if exist "%LV%\da-goi.txt" set "DA_XONG=1"
-if defined DA_XONG if not exist "%LV%\vong-%VONG%\start-sau.lua" (
+if defined DA_XONG if not exist "%LV%\vong-%VONG_CUOI%\start-sau.lua" (
   echo Dot truoc da xong, VONG=%VONG% lon hon so vong da danh: chinh tiep cac vong con lai voi scripts cua bo XOI nay.
   if exist "%LV%\scripts" rmdir /s /q "%LV%\scripts"
   if exist "%LV%\kiem-tra" rmdir /s /q "%LV%\kiem-tra"
@@ -212,6 +246,7 @@ rem (THU_GIOI_HAN: so giay, de thu file nay.)
 if defined THU_GIOI_HAN set /a GIOI_HAN=THU_GIOI_HAN
 if !GIOI_HAN! GTR 0 echo Hen gio: chay %GIO_CHAY% gio roi tam dung ^(GIO_CHAY^).
 if "%TIEP_HOC_SAU%"=="1" echo Hoc sau tiep: chinh so xong thi tu chay hoc-sau.bat ^(TIEP_HOC_SAU=1^).
+if defined KIEM_VONG echo Dung som: sau moi vong kiem tra %GIAY_KV% giay; %DUNG_SOM% vong gan nhat khong cao hon %DUNG_SOM% vong truoc do thi dung ^(DUNG_SOM^).
 call :giay CHAY_LUC
 rem Canh cua so: mot PowerShell an cho cua so nay dong - ke ca khi bam X giua chung - roi dung moi game cua thu muc spsa
 rem nay (game goi 69-72 khong dung theo cua so cmd cua no khi ket qua ghi vao out.txt, nen dong cac cua so roi game van
@@ -226,15 +261,20 @@ set XS_DA_CHON=%XS%
 set "TRUOC=%LV%\bat-dau.lua"
 rem K_DAU: so cap ma moi chuoi da danh truoc vong nay (cho buoc dich), lay tu k-sau.txt cua vong truoc.
 set /a E=1, K_DAU=0
+set "DUNG_LAI="
 :vong_tiep
-if %E% GTR %VONG% goto kiem
+if %E% GTR %VONG_CUOI% goto kiem
 set "D=%LV%\vong-%E%"
 rem Vong da gop xong: so cua no o start-sau.lua (dong --SPSA_START). File hong - may tat dot ngot luc ghi, Windows de
-rem lai file toan so 0 - thi bo, gop lai vong ay tu cac tien trinh da danh (khong danh lai).
+rem lai file toan so 0 - thi bo, gop lai vong ay tu cac tien trinh da danh (khong danh lai). Lan kiem tra nho sau vong
+rem ay (dung som) ma chua xong - cua so dong giua chung - thi lam lai, khi vong sau chua bat dau.
 if exist "%D%\start-sau.lua" (
   findstr /c:"--SPSA_START" "%D%\start-sau.lua" >nul 2>nul && (
     set "TRUOC=%D%\start-sau.lua"
     call :doc_k "%D%"
+    call :sau_vong cu
+    if defined HET_GIO goto het_gio
+    if defined DUNG_LAI goto kiem
     set /a E+=1
     goto vong_tiep
   )
@@ -251,6 +291,9 @@ if defined HET_GIO goto het_gio
 if errorlevel 1 goto loi
 set "TRUOC=%D%\start-sau.lua"
 call :doc_k "%D%"
+call :sau_vong
+if defined HET_GIO goto het_gio
+if defined DUNG_LAI goto kiem
 set /a E+=1
 goto vong_tiep
 
@@ -356,7 +399,7 @@ set /a "PHUT_V=((XONG_LUC-BAT_DAU+86400) %% 86400)/60, CON_V=VONG-E, CON=CON_V*P
   echo.
   echo Cai dat: VONG=%VONG% PHUT_VONG=%PHUT_VONG% SONG_SONG=%N% PHUT_KIEM_TRA=%PHUT_KIEM_TRA% HAT_GIONG=%HAT_GIONG% DOI_THU=%DOI_THU%; ban mod:
   for /L %%p in (1,1,%NP%) do call echo   %%p. %%PACK_%%p%%
-  findstr /c:"Vong " /c:"tien trinh" "%LV%\thoi-gian.txt"
+  findstr /c:"Vong " /c:"tien trinh" /c:"Kiem tra sau vong" "%LV%\thoi-gian.txt"
 ) >"%LV%\ket-qua.txt"
 echo Vong %E% xong luc %TIME%: !CO! chuoi, !CAP_V! cap tran, mat !PHUT_V! phut; con !CON_V! vong, khoang !CON_G! gio !CON_P! phut ^(chua ke kiem tra^).
 echo Cac so hien tai: "%LV%\ket-qua.txt"
@@ -505,6 +548,75 @@ if exist "%HS%\" (
   exit /b 1
 )
 echo Thu muc hoc-sau cua lan chay truoc da doi ten thanh !TEN_CU!: bo nao moi hoc tu dau tren bo so vua chinh.
+exit /b 0
+
+rem --- Dung som (goi 100), sau vong %E% (thu muc %D%): kiem tra nho (kiem-vong.txt cua vong) roi xet dung som - khong o
+rem vong cuoi (kiem tra va goi so lam ngay sau do), khong khi da dung som o lan chay truoc (DS_E). %1 = cu: vong da xong
+rem tu lan chay truoc - chi lam khi vong sau chua bat dau (cac vong cua mot dot bat dau truoc goi 100, hay khi DUNG_SOM
+rem con tat, khong kiem tra lai). ---
+:sau_vong
+if not defined KIEM_VONG exit /b 0
+if defined DS_E exit /b 0
+if %E% GEQ %VONG% exit /b 0
+set /a E1=E+1
+if /i "%~1"=="cu" if exist "%LV%\vong-%E1%\" exit /b 0
+if not exist "%D%\kiem-vong.txt" call :kiem_vong
+if defined HET_GIO exit /b 0
+if not exist "%D%\kiem-vong.txt" exit /b 0
+call :xet_dung_som
+exit /b 0
+
+rem --- Kiem tra nho sau vong %E%: cac so cua vong (start-sau.lua) danh voi cac so luc bat dau (bat-dau.lua) - co doi thu
+rem thi danh doi thu ay - trong GIAY_KV giay, moi tien trinh cung hat giong moi lan (cung cac cap tran, nen cac lan kiem
+rem tra so duoc voi nhau). Ket qua: kiem-vong.txt cua vong = so tran thang, thua, hoa cua cac so dang chinh. ---
+:kiem_vong
+echo   Kiem tra nho sau vong %E%: %N% tien trinh trong %GIAY_KV% giay ^(dung som^)...
+set "KV=%D%\kiem"
+if exist "%KV%" rmdir /s /q "%KV%"
+mkdir "%KV%"
+call :chuan_bi "%KV%" "%D%\start-sau.lua"
+set /a PI=0
+for /L %%k in (1,1,%N%) do (
+  set /a PI+=1
+  if !PI! GTR %NP% set /a PI=1
+  set /a SEED=HAT_GIONG+600000+%%k
+  copy /y "%LV%\bat-dau.lua" "%KV%\p%%k\spsa_base.lua" >nul
+  >>"%KV%\p%%k\package.manifest" echo module=spsa_base^|spsa_base.lua
+  >"%KV%\p%%k\config.lua" echo return {command = "spsa", step = "check", !DT_CFG!tuned_only = true, start = "spsa_start", base = "spsa_base", games = 1000000, seconds = %GIAY_KV%, seed = !SEED!, limit = 9000}
+  start "SPSA kiem tra vong %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 vong-%E%\kiem %%k !SEED! !PI!
+)
+call :cho "%KV%" "SPSA_CHECK "
+if defined HET_GIO exit /b 0
+set /a VW=0, VL=0, VD=0, VCO=0
+for /L %%k in (1,1,%N%) do (
+  if exist "%KV%\p%%k\out.txt" for /f "tokens=2,3,4" %%a in ('findstr /b /c:"SPSA_CHECK " "%KV%\p%%k\out.txt"') do set /a VW+=%%a, VL+=%%b, VD+=%%c, VCO+=1
+)
+if !VCO! EQU 0 (
+  echo   [CHU Y] Kiem tra sau vong %E% khong ra ket qua - xem "%KV%\p1\out.txt"; vong nay khong tinh cho dung som.
+  exit /b 0
+)
+>"%D%\kiem-vong.txt" echo !VW! !VL! !VD!
+set /a VT=VW+VL, VP=0
+if !VT! GTR 0 set /a VP=VW*1000/VT
+set /a VP1=VP/10, VP2=VP%%10
+>>"%LV%\thoi-gian.txt" echo   Kiem tra sau vong %E%: cac so dang chinh thang !VP1!.!VP2!%% ^(thang !VW!, thua !VL!, hoa !VD!^)
+>>"%LV%\ket-qua.txt" echo   Kiem tra sau vong %E%: cac so dang chinh thang !VP1!.!VP2!%% ^(thang !VW!, thua !VL!, hoa !VD!^)
+echo   Kiem tra sau vong %E%: cac so dang chinh thang !VP1!.!VP2!%% so tran co nguoi thang ^(thang !VW!, thua !VL!, hoa !VD!^)
+rmdir /s /q "%KV%" 2>nul
+exit /b 0
+
+rem --- Xet dung som: tu kiem-vong.txt cua cac vong den vong %E%, ty le thang cua moi lan kiem tra (phan tram so tran co
+rem nguoi thang). A = trung binh DUNG_SOM lan gan nhat, B = trung binh DUNG_SOM lan truoc do, h = mot lan sai so do hen xui
+rem cua A - B. A - B + h duoi 0,25 diem (du tinh ca phan hen xui, cung khong con tang 0,25 diem) thi dung: DUNG_LAI,
+rem VONG_CUOI = vong nay, dung-som.txt, mot dong DUNG SOM trong thoi-gian.txt va ket-qua.txt. ---
+:xet_dung_som
+set "XET_E=%E%"
+powershell -NoProfile -Command "$inv=[Globalization.CultureInfo]::InvariantCulture; $w=[int]$env:DUNG_SOM; $e=[int]$env:XET_E; $r=@(); foreach ($d in @(Get-ChildItem -LiteralPath $env:LV -Directory -Filter 'vong-*')) { if ($d.Name -match '^vong-([0-9]+)$') { $n=[int]$Matches[1]; $f=Join-Path $d.FullName 'kiem-vong.txt'; if (($n -le $e) -and (Test-Path -LiteralPath $f)) { $t=@(([string](Get-Content -LiteralPath $f -TotalCount 1)).Trim() -split '\s+'); if ($t.Count -ge 2) { $a=[double]$t[0]; $b=[double]$t[1]; if ($a + $b -gt 0) { $p=100 * $a / ($a + $b); $r += [pscustomobject]@{n=$n; p=$p; v=$p * (100 - $p) / ($a + $b)} } } } } }; $r=@($r | Sort-Object n); $c=$r.Count; if ($c -lt 2 * $w) { Write-Host ('  (Dung som: can ' + (2 * $w) + ' lan kiem tra sau vong de so, da co ' + $c + ')'); exit 0 }; $A=@($r[($c - $w)..($c - 1)]); $B=@($r[($c - 2 * $w)..($c - $w - 1)]); $ma=($A | Measure-Object -Property p -Average).Average; $mb=($B | Measure-Object -Property p -Average).Average; $h=[math]::Sqrt((@($A + $B) | Measure-Object -Property v -Sum).Sum) / $w; $txt=[string]$w + ' vong gan nhat ' + $ma.ToString('0.0', $inv) + '%%, ' + $w + ' vong truoc do ' + $mb.ToString('0.0', $inv) + '%% (hen xui +-' + $h.ToString('0.0', $inv) + ' diem)'; if (($ma - $mb + $h) -lt 0.25) { $msg='DUNG SOM o vong ' + $e + ': bo so da cham tran - ty le thang khi kiem tra, ' + $txt + ': khong con tang it nhat 0,25 diem, thoi cac vong con lai'; Add-Content -LiteralPath (Join-Path $env:LV 'thoi-gian.txt') -Value $msg; Add-Content -LiteralPath (Join-Path $env:LV 'ket-qua.txt') -Value $msg; Write-Host ('  ' + $msg); exit 2 }; Write-Host ('  (Dung som: ' + $txt + ' - con tang)'); exit 0"
+if errorlevel 2 (
+  set "DUNG_LAI=1"
+  set "VONG_CUOI=%E%"
+  >"%LV%\dung-som.txt" echo %E%
+)
 exit /b 0
 
 rem --- Them vao file %2 dong cuoi cua mot chuoi trong file %1: dong ket thuc, hay (tien trinh bi dung giua chung) dong
