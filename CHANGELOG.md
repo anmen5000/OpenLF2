@@ -911,6 +911,25 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   learned in 7.4 s in Lua 5.2 reads them in 0.75 s (the data checksum half of it) and plays the same match frame for
   frame; in a browser, two pages of one computer, two humans and six XOI players, the joining page slowed down twice:
   the match began at once on both, through the relay's beat too (38 s before), every check the same on both
+- INSANE! and XOI set traps and spring them (package 106, the project owner's questions: "the AI seems to have no
+  notion of trap moves"). In NTSD 2.6 Minato's D^J scatters ten kunai and his DvA leaves one, and attack, then jump in
+  the punch, turns every kunai on the stage into a copy of him striking where it lies (55 HP); Deidara's clay (his
+  birds, the waiting spiders, the DvA bomb) bursts on "katsu", the same keys. Neither key strikes anything itself, so
+  the computer players never pressed it, and Minato's D^J, which strikes nothing either, they never used. Now every
+  move that leaves things is played in the copy before each move whose things can strike the fighter's own side - a
+  blow in a frame of state 18, fire, spares no one, and both keys throw one over the whole stage, below it where only
+  the traps' hidden bodies are -, and what stood, then left its way and struck is that kind's answer to the move
+  (`smart.trap_kit`, `setup_kit.learn_traps`). A match weighs it with the answers of the things standing then, as a
+  set-up's (`best_attack`), when the enemy is near enough to one of them and the fire would strike neither the fighter
+  nor its side; a trap that strikes nothing itself is laid as a set-up when it is safe and pays for its MP (Minato's
+  D^J, Deidara's D^A and DvA), and Kankuro's puppet answers his D^A the same way. A jump that lands where it does
+  wherever the enemy stands is now learned as the fighter's own course, not a teleport onto the enemy (`explore`):
+  Minato's D>A then jump, taken for one, was thrown at enemies anywhere for 250 MP. XOI against package 105's on
+  NTSD 2.6 (15 opponents, 14 for Tobi, who is one of them; two seeds; both with the hits of the Fixed entry below):
+  Minato won 105 games of 180 to 84, Deidara 59 of 120 to 47 (111 of 180 to 62 before those hits were played), Tobi
+  79 of 112 to 71; Sasori 65 to 66 and Kankuro 44 to 45 of 120. The learned files of packages 104 and 105 are left
+  aside (`smart.learned_kit` version 2) and `hoc-chieu.bat` learns them again: NTSD 2.6's 77 fighters in 21 s with
+  LuaJIT (13 before), the same files with Lua 5.2
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the
@@ -1298,6 +1317,17 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   Four's) or a second set there (Itachi's, who changes into himself to show it). Now a record shows its pictures at the
   offset only when most of its frames have one there, and a frame without one shows its own (`object_data.picture`);
   what is drawn only, the game plays as before
+- NTSD 2.6's hits that find things did nothing (package 106, the project owner's reports): Tobi's second D^J never let
+  go of the enemy his first had taken in, who came out only when the time ran out; Sasori's six D-moves with the
+  black puppet in hand (D^J, D>J, DvJ, D^A, D>A, DvA) did nothing, and D+J+A left the puppet standing stuck for good;
+  Minato's punch near his kunai did not take him onto it. The mod's NTSD.exe plays hits of kinds 800-899 that the
+  original lf2.exe has not. As the mod's data uses them (NTSD.exe itself was not opened), a hit of kind 8TM touches the
+  records of kind T (0 fighters, 3 attacks) - M 0 any of them, and the toucher then stands on it, M 1 its own team's,
+  M 6 its own owner's - and takes the toucher to its frame dvx, harming no one and looking past blinking
+  (`combat.detector`, `base/game/combat`). The mod has 1,223 such hits in 84 records, 38 of them characters
+  (kinds 801, 806, 830 and 836; NTSD 2.4 has none). Now Tobi's second D^J lets go of the enemy with 60 HP; Sasori's
+  puppet moves are the puppet's (D>A its iron sand, D+J+A its charge of MP, the puppet held meanwhile); Minato goes
+  onto his kunai and strikes
 
 ## [1.1.2] - 2026-10-26
 

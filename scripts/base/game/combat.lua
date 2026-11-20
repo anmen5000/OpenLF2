@@ -127,10 +127,33 @@ local function heal_reaches(attacker, defender, defender_index, itr)
     return whom == 3 or attacker.owner == defender_index
 end
 
+-- Detectors of Naruto: The Setting Dawn 2.6 (2.4 has none), whose own program (NTSD.exe, which OpenLF2 does not open)
+-- has them: itr kind 8TM touches as kind 8 does — whatever touches it goes to frame dvx — but things of kind T (0
+-- fighters, 3 attacks), and of them M: 0 anyone, the toucher going onto it as with kind 8; 1 its team; 6 the same
+-- owner. Read from the mod's data, as its moves need them (the lf2.exe of its packs, the original's, does nothing with
+-- kinds above 16): Tobi's hold, far below the stage, lets go of what his D^J took when his second D^J's body touches it
+-- (806, its frame 353); Sasori's D-moves with the puppet in hand become its moves when they touch the mark the puppet
+-- leaves (806); Minato, jumping after a kunai has struck, goes onto it and strikes (830, frame 21); a kunai falling
+-- onto another goes (836). Kinds 8TM with other M, and other kinds above 16, do nothing as before.
+-- Returns T and M for such a kind, nil otherwise.
+local function detector(kind)
+    if kind < 800 or kind > 899 then return nil end
+    local whom = kind % 10
+    if whom ~= 0 and whom ~= 1 and whom ~= 6 then return nil end
+    return math.floor(kind / 10) % 10, whom
+end
+combat.detector = detector
+
 local function eligible(state, a_entry, b_entry, itr)
     local attacker, defender = a_entry.value, b_entry.value
     local attack_kind = itr.kind
-    if attack_kind > attack_kinds.freezing_whirlwind or attack_kind == attack_kinds.ignored_12 or attack_kind == attack_kinds.ignored_13 then return false end
+    if attack_kind > attack_kinds.freezing_whirlwind or attack_kind == attack_kinds.ignored_12 or attack_kind == attack_kinds.ignored_13 then
+        local touches, whom = detector(attack_kind)
+        if not touches or defender.record.kind ~= touches then return false end
+        if whom == 1 then return attacker.team == defender.team and attacker.team ~= team_independent end
+        if whom == 6 then return attacker.owner == defender.owner end
+        return true
+    end
     if breakable[attacker.record.id] and defender.record.id == object_freeze_ball and attack_kind ~= attack_kinds.reflect_ball then return false end
     local defender_kind = defender.record.kind
     if attack_kind == attack_kinds.catch and defender_kind ~= record_kinds.character then return false end
@@ -1082,7 +1105,7 @@ function combat.apply(state, p)
             end
             -- (A mod's lf2.exe that lets kind 8 touch weapons spares it here: patched.heal_heavy_whole.)
             if itr and victim.record.kind == record_kinds.heavy_item
-               and not (patched.heal_heavy_whole and itr.kind == attack_kinds.heal) then
+               and not (patched.heal_heavy_whole and itr.kind == attack_kinds.heal) and not detector(itr.kind) then
                 itr = copy_itr(itr)
                 itr.dvx, itr.dvy = cdiv(itr.dvx, 2), cdiv(itr.dvy, 2)
             end
@@ -1123,6 +1146,13 @@ function combat.apply(state, p)
                 attacker.frame = itr.dvx
                 attacker.x = victim.x
                 attacker.z = victim.z + 1.0
+            elseif detector(itr.kind) then
+                -- A detector of Naruto: The Setting Dawn's (above): the toucher to frame dvx; of anyone's, onto it.
+                attacker.frame = itr.dvx
+                if itr.kind % 10 == 0 then
+                    attacker.x = victim.x
+                    attacker.z = victim.z + 1.0
+                end
             elseif itr.kind == attack_kinds.reflect_ball then
                 reflect_ball(state, p, attacker, victim)
             elseif itr.kind == attack_kinds.whirlwind or (itr.kind == attack_kinds.conditional_whirlwind and victim.fall_damage < 0) then
