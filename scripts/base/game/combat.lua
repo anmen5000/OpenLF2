@@ -294,7 +294,7 @@ local function record_targets(state, a_entry, b_entry)
     end
 end
 
-local active, active_slots = {}, {}
+local active = {}
 local function prepare_collision(state)
     local items = state.items
     local count = 0
@@ -310,7 +310,6 @@ local function prepare_collision(state)
                 value.timer_ec = 0
             end
             count = count + 1
-            active_slots[index] = true
             local entry = active[count]
             if not entry then
                 entry = {boxes = {}, box_pool = {}}
@@ -340,12 +339,15 @@ local function age_cooldowns(count)
     -- Detection never writes pair cooldowns. Age existing entries before scanning
     -- candidates, including pairs with no attack/body. Inactive slots and self
     -- entries must retain their values, as in the original unordered-pair loop.
+    -- (The active slots are the only ones aged, so they are the ones looked at, not
+    -- all 400 an item's cooldowns have room for: package 109, the same cooldowns.)
     for position = 1, count do
         local entry = active[position]
-        for slot, rest in pairs(entry.rest) do
-            if rest > 0 and slot ~= entry.index and active_slots[slot] then
-                entry.rest[slot] = rest - 1
-            end
+        local rest_of, own = entry.rest, entry.index
+        for other = 1, count do
+            local slot = active[other].index
+            local rest = rest_of[slot]
+            if rest and rest > 0 and slot ~= own then rest_of[slot] = rest - 1 end
         end
     end
 end
@@ -382,7 +384,6 @@ end
 local function release_collision(count)
     for index = 1, count do
         local entry = active[index]
-        active_slots[entry.index] = nil
         entry.value, entry.frame, entry.rest = nil, nil, nil
     end
 end

@@ -25,6 +25,15 @@ local network, network_time = openlf2_network, openlf2_network_time
 -- The web page's orders for computer players and what it is told of the match (web build only: base/game/smart_ai's
 -- page_kit, dist/pages/gemini.js).
 local page_plan, page_post = openlf2_page_plan, openlf2_page_post
+-- LuaJIT's compiler for the scripts (package 109). Room for 65535 traces and 64 MB of code: the host's 8192 and 16 MB
+-- filled up within the first 16 games of XOI against XOI, and every trace was thrown away and compiled again, over
+-- and over in a long training run. And less compiling of the computer players' many branches: a loop or a function
+-- compiled once it has run 112 times (56 before), a side trace once its exit has been taken 80 times (10). Only how
+-- quickly the same play runs: with the item slots made an array (base/game/match), XOI's games of NTSD 2.6 take half
+-- the time they took. Nothing here without the compiler (the web build, --no-jit).
+if jit and jit.opt and jit.opt.start then
+    jit.opt.start("maxtrace=65535", "maxmcode=65536", "hotexit=80", "hotloop=112")
+end
 local set_environment = setfenv
 local unpack_values = unpack or table.unpack
 local traceback = debug.traceback

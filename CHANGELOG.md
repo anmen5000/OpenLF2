@@ -930,6 +930,31 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   79 of 112 to 71; Sasori 65 to 66 and Kankuro 44 to 45 of 120. The learned files of packages 104 and 105 are left
   aside (`smart.learned_kit` version 2) and `hoc-chieu.bat` learns them again: NTSD 2.6's 77 fighters in 21 s with
   LuaJIT (13 before), the same files with Lua 5.2
+### Changed
+- The game, and INSANE! and XOI's thinking in it, run in half the time, the play the same (package 109, the project
+  owner's question once `hoc-chieu.bat` had made his training quicker: could XOI think faster too, for the training to
+  come?). A match's 400 item slots, a few of them filled, were kept in the hash part of their table, and a frame goes
+  through all of them some dozens of times — each computer player's thinking has 28 such loops, the frame's steps more
+  —, every empty slot a search of the table: they are now its array part, made so with the match (`match.create`).
+  LuaJIT had room for 8192 traces of compiled code and 16 MB (the host's settings), which XOI against XOI filled within
+  its first 16 games of NTSD 2.6, every trace then thrown away and the code compiled anew, again and again in a long
+  run: the scripts' own runtime (`scripts/runtime/bootstrap.lua`, which the kit brings with its scripts) gives it 65535
+  and 64 MB, and compiles less of the players' many branches (a side trace once its exit has been taken 80 times, 10
+  before; a loop or a function once it has run 112 times, 56). And two of the game's steps went through every slot for
+  nothing: a hold's keys (`grab.update_holds`, where a function made inside the loop kept LuaJIT from compiling it at
+  all) and the pairs' cooldowns (`combat`, the active items' alone now, not the 400 each item has room for). NTSD 2.6,
+  XOI against XOI with the mod's learned files (16 games of 8 pairs, the median of 6 to 8 processes): 2.8 s instead of
+  5.5 in a process just started, 5.9 instead of 12.3 for two such rounds once a process has played one, and 15.1 instead
+  of 33.6 for two rounds of 60 games of random pairs once one has been played; learning the 77 fighters
+  (`hoc-chieu.bat`) 12.3 s instead of 15.3; in Lua 5.2 (the browser), with no compiler to tune, 14.6 s instead of 17.0
+  for the 16 games. Memory a little less (a process of 32 games 366 MB at most, 388 before). Every number of every item,
+  every frame, and the random numbers, the same as before in 72 games of eight mods (NTSD 2.6 with its learned files and
+  without, NTSD 2.4, One Piece GrandWorld, Dragon Ball Super Edition, KT-LF2, Sx2, mode Convergence, Sauce's pack;
+  versus, two against two, stage), in LuaJIT and in Lua 5.2 alike; the learned files the same, so `hoc-chieu.bat` need
+  not be run again, and numbers, notes and brains trained before play as they did. Tried and left out: smaller changes
+  to the AI's own reckoning (where a victim stands, the drift of a speed of 0, the target's place worked out once for
+  every move) gave the same play but no quicker games: what LuaJIT compiled of the AI changed with them, for the worse
+  as often as not
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the

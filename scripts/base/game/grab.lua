@@ -34,6 +34,16 @@ local function enter(value, frame_id)
     end
 end
 
+-- The holder's attack, throw or jump out of a hold: into frame_id, the victim into the frame it gives.
+-- (Out of update_holds' loop since package 109: a function made in the loop kept LuaJIT from compiling it, and the
+-- loop goes through every item slot each frame.)
+local function act(holder, target, frame_id)
+    enter(holder, frame_id)
+    target.frame = cpoint(holder, holder.frame).vaction
+    target.wait_counter = 0
+    holder.wait_counter = 0
+end
+
 function grab.update_holds(state)
     local link
     for index = 0, item_slots - 1 do
@@ -60,21 +70,15 @@ function grab.update_holds(state)
                     end
                     if not released then
                         local keys = holder.keys
-                        local function act(frame_id)
-                            enter(holder, frame_id)
-                            target.frame = cpoint(holder, holder.frame).vaction
-                            target.wait_counter = 0
-                            holder.wait_counter = 0
-                        end
                         if keys.attack and holder.attack_press > 0 and hit.aaction ~= 0
                            and ((not keys.left and not keys.right) or hit.taction == 0) then
-                            act(hit.aaction)
+                            act(holder, target, hit.aaction)
                         end
                         if keys.attack and holder.attack_press > 0
                            and (keys.left or keys.right or keys.up or keys.down) and hit.taction ~= 0 then
-                            act(hit.taction)
+                            act(holder, target, hit.taction)
                         end
-                        if keys.jump and holder.jump_press > 0 and hit.jaction ~= 0 then act(hit.jaction) end
+                        if keys.jump and holder.jump_press > 0 and hit.jaction ~= 0 then act(holder, target, hit.jaction) end
                     end
                 else
                     released = true
