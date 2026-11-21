@@ -33,6 +33,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    Each mod's numbers: at the end it writes xoi-<mod>\tune.txt and <mod>-xoi.zip, the mod with xoi\tune.txt
    (and XOI's notes, if trained) inside: uploaded to the relay, XOI plays that mod with its own
    numbers ("mod tuned" in the match). With one mod next to it, the next run goes on from that mod's numbers.
+   A <mod>-xoi.zip given (or the only one there, with no <mod>.zip) is updated itself and shares xoi-<mod> with
+   the original, as in hoc-sau.bat and xoi-hoc.bat (package 108; before, spsa.bat made <mod>-xoi-xoi.zip and
+   xoi-<mod>-xoi, which hoc-sau.bat run next did not see: a folder xoi-<mod>-xoi left gives xoi-<mod> what it lacks).
    Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
    two PCs on the same mod need different HAT_GIONG.
    DOI_THU=classic (package 58): both nudged sets play the original computer player instead of each other - the
@@ -286,6 +289,9 @@ chơi được chính các file của bản mod.
    Bộ số của từng bản mod: chạy xong, nó ghi xoi-<tên>\tune.txt và <tên>-xoi.zip, tức bản mod có xoi\tune.txt
    (và bộ nhớ XOI nếu đã huấn luyện) bên trong: tải lên relay thì XOI chơi bản mod ấy bằng bộ số
    riêng của nó (trong trận ghi "mod tuned"). Chỉ một bản mod cạnh nó thì lần sau chỉnh tiếp từ bộ số ấy.
+   Đưa vào chính <tên>-xoi.zip (hoặc chỉ có nó, không còn <tên>.zip) thì nó được cập nhật tại chỗ và dùng chung
+   xoi-<tên> với bản gốc, như hoc-sau.bat và xoi-hoc.bat (gói 108; trước đó spsa.bat tạo <tên>-xoi-xoi.zip và
+   xoi-<tên>-xoi, hoc-sau.bat chạy tiếp không thấy bộ số: thư mục xoi-<tên>-xoi còn lại thì xoi-<tên> lấy những gì nó thiếu).
    Nhiều máy: mỗi máy lo một hai bản mod riêng (mỗi máy một bản mod thì bản mod nào cũng có bộ số tốt nhất
    cho nó); hai máy cùng một bản mod thì đặt HAT_GIONG khác nhau.
    DOI_THU=classic (gói 58): hai bản nhích số cùng đánh với máy gốc của game thay vì đánh nhau - nhân vật nào có script

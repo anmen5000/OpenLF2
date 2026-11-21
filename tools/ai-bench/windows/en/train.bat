@@ -43,18 +43,27 @@ if defined GOP if exist "%~1\data\data.txt" (
   pause
   exit /b 1
 )
+rem (A folder xoi-<mod> with the original zip file gone: packed into <mod>-xoi.zip itself beside this file, if there - package 108.)
 if defined GOP if exist "%~1\" (
   set "THU=%~nx1"
   if /i "!THU:~0,4!"=="xoi-" if not defined PACK (
     set "PACK=%~dp0!THU:~4!.zip"
     if exist "%~f1\mod.txt" set /p PACK=<"%~f1\mod.txt"
+    if not exist "!PACK!" if exist "%~dp0!THU:~4!-xoi.zip" set "PACK=%~dp0!THU:~4!-xoi.zip"
   )
 )
+rem (<mod>-xoi.zip is passed over only when <mod>.zip is there too, as in brain.bat.)
 if not defined PACK (
   pushd "%~dp0"
   for %%z in (*.zip) do (
     set "TEN=%%~nz"
-    if not defined PACK if /i not "!TEN:~-4!"=="-xoi" if /i not "!TEN:~-13!"=="-xoi-previous" if /i not "!TEN:~0,17!"=="lf2-online-upload" if /i not "!TEN:~0,7!"=="xoi-kit" set "PACK=%%~fz"
+    set "BO="
+    if /i "!TEN:~-4!"=="-xoi" if exist "!TEN:~0,-4!.zip" set "BO=1"
+    if /i "!TEN:~-13!"=="-xoi-previous" set "BO=1"
+    if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
+    if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
+    if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
+    if not defined PACK if not defined BO set "PACK=%%~fz"
   )
   popd
 )
@@ -68,11 +77,22 @@ if not defined GAME set "GAME=%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe"
 
 for %%z in ("%PACK%") do (
   set "TEN=%%~nz"
-  set "OUT=%%~dpnz-xoi.zip"
+  set "THU_MUC_GOI=%%~dpz"
 )
+rem (The mod's name: the file's name without -xoi, as in brain.bat: <mod>-xoi.zip shares the folder xoi-<mod> with the
+rem original, and given it the package updates it itself - package 108; before, its notes went to xoi-<mod>-xoi and
+rem <mod>-xoi-xoi.zip.)
+if /i "!TEN:~-4!"=="-xoi" set "TEN=!TEN:~0,-4!"
+set "OUT=!THU_MUC_GOI!!TEN!-xoi.zip"
 rem One folder xoi-<mod> per mod: each training round in round-<seed>, the merged notes in notes.txt
 set "XOI=%~dp0xoi-%TEN%"
 set "KQ=%XOI%\round-%FIRST_SEED%"
+rem (A folder xoi-<mod>-xoi left from before package 108: the files of it that xoi-<mod> lacks are taken over.)
+if /i not "%~1"=="chay1" if exist "%~dp0xoi-%TEN%-xoi\" for %%f in (notes.txt tune.txt brain.txt) do if exist "%~dp0xoi-%TEN%-xoi\%%f" if not exist "%XOI%\%%f" (
+  if not exist "%XOI%\" mkdir "%XOI%"
+  copy /y "%~dp0xoi-%TEN%-xoi\%%f" "%XOI%\%%f" >nul
+  echo Took "%~dp0xoi-%TEN%-xoi\%%f" over to "%XOI%\%%f".
+)
 if not defined BENCH (
   if exist "%~dp0tools\ai-bench\learn.lua" set "BENCH=%~dp0tools\ai-bench"
   if exist "%~dp0learn.lua" set "BENCH=%~dp0."
@@ -148,12 +168,17 @@ timeout /t 10 /nobreak >nul
 tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul && goto cho
 
 :gop
-rem Merges every training round of this mod (xoi-<mod>\round-*) into xoi-<mod>\notes.txt
+rem Merges every training round of this mod (xoi-<mod>\round-*) into xoi-<mod>\notes.txt - into notes-new.txt first, then
+rem put in its place: a folder with no training round yet (only notes, numbers, a brain) keeps the notes.txt it has, and
+rem is packed all the same.
 set /a CAP=0, LOI=0, DOT=0
 if not exist "%XOI%" mkdir "%XOI%"
-type nul > "%XOI%\notes.txt"
+type nul > "%XOI%\notes-new.txt"
 for /f "delims=" %%d in ('dir /b /ad "%XOI%\round-*" 2^>nul') do call :gop_dot "%XOI%\%%d"
-if %DOT% EQU 0 (echo No training round of "%TEN%" beside this file yet.& pause& exit /b 1)
+if %DOT% GTR 0 move /y "%XOI%\notes-new.txt" "%XOI%\notes.txt" >nul
+if exist "%XOI%\notes-new.txt" del /q "%XOI%\notes-new.txt"
+if %DOT% EQU 0 if not exist "%XOI%\notes.txt" (echo No training round of "%TEN%" beside this file yet.& pause& exit /b 1)
+if %DOT% EQU 0 echo No training round of "%TEN%" beside this file yet: the notes it has are kept.
 echo.
 echo ===== %DOT% training rounds, %CAP% pairs of fighters trained =====
 if %LOI% GTR 0 echo [ERROR] %LOI% processes not finished or with errors - see the lines above.
@@ -172,11 +197,14 @@ set "XTUNE="
 if exist "%XOI%\tune.txt" set "XTUNE=%XOI%\tune.txt"
 set "XBRAIN="
 if exist "%XOI%\brain.txt" set "XBRAIN=%XOI%\brain.txt"
-rem (The previous packed copy is kept as <name>-xoi-previous.zip, to measure it against the new one.)
-for %%z in ("%PACK%") do set "TRUOC=%%~dpnz-xoi-previous.zip"
+rem (The previous packed copy is kept as <name>-xoi-previous.zip, to measure it against the new one. Given <name>-xoi.zip
+rem itself, it is updated in place, the other files in it kept.)
+set "TRUOC=!THU_MUC_GOI!!TEN!-xoi-previous.zip"
+set "XTAI_CHO="
+for %%z in ("%PACK%") do if /i "%%~fz"=="%OUT%" set "XTAI_CHO=1"
 if exist "%OUT%" copy /y "%OUT%" "%TRUOC%" >nul
-del /q "%OUT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Added ' + $name) } } } finally { $z.Dispose() }"
+if not defined XTAI_CHO del /q "%OUT%" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (-not $env:XTAI_CHO) { Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Added ' + $name) } } } finally { $z.Dispose() }"
 if not exist "%OUT%" goto khong_goi
 if errorlevel 1 goto khong_goi
 echo.
@@ -202,7 +230,7 @@ exit /b 0
 
 :gop1
 if not exist "%~1\out.txt" (set /a LOI+=1& echo [ERROR] "%~1" has not run& exit /b 0)
-findstr /C:"XOI " "%~1\out.txt" >> "%XOI%\notes.txt"
+findstr /C:"XOI " "%~1\out.txt" >> "%XOI%\notes-new.txt"
 for /f "delims=" %%l in ('findstr /C:" done: " "%~1\out.txt"') do set /a CAP+=1
 findstr /C:"LEARN DONE" "%~1\out.txt" >nul && exit /b 0
 set /a LOI+=1

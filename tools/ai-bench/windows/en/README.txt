@@ -34,6 +34,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    Each mod's numbers: at the end it writes xoi-<mod>\tune.txt and <mod>-xoi.zip, the mod with xoi\tune.txt
    (and XOI's notes, if trained) inside: uploaded to the relay, XOI plays that mod with its own
    numbers ("mod tuned" in the match). With one mod next to it, the next run goes on from that mod's numbers.
+   A <mod>-xoi.zip given (or the only one there, with no <mod>.zip) is updated itself and shares xoi-<mod> with
+   the original, as in brain.bat and train.bat (package 108; before, spsa.bat made <mod>-xoi-xoi.zip and
+   xoi-<mod>-xoi, which brain.bat run next did not see: a folder xoi-<mod>-xoi left gives xoi-<mod> what it lacks).
    Several PCs: give each PC one or two mods of its own (one mod per PC gives each mod its own best numbers);
    two PCs on the same mod need different FIRST_SEED.
    Start from earlier numbers: put a "return {...}" line of a previous results.txt into spsa\start.lua before

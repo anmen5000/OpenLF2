@@ -11,6 +11,9 @@ rem the processes are merged, the next round starts from there. After the last r
 rem original ones as a check. Result: spsa\results.txt (send this file to whoever maintains the AI). Each mod's numbers:
 rem xoi-<mod>\tune.txt, and <mod>-xoi.zip = the mod with those numbers (and XOI's notes, if trained) - uploaded to the
 rem relay, XOI plays that mod with its own numbers (package 38 on; from package 43 INSANE! does not use them). One mod only: the next run goes on from its numbers.
+rem Given <mod>-xoi.zip itself (with no <mod>.zip left), the numbers go to xoi-<mod> as for the original and the package
+rem updates that zip itself, the earlier one kept as <mod>-xoi-previous.zip - as brain.bat does (package 108; before, they
+rem went to xoi-<mod>-xoi and <mod>-xoi-xoi.zip, and brain.bat run next did not find them).
 rem Early stop (package 100): when the numbers have hit their ceiling - the small check after each round rises no more -
 rem the remaining rounds are skipped, the check and the packing are done, then the brain if THEN_BRAIN=1 (see EARLY_STOP).
 rem To pause: close this window - its games stop with it (package 73 on) - or set RUN_HOURS, or shut the PC down. To go
@@ -23,8 +26,9 @@ rem shrinking as before, and they use this kit's scripts (the new AI); the run e
 rem ============ SETTINGS ============
 rem The installed game. Left empty, it is looked for (Install for me only, all users, or an OpenLF2 folder next to this file).
 set "GAME="
-rem The mod's zip file. Left empty, EVERY mod .zip next to this file is used (but *-xoi.zip, lf2-online-upload packages,
-rem xoi-kit), the processes shared out evenly among the mods; a zip file dragged onto this file is the only mod used.
+rem The mod's zip file. Left empty, EVERY mod .zip next to this file is used (but <mod>-xoi.zip when <mod>.zip is there
+rem too, lf2-online-upload packages, xoi-kit), the processes shared out evenly among the mods; a zip file dragged onto this
+rem file is the only mod used.
 set "PACK="
 rem Number of rounds (ROUNDS) and minutes per round (ROUND_MINUTES): the whole run takes about ROUNDS x ROUND_MINUTES
 rem minutes (60 x 10 = 10 hours). In a round every process plays pair after pair on its mod until the minutes are up.
@@ -110,8 +114,9 @@ if !NP! EQU 0 (
   for %%z in (*.zip) do (
     set "TEN=%%~nz"
     set "BO="
-    if /i "!TEN:~-4!"=="-xoi" set "BO=1"
+    if /i "!TEN:~-4!"=="-xoi" if exist "!TEN:~0,-4!.zip" set "BO=1"
     if /i "!TEN:~-13!"=="-xoi-previous" set "BO=1"
+    if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
     if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
     if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
     if not defined BO (
@@ -122,6 +127,8 @@ if !NP! EQU 0 (
   popd
 )
 if !NP! EQU 0 (echo No mod zip file found: put the mod's zip file next to this file, drag it onto this file, or set the PACK line at the top of this file.& pause& exit /b 1)
+rem (The mod's name: the file's name without -xoi, so that <mod>-xoi.zip shares xoi-<mod> with the original, as in brain.bat.)
+for /L %%p in (1,1,%NP%) do call :ten_mod %%p
 
 rem --- Game, bench, scripts ---
 if not defined GAME (
@@ -224,9 +231,9 @@ if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.
 set XS=--scripts "%LV%\scripts"
 rem Starting point: XOI's numbers (an empty start.lua), or a start.lua put there beforehand ^(a previous run's result, say^).
 rem One mod only, with its own numbers already (xoi-<mod>\tune.txt, from a previous run): tuning goes on from them.
-if %NP% EQU 1 if not exist "%LV%\start.lua" for %%z in ("!PACK_1!") do if exist "%KIT%xoi-%%~nz\tune.txt" (
-  copy /y "%KIT%xoi-%%~nz\tune.txt" "%LV%\start.lua" >nul
-  echo Starting from the mod's own numbers: "%KIT%xoi-%%~nz\tune.txt"
+if %NP% EQU 1 if not exist "%LV%\start.lua" if exist "!KIT!xoi-!TEN_1!\tune.txt" (
+  copy /y "!KIT!xoi-!TEN_1!\tune.txt" "%LV%\start.lua" >nul
+  echo Starting from the mod's own numbers: "!KIT!xoi-!TEN_1!\tune.txt"
 )
 if not exist "%LV%\start.lua" (>"%LV%\start.lua" echo return {})
 
@@ -648,15 +655,20 @@ set /a CO+=1
 exit /b 0
 
 rem --- The numbers just tuned for mod number %1: xoi-<mod>\tune.txt (the numbers before them kept as tune-previous.txt),
-rem and <mod>-xoi.zip: a copy of the mod's zip file with xoi/tune.txt (and xoi/notes.txt, if train.bat has trained) next
-rem to the data folder; the previous package kept as <mod>-xoi-previous.zip ---
+rem and <mod>-xoi.zip: a copy of the mod's zip file with xoi/tune.txt (and xoi/notes.txt, if train.bat has trained,
+rem xoi/brain.txt, if brain.bat has) next to the data folder; the previous package kept as <mod>-xoi-previous.zip. Given
+rem <mod>-xoi.zip itself, it is updated in place, the other files in it kept. ---
 :goi_so
 set "XPACK=!PACK_%1!"
+set "XTEN=!TEN_%1!"
 for %%z in ("!XPACK!") do (
-  set "XDIR=%KIT%xoi-%%~nz"
-  set "XOUT=%%~dpnz-xoi.zip"
-  set "XTRUOC=%%~dpnz-xoi-previous.zip"
+  set "XFULL=%%~fz"
+  set "XDIR=!KIT!xoi-!XTEN!"
+  set "XOUT=%%~dpz!XTEN!-xoi.zip"
+  set "XTRUOC=%%~dpz!XTEN!-xoi-previous.zip"
 )
+set "XTAI_CHO="
+if /i "!XFULL!"=="!XOUT!" set "XTAI_CHO=1"
 if not exist "!XDIR!" mkdir "!XDIR!"
 if exist "!XDIR!\tune.txt" copy /y "!XDIR!\tune.txt" "!XDIR!\tune-previous.txt" >nul
 copy /y "%TRUOC%" "!XDIR!\tune.txt" >nul
@@ -667,9 +679,25 @@ if exist "!XDIR!\notes.txt" set "XNOTES=!XDIR!\notes.txt"
 set "XBRAIN="
 if exist "!XDIR!\brain.txt" set "XBRAIN=!XDIR!\brain.txt"
 if exist "!XOUT!" copy /y "!XOUT!" "!XTRUOC!" >nul
-del /q "!XOUT!" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Added ' + $name) } } } finally { $z.Dispose() }" 2>nul
-if exist "!XOUT!" (echo      Packed: "!XOUT!") else (echo      [ERROR] Could not pack it - by hand: open the mod's zip file, go into the folder that holds the data folder, make a folder named xoi, copy "!XDIR!\tune.txt" into it.)
+if not defined XTAI_CHO del /q "!XOUT!" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (-not $env:XTAI_CHO) { Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'the zip has no data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Added ' + $name) } } } finally { $z.Dispose() }" 2>nul
+set "XLOI="
+if errorlevel 1 set "XLOI=1"
+if not exist "!XOUT!" set "XLOI=1"
+if defined XLOI (echo      [ERROR] Could not pack it - by hand: open the mod's zip file, go into the folder that holds the data folder, make a folder named xoi, copy "!XDIR!\tune.txt" into it.) else if defined XTAI_CHO (echo      Updated: "!XOUT!" - the one before: "!XTRUOC!") else (echo      Packed: "!XOUT!")
+exit /b 0
+
+rem --- The name of mod number %1 (TEN_<p>): the zip file's name without -xoi. A folder xoi-<mod>-xoi left (where this file
+rem put the numbers of a <mod>-xoi.zip before package 108): the files of it that xoi-<mod> lacks are taken over. ---
+:ten_mod
+for %%z in ("!PACK_%1!") do set "T_=%%~nz"
+if /i "!T_:~-4!"=="-xoi" set "T_=!T_:~0,-4!"
+set "TEN_%1=!T_!"
+if exist "!KIT!xoi-!T_!-xoi\" for %%f in (tune.txt notes.txt brain.txt) do if exist "!KIT!xoi-!T_!-xoi\%%f" if not exist "!KIT!xoi-!T_!\%%f" (
+  if not exist "!KIT!xoi-!T_!\" mkdir "!KIT!xoi-!T_!"
+  copy /y "!KIT!xoi-!T_!-xoi\%%f" "!KIT!xoi-!T_!\%%f" >nul
+  echo Took "!KIT!xoi-!T_!-xoi\%%f" over to "!KIT!xoi-!T_!\%%f".
+)
 exit /b 0
 
 rem --- The check's result for mod number %1 ---

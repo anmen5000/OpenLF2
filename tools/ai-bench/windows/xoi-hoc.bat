@@ -43,18 +43,27 @@ if defined GOP if exist "%~1\data\data.txt" (
   pause
   exit /b 1
 )
+rem (Thu muc xoi-<ten> ma khong con file zip ban goc: dong goi vao chinh <ten>-xoi.zip canh file nay, neu co - goi 108.)
 if defined GOP if exist "%~1\" (
   set "THU=%~nx1"
   if /i "!THU:~0,4!"=="xoi-" if not defined PACK (
     set "PACK=%~dp0!THU:~4!.zip"
     if exist "%~f1\ban-mod.txt" set /p PACK=<"%~f1\ban-mod.txt"
+    if not exist "!PACK!" if exist "%~dp0!THU:~4!-xoi.zip" set "PACK=%~dp0!THU:~4!-xoi.zip"
   )
 )
+rem (Ban <ten>-xoi.zip chi bi bo qua khi <ten>.zip cung nam day, nhu hoc-sau.bat.)
 if not defined PACK (
   pushd "%~dp0"
   for %%z in (*.zip) do (
     set "TEN=%%~nz"
-    if not defined PACK if /i not "!TEN:~-4!"=="-xoi" if /i not "!TEN:~-10!"=="-xoi-truoc" if /i not "!TEN:~0,17!"=="lf2-online-upload" if /i not "!TEN:~0,7!"=="xoi-kit" set "PACK=%%~fz"
+    set "BO="
+    if /i "!TEN:~-4!"=="-xoi" if exist "!TEN:~0,-4!.zip" set "BO=1"
+    if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
+    if /i "!TEN:~-13!"=="-xoi-previous" set "BO=1"
+    if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
+    if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
+    if not defined PACK if not defined BO set "PACK=%%~fz"
   )
   popd
 )
@@ -68,11 +77,21 @@ if not defined GAME set "GAME=%LOCALAPPDATA%\Programs\OpenLF2\openlf2.exe"
 
 for %%z in ("%PACK%") do (
   set "TEN=%%~nz"
-  set "OUT=%%~dpnz-xoi.zip"
+  set "THU_MUC_GOI=%%~dpz"
 )
+rem (Ten ban mod: ten file bo duoi -xoi, nhu hoc-sau.bat: ban <ten>-xoi.zip dung chung thu muc xoi-<ten> voi ban goc, va
+rem dua no vao thi goi cap nhat chinh no - goi 108; truoc do bo nho cua no ve xoi-<ten>-xoi va <ten>-xoi-xoi.zip.)
+if /i "!TEN:~-4!"=="-xoi" set "TEN=!TEN:~0,-4!"
+set "OUT=!THU_MUC_GOI!!TEN!-xoi.zip"
 rem Moi ban mod mot thu muc xoi-<ten ban mod>: moi dot hoc trong dot-<hat giong>, bo nho gop o notes.txt
 set "XOI=%~dp0xoi-%TEN%"
 set "KQ=%XOI%\dot-%HAT_GIONG_DAU%"
+rem (Thu muc xoi-<ten>-xoi con lai tu truoc goi 108: lay sang xoi-<ten> nhung file xoi-<ten> chua co.)
+if /i not "%~1"=="chay1" if exist "%~dp0xoi-%TEN%-xoi\" for %%f in (notes.txt tune.txt brain.txt) do if exist "%~dp0xoi-%TEN%-xoi\%%f" if not exist "%XOI%\%%f" (
+  if not exist "%XOI%\" mkdir "%XOI%"
+  copy /y "%~dp0xoi-%TEN%-xoi\%%f" "%XOI%\%%f" >nul
+  echo Lay "%~dp0xoi-%TEN%-xoi\%%f" sang "%XOI%\%%f".
+)
 if not defined BENCH (
   if exist "%~dp0tools\ai-bench\learn.lua" set "BENCH=%~dp0tools\ai-bench"
   if exist "%~dp0learn.lua" set "BENCH=%~dp0."
@@ -148,12 +167,16 @@ timeout /t 10 /nobreak >nul
 tasklist /FI "IMAGENAME eq openlf2.exe" 2>nul | find /I "openlf2.exe" >nul && goto cho
 
 :gop
-rem Gop moi dot hoc cua ban mod nay (xoi-<ten ban mod>\dot-*) thanh xoi-<ten ban mod>\notes.txt
+rem Gop moi dot hoc cua ban mod nay (xoi-<ten ban mod>\dot-*) thanh xoi-<ten ban mod>\notes.txt - gop vao notes-moi.txt roi
+rem moi thay vao: thu muc chua co dot hoc nao (chi co bo nho, bo so, bo nao) thi giu nguyen notes.txt dang co, van dong goi.
 set /a CAP=0, LOI=0, DOT=0
 if not exist "%XOI%" mkdir "%XOI%"
-type nul > "%XOI%\notes.txt"
+type nul > "%XOI%\notes-moi.txt"
 for /f "delims=" %%d in ('dir /b /ad "%XOI%\dot-*" 2^>nul') do call :gop_dot "%XOI%\%%d"
-if %DOT% EQU 0 (echo Chua co dot hoc nao cua "%TEN%" canh file nay.& pause& exit /b 1)
+if %DOT% GTR 0 move /y "%XOI%\notes-moi.txt" "%XOI%\notes.txt" >nul
+if exist "%XOI%\notes-moi.txt" del /q "%XOI%\notes-moi.txt"
+if %DOT% EQU 0 if not exist "%XOI%\notes.txt" (echo Chua co dot hoc nao cua "%TEN%" canh file nay.& pause& exit /b 1)
+if %DOT% EQU 0 echo Chua co dot hoc nao cua "%TEN%" canh file nay: giu bo nho dang co.
 echo.
 echo ===== %DOT% dot hoc, %CAP% cap nhan vat da hoc xong =====
 if %LOI% GTR 0 echo [LOI] %LOI% tien trinh chua xong hoac co loi - xem cac dong o tren.
@@ -172,11 +195,14 @@ set "XTUNE="
 if exist "%XOI%\tune.txt" set "XTUNE=%XOI%\tune.txt"
 set "XBRAIN="
 if exist "%XOI%\brain.txt" set "XBRAIN=%XOI%\brain.txt"
-rem (Ban dong goi lan truoc duoc giu lai thanh <ten>-xoi-truoc.zip, de do so sanh voi ban moi.)
-for %%z in ("%PACK%") do set "TRUOC=%%~dpnz-xoi-truoc.zip"
+rem (Ban dong goi lan truoc duoc giu lai thanh <ten>-xoi-truoc.zip, de do so sanh voi ban moi. Dua vao chinh <ten>-xoi.zip
+rem thi cap nhat no tai cho, giu cac file khac trong no.)
+set "TRUOC=!THU_MUC_GOI!!TEN!-xoi-truoc.zip"
+set "XTAI_CHO="
+for %%z in ("%PACK%") do if /i "%%~fz"=="%OUT%" set "XTAI_CHO=1"
 if exist "%OUT%" copy /y "%OUT%" "%TRUOC%" >nul
-del /q "%OUT%" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Da them ' + $name) } } } finally { $z.Dispose() }"
+if not defined XTAI_CHO del /q "%OUT%" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (-not $env:XTAI_CHO) { Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('Da them ' + $name) } } } finally { $z.Dispose() }"
 if not exist "%OUT%" goto khong_goi
 if errorlevel 1 goto khong_goi
 echo.
@@ -202,7 +228,7 @@ exit /b 0
 
 :gop1
 if not exist "%~1\out.txt" (set /a LOI+=1& echo [LOI] "%~1" chua chay& exit /b 0)
-findstr /C:"XOI " "%~1\out.txt" >> "%XOI%\notes.txt"
+findstr /C:"XOI " "%~1\out.txt" >> "%XOI%\notes-moi.txt"
 for /f "delims=" %%l in ('findstr /C:" done: " "%~1\out.txt"') do set /a CAP+=1
 findstr /C:"LEARN DONE" "%~1\out.txt" >nul && exit /b 0
 set /a LOI+=1

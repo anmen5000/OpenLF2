@@ -11,6 +11,9 @@ rem cac tien trinh, vong sau bat dau tu do. Het moi vong: cho ban da chinh danh 
 rem spsa\ket-qua.txt (gui file nay cho nguoi lam AI). Bo so cua moi ban mod: xoi-<ten ban mod>\tune.txt, va
 rem <ten ban mod>-xoi.zip = ban mod co bo so ay (va bo nho XOI neu da hoc) - tai len relay thi XOI choi ban
 rem mod ay bang bo so rieng cua no (goi 38 tro len; tu goi 43 INSANE! khong dung bo so nay). Chi mot ban mod: lan sau chinh tiep tu bo so cua no.
+rem Dua vao chinh <ten>-xoi.zip (khi khong con <ten>.zip) thi bo so ve xoi-<ten> nhu ban goc va goi cap nhat chinh no,
+rem ban truoc giu o <ten>-xoi-truoc.zip - nhu hoc-sau.bat (goi 108; truoc do bo so ve xoi-<ten>-xoi va <ten>-xoi-xoi.zip,
+rem hoc-sau.bat chay tiep khong thay bo so ay).
 rem Dung som (goi 100): bo so da cham tran - kiem tra nho sau moi vong khong con tang - thi thoi cac vong con lai, kiem
 rem tra, goi so, roi hoc sau tiep neu dat TIEP_HOC_SAU=1 (xem DUNG_SOM).
 rem Tam dung: dong cua so nay - cac game cua no tu dung theo (tu goi 73) - hay dat GIO_CHAY, hay tat may. Lam tiep:
@@ -23,8 +26,9 @@ rem scripts cua bo XOI nay (AI ban moi); cuoi dot kiem tra va goi so lai.
 rem ============ CHINH O DAY ============
 rem Game da cai. De trong thi tu tim (Install for me only, all users, hoac thu muc OpenLF2 canh file nay).
 set "GAME="
-rem File zip ban mod. De trong thi dung MOI file .zip ban mod canh file nay (tru *-xoi.zip, goi lf2-online-upload,
-rem xoi-kit), cac tien trinh chia deu cho cac ban mod; keo tha mot file zip vao file nay thi chi dung ban mod ay.
+rem File zip ban mod. De trong thi dung MOI file .zip ban mod canh file nay (tru <ten>-xoi.zip khi <ten>.zip cung nam
+rem day, goi lf2-online-upload, xoi-kit), cac tien trinh chia deu cho cac ban mod; keo tha mot file zip vao file nay thi
+rem chi dung ban mod ay.
 set "PACK="
 rem So vong (VONG) va so phut moi vong (PHUT_VONG): ca qua trinh chung VONG x PHUT_VONG phut (60 x 10 = 10 tieng).
 rem Trong mot vong, moi tien trinh danh lien cac cap tran tren ban mod cua no cho toi het PHUT_VONG phut. Mot cap tran:
@@ -106,8 +110,9 @@ if !NP! EQU 0 (
   for %%z in (*.zip) do (
     set "TEN=%%~nz"
     set "BO="
-    if /i "!TEN:~-4!"=="-xoi" set "BO=1"
+    if /i "!TEN:~-4!"=="-xoi" if exist "!TEN:~0,-4!.zip" set "BO=1"
     if /i "!TEN:~-10!"=="-xoi-truoc" set "BO=1"
+    if /i "!TEN:~-13!"=="-xoi-previous" set "BO=1"
     if /i "!TEN:~0,17!"=="lf2-online-upload" set "BO=1"
     if /i "!TEN:~0,7!"=="xoi-kit" set "BO=1"
     if not defined BO (
@@ -118,6 +123,8 @@ if !NP! EQU 0 (
   popd
 )
 if !NP! EQU 0 (echo Khong thay file zip ban mod: dat file zip ban mod canh file nay, keo tha no vao file nay, hoac sua dong PACK o dau file.& pause& exit /b 1)
+rem (Ten ban mod: ten file bo duoi -xoi, de ban <ten>-xoi.zip dung chung xoi-<ten> voi ban goc, nhu hoc-sau.bat.)
+for /L %%p in (1,1,%NP%) do call :ten_mod %%p
 
 rem --- Game, bo chay thu, scripts ---
 if not defined GAME (
@@ -217,9 +224,9 @@ if exist "%SCRIPTS%\runtime\bootstrap.lua" copy /y "%SCRIPTS%\runtime\bootstrap.
 set XS=--scripts "%LV%\scripts"
 rem Diem bat dau: cac so cua XOI (bat-dau.lua rong), hoac dat san mot bat-dau.lua ^(vi du ket qua lan chinh truoc^).
 rem Chi mot ban mod, da co bo so rieng (xoi-<ten>\tune.txt, tu lan chinh truoc): chinh tiep tu bo so ay.
-if %NP% EQU 1 if not exist "%LV%\bat-dau.lua" for %%z in ("!PACK_1!") do if exist "%KIT%xoi-%%~nz\tune.txt" (
-  copy /y "%KIT%xoi-%%~nz\tune.txt" "%LV%\bat-dau.lua" >nul
-  echo Bat dau tu bo so rieng cua ban mod: "%KIT%xoi-%%~nz\tune.txt"
+if %NP% EQU 1 if not exist "%LV%\bat-dau.lua" if exist "!KIT!xoi-!TEN_1!\tune.txt" (
+  copy /y "!KIT!xoi-!TEN_1!\tune.txt" "%LV%\bat-dau.lua" >nul
+  echo Bat dau tu bo so rieng cua ban mod: "!KIT!xoi-!TEN_1!\tune.txt"
 )
 if not exist "%LV%\bat-dau.lua" (>"%LV%\bat-dau.lua" echo return {})
 
@@ -636,15 +643,20 @@ set /a CO+=1
 exit /b 0
 
 rem --- Bo so vua chinh cho ban mod thu %1: xoi-<ten>\tune.txt (bo so truoc do giu o tune-truoc.txt), va <ten>-xoi.zip:
-rem ban sao file zip ban mod, them xoi/tune.txt (va xoi/notes.txt neu xoi-hoc.bat da hoc) canh thu muc data; goi truoc
-rem do giu o <ten>-xoi-truoc.zip ---
+rem ban sao file zip ban mod, them xoi/tune.txt (va xoi/notes.txt neu xoi-hoc.bat da hoc, xoi/brain.txt neu hoc-sau.bat
+rem da hoc) canh thu muc data; goi truoc do giu o <ten>-xoi-truoc.zip. Dua vao chinh <ten>-xoi.zip thi cap nhat no tai
+rem cho, giu cac file khac trong no. ---
 :goi_so
 set "XPACK=!PACK_%1!"
+set "XTEN=!TEN_%1!"
 for %%z in ("!XPACK!") do (
-  set "XDIR=%KIT%xoi-%%~nz"
-  set "XOUT=%%~dpnz-xoi.zip"
-  set "XTRUOC=%%~dpnz-xoi-truoc.zip"
+  set "XFULL=%%~fz"
+  set "XDIR=!KIT!xoi-!XTEN!"
+  set "XOUT=%%~dpz!XTEN!-xoi.zip"
+  set "XTRUOC=%%~dpz!XTEN!-xoi-truoc.zip"
 )
+set "XTAI_CHO="
+if /i "!XFULL!"=="!XOUT!" set "XTAI_CHO=1"
 if not exist "!XDIR!" mkdir "!XDIR!"
 if exist "!XDIR!\tune.txt" copy /y "!XDIR!\tune.txt" "!XDIR!\tune-truoc.txt" >nul
 copy /y "%TRUOC%" "!XDIR!\tune.txt" >nul
@@ -655,9 +667,25 @@ if exist "!XDIR!\notes.txt" set "XNOTES=!XDIR!\notes.txt"
 set "XBRAIN="
 if exist "!XDIR!\brain.txt" set "XBRAIN=!XDIR!\brain.txt"
 if exist "!XOUT!" copy /y "!XOUT!" "!XTRUOC!" >nul
-del /q "!XOUT!" 2>nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Da them ' + $name) } } } finally { $z.Dispose() }" 2>nul
-if exist "!XOUT!" (echo      Goi: "!XOUT!") else (echo      [LOI] Khong goi duoc - tu lam: mo file zip ban mod, vao thu muc co thu muc data, tao thu muc xoi, chep "!XDIR!\tune.txt" vao do.)
+if not defined XTAI_CHO del /q "!XOUT!" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (-not $env:XTAI_CHO) { Copy-Item -LiteralPath $env:XPACK -Destination $env:XOUT -Force }; $z=[System.IO.Compression.ZipFile]::Open($env:XOUT,'Update'); try { $e=$z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length } | Select-Object -First 1; if (-not $e) { throw 'zip khong co data/data.txt' }; $root=$e.FullName.Substring(0, $e.FullName.Length - 13); foreach ($f in @(@($env:XNOTES, 'xoi/notes.txt'), @($env:XTUNE, 'xoi/tune.txt'), @($env:XBRAIN, 'xoi/brain.txt'))) { if ($f[0] -and (Test-Path -LiteralPath $f[0])) { $name=$root + $f[1]; foreach ($old in @($z.Entries | Where-Object { $_.FullName -ieq $name })) { $old.Delete() }; [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $f[0], $name); Write-Host ('     Da them ' + $name) } } } finally { $z.Dispose() }" 2>nul
+set "XLOI="
+if errorlevel 1 set "XLOI=1"
+if not exist "!XOUT!" set "XLOI=1"
+if defined XLOI (echo      [LOI] Khong goi duoc - tu lam: mo file zip ban mod, vao thu muc co thu muc data, tao thu muc xoi, chep "!XDIR!\tune.txt" vao do.) else if defined XTAI_CHO (echo      Da cap nhat: "!XOUT!" - ban truoc: "!XTRUOC!") else (echo      Goi: "!XOUT!")
+exit /b 0
+
+rem --- Ten ban mod thu %1 (TEN_<p>): ten file zip, bo duoi -xoi. Thu muc xoi-<ten>-xoi (file nay truoc goi 108 de bo so
+rem cua ban <ten>-xoi.zip o do) con lai thi lay sang xoi-<ten> nhung file xoi-<ten> chua co. ---
+:ten_mod
+for %%z in ("!PACK_%1!") do set "T_=%%~nz"
+if /i "!T_:~-4!"=="-xoi" set "T_=!T_:~0,-4!"
+set "TEN_%1=!T_!"
+if exist "!KIT!xoi-!T_!-xoi\" for %%f in (tune.txt notes.txt brain.txt) do if exist "!KIT!xoi-!T_!-xoi\%%f" if not exist "!KIT!xoi-!T_!\%%f" (
+  if not exist "!KIT!xoi-!T_!\" mkdir "!KIT!xoi-!T_!"
+  copy /y "!KIT!xoi-!T_!-xoi\%%f" "!KIT!xoi-!T_!\%%f" >nul
+  echo Lay "!KIT!xoi-!T_!-xoi\%%f" sang "!KIT!xoi-!T_!\%%f".
+)
 exit /b 0
 
 rem --- Ket qua kiem tra cua ban mod thu %1 ---

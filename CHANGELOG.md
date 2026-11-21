@@ -1338,6 +1338,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   either; the HP a side ends with is its fighter's while on the stage, else what its team stands with. (The rule is the
   bench's own, not the game's: a measure keeps the game's scripts it began with.) Naruto against either clone, 8
   games: 8 draws before, 8 wins now; the two clones, 4 draws, now 2 wins each; the games themselves are the same
+- `spsa.bat` given a `<mod>-xoi.zip` kept its numbers apart from the mod's other XOI files (package 108, the project
+  owner's report: `spsa.bat` on NTSD2.6-xoi.zip, then `hoc-sau.bat` after it, left the tuned numbers in
+  NTSD2.6-xoi-xoi.zip and the brain in NTSD2.6-xoi.zip, no package with both). `spsa.bat` and `xoi-hoc.bat` named a mod
+  after its zip file, so a `-xoi.zip` got the folder `xoi-<mod>-xoi` and the package `<mod>-xoi-xoi.zip`, while
+  `hoc-sau.bat` drops the `-xoi`: the brain it learned next (`TIEP_HOC_SAU=1`, "on the numbers just tuned") was learned
+  without them and packed without them. Now the three share `xoi-<mod>` and update a `<mod>-xoi.zip` given in place
+  (the one before kept as `<mod>-xoi-truoc.zip`); a `<mod>-xoi.zip` is passed over only when `<mod>.zip` is there too;
+  a folder `xoi-<mod>-xoi` left gives `xoi-<mod>` the files it lacks, so the next run of any of them puts the mod's
+  numbers, notes and brain in one package. `xoi-hoc.bat` with a folder `xoi-<mod>` dragged onto it (merge and pack only)
+  packs into `<mod>-xoi.zip` when the original zip is gone, and with no training round to merge keeps the notes it has
+  (it emptied them, then stopped). The English kit the same (`spsa.bat`, `train.bat`, `brain.bat`); untried on Windows
+  here: the scripts follow `hoc-sau.bat`'s own handling of a `-xoi.zip`, line for line where they can
 
 ## [1.1.2] - 2026-10-26
 

@@ -748,11 +748,18 @@ rem ghi mot dong cho moi ban mod cua lan chay) thi KHAC=1 ---
 :doi_chieu
 findstr /l /c:"ban mod %1 (!TEN_%1!" "%LV%\thoi-gian.txt" >nul 2>nul || set "KHAC=1"
 exit /b 0
-rem --- Ten ban mod thu %1 (TEN_<p>): ten file zip, bo duoi -xoi ---
+rem --- Ten ban mod thu %1 (TEN_<p>): ten file zip, bo duoi -xoi. Thu muc xoi-<ten>-xoi (spsa.bat va xoi-hoc.bat truoc goi
+rem 108 de bo so, bo nho cua ban <ten>-xoi.zip o do, va file nay khong thay) con lai thi lay sang xoi-<ten> nhung file
+rem xoi-<ten> chua co. ---
 :ten_mod
 for %%z in ("!PACK_%1!") do set "T_=%%~nz"
 if /i "!T_:~-4!"=="-xoi" set "T_=!T_:~0,-4!"
 set "TEN_%1=!T_!"
+if exist "!KIT!xoi-!T_!-xoi\" for %%f in (tune.txt notes.txt brain.txt) do if exist "!KIT!xoi-!T_!-xoi\%%f" if not exist "!KIT!xoi-!T_!\%%f" (
+  if not exist "!KIT!xoi-!T_!\" mkdir "!KIT!xoi-!T_!"
+  copy /y "!KIT!xoi-!T_!-xoi\%%f" "!KIT!xoi-!T_!\%%f" >nul
+  echo Lay "!KIT!xoi-!T_!-xoi\%%f" sang "!KIT!xoi-!T_!\%%f".
+)
 exit /b 0
 rem --- Bo nao bat dau cua ban mod thu %1 (NAO_<p>): xoi-<ten>\brain.txt; hay thu muc theo ten file chua bo duoi -xoi
 rem (hoc-sau.bat cua goi 67 lam vay); hay bo nao trong goi (lam_ban_mod lay ra nao-goi-<p>.txt) ---

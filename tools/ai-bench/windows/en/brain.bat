@@ -759,11 +759,18 @@ rem each mod of the run): KHAC=1 ---
 :doi_chieu
 findstr /l /c:"mod %1 (!TEN_%1!" "%LV%\timing.txt" >nul 2>nul || set "KHAC=1"
 exit /b 0
-rem --- Mod %1's name (TEN_<p>): the zip file's name less a -xoi ending ---
+rem --- Mod %1's name (TEN_<p>): the zip file's name less a -xoi ending. A folder xoi-<mod>-xoi left (where spsa.bat and
+rem train.bat put the numbers and notes of a <mod>-xoi.zip before package 108, which this file did not see): the files of
+rem it that xoi-<mod> lacks are taken over. ---
 :ten_mod
 for %%z in ("!PACK_%1!") do set "T_=%%~nz"
 if /i "!T_:~-4!"=="-xoi" set "T_=!T_:~0,-4!"
 set "TEN_%1=!T_!"
+if exist "!KIT!xoi-!T_!-xoi\" for %%f in (tune.txt notes.txt brain.txt) do if exist "!KIT!xoi-!T_!-xoi\%%f" if not exist "!KIT!xoi-!T_!\%%f" (
+  if not exist "!KIT!xoi-!T_!\" mkdir "!KIT!xoi-!T_!"
+  copy /y "!KIT!xoi-!T_!-xoi\%%f" "!KIT!xoi-!T_!\%%f" >nul
+  echo Took "!KIT!xoi-!T_!-xoi\%%f" over to "!KIT!xoi-!T_!\%%f".
+)
 exit /b 0
 rem --- Mod %1's starting brain (NAO_<p>): xoi-<mod>\brain.txt; or the folder named after the file name with its -xoi
 rem ending (package 67's brain.bat did so); or the brain inside the zip (lam_ban_mod takes it out as zip-brain-<p>.txt) ---
