@@ -18,6 +18,7 @@ local controls = require("base/ui/controls")
 local font = require("base/ui/font")
 local brains = require("bench/brains")
 local names = require("bench/names")
+local outcome = require("bench/outcome")
 local show = {}
 
 local function find(fighters, id)
@@ -123,12 +124,12 @@ function show.update(state, raw, context)
     -- (A game at its limit, still undecided: a draw.)
     local timed_out = current.round_counter == 0 and (current.elapsed or 0) >= (state.config.limit or 9000)
     if requested == "round_over" or requested == "replay_error" or timed_out then
-        local items = state.screen.match.items
-        local hp = {}
-        for slot, side in pairs(state.sides) do hp[side] = items[slot] and math.max(items[slot].hp, 0) or 0 end
+        -- (Down as the game takes it, bench/outcome: the fighter in slot 10 is of team 1, the one in 11 of team 2.)
+        local down = {}
+        for slot, side in pairs(state.sides) do down[side] = outcome.side(current, slot, slot - 9) end
         if timed_out then state.draws = state.draws + 1
-        elseif hp[1] > 0 and hp[2] <= 0 then state.wins[1] = state.wins[1] + 1
-        elseif hp[2] > 0 and hp[1] <= 0 then state.wins[2] = state.wins[2] + 1
+        elseif down[2] and not down[1] then state.wins[1] = state.wins[1] + 1
+        elseif down[1] and not down[2] then state.wins[2] = state.wins[2] + 1
         else state.draws = state.draws + 1 end
         state.played = state.played + 1
         engine.log(string.format("show: game %d: %s %d - %d %s (draws %d)%s", state.played, state.labels[1], state.wins[1], state.wins[2], state.labels[2], state.draws,

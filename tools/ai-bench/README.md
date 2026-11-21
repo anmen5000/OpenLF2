@@ -325,7 +325,11 @@ numbers, not a verdict. One computer player (`brain`: `"xoi"` by default, `"smar
 original player with the mod's own AI scripts) plays both sides of every pair of the chosen fighters, each pair on both
 sides, on the same stage, from the same point of the random sequence (`engine.set_random_state`: about 3.7 million
 starts). Weapons do not fall from the sky unless `weapons = true`; a game ends at `limit` frames (9000) or after `stall`
-frames without anybody losing HP (1800), a draw.
+frames without anybody losing HP (1800), a draw. A side is down as the game itself takes it when it ends the round
+(`outcome.lua`, for every job here that scores games): when no character of its team stands, on the stage with HP
+left. So a fighter gone from the stage has lost whatever HP it had — NTSD 2.6's Hiruzen(Clone) and Kisame(Clone) go up
+in smoke when struck, and their games were counted as draws before package 107 —, and one down while a character it
+made stands on (Naruto's clones) has not, yet.
 
 Each blow is credited by the game's own count of damage (`battle.on_damage`, set only by this job: the item that
 struck, and whether the blow was guarded) to the move it came from. A fighter's move runs from where it leaves a free

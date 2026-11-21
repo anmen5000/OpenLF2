@@ -87,7 +87,7 @@ for source, target in ((root / "scripts", "scripts"), (root / "tools/ai-bench", 
 names = {name for name, _ in files}
 for needed in [name for name, _ in texts] + [
         "scripts/base/game/smart_ai.lua", "scripts/base/game/match.lua", "tools/ai-bench/learn.lua",
-        "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/list.lua",
+        "tools/ai-bench/show.lua", "tools/ai-bench/names.lua", "tools/ai-bench/outcome.lua", "tools/ai-bench/list.lua",
         "tools/ai-bench/duel.lua", "tools/ai-bench/brains.lua", "tools/ai-bench/spsa.lua",
         "tools/ai-bench/record.lua", "tools/ai-bench/train.lua", "tools/ai-bench/balance.lua", "tools/ai-bench/rl.lua",
         "tools/ai-bench/balance-report-head.html", "tools/ai-bench/balance-report-tail.html",

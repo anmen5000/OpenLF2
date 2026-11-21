@@ -27,6 +27,7 @@ module=learn|learn.lua
 module=stall|stall.lua
 module=spsa|spsa.lua
 module=names|names.lua
+module=outcome|outcome.lua
 module=list|list.lua
 module=record|record.lua
 module=train|train.lua

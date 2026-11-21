@@ -33,6 +33,7 @@ local constants = require("base/game/constants")
 local objects = require("base/game/objects")
 local battle = require("base/game/battle")
 local names = require("bench/names")
+local outcome = require("bench/outcome")
 local job = {}
 local floor, max, min, abs, sqrt = math.floor, math.max, math.min, math.abs, math.sqrt
 local item_slots = constants.item_slots
@@ -537,9 +538,13 @@ local function play_game(context, left, right, row, h)
     end)
     watching = nil
     if not ok then error(problem, 0) end
-    local hp_left, hp_right = max(a.hp, 0), max(b.hp, 0)
+    -- Who is down, as the game takes it (bench/outcome): a fighter gone from the stage is, whatever HP it had - NTSD
+    -- 2.6's clones go up in smoke when struck, and their games were counted as draws -, and one whose own character
+    -- still stands is not.
+    local left_down, hp_left = outcome.side(state, sides[1].slot, a.team)
+    local right_down, hp_right = outcome.side(state, sides[2].slot, b.team)
     local winner
-    if hp_left > 0 and hp_right <= 0 then winner = 1 elseif hp_right > 0 and hp_left <= 0 then winner = 2 end
+    if right_down and not left_down then winner = 1 elseif left_down and not right_down then winner = 2 end
     if ending == "ko" and not winner then ending = "both" end
     return winner, ending, game.tick, hp_left, hp_right
 end

@@ -17,6 +17,7 @@ local function find(fighters, id)
     return index
 end
 local brains = require("bench/brains")
+local outcome = require("bench/outcome")
 local other_brain, label = brains.load, brains.label
 function duel.run(config)
     -- config.notes: a module of this package returning {text = <notes>} for "xoi" (instead of the mod's xoi/notes.txt).
@@ -165,6 +166,7 @@ function duel.run(config)
                 end
                 local held = {functions = "", function_presses = "", keys = {}}
                 local ticks = 0
+                local teams = {[10] = state.items[10].team, [11] = state.items[11].team}
                 local last_hp = {[10] = state.items[10].hp, [11] = state.items[11].hp}
                 local notes = {[10] = {}, [11] = {}}
                 local track = {[10] = {hp = state.items[10].hp, note = "-", free = true, lying_at = -999, hit_at = -999},
@@ -339,11 +341,13 @@ function duel.run(config)
                     end
                     if state.round_counter > 0 then break end
                 end
-                local hp = {}
-                hp[first] = math.max(state.items[10] and state.items[10].hp or 0, 0)
-                hp[second] = math.max(state.items[11] and state.items[11].hp or 0, 0)
+                -- (Down as the game takes it, bench/outcome: a fighter gone from the stage is, whatever HP it had, as
+                -- NTSD 2.6's clones when struck; one whose own character still stands is not.)
+                local hp, down = {}, {}
+                down[first], hp[first] = outcome.side(state, 10, teams[10])
+                down[second], hp[second] = outcome.side(state, 11, teams[11])
                 local winner
-                if hp[1] > 0 and hp[2] <= 0 then winner = 1 elseif hp[2] > 0 and hp[1] <= 0 then winner = 2 end
+                if down[2] and not down[1] then winner = 1 elseif down[1] and not down[2] then winner = 2 end
                 if not winner then
                     draws = draws + 1
                 else

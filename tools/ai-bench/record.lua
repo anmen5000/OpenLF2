@@ -15,6 +15,7 @@ local match = require("base/game/match")
 local constants = require("base/game/constants")
 local ai_scripts = require("base/game/ai_scripts")
 local brains = require("bench/brains")
+local outcome = require("bench/outcome")
 local job = {}
 
 local function clock_seconds() local clock = engine.network_time; return clock and clock() / 1000 or nil end
@@ -209,6 +210,7 @@ function job.run(config)
             local held = {functions = "", function_presses = "", keys = {}}
             local ticks = 0
             local hp = {state.items[10].hp, state.items[11].hp}
+            local teams = {state.items[10].team, state.items[11].team}
             while ticks < limit do
                 match.step(state, held)
                 ticks = ticks + 1
@@ -255,10 +257,9 @@ function job.run(config)
                 pending = keep
                 if one.hp <= 0 or two.hp <= 0 or state.round_counter > 0 then break end
             end
-            local one, two = state.items[10], state.items[11]
-            if one and two then
-                if one.hp > 0 and two.hp <= 0 then wins = wins + 1 elseif two.hp > 0 and one.hp <= 0 then losses = losses + 1 end
-            end
+            -- (Down as the game takes it, bench/outcome: gone from the stage is down too.)
+            local down_one, down_two = outcome.side(state, 10, teams[1]), outcome.side(state, 11, teams[2])
+            if down_two and not down_one then wins = wins + 1 elseif down_one and not down_two then losses = losses + 1 end
         end)
         if not ok then engine.log("record: game failed: " .. tostring(problem)) end
     end

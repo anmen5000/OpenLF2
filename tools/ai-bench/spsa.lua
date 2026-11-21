@@ -52,6 +52,7 @@ local ai_scripts = require("base/game/ai_scripts")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
 local brains = require("bench/brains")
+local outcome = require("bench/outcome")
 local spsa = {}
 local floor, max, min = math.floor, math.max, math.min
 
@@ -194,9 +195,12 @@ local function play(config, fighters, backgrounds, row, first, second, swap)
             own_hp, other_hp = own.hp, other.hp
             if stall > 0 and quiet >= stall then break end
         end
-        local mine, theirs = max(own.hp, 0), max(other.hp, 0)
+        -- (Down as the game takes it, bench/outcome: a fighter gone from the stage is, whatever HP it had, as NTSD
+        -- 2.6's clones when struck; one whose own character still stands is not.)
+        local my_down, mine = outcome.side(state, 10 + smart_slot, own.team)
+        local their_down, theirs = outcome.side(state, 11 - smart_slot, other.team)
         local score = 0
-        if mine > 0 and theirs <= 0 then score = 1 elseif theirs > 0 and mine <= 0 then score = -1 end
+        if their_down and not my_down then score = 1 elseif my_down and not their_down then score = -1 end
         return score + max(-1, min(1, (mine - theirs) / 500))
     end)
     if not ok then

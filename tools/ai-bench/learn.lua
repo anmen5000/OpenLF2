@@ -31,6 +31,7 @@ local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
 local brains = require("bench/brains")
+local outcome = require("bench/outcome")
 local learn = {}
 
 local function find(fighters, id)
@@ -225,11 +226,14 @@ function learn.run(config)
         end
         for value, window in pairs(open) do close(window); open[value] = nil end
         for value in pairs(foe_of) do settle(value, tick) end
-        local left_a, left_b = math.max(a.hp, 0), math.max(b.hp, 0)
+        -- (Down as the game takes it, bench/outcome: a fighter gone from the stage is, whatever HP it had, as NTSD
+        -- 2.6's clones when struck; one whose own character still stands is not.)
+        local down_a, left_a = outcome.side(state, slot_of[1], a.team)
+        local down_b, left_b = outcome.side(state, slot_of[2], b.team)
         local mine, theirs = moves_of(pair[1], pair[2]), moves_of(pair[2], pair[1])
         mine.games, theirs.games = mine.games + 1, theirs.games + 1
-        if left_a > 0 and left_b <= 0 then mine.wins = mine.wins + 1
-        elseif left_b > 0 and left_a <= 0 then theirs.wins = theirs.wins + 1
+        if down_b and not down_a then mine.wins = mine.wins + 1
+        elseif down_a and not down_b then theirs.wins = theirs.wins + 1
         else mine.draws, theirs.draws = mine.draws + 1, theirs.draws + 1 end
         for value, entry in pairs({[a] = mine, [b] = theirs}) do
             local memory = value.smart_memory

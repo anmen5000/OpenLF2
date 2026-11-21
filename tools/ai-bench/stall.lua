@@ -10,6 +10,7 @@ local catalog = require("base/game/catalog")
 local match = require("base/game/match")
 local constants = require("base/game/constants")
 local brains = require("bench/brains")
+local outcome = require("bench/outcome")
 local job = {}
 local function find(fighters, id)
     for i, f in ipairs(fighters) do if f.id == id then return i end end
@@ -72,7 +73,8 @@ function job.run(config)
                 end
                 if state.round_counter > 0 then break end
             end
-            if a.hp > 0 and b.hp > 0 then draws = draws + 1 end
+            -- (Down as the game takes it, bench/outcome: gone from the stage is down too.)
+            if not outcome.side(state, 10 + slot_a, a.team) and not outcome.side(state, 10 + slot_b, b.team) then draws = draws + 1 end
         end
     end
     engine.log(string.format("STALLS %d: %d of %d frames, %d games, %d draws", stalls, stall_frames, frames, games, draws))

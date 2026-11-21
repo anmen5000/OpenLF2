@@ -1326,8 +1326,18 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   M 6 its own owner's - and takes the toucher to its frame dvx, harming no one and looking past blinking
   (`combat.detector`, `base/game/combat`). The mod has 1,223 such hits in 84 records, 38 of them characters
   (kinds 801, 806, 830 and 836; NTSD 2.4 has none). Now Tobi's second D^J lets go of the enemy with 60 HP; Sasori's
-  puppet moves are the puppet's (D>A its iron sand, D+J+A its charge of MP, the puppet held meanwhile); Minato goes
-  onto his kunai and strikes
+  puppet moves are the puppet's (D>A its iron sand; D+J+A the charge the mod has for it, the puppet held on guard,
+  its MP seemingly from a hit of effect 6030, one of NTSD.exe's own effects, which OpenLF2 does not play: MP comes
+  back there only as fast as ever); Minato goes onto his kunai and strikes
+- The bench's tools counted a fighter gone from the stage as still standing (package 107, the project owner's report:
+  `can-bang.bat` scored the games of NTSD 2.6's Hiruzen(Clone) and Kisame(Clone), clones that go up in smoke when
+  struck, as draws). The game takes a character removed for one down and ends the round (`versus_counter`), but
+  `balance`, `spsa` and `learn` read the HP of the fighter a game began with, which a removed fighter keeps. Now a side
+  is down as the game takes it, in every tool that scores games (`tools/ai-bench/outcome.lua`: no character of its team
+  on the stage with HP left), so a fighter down while a character it made fights on (Naruto's clones) is not down yet
+  either; the HP a side ends with is its fighter's while on the stage, else what its team stands with. (The rule is the
+  bench's own, not the game's: a measure keeps the game's scripts it began with.) Naruto against either clone, 8
+  games: 8 draws before, 8 wins now; the two clones, 4 draws, now 2 wins each; the games themselves are the same
 
 ## [1.1.2] - 2026-10-26
 
