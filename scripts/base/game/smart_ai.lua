@@ -8145,7 +8145,9 @@ smart.rl_kit = {nets = {}, texts = nil, off = false, NOBS = 105, NH = 64, NA = 2
     -- States whose frames a key changes (standing, walking, running, jumping, dashing, defending, catching).
     act_states = {[0] = true, [1] = true, [2] = true, [4] = true, [5] = true, [7] = true, [9] = true},
     letter_key = {u = "up", d = "down", A = "attack", J = "jump", D = "defend"},
-    dummy_move = {boxes = {}, entry = {}}}
+    dummy_move = {boxes = {}, entry = {}},
+    -- (decide's list of the inputs that are not 0.)
+    nonzero = {}}
 -- (Its numbers' count, and powers of two made by doubling, exact; in a function: the file's main chunk is at Lua's
 -- limit of 200 locals.)
 function smart.rl_kit.init()
@@ -8333,12 +8335,19 @@ function smart.rl_kit.decide(p, x, h1, h2)
     local oB2 = oW2 + NH * NH
     local oWP = oB2 + NH
     local oBP = oWP + NA * NH
+    -- Layer 1 adds only the inputs that are not 0 (most are 0: 35 of the 36 keys, the flying things when there are
+    -- none); since package 110 they are listed once rather than asked again for each of the 64 — the same sums, in
+    -- the same order, as tools/ai-bench/rl.lua's.
+    local nonzero, n = rl.nonzero, 0
+    for i = 1, NOBS do
+        if x[i] ~= 0 then n = n + 1; nonzero[n] = i end
+    end
     for j = 1, NH do
         local s = p[oB1 + j]
         local base = (j - 1) * NOBS
-        for i = 1, NOBS do
-            local xi = x[i]
-            if xi ~= 0 then s = s + p[base + i] * xi end
+        for q = 1, n do
+            local i = nonzero[q]
+            s = s + p[base + i] * x[i]
         end
         h1[j] = tanh(s)
     end

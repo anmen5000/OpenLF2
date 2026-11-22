@@ -984,13 +984,22 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Reinforcement learning a third quicker</b> (package 110). Package 109 made XOI's games quicker, but a round
+          of <code>hoc-tang-cuong.bat</code> spends much of its time on the network's own arithmetic, and the kit looked
+          whether the round's games were over only every 5 seconds, so a run went on at 16 to 17 seconds a round as
+          before. The network now lists once the inputs that are not 0, rather than asking every input again 64 times
+          (the same numbers exactly), and the kit looks every second: a process of 20 games of NTSD 2.6 in 9.1 s instead
+          of 16.1. A fighter already learning keeps the scripts it began with: close the window, delete
+          <code>hoc-tang-cuong\&lt;fighter&gt;\scripts</code> and run again to have all of it (safe: since package 106
+          the scripts have changed only in speed); without that, 11.7 s.</li>
         <li><b>Training in half the time</b> (package 109). XOI's games run about twice as fast, the play the same frame
           for frame: a match's 400 item slots are kept as an array now (every frame goes through them dozens of times),
           LuaJIT, the game's compiler, has the room to keep what it compiled (it threw it all away and began again every
           few games) and compiles less of the AI's many branches, and two of the game's steps no longer go through every
           slot for nothing. NTSD 2.6, XOI against XOI: 16 games in 2.8 s instead of 5.5, and 32 in 5.9 s instead of 12.3
-          once the process has played a while, so <code>spsa.bat</code>, <code>hoc-sau.bat</code>,
-          <code>hoc-tang-cuong.bat</code> and <code>can-bang.bat</code> play about twice the games in the same minutes;
+          once the process has played a while, so <code>spsa.bat</code>, <code>hoc-sau.bat</code> and
+          <code>can-bang.bat</code> play about twice the games in the same minutes (<code>hoc-tang-cuong.bat</code> less:
+          package 110);
           <code>hoc-chieu.bat</code> 12 s instead of 15. The learned files, numbers, notes and brains you have stay
           good. A run already under way keeps the scripts it began with: start a new one with the new kit.</li>
         <li><b>The numbers, the notes and the brain in one package again</b> (package 108). <code>spsa.bat</code> given
@@ -1230,13 +1239,21 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Học tăng cường nhanh hơn khoảng một phần ba</b> (gói 110). Gói 109 làm các ván của XOI nhanh hơn, nhưng mỗi
+          vòng của <code>hoc-tang-cuong.bat</code> tốn nhiều thời gian vào phép tính của chính bộ não, và bộ XOI cứ 5
+          giây mới xem các ván của vòng đã xong chưa, nên lần chạy vẫn 16–17 giây một vòng như trước. Nay bộ não liệt kê
+          một lần các ô khác 0, thay vì hỏi lại mọi ô 64 lần (đúng từng con số như cũ), và bộ XOI xem mỗi giây: một tiến
+          trình 20 trận NTSD 2.6 mất 9,1 giây thay vì 16,1. Nhân vật đang học dở vẫn giữ scripts lúc bắt đầu: đóng cửa
+          sổ, xóa <code>hoc-tang-cuong\&lt;tên nhân vật&gt;\scripts</code> rồi chạy lại để được trọn (an toàn: từ gói
+          106 scripts chỉ đổi về tốc độ); không xóa thì 11,7 giây.</li>
         <li><b>Huấn luyện nhanh gấp đôi</b> (gói 109). Các ván của XOI chạy nhanh khoảng gấp đôi mà vẫn chơi y hệt từng
           khung hình: 400 ô vật thể của trận đấu nay được giữ dạng mảng (mỗi khung hình đi qua chúng vài chục lần),
           LuaJIT, bộ biên dịch của game, có đủ chỗ giữ những gì đã biên dịch (trước đây cứ vài ván lại xóa sạch rồi biên
           dịch lại) và biên dịch ít hơn các nhánh của AI, còn hai bước của game không còn đi qua mọi ô một cách vô ích.
           NTSD 2.6, XOI đấu XOI: 16 ván mất 2,8 giây thay vì 5,5, và 32 ván mất 5,9 giây thay vì 12,3 khi tiến trình đã
-          chạy một lúc, nên <code>spsa.bat</code>, <code>hoc-sau.bat</code>, <code>hoc-tang-cuong.bat</code> và
-          <code>can-bang.bat</code> đánh được khoảng gấp đôi số ván trong cùng số phút; <code>hoc-chieu.bat</code> 12
+          chạy một lúc, nên <code>spsa.bat</code>, <code>hoc-sau.bat</code> và <code>can-bang.bat</code> đánh được khoảng
+          gấp đôi số ván trong cùng số phút (<code>hoc-tang-cuong.bat</code> được ít hơn: xem gói 110);
+          <code>hoc-chieu.bat</code> 12
           giây thay vì 15. File học chiêu, bộ số, bộ nhớ và bộ não đã có vẫn dùng được nguyên. Lần chạy đang dở vẫn giữ
           scripts lúc nó bắt đầu: hãy chạy lần mới bằng bộ XOI mới.</li>
         <li><b>Bộ số, bộ nhớ và bộ não lại về chung một gói</b> (gói 108). <code>spsa.bat</code> khi đưa vào file

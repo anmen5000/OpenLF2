@@ -585,12 +585,14 @@ set /a "%1=(1%T_:~0,2%-100)*3600+(1%T_:~3,2%-100)*60+(1%T_:~6,2%-100)" 2>nul
 exit /b 0
 
 rem --- Cho moi tien trinh xong: dong %2 trong out.txt, hoac xong.txt (game tat, ke ca khi loi) ---
+rem (Tu goi 110 xem moi giay mot lan, khong phai 5 giay: mot vong hoc chi mat muoi may giay, cho them toi 5 giay
+rem moi vong la mat toi mot phan ba thoi gian. CHO dem so lan xem, gan bang so giay da cho.)
 :cho
 set /a CHO=0, NHIP=-1
 call :giay CHO_TU
 if not defined DOI_THEM set /a DOI_THEM=300
 :cho_tiep
-ping -n 6 127.0.0.1 >nul 2>&1
+ping -n 2 127.0.0.1 >nul 2>&1
 set /a XONG=0, TOT=0
 for /L %%k in (1,1,%N%) do (
   set "X="
@@ -610,7 +612,7 @@ if !GIOI_HAN! GTR 0 (
     exit /b 0
   )
 )
-set /a CHO+=5
+set /a CHO+=1
 rem Mot nua so tien trinh xong thi dat nhip: tien trinh nao con chay qua 2 lan nhip ay va qua it nhat 5 phut sau
 rem nhip coi nhu bi treo - dung no va lam tiep voi cac tien trinh da xong.
 set /a "NUA=TOT*2"

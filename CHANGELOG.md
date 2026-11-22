@@ -955,6 +955,19 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   to the AI's own reckoning (where a victim stands, the drift of a speed of 0, the target's place worked out once for
   every move) gave the same play but no quicker games: what LuaJIT compiled of the AI changed with them, for the worse
   as often as not
+- Learning by reinforcement (`hoc-tang-cuong.bat`) takes about a third less time a round, and learns the same (package
+  110, the project owner's report that his run went on at 16 to 17 seconds a round with package 109 as before it).
+  Package 109 made XOI's games quicker, but a round of learning spends much of its time elsewhere: in the network's own
+  arithmetic, its learning (PPO) and its look at every frame — and in the kit's wait, which looked whether the round's
+  processes were done once every 5 seconds, so that a round's 10 to 15 seconds lost up to a third of their time there
+  and the quicker games did not show. The network's first layer (`tools/ai-bench/rl.lua`, and the game's
+  `smart.rl_kit.decide` for a mod's learned networks) added only the inputs that are not 0, but asked each of the 105
+  again for every one of the 64 hidden units: it lists them once now, the same sums in the same order; and the kit looks
+  every second. A process of 20 games of NTSD 2.6: 9.1 s instead of 16.1 before package 109 (12.4 with 109 alone). A
+  fighter already learning keeps the scripts it began with (`hoc-tang-cuong\<fighter>\scripts`): 11.7 s with this
+  package, and 9.1 once that folder is deleted, which is safe as the scripts have changed only in quickness since
+  package 106. The same numbers: every line of the learning job's play and check steps the same as before (two fighters,
+  a new network and a learned one), games with a mod's networks the same frame by frame
 ### Fixed
 - The results of one mod could be taken for another's. A fighter's results are kept by the name it is asked by,
   mostly its id, and two mods mostly share ids: once a mod was done, the relay's job kept its fighters (adding the

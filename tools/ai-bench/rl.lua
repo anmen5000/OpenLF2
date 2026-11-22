@@ -115,13 +115,22 @@ local function parse_params(text, head)
 end
 
 -- The network: h1 = tanh(W1 x + b1), h2 = tanh(W2 h1 + b2), logits = Wp h2 + bp, value = Wv . h2 + bv.
+-- Layer 1 adds only the inputs that are not 0 — most are 0 in a frame: 35 of the 36 keys, the flying things when
+-- there are none —, and since package 110 it lists them once (nonzero, count_nonzero: also for learn's way back)
+-- rather than asking every input again for each of the 64: the same sums, in the same order, quicker.
+local nonzero, count_nonzero = {}, 0
 local function forward(p, x, h1, h2, z)
+    local n = 0
+    for i = 1, NOBS do
+        if x[i] ~= 0 then n = n + 1; nonzero[n] = i end
+    end
+    count_nonzero = n
     for j = 1, NH do
         local s = p[oB1 + j]
         local base = oW1 + (j - 1) * NOBS
-        for i = 1, NOBS do
-            local xi = x[i]
-            if xi ~= 0 then s = s + p[base + i] * xi end
+        for q = 1, n do
+            local i = nonzero[q]
+            s = s + p[base + i] * x[i]
         end
         h1[j] = tanh(s)
     end
@@ -664,14 +673,15 @@ function job.learn(config, p0, X, Aa, LP, V, R, DONE, n, K)
                         g[oB2 + j] = g[oB2 + j] + da
                     end
                 end
-                -- Layer 1.
+                -- Layer 1 (x's inputs that are not 0 as forward listed them, just now for this x).
+                local n_x = count_nonzero
                 for j = 1, NH do
                     local da = dh1[j] * (1 - h1[j] * h1[j])
                     if da ~= 0 then
                         local base = oW1 + (j - 1) * NOBS
-                        for i = 1, NOBS do
-                            local xi = x[i]
-                            if xi ~= 0 then g[base + i] = g[base + i] + da * xi end
+                        for q = 1, n_x do
+                            local i = nonzero[q]
+                            g[base + i] = g[base + i] + da * x[i]
                         end
                         g[oB1 + j] = g[oB1 + j] + da
                     end
