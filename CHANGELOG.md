@@ -1388,6 +1388,32 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   packs into `<mod>-xoi.zip` when the original zip is gone, and with no training round to merge keeps the notes it has
   (it emptied them, then stopped). The English kit the same (`spsa.bat`, `train.bat`, `brain.bat`); untried on Windows
   here: the scripts follow `hoc-sau.bat`'s own handling of a `-xoi.zip`, line for line where they can
+- Two computer players with learned networks could stand off for good (package 111, INSANE! version 53; the project
+  owner's clips after his reinforcement learning of NTSD 2.6's 58 fighters): XOI against XOI, Hashirama punched the
+  air from standing again and again, a step nearer each time, while Rock Lee walked into the stage's bottom edge. A
+  network learns against XOI without one, which comes in sooner or later, and some learned to wait for that:
+  Hashirama's punch from standing (his network's A, 0.8 to 0.99 likely, whatever the distance) waits for the enemy to
+  walk into it, and Lee's walk down (0.87) kept him at the edge. Against a fighter that does not come - another
+  network, a player standing still - nothing ended it: Hashirama against a Lee that never moves played both games to
+  the bench's limit. Now when no blow has passed between a fighter and its target for 189 frames, about 6 seconds, the
+  network stands aside and XOI alone decides until the next blow (`smart.rl_kit.standoff`); the blows are watched
+  every frame (`smart.rl_kit.watch`: the two losing more than 8 HP between frames), as XOI's own count stands still in
+  the frames its decision leaves early - Konan as the angel kept trying to leave her stance by the stage's edge for a
+  minute while her network's keys kept her in it. `tools/ai-bench/rl.lua` does the same, so that the learning job's
+  checks still play the game's games (the same 24 games of Hashirama and of Lee, one by one). His 58 networks, XOI
+  against XOI: Hashirama against seven fighters, the frames 10 seconds and more after a blow 26,173 of 53,118 and 3
+  games of 14 to the limit before, 391 of 29,510 and none now; six other pairs 9,177 of 25,396 (one game to the
+  limit), none now; Hashirama beats the Lee that never moves in both games. Against XOI without a network the networks
+  keep most of their gain: the learning job's check, the same 30 games for each of the 58, 14.5 points in 100 games
+  more than XOI alone and 65 games of 1,740 to the limit before, 12.6 and 7 now (XOI alone 5); eight fighters in the
+  game, 78 games each against XOI without a network: 431 won and 189 lost before, 399 and 224 now, 316 and 304 without
+  networks. A network learned before this package needs no new learning; a fighter learning still keeps the rule of
+  the scripts it began with (`hoc-tang-cuong\<fighter>\scripts`) until that folder is deleted
+- A heavy item in hand with the target less than 6 pixels to either side was held for good (package 111, found with
+  the entry above): the throw waits for the fighter to face its target, and a turn toward a target so close is left
+  alone (a pixel either side would turn it round every frame) - Yamato and Hashirama, a log each, stood back to back 5
+  pixels apart for 7,700 frames. It is thrown at once now. Without networks the game plays as package 110 but for
+  that: six mods the same frame by frame, Convergence's second game changed by it
 
 ## [1.1.2] - 2026-10-26
 

@@ -9,7 +9,8 @@
 -- forward, back, up, down); a walk of 4 frames (forward, back, up, down); a run of 10 (forward, back); the seven
 -- D-moves (D>A, D>J, D^A, D^J, DvA, DvJ, DJA, the direction locked to the facing at its start); a wait of 4 frames
 -- with no key. The network is asked only where a key can change anything (free states, a frame with ways on by keys,
--- the frames of a fall where J flips); at first it lets XOI's keys through 99 times in 100.
+-- the frames of a fall where J flips), and not in a standoff of 189 frames without a blow (the game's rule since
+-- version 53 of its computer player, smart.rl_kit.standoff); at first it lets XOI's keys through 99 times in 100.
 -- The fighter plays XOI without a brain (xoi@hs_alt) on every fighter of the mod, random stages. Learning: PPO.
 -- Rewards: HP dealt minus HP taken, in hundreds, frame by frame; a won game 2 more, a lost one 2 less. Each process
 -- plays its games with the round's network, works its own epochs from it (Adam) and prints the change (RLD lines);
@@ -216,6 +217,19 @@ local function can_act(self)
     return self.frame == 182 or self.frame == 188
 end
 
+-- A standoff in which the network stands aside, XOI alone deciding until the next blow, as the game has it since
+-- version 53 of its computer player (smart.rl_kit.standoff: 189 frames by the clock without a blow between the two,
+-- the blows watched every frame, smart.rl_kit.watch): the scripts' own rule, so that the checks play the game's
+-- games; none with scripts older than that.
+local function watch(smart, state, self, target)
+    local rule = smart.rl_kit and smart.rl_kit.watch
+    if rule and self.smart_memory then rule(state, self.smart_memory, self, target) end
+end
+local function standoff(smart, state, self)
+    local rule = smart.rl_kit and smart.rl_kit.standoff
+    return rule ~= nil and self.smart_memory ~= nil and rule(state, self.smart_memory) or false
+end
+
 -- A move's frame onto the keys: `right` the facing locked at the move's start.
 local letter_key = {u = "up", d = "down", A = "attack", J = "jump", D = "defend"}
 local function apply_frame(value, spec, right, last)
@@ -376,6 +390,7 @@ function job.step(config)
         local c = current
         if c and state.items[index] == c.self then
             local self, target = c.self, c.target
+            watch(smart, state, self, target)
             -- The reward of the step before: HP dealt minus HP taken since, in hundreds.
             if c.pending then
                 R[c.pending] = R[c.pending] + ((c.thp - target.hp) - (c.hp - self.hp)) / 100
@@ -388,7 +403,7 @@ function job.step(config)
                 move.at = move.at + 1
                 if c.pending then K[c.pending] = K[c.pending] + 1 end
                 if move.at > #MOVES[move.index] then c.move = nil end
-            elseif mode == "follow" or not can_act(self) then
+            elseif mode == "follow" or not can_act(self) or standoff(smart, state, self) then
                 -- XOI's keys go through; the frame counts to the step under way.
                 if c.pending then K[c.pending] = K[c.pending] + 1 end
             else

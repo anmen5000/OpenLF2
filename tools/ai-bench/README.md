@@ -392,7 +392,14 @@ processes or more the first merge failed.)
 
 From package 88 (INSANE! version 50) the game plays these networks: a mod's `xoi/rl-<id>.txt` (a `bo-nao-<round>.txt`)
 has XOI play that fighter with it (`smart.rl_kit` in `smart_ai.lua`: the same moves and numbers, the likeliest
-action; this job turns it off on both sides while it learns or checks). The kit's `dua-bo-nao-vao-mod.bat` puts in
+action; this job turns it off on both sides while it learns or checks). From package 111 (version 53) the network
+stands aside in a standoff: no blow between the fighter and its target for 189 frames by the clock (the two losing
+more than 8 HP between frames, watched every frame: `smart.rl_kit.watch` and `standoff`), XOI alone deciding until
+the next blow, and this job does the same, so that its checks play the game's games. A network learns against XOI
+without one, which comes in sooner or later, and some learned to wait for that - NTSD 2.6's Hashirama punched the
+air from standing until the enemy walked into it -; against a fighter that does not come, another network or a
+player standing still, nothing ended it (the project owner's clips: Hashirama and Rock Lee, for good). The kit's
+`dua-bo-nao-vao-mod.bat` puts in
 each fighter's network that beats XOI alone, and `hoc-tang-cuong.bat` keeps the best check's network as it goes
 (step `sum`'s `RLB <way> <difference> <lower bound>` lines, in tenths of a point per 100 games). The best of twenty
 checks is mostly the luckiest - every check plays the same games, and each is off by several points either way - so

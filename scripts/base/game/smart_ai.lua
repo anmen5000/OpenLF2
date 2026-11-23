@@ -505,8 +505,9 @@ end
 -- The version of this computer player, shown on the site (dist/build-web.sh writes it and the history below to
 -- insane-version.json) and beside INSANE! in the match. Raise it with every change to how it plays, and say
 -- what changed in one line (newest first).
-smart.version = 52
+smart.version = 53
 smart.history = {
+    {53, "2026-11-24", "A learned network stands aside in a standoff, and a heavy item is thrown with the enemy right behind. The project owner's clips after his reinforcement learning of NTSD 2.6 (58 fighters): XOI against XOI in VS mode, Hashirama punching the air from standing again and again, a step nearer each time, and Rock Lee walking into the stage's bottom edge, for good. Each network had learned against XOI without one, which comes in sooner or later, and some had learned to wait for that: Hashirama's punch from standing (his network's A, 0.8 to 0.99 likely, whatever the distance) waits for the enemy to walk into it. Against a fighter that does not come - one with a network of the same kind, a player standing still - nothing ended it (Hashirama against a Lee that never moves: two games to the bench's limit, Lee left with 368 and 414 HP). Now when no blow has passed between a fighter and its target for 189 frames by the clock (XOI's own loop_calm; the two losing more than 8 HP between frames, watched every frame, smart.rl_kit.watch - XOI's own count stands still in the frames its decision leaves early, and Konan as the angel kept trying to leave her stance by the stage's edge for a minute while her network's keys kept her in it), the network stands aside and XOI alone decides until the next blow (smart.rl_kit.standoff). The learning job does the same (tools/ai-bench/rl.lua), so that its checks still play the game's games (the same 24 games of Hashirama and of Lee, one by one). His 58 networks, XOI against XOI: Hashirama against seven fighters, the frames 10 seconds and more after a blow 26,173 of 53,118 and 3 games of 14 to the limit before, 391 of 29,510 and none now; six other pairs 9,177 of 25,396 and one game to the limit before, none now; Hashirama beats the Lee that never moves in both games. Against XOI without a network the networks keep most of their gain: the learning job's check, the same 30 games for each of the 58, 14.5 points in 100 games more than XOI alone and 65 games of 1,740 to the limit before, 12.6 and 7 now (XOI alone 5); eight fighters in the game, 78 games each against XOI without a network: 431 won and 189 lost before, 399 and 224 now, 316 and 304 without networks (Hashirama 53-23, 40-38, 36-40; in the check 20-10, 21-9, XOI alone 12-18). And a heavy item in hand with the target less than 6 pixels to either side, which face leaves alone, is thrown at once: Yamato and Hashirama, a log each, stood back to back 5 pixels apart for 7,700 frames, each waiting to turn round. Without networks the game plays as version 52 but for that: six mods the same frame by frame, and Convergence's second game changed by it."},
     {52, "2026-11-20", "Traps, and the hits of Naruto: The Setting Dawn 2.6 that find things. The project owner's questions: Minato's D^J scatters kunai that attack, then jump in the punch sets off - every kunai on the stage a copy of him striking where it lies, 55 HP -, and Deidara's clay (chasing birds, waiting spiders, the DvA bomb) bursts on 'katsu', the same keys; INSANE! and XOI used neither, the keys striking nothing themselves (and Minato's D^J nothing at all). Now every move that leaves things is played in the copy before each move whose things can strike the fighter's own - a blow in a frame of state 18, fire, spares no side, and both keys throw out such a blow over the whole stage, below it where only the traps' hidden bodies are -, and what stood, then left its way and struck is that kind's answer to the move (smart.trap_kit, setup_kit.learn_traps), weighed in a match with the answers of the things standing then, as a set-up's (best_attack); a trap that strikes nothing itself is laid as a set-up when safe and worth its MP (Minato's D^J, Deidara's D^A and DvA), and a burst of fire that would strike the fighter or its side is not set off. And the game now plays the mod's own hits that find things, kinds 801, 806, 830 and 836 of its NTSD.exe (base/game/combat): Tobi's second D^J lets go, with 60 HP, of the enemy his first took; Sasori's D-moves with the black puppet in hand are the puppet's; Minato goes onto his kunai and strikes. Learned as such, a jump that lands where it does wherever the enemy stands is the fighter's own course, not a teleport onto the enemy (explore): Minato's D>A then jump, taken for one, was thrown at enemies anywhere for 250 MP. XOI against version 51's on NTSD 2.6 (15 opponents, 14 for Tobi, who is one of them; two seeds; the mod's rules of package 106 for both): Minato won 105 games of 180 to 84, Deidara 59 of 120 to 47, Tobi 79 of 112 to 71; Sasori 65 to 66 and Kankuro 44 to 45 of 120. The learned files are made again (learned_kit version 2)."},
     {51, "2026-11-19", "Gemini plays along: on the web page, Google's Gemini can command computer players at INSANE! and XOI (the panel Gemini choi cung, through the relay's page /gemini). The game tells the page what the match looks like about once a second; every few seconds Gemini answers with an order for each fighter it commands - whom to go for, a mode and how much MP to keep - and the fighter plays by it every frame: attack lowers the bar a move must clear (x0.6) and comes nearer, defend raises it (x1.7) and keeps further, kite keeps twice as far, retreat stays away and starts almost nothing, balanced is the fighter's own play; no move that would leave less MP than asked; without its learned network while under orders (smart.page_kit). Orders that are not renewed lapse, a new match drops them, and they never apply in a network game or a replay. With no orders a fighter plays exactly as version 50 (the bench's duels the same frame for frame); with fixed orders, eight duels of XOI against INSANE!: 5-3 as it is, 6-2 attacking, 6-2 defending, 2-6 kiting."},
     {50, "2026-11-17", "Learned brains: a mod may give a fighter a network of reinforcement learning (xoi/rl-<id>.txt, as the kit's hoc-tang-cuong.bat learns it beside XOI), and XOI playing that fighter plays it: where a key can change something the network sees the situation and XOI's keys, and lets them through or plays one of its 22 moves instead (smart.rl_kit). The project owner's first run (300,000 games a fighter against XOI without a brain, on 30 threads a fighter) checked in the lab against XOI alone, each game twice from the same start, version 49 and the owner's brain on both sides: Keny 200-0 where XOI alone went 95-102 (his network calls up his unseen heavy weapon - D, A, then A to pick it up - whose A is a guard-breaking punch that ends in a grab, and walks in); Khaoslong 64.3% where XOI alone won 56.0% (+8.3 points in 100 games, +- 3.4, 1,000 games), mostly by waiting where XOI would act; Ryozaki -6.0 (+- 5.8), left out. The game plays exactly the games of the learning job's own check (60 Khaoslong and 30 Keny games the same, one by one); tanh made of + - * / alone, so every machine of a room plays the same keys, and replays stay in step. Without such files XOI plays as version 49. INSANE! does not use them."},
@@ -7204,11 +7205,13 @@ function smart.control(state, index)
     -- throw not landing on it (it would have been chosen above): thrown all the same, rather than held — with it the
     -- fighter can neither guard, jump nor strike, and two fighters each holding one stood face to face for good
     -- (Kakashi with a stone, Gaara with a log, at a wall in Naruto: The Setting Dawn). Turned toward the target
-    -- first: it may still land.
+    -- first: it may still land. (Version 53: not with the target less than 6 pixels to either side, which face
+    -- leaves alone — two fighters with a log each, back to back 5 pixels apart, each waiting to turn round for
+    -- good, Rock Lee and Hashirama, Yamato and Hashirama in NTSD 2.6: thrown at once then, whichever way.)
     if grounded and self.weapon == record_kinds.heavy_item and not threat_t
        and (fstate == states.standing or fstate == states.walking)
        and abs(target.x_int - self.x_int) < melee_reach(context.analysis_of(target)) + tune.heavy_room then
-        if (target.x_int >= self.x_int) == (self.facing == facing_right) then
+        if abs(target.x_int - self.x_int) < 6 or (target.x_int >= self.x_int) == (self.facing == facing_right) then
             fresh(self, "attack")
             memory.note = "throw heavy"
         else
@@ -8147,7 +8150,9 @@ smart.rl_kit = {nets = {}, texts = nil, off = false, NOBS = 105, NH = 64, NA = 2
     letter_key = {u = "up", d = "down", A = "attack", J = "jump", D = "defend"},
     dummy_move = {boxes = {}, entry = {}},
     -- (decide's list of the inputs that are not 0.)
-    nonzero = {}}
+    nonzero = {},
+    -- The standoff in which the network stands aside (rl_kit.standoff): no blow between the two for so many frames.
+    standoff_frames = 189}
 -- (Its numbers' count, and powers of two made by doubling, exact; in a function: the file's main chunk is at Lua's
 -- limit of 200 locals.)
 function smart.rl_kit.init()
@@ -8385,6 +8390,34 @@ function smart.rl_kit.target_of(state, index, self, memory)
     end
     return best
 end
+-- A standoff long enough to be a loop (version 53): no blow between the fighter and its target for 189 frames by
+-- the clock (189: XOI's own loop_calm, whatever a mod's numbers make of it). The network stands aside then, XOI
+-- alone deciding until the next blow: XOI has its ways out of a loop (the bar a move must clear comes down, see the
+-- decision) and the network none. It learned against XOI without one, which comes in sooner or later, and some
+-- learned to wait for that: Hashirama punches the air from standing again and again (his network's A, 0.8 to 0.99
+-- likely) until the enemy walks into it. Against a fighter that does not come - one with a network of the same kind,
+-- a player standing still - nothing ended it: the project owner's clips (NTSD 2.6, his 58 networks), Hashirama
+-- punching the air for good with Rock Lee 270 pixels off in depth, Lee walking into the bottom edge (walk-d, 0.87).
+-- tools/ai-bench/rl.lua does the same, so that the learning job's checks still play the game's games.
+-- The blows are watched here, every frame the fighter is played with a network (rl_kit.watch, from rl_kit.after;
+-- the learning job the same): the two losing more than 8 HP between frames (XOI's own calm_damage). XOI's own count
+-- (memory.quiet) stands still in the frames its decision leaves early, and Konan as the angel kept trying to leave
+-- the stance by the stage's edge for a minute while the network's keys kept her in it.
+function smart.rl_kit.watch(state, memory, self, target)
+    local sum = self.hp + (target and target.hp or 0)
+    local watch = memory.rl_watch
+    if not watch or watch.target ~= target then
+        watch = {target = target, sum = sum, blow_at = state.frame_number}
+        memory.rl_watch = watch
+    elseif sum < watch.sum - 8 then
+        watch.blow_at = state.frame_number
+    end
+    watch.sum = sum
+end
+function smart.rl_kit.standoff(state, memory)
+    local watch = memory.rl_watch
+    return watch ~= nil and state.frame_number - watch.blow_at >= smart.rl_kit.standoff_frames
+end
 -- After XOI's keys of the frame: the network's, if the fighter XOI plays has one (see above).
 function smart.rl_kit.after(state, index)
     local rl = smart.rl_kit
@@ -8403,13 +8436,14 @@ function smart.rl_kit.after(state, index)
         run = {last = {}, x = {}, h1 = {}, h2 = {}}
         memory.rl = run
     end
+    local target = rl.target_of(state, index, self, memory)
+    rl.watch(state, memory, self, target)
     if run.move then
         local move = run.move
         rl.apply_frame(self, rl.moves[move.index][move.at], move.right, run.last)
         move.at = move.at + 1
         if move.at > #rl.moves[move.index] then run.move = nil end
-    elseif rl.can_act(self) then
-        local target = rl.target_of(state, index, self, memory)
+    elseif rl.can_act(self) and not rl.standoff(state, memory) then
         if target then
             local xoi_kind = rl.kind_of(self.keys, self.previous_keys, self.facing)
             local x = rl.observe(state, self, target, xoi_kind, run.last, run.x)
