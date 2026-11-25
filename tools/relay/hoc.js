@@ -56,7 +56,8 @@ const MAX_FIGHTERS = 2000;
 // The settings a machine learns a fighter with (hoc-tang-cuong.bat's names): default, least, most. MOI_NV is
 // how many processes a fighter gets: a machine takes as many fighters at once as it has threads for. DUNG_SOM
 // (package 97): a fighter whose checks have not got better for that many rounds stops early (0: never), and its
-// slot takes the next one; VONG is then the most it learns.
+// slot takes the next one; VONG is then the most it learns. DOI_THU (package 112): 1 - the opponents with an AI script
+// of the mod's own (Sauce's AI) play it, the kit's DOI_THU=classic; 0 - XOI without a network, as before.
 const SETTINGS = {
   VONG: [500, 1, 100000],
   TRAN: [20, 1, 1000],
@@ -65,6 +66,7 @@ const SETTINGS = {
   TRAN_XAC_NHAN: [720, 0, 1000000],
   MOI_NV: [33, 1, 1024],
   DUNG_SOM: [400, 0, 100000],
+  DOI_THU: [0, 0, 1],
 };
 const STATES = new Set(['cho', 'dang', 'xong', 'loi']);
 
@@ -581,12 +583,18 @@ const PAGE = `<!doctype html>
       <div><label for="TRAN_KIEM_TRA">Trận kiểm tra</label><input id="TRAN_KIEM_TRA" type="number" min="1"></div>
       <div><label for="TRAN_XAC_NHAN">Trận xác nhận</label><input id="TRAN_XAC_NHAN" type="number" min="0"></div>
       <div><label for="DUNG_SOM">Dừng sớm sau (vòng)</label><input id="DUNG_SOM" type="number" min="0"></div>
+      <div><label for="DOI_THU">Đối thủ</label><select id="DOI_THU"><option value="0">XOI không bộ não</option>
+        <option value="1">AI riêng của bản mod (như AI của Sauce)</option></select></div>
     </div>
     <p class="note">Mỗi máy con học cùng lúc (số luồng CPU ÷ tiến trình mỗi nhân vật) nhân vật: máy 100 luồng với 33 là 3 nhân vật.</p>
     <p class="note">Dừng sớm: nhân vật nào qua ngần ấy vòng mà điểm kiểm tra không cao thêm (đã tới giới hạn) thì thôi học, máy
       con lấy ngay nhân vật kế; nhân vật còn lên thì học tới Số vòng — nên đặt Số vòng cao (ví dụ 1500). 0 = không dừng sớm.
       Cần kiểm tra (Kiểm tra mỗi trên 0); ít tiến trình thì tăng Trận kiểm tra (mỗi lần kiểm tra nên có từ 300 trận:
       tiến trình × trận kiểm tra).</p>
+    <p class="note">Đối thủ: "AI riêng của bản mod" — đối thủ nào có script AI riêng của bản mod (<code>ai\\&lt;id&gt;.as</code>,
+      như AI của Sauce) thì đánh bằng script ấy (máy gốc mức CRAZY!), đối thủ không có thì vẫn là XOI không bộ não; kiểm tra và
+      xác nhận cũng vậy. Cần bộ XOI từ gói 112 trên mọi máy con. Đổi đối thủ khi nhân vật đã học dở thì máy con học nhân vật ấy
+      lại từ đầu (thư mục cũ được đổi tên, không xóa gì).</p>
     <p><button id="save">Lưu cài đặt</button></p>
     <label for="add">Thêm nhân vật (số id hoặc tên, cách nhau bằng dấu cách)</label>
     <input id="add" type="text" placeholder="ví dụ: 1 3 4 5 6 7 9 10">
@@ -618,7 +626,7 @@ const PAGE = `<!doctype html>
   const api = base + '/api/';
   const root = base.replace(/\\/hoc$/, '');
   $('adminlink').href = root + '/admin';
-  const NAMES = ['VONG', 'TRAN', 'MOI_NV', 'KIEM_TRA_MOI', 'TRAN_KIEM_TRA', 'TRAN_XAC_NHAN', 'DUNG_SOM'];
+  const NAMES = ['VONG', 'TRAN', 'MOI_NV', 'KIEM_TRA_MOI', 'TRAN_KIEM_TRA', 'TRAN_XAC_NHAN', 'DUNG_SOM', 'DOI_THU'];
   let state = null;
   let timer = 0;
   try { $('key').value = localStorage.getItem('lf2-admin-key') || ''; } catch (error) {}

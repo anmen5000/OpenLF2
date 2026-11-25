@@ -209,6 +209,14 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    check's luck as measured): with VONG 1500 and DUNG_SOM 400, a fighter that stops getting better early stops at
    750-950 rounds, one that never beats XOI at about 700, and the network chosen is within 0.6 point of the one 1500
    rounds give (1.3 points for one still gaining slowly at round 1000).
+   The opponent (package 112): DOI_THU=classic - each opponent that has an AI script of the mod's own (ai\<id>.as, as
+   Sauce's AI in his mod) plays the original computer player with that script (CRAZY!), in the checks and the
+   confirmation too; an opponent without one is still XOI without a brain. Empty (the default): XOI without a brain
+   for every opponent, as before. A fighter learns its whole run against one opponent: a folder of its learned against
+   another is renamed <folder>.cu-<n> (nothing is deleted) and it learns from the start (tom-tat.txt's "Bat dau luc"
+   line carries [doi-thu classic]). Sauce's mod, XOI alone (no notes, no tuned numbers) against Sauce's AI, 30 games
+   each: Deep 28-2, Davis 22-8, Firen and Woody 20-10, Dennis 17-13, Rudolf 14-16, Henry 13-17, Louis and Freeze 8-22,
+   John 7-23.
 
 12. Reinforcement learning on many machines (package 90): may-con.bat, with the relay as the one that shares out
    the work. The relay (your VPS, installer version 14) keeps a job - the mod, the settings, the fighters to learn -
@@ -238,7 +246,9 @@ INSANE! and XOI are part of OpenLF2, which plays the same mod files.
    under 0.3 MB (the page shows the total); on a machine a fighter's folder keeps every round's network (about 70 MB
    for 500 rounds) - once the mod has its networks, a machine's hoc-tang-cuong folder can be deleted. Results from
    before package 94 carry no code: once the current mod is packed, rename your machine's hoc-tang-cuong folder
-   (hoc-tang-cuong-naruto, say).
+   (hoc-tang-cuong-naruto, say). From package 112 (relay installer 19) the page has the opponent too ("Doi thu": XOI
+   without a brain, or the mod's own AI, as DOI_THU=classic above) for every machine of the job; a relay older than
+   that sends none, and each machine goes by its own DOI_THU. Every machine needs the kit of package 112.
 
 13. Learn the moves once (package 104): hoc-chieu.bat. Before a match INSANE! and XOI learn every fighter's moves
    from the mod's data - 15 to 45 seconds for a match of eight in a browser, on every computer of a room. Put the mod's
@@ -462,6 +472,13 @@ chơi được chính các file của bản mod.
    lập (độ hên xui của kiểm tra như đo được): VONG 1500, DUNG_SOM 400 thì nhân vật sớm thôi lên dừng ở 750-950 vòng,
    nhân vật không hơn được XOI dừng chừng 700, và bộ não được chọn kém bộ của 1500 vòng không quá 0,6 điểm (1,3 điểm
    với nhân vật vẫn lên chậm ở vòng 1000).
+   Đối thủ (gói 112): DOI_THU=classic - đối thủ nào có script AI riêng của bản mod (ai\<id>.as, như AI của Sauce trong
+   bản mod của Sauce) thì đánh bằng script ấy (máy gốc mức CRAZY!), cả lúc kiểm tra và xác nhận; đối thủ không có
+   script thì vẫn là XOI không bộ não. Để trống (mặc định): mọi đối thủ là XOI không bộ não, như trước. Mỗi nhân vật học
+   trọn một lần với một đối thủ: thư mục của nhân vật đã học với đối thủ khác được đổi tên thành <thư mục>.cu-<số>
+   (không xóa gì) và nhân vật học từ đầu (dòng "Bat dau luc" của tom-tat.txt ghi [doi-thu classic]). Bản mod của
+   Sauce, XOI một mình (chưa có bộ nhớ, bộ số đã chỉnh) đấu AI của Sauce, mỗi nhân vật 30 trận: Deep 28-2, Davis 22-8,
+   Firen và Woody 20-10, Dennis 17-13, Rudolf 14-16, Henry 13-17, Louis và Freeze 8-22, John 7-23.
 
 12. Học tăng cường trên nhiều máy (gói 90): may-con.bat, relay chia việc. Relay (VPS của bạn, trình cài đặt phiên
    bản 14) giữ một việc - bản mod, cài đặt, các nhân vật cần học - ở trang https://<relay>/hoc (mã ADMIN_KEY): chọn
@@ -490,7 +507,9 @@ chơi được chính các file của bản mod.
    nhân vật chưa tới 0,3 MB (trang /hoc ghi tổng); trên máy con, thư mục mỗi nhân vật giữ bộ não của từng vòng (500
    vòng chừng 70 MB) - bản mod đã có bộ não thì xóa thư mục hoc-tang-cuong của máy con được. Kết quả trước gói 94
    không có mã: đóng gói xong bản mod hiện tại thì đổi tên thư mục hoc-tang-cuong trên máy của bạn (ví dụ
-   hoc-tang-cuong-naruto).
+   hoc-tang-cuong-naruto). Từ gói 112 (relay phiên bản 19) trang /hoc có thêm ô "Đối thủ" (XOI không bộ não, hay AI
+   riêng của bản mod, như DOI_THU=classic ở trên) cho mọi máy của việc; relay cũ hơn không gửi, mỗi máy dùng DOI_THU
+   của chính nó. Máy nào cũng cần bộ XOI của gói 112.
 
 13. Học chiêu một lần (gói 104): hoc-chieu.bat. Trước mỗi trận INSANE! và XOI học chiêu của từng nhân vật từ dữ liệu
    bản mod - một trận 8 nhân vật mất 15-45 giây trên trình duyệt, và máy nào trong phòng cũng phải học. Đặt file .zip

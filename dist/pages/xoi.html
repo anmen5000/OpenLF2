@@ -984,6 +984,14 @@
           check now plays the brain there was before the run too (<code>xoi-&lt;mod&gt;\brain.txt</code>, or the zip's own) and
           keeps it when the new one does not win more — nothing is packed then, nothing changes. A <code>hoc-sau</code> folder
           of package 81 or older (58-number data) cannot go on: rename it first (the kit says so).</li>
+        <li><b>Reinforcement learning against the mod's own AI</b> (package 112). <code>hoc-tang-cuong.bat</code> has a
+          setting <code>DOI_THU</code>: empty, the fighter learns against XOI without a network as before;
+          <code>classic</code>, every opponent with an AI script of the mod's own (<code>ai\&lt;id&gt;.as</code>, as Sauce's AI
+          in his mod) plays it (the original computer player, CRAZY!), in the checks too; an opponent without one is still
+          XOI. Keep it in <code>hoc-tang-cuong-cai-dat.bat</code> (<code>set "DOI_THU=classic"</code>). On many machines the
+          relay's <code>/hoc</code> page has it ("Đối thủ"; relay installer version 19, so update the relay once); a fighter
+          learned against the other opponent starts again (its old folder is kept, renamed). Sauce's mod, XOI alone against
+          Sauce's AI, 30 games each: from 28-2 (Deep) to 7-23 (John), so there is room to learn.</li>
         <li><b>No more standing off for good with learned networks</b> (package 111, XOI version 53). The project owner's
           clips after his reinforcement learning of NTSD 2.6: Hashirama punching the air again and again, a step nearer
           each time, and Rock Lee pressed against the bottom edge, for good. A network learns against XOI without one,
@@ -1251,6 +1259,14 @@
           (<code>xoi-&lt;tên&gt;\brain.txt</code>, hay bộ não trong file zip) và giữ nguyên nó khi bộ mới không thắng nhiều hơn —
           không gói gì, không đổi gì. Thư mục <code>hoc-sau</code> của gói 81 trở về trước (dữ liệu 58 số) không chạy tiếp được:
           đổi tên nó trước (kit sẽ báo).</li>
+        <li><b>Học tăng cường với AI riêng của bản mod</b> (gói 112). <code>hoc-tang-cuong.bat</code> có cài đặt
+          <code>DOI_THU</code>: để trống thì nhân vật học với XOI không bộ não như trước; ghi <code>classic</code> thì đối thủ
+          nào có script AI riêng của bản mod (<code>ai\&lt;id&gt;.as</code>, như AI của Sauce trong bản mod của Sauce) đánh bằng
+          script ấy (máy gốc mức CRAZY!), cả lúc kiểm tra; đối thủ không có script thì vẫn là XOI. Ghi trong
+          <code>hoc-tang-cuong-cai-dat.bat</code> (<code>set "DOI_THU=classic"</code>). Học trên nhiều máy thì trang
+          <code>/hoc</code> của relay có ô "Đối thủ" (relay phiên bản 19: cập nhật relay một lần); nhân vật đã học với đối thủ
+          khác thì học lại từ đầu (thư mục cũ được giữ, đổi tên). Bản mod của Sauce, XOI một mình đấu AI của Sauce, mỗi nhân
+          vật 30 trận: từ 28-2 (Deep) tới 7-23 (John), nên còn nhiều chỗ để học.</li>
         <li><b>Hết cảnh hai quân có bộ não đứng nhìn nhau mãi</b> (gói 111, XOI phiên bản 53). Clip của chủ dự án sau khi
           học tăng cường NTSD 2.6: Hashirama đấm vào không khí liên tục, mỗi lần nhích tới một chút, còn Rock Lee dí sát
           mép dưới sân, mãi không thôi. Bộ não học với XOI không có bộ não, mà XOI đó sớm muộn cũng tự đi vào, nên có bộ

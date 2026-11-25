@@ -218,8 +218,10 @@ one of its packs, to a machine that asks for it.
 
 The page `/hoc` (`ADMIN_KEY`, the one `/admin` remembers) sets the job: the mod (one of the relay's
 packs, or each machine's own copy), the settings (`VONG`, `TRAN`, `KIEM_TRA_MOI`, `TRAN_KIEM_TRA`,
-`TRAN_XAC_NHAN`, `MOI_NV`, the processes a fighter gets, and from package 97 `DUNG_SOM`, the rounds with
-no better check after which a fighter stops early: 400, 0 never), the fighters (ids or names), and shows
+`TRAN_XAC_NHAN`, `MOI_NV`, the processes a fighter gets, from package 97 `DUNG_SOM`, the rounds with
+no better check after which a fighter stops early: 400, 0 never, and from package 112 `DOI_THU`, the
+opponent: 0 XOI without a network, 1 the mod's own AI scripts where an opponent has one, as Sauce's AI -
+the kit's `DOI_THU=classic`; installer version 19), the fighters (ids or names), and shows
 each one's state: waiting, learning on which slot (with its last check, which the slot reports),
 done (the round chosen and its score on new games, and where it stopped early: the last `KET THUC`
 line of its `tom-tat.txt`), or failed (the end of its account). A fighter can

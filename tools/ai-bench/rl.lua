@@ -11,7 +11,9 @@
 -- with no key. The network is asked only where a key can change anything (free states, a frame with ways on by keys,
 -- the frames of a fall where J flips), and not in a standoff of 189 frames without a blow (the game's rule since
 -- version 53 of its computer player, smart.rl_kit.standoff); at first it lets XOI's keys through 99 times in 100.
--- The fighter plays XOI without a brain (xoi@hs_alt) on every fighter of the mod, random stages. Learning: PPO.
+-- The fighter plays XOI without a brain (xoi@hs_alt) on every fighter of the mod, random stages - or, with
+-- `opponent = "classic"` (package 112), each opponent that has an AI script of the mod's own (ai/<id>.as: Sauce's
+-- lf2-AI) plays the original computer player with that script, CRAZY!, the others XOI as before. Learning: PPO.
 -- Rewards: HP dealt minus HP taken, in hundreds, frame by frame; a won game 2 more, a lost one 2 less. Each process
 -- plays its games with the round's network, works its own epochs from it (Adam) and prints the change (RLD lines);
 -- step "avg" lays the mean of the processes' changes onto the network (RLW lines: the next round's); step "eval"
@@ -25,7 +27,10 @@
 --             this package (one a process); deltas: instead, a bench module with them all (a few processes only: a
 --             module may not exceed 1 MiB); evals: (sum) bench module with the processes' RLE lines
 --   fighter   the learned side: an id or a name (bench/names; default 2); ids: the opponents' ids (all fighters a
---             player can choose when absent, the Template aside)
+--             player can choose when absent, the Template aside: the match leaves his seat empty, match.lua's
+--             spectator_seat - a game in 11 failed in the original's fighters before package 112)
+--   opponent  "classic": the opponents with an AI script of the mod's own (ai_scripts.has) play the original computer
+--             player with it - the opponent the kit's DOI_THU=classic asks for; absent: XOI without a brain
 --   games, seed, offset, limit (frames a game, 9000); brain (bench module: the learned side's XOI brain)
 --   epochs (3), batch (256), rate (3e-4), clip (0.2), gamma (0.997), lambda (0.95), entropy (0), vcoef (0.5),
 --   win (2: a won game's reward), greedy (eval: the likeliest action instead of one drawn), bonus_move/bonus (a test
@@ -35,6 +40,7 @@ local match = require("base/game/match")
 local constants = require("base/game/constants")
 local brains = require("bench/brains")
 local item = require("base/game/item")
+local ai_scripts = require("base/game/ai_scripts")
 local job = {}
 
 local facing_right = constants.facings.right
@@ -355,9 +361,12 @@ function job.step(config)
         for _, id in ipairs(config.ids) do if by_id[id] then pool[#pool + 1] = by_id[id] end end
     else
         for index, fighter in ipairs(fighters) do
-            if not fighter.hidden and fighter.id ~= 40 then pool[#pool + 1] = index end
+            local path, name = (fighter.path or ""):lower(), (fighter.name or ""):lower()
+            local template = path:match("template%.dat$") ~= nil or name == "template"
+            if not fighter.hidden and fighter.id ~= 40 and not template then pool[#pool + 1] = index end
         end
     end
+    if config.opponent and config.opponent ~= "classic" then error("opponent: \"classic\" or none, not " .. tostring(config.opponent)) end
     if config.brain then
         local brain = assert(smart.brain_kit.parse(require("bench/" .. config.brain).text), "the brain's text does not fit")
         smart.set_brain(brain)
@@ -461,7 +470,8 @@ function job.step(config)
                 fighters = fighters, backgrounds = backgrounds,
                 slots = {[0] = {kind = "computer", fighter = me_index, team = 1}, [1] = {kind = "computer", fighter = b, team = 2}}})
             state.items[10].brain = "xoi"
-            state.items[11].brain = "xoi@hs_alt"
+            -- (The mod's own AI script where the opponent has one and it was asked for: the original player with it.)
+            state.items[11].brain = (config.opponent == "classic" and ai_scripts.has(state, 11)) and "classic" or "xoi@hs_alt"
             current = {self = state.items[10], target = state.items[11], last = {}, hp = state.items[10].hp, thp = state.items[11].hp}
             local held = {functions = "", function_presses = "", keys = {}}
             local ticks = 0

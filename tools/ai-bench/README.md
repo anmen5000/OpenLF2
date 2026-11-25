@@ -392,7 +392,11 @@ processes or more the first merge failed.)
 
 From package 88 (INSANE! version 50) the game plays these networks: a mod's `xoi/rl-<id>.txt` (a `bo-nao-<round>.txt`)
 has XOI play that fighter with it (`smart.rl_kit` in `smart_ai.lua`: the same moves and numbers, the likeliest
-action; this job turns it off on both sides while it learns or checks). From package 111 (version 53) the network
+action; this job turns it off on both sides while it learns or checks). From package 112 the opponent can be the
+mod's own AI (`opponent = "classic"`, the kit's `DOI_THU=classic`): an opponent with an AI script of the mod's own
+(`ai/<id>.as`, `ai_scripts.has`: Sauce's AI in his mod) plays the original computer player with it, CRAZY!, the
+others XOI without a brain as before; and the Template is out of the opponents (the match leaves his seat empty: in
+the original's fighters a game in 11 failed). From package 111 (version 53) the network
 stands aside in a standoff: no blow between the fighter and its target for 189 frames by the clock (the two losing
 more than 8 HP between frames, watched every frame: `smart.rl_kit.watch` and `standoff`), XOI alone deciding until
 the next blow, and this job does the same, so that its checks play the game's games. A network learns against XOI

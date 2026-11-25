@@ -270,6 +270,29 @@ test('a check line read for the page', () => {
   assert.equal(checkScore('nothing'), null);
 });
 
+test('the opponent (package 112): XOI by default, the mod\'s own AI when set, passed to the machines', async () => {
+  const relay = await startRelay(tempDir());
+  try {
+    let answer = await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 1500 } });
+    assert.equal(answer.body.settings.DOI_THU, 0, 'XOI without a network by default');
+    answer = await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 1500, DOI_THU: 1 } });
+    const key = answer.body.key;
+    assert.equal(answer.body.settings.DOI_THU, 1);
+    await admin(relay, 'POST', 'them', { fighters: '11' });
+    assert.equal((await machine(relay, key, 'GET', 'viec')).values.DOI_THU, '1');
+    const reply = await machine(relay, key, 'POST', 'nhan?may=PC1-o1');
+    assert.equal(reply.values.NV, '11');
+    assert.equal(reply.values.DOI_THU, '1');
+    answer = await admin(relay, 'PUT', 'cai-dat', { pack: '', settings: { VONG: 1500, DOI_THU: 7 } });
+    assert.equal(answer.body.settings.DOI_THU, 0, 'out of range: the default');
+    const page = await (await fetch(`${relay.base}/hoc`)).text();
+    assert.match(page, /<select id="DOI_THU">/);
+    assert.match(page, /AI riêng của bản mod \(như AI của Sauce\)/);
+  } finally {
+    await relay.close();
+  }
+});
+
 test('early stop (package 97): the setting goes to the machines, the page shows where a fighter stopped', async () => {
   const relay = await startRelay(tempDir());
   try {

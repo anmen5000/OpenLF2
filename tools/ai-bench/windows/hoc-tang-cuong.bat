@@ -4,7 +4,8 @@ rem HOC TANG CUONG (THU NGHIEM, goi 85) - mot bo nao nho hoc cach bam phim cho M
 rem Moi khung hinh XOI tu quyet nhu thuong; roi bo nao xem tinh huong va phim XOI vua chon, va hoac de XOI bam,
 rem hoac tu ra mot trong 22 nuoc cua no: bam A, J hay D; nhay (tai cho, toi, lui, len, xuong); di 4 khung (toi,
 rem lui, len, xuong); chay 10 khung (toi, lui); 7 chieu D (D>A, D>J, D^A, D^J, DvA, DvJ, DJA); dung yen 4 khung.
-rem Nhan vat ay (NHAN_VAT) danh voi XOI khong bo nao, doi thu la moi nhan vat cua ban mod, san ngau nhien.
+rem Nhan vat ay (NHAN_VAT) danh voi XOI khong bo nao, doi thu la moi nhan vat cua ban mod, san ngau nhien - hay, voi
+rem DOI_THU=classic (tu goi 112), voi AI rieng cua ban mod o doi thu nao co (nhu AI cua Sauce).
 rem Moi vong: moi tien trinh (mot luong CPU) danh TRAN tran voi bo nao cua vong truoc, tu hoc tren cac tran cua
 rem minh (PPO), ghi phan doi; het vong lay trung binh phan doi cua cac tien trinh thanh bo nao moi. Luc dau bo nao
 rem gan nhu luon de XOI bam (99 khung tren 100), nen nhan vat danh gan nhu XOI; no chi doi khi thay doi co loi.
@@ -57,6 +58,13 @@ rem Hen gio tam dung: chay chung ay gio roi tu dung (vi du 8; de trong: chay den
 set "GIO_CHAY="
 set "UU_TIEN=BELOWNORMAL"
 set "HAT_GIONG=7000"
+rem Doi thu (DOI_THU, tu goi 112). De trong: XOI khong bo nao (nhu truoc). Ghi classic: doi thu nao co script AI rieng
+rem cua ban mod (ai\<id>.as, nhu AI cua Sauce) thi danh bang script ay - may goc cua game o muc CRAZY!, script thay
+rem cac chieu cua no - doi thu khong co script thi van la XOI khong bo nao. Kiem tra va xac nhan cung danh voi doi thu
+rem ay. Moi nhan vat hoc tron voi mot doi thu: thu muc cua nhan vat da hoc voi doi thu khac thi duoc doi ten thanh
+rem <thu muc>.cu-<so> (khong xoa gi) va nhan vat hoc tu dau. May con (may-con.bat): relay tu goi 112 gui cai dat nay
+rem (trang /hoc, o "Doi thu"); relay cu hon thi moi may dung DOI_THU cua chinh no.
+set "DOI_THU="
 rem Thu muc tools\ai-bench va scripts cua goi (de trong thi tu tim canh file .bat nay)
 set "BENCH="
 set "SCRIPTS="
@@ -82,6 +90,10 @@ if defined HOC_MAY (
   if defined HOC_TRAN_XAC_NHAN set "TRAN_XAC_NHAN=!HOC_TRAN_XAC_NHAN!"
   if defined HOC_DUNG_SOM set "DUNG_SOM=!HOC_DUNG_SOM!"
   if defined HOC_PACK_FILE set "PACK=!HOC_PACK_FILE!"
+  if defined HOC_DOI_THU (
+    set "DOI_THU="
+    if "!HOC_DOI_THU!"=="1" set "DOI_THU=classic"
+  )
   set "GIO_CHAY="
 )
 
@@ -91,6 +103,14 @@ if /i "%~1"=="chay1" goto chay1
 
 set "SELF=%~f0"
 set "KIT=%~dp0"
+rem --- Doi thu (DOI_THU): classic, hay de trong ---
+set "DT_CFG="
+set "DT_TEN="
+if defined DOI_THU (
+  if /i not "%DOI_THU%"=="classic" (echo [LOI] DOI_THU chi nhan classic ^(hoac de trong^), khong phai "%DOI_THU%".& %DUNG%& exit /b 1)
+  set DT_CFG=opponent = "classic", 
+  set "DT_TEN=classic"
+)
 rem --- Ban mod ---
 set "PACK_1="
 if not "%~1"=="" if /i "%~x1"==".zip" if exist "%~f1" set "PACK_1=%~f1"
@@ -215,9 +235,10 @@ rem file zip cua cung ban mod (ca <ten>-xoi.zip, ca ban relay gui). Ghi o dong "
 set "MA_MOD="
 for /f "usebackq delims=" %%h in (`powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [IO.Compression.ZipFile]::OpenRead($env:PACK_1); try { $e = @($z.Entries | Where-Object { $_.FullName -imatch '(^|[\\/])data[\\/]data\.txt$' } | Sort-Object { $_.FullName.Length }); if ($e.Count -gt 0) { $s = $e[0].Open(); try { $h = [Security.Cryptography.SHA256]::Create().ComputeHash($s) } finally { $s.Close() }; -join ($h[0..5] | ForEach-Object { $_.ToString('x2') }) } } finally { $z.Dispose() }" 2^>nul`) do set "MA_MOD=%%h"
 rem Thu muc nay dang co ket qua cua nhan vat khac (ban mod khac co cung so id, hay cung nhan vat tren ban mod khac
-rem ma): doi ten no thanh <thu muc>.cu-<so> (khong xoa gi) roi hoc tu dau. Truoc goi 94, may con nhan so id ay cua
+rem ma), hay hoc voi doi thu khac (DOI_THU, tu goi 112; dong "Bat dau luc" khong ghi [doi-thu ...] la XOI khong bo
+rem nao): doi ten no thanh <thu muc>.cu-<so> (khong xoa gi) roi hoc tu dau. Truoc goi 94, may con nhan so id ay cua
 rem ban mod moi tuong nhan vat da hoc xong va gui lai ket qua cu.
-powershell -NoProfile -Command "$t = Join-Path $env:LV 'tom-tat.txt'; if (-not (Test-Path -LiteralPath $t)) { exit 0 }; $b = @(Select-String -LiteralPath $t -Pattern '^=== Bat dau luc ' | Select-Object -Last 1); if ($b.Count -eq 0) { exit 0 }; $s = $b[0].Line; $khac = ''; if ($s -match 'nhan vat (.+?) \(id (-?\d+)\)') { $cu = $Matches[1] + ' (id ' + $Matches[2] + ')'; if ($cu -ne $env:TEN_THAT) { $khac = $cu } }; if (-not $khac -and $env:MA_MOD -and $s -match '\[ma-mod ([0-9a-f]+)\]') { if ($Matches[1] -ne $env:MA_MOD) { $khac = $env:TEN_THAT + ' tren ban mod khac (ma ' + $Matches[1] + ')' } }; if (-not $khac) { exit 0 }; $k = 1; while (Test-Path -LiteralPath ($env:LV + '.cu-' + $k)) { $k++ }; $moi = (Split-Path -Leaf $env:LV) + '.cu-' + $k; try { Rename-Item -LiteralPath $env:LV -NewName $moi -ErrorAction Stop } catch { Write-Host ('[LOI] ' + $_.Exception.Message); exit 1 }; Write-Host ('[CHU Y] Thu muc ' + $env:LV + ' co ket qua cua ' + $khac + ': da doi ten thanh ' + $moi + ' (khong xoa gi) - hoc ' + $env:TEN_THAT + ' tu dau.'); exit 2"
+powershell -NoProfile -Command "$t = Join-Path $env:LV 'tom-tat.txt'; if (-not (Test-Path -LiteralPath $t)) { exit 0 }; $b = @(Select-String -LiteralPath $t -Pattern '^=== Bat dau luc ' | Select-Object -Last 1); if ($b.Count -eq 0) { exit 0 }; $s = $b[0].Line; $khac = ''; if ($s -match 'nhan vat (.+?) \(id (-?\d+)\)') { $cu = $Matches[1] + ' (id ' + $Matches[2] + ')'; if ($cu -ne $env:TEN_THAT) { $khac = $cu } }; if (-not $khac -and $env:MA_MOD -and $s -match '\[ma-mod ([0-9a-f]+)\]') { if ($Matches[1] -ne $env:MA_MOD) { $khac = $env:TEN_THAT + ' tren ban mod khac (ma ' + $Matches[1] + ')' } }; if (-not $khac) { $dt = ''; if ($s -match '\[doi-thu ([a-z]+)\]') { $dt = $Matches[1] }; if ($dt -ne [string]$env:DT_TEN) { $cu = 'XOI khong bo nao'; if ($dt) { $cu = $dt }; $khac = $env:TEN_THAT + ' voi doi thu khac (' + $cu + ')' } }; if (-not $khac) { exit 0 }; $k = 1; while (Test-Path -LiteralPath ($env:LV + '.cu-' + $k)) { $k++ }; $moi = (Split-Path -Leaf $env:LV) + '.cu-' + $k; try { Rename-Item -LiteralPath $env:LV -NewName $moi -ErrorAction Stop } catch { Write-Host ('[LOI] ' + $_.Exception.Message); exit 1 }; Write-Host ('[CHU Y] Thu muc ' + $env:LV + ' co ket qua cua ' + $khac + ': da doi ten thanh ' + $moi + ' (khong xoa gi) - hoc ' + $env:TEN_THAT + ' tu dau.'); exit 2"
 if errorlevel 2 goto thu_muc_nv
 if errorlevel 1 (
   >"%LV%\loi.txt" echo Thu muc "%LV%" co ket qua cua nhan vat khac hay ban mod khac, ma khong doi ten duoc - dong cac chuong trinh dang mo file trong do roi chay lai.
@@ -228,6 +249,7 @@ if errorlevel 1 (
 
 echo Hoc tang cuong ^(thu nghiem^): nhan vat !TEN_THAT!, ban mod "%PACK_1%"
 echo %VONG% vong, moi vong %N% tien trinh x %TRAN% tran ^(uu tien %UU_TIEN%^); ket qua vao "%LV%"
+if defined DT_TEN (echo Doi thu: AI rieng cua ban mod ^(DOI_THU=classic^) - doi thu khong co script AI rieng thi XOI khong bo nao.) else echo Doi thu: XOI khong bo nao.
 echo Tam dung: dong cua so nay. Chay lai file nay la lam tiep. De may chay qua dem: tat che do ngu cua Windows.
 rem Hen gio (GIO_CHAY): so giay chay toi da (GIOI_HAN; 0 = khong hen).
 set /a GIOI_HAN=0, DA_CHAY=0
@@ -245,6 +267,7 @@ del /q "%CANH_XONG%" 2>nul
 start "Hoc tang cuong - canh cua so" /MIN powershell -NoProfile -WindowStyle Hidden -Command "$c = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $PID)).ParentProcessId; if (-not $c) { exit }; while (Get-Process -Id $c -ErrorAction SilentlyContinue) { if (Test-Path -LiteralPath $env:CANH_XONG) { exit }; Start-Sleep -Seconds 3 }; Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'openlf2.exe' -and $_.CommandLine -and $_.CommandLine.Contains($env:CANH) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 set "MA_GHI="
 if defined MA_MOD set "MA_GHI= [ma-mod !MA_MOD!]"
+if defined DT_TEN set "MA_GHI=!MA_GHI! [doi-thu !DT_TEN!]"
 >>"%LV%\tom-tat.txt" echo === Bat dau luc %DATE% %TIME%: nhan vat !TEN_THAT!, ban mod %PACK_1%!MA_GHI!, %N% tien trinh x %TRAN% tran moi vong
 
 rem Mat dien hay may tat giua chung: bo nao vua ghi co the chua kip xuong dia (thieu so, hay toan so 0). Kiem bo nao
@@ -306,7 +329,7 @@ set "W_CFG="
 if defined W_TRUOC set W_CFG=weights = "rl_weights",
 for /L %%k in (1,1,%N%) do (
   set /a SEED=HAT_GIONG+E*1000+%%k, OFF=E*7919+%%k*104
-  >"%D%\p%%k\config.lua" echo return {command = "rl", step = "play", !W_CFG!fighter = "%NHAN_VAT%", games = %TRAN%, seed = !SEED!, offset = !OFF!, limit = 9000}
+  >"%D%\p%%k\config.lua" echo return {command = "rl", step = "play", !W_CFG!!DT_CFG!fighter = "%NHAN_VAT%", games = %TRAN%, seed = !SEED!, offset = !OFF!, limit = 9000}
   start "Hoc tang cuong vong %E% - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 vong-%E% %%k !SEED!
 )
 call :cho "%D%" "RL_DONE"
@@ -369,7 +392,7 @@ call :chuan_bi "%K%"
 rem Cung cac tran cho moi lan kiem tra (hat giong co dinh): cac lan kiem tra so duoc voi nhau.
 for /L %%k in (1,1,%N%) do (
   set /a SEED=HAT_GIONG+900000+%%k, OFF=%%k*131
-  >"%K%\p%%k\config.lua" echo return {command = "rl", step = "eval", both = true, weights = "rl_weights", fighter = "%NHAN_VAT%", games = %TRAN_KIEM_TRA%, seed = !SEED!, offset = !OFF!, limit = 9000}
+  >"%K%\p%%k\config.lua" echo return {command = "rl", step = "eval", both = true, weights = "rl_weights", !DT_CFG!fighter = "%NHAN_VAT%", games = %TRAN_KIEM_TRA%, seed = !SEED!, offset = !OFF!, limit = 9000}
   start "Hoc tang cuong kiem tra - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 kiem-tra-vong-%E% %%k !SEED!
 )
 call :cho "%K%" "RL_DONE"
@@ -489,7 +512,7 @@ call :chuan_bi "%K%"
 rem Hat giong rieng: nhung tran khac cac lan kiem tra va cac vong hoc; moi bo nao xac nhan danh cung cac tran ay.
 for /L %%k in (1,1,%N%) do (
   set /a SEED=HAT_GIONG+900500+%%k, OFF=%%k*173+7
-  >"%K%\p%%k\config.lua" echo return {command = "rl", step = "eval", greedy = true, weights = "rl_weights", fighter = "%NHAN_VAT%", games = !XN_MOI!, seed = !SEED!, offset = !OFF!, limit = 9000}
+  >"%K%\p%%k\config.lua" echo return {command = "rl", step = "eval", greedy = true, weights = "rl_weights", !DT_CFG!fighter = "%NHAN_VAT%", games = !XN_MOI!, seed = !SEED!, offset = !OFF!, limit = 9000}
   start "Hoc tang cuong xac nhan - %%k" /MIN /%UU_TIEN% cmd /c call "%SELF%" chay1 xac-nhan-vong-%XR% %%k !SEED!
 )
 call :cho "%K%" "RL_DONE"

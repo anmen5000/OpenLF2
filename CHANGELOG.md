@@ -930,6 +930,24 @@ player's own version numbers (shown in the game as "INSANE! vN" and on the site'
   79 of 112 to 71; Sasori 65 to 66 and Kankuro 44 to 45 of 120. The learned files of packages 104 and 105 are left
   aside (`smart.learned_kit` version 2) and `hoc-chieu.bat` learns them again: NTSD 2.6's 77 fighters in 21 s with
   LuaJIT (13 before), the same files with Lua 5.2
+- Reinforcement learning against the mod's own AI (package 112; the project owner wants Sauce's mod learned against
+  Sauce's AI): `hoc-tang-cuong.bat` has `DOI_THU` - empty, the fighter learns against XOI without a network as before;
+  `classic`, each opponent that has an AI script of the mod's own (`ai\<id>.as`, Sauce's AI in his mod,
+  `ai_scripts.has`) plays the original computer player with that script, CRAZY! (the opponent `spsa.bat`'s
+  `DOI_THU=classic` plays), in the checks and the confirmation too, an opponent without one still XOI
+  (`tools/ai-bench/rl.lua`: `opponent = "classic"`). A fighter learns its whole run against one opponent:
+  `tom-tat.txt`'s "Bat dau luc" line carries `[doi-thu classic]`, and a fighter folder learned against the other is
+  renamed `<folder>.cu-<n>` (nothing deleted) before the fighter learns from the start, as for another mod (package
+  94); `dua-bo-nao-vao-mod.bat` tells such results on the relay from a machine's own the same way. On many machines
+  the relay's `/hoc` has the setting ("Doi thu"; `DOI_THU` 0 or 1, relay installer version 19) and `may-con.bat` hands
+  it on; with a relay older than that each machine goes by its own `DOI_THU`. And the Template is out of the opponents
+  whoever they are: the match leaves his seat empty, and in the original's fighters (Sauce's mod) a game in 11 failed
+  ("attempt to index a nil value"). The learning job without `DOI_THU` plays as before (NTSD 2.6: a round's learning
+  and a check line for line the same). Sauce's mod, XOI alone (no notes, no tuned numbers) against Sauce's AI, 30
+  games each: Deep 28-2, Davis 22-8, Firen and Woody 20-10, Dennis 17-13, Rudolf 14-16, Henry 13-17, Louis and Freeze
+  8-22, John 7-23; a round is no slower against Sauce's AI (Davis, 20 games: 10.5 s, 14.4 against XOI). Not tried on
+  Windows: Wine's `cmd` ran the settings, the relay's setting and the three jobs' lines, PowerShell 7 the folder
+  checks
 ### Changed
 - The game, and INSANE! and XOI's thinking in it, run in half the time, the play the same (package 109, the project
   owner's question once `hoc-chieu.bat` had made his training quicker: could XOI think faster too, for the training to
